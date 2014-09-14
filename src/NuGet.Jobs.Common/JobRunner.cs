@@ -64,6 +64,7 @@ namespace NuGet.Jobs.Common
                     if (!runContinuously) break;
 
                     // Wait for <sleepDuration> milliSeconds and run the job again
+                    job.Logger.Log(TraceLevel.Info, "Sleeping for " + TimeSpan.FromMilliseconds(sleepDuration.Value).ToString());
                     Thread.Sleep(sleepDuration.Value);
                 } while (true);
             }
