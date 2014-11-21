@@ -61,6 +61,13 @@ namespace NuGet.Jobs.Common
         public const string SourceContainerName = "SourceContainerName";
         public const string DestinationContainerName = "DestinationContainerName";
         public const string CursorBlob = "CursorBlob";
+
+        //Arguments specific to UpdateLicenseReport
+        public const string LicenseReportService = "LicenseReportService";
+        public const string LicenseReportUser = "LicenseReportUser";
+        public const string LicenseReportPassword = "LicenseReportPassword";
+        public const string WhatIf = "WhatIf";
+        public const string RetryCount = "RetryCount";
     }
     /// <summary>
     /// This class is used to retrieve and expose the known azure configuration settings 
