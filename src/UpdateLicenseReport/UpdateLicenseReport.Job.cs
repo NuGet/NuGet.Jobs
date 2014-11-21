@@ -81,8 +81,9 @@ namespace UpdateLicenseReport
                 LicenseReportService = new Uri(JobConfigManager.GetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportService));
                 LicenseReportUser = JobConfigManager.GetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportUser);
                 LicenseReportPassword = JobConfigManager.GetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportPassword);
-                RetryCount = JobConfigManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.RetryCount) == null? DefaultRetryCount : int.Parse(JobConfigManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.RetryCount));
-                WhatIf = JobConfigManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.WhatIf) == null? false : bool.Parse(JobConfigManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.WhatIf));
+                RetryCount = JobConfigManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.RetryCount) ?? DefaultRetryCount;
+                WhatIf = JobConfigManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.WhatIf) == false ? false : JobConfigManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.WhatIf);
+                LoadDefaults();
                 return true;
             }
             catch (Exception ex)
@@ -94,9 +95,6 @@ namespace UpdateLicenseReport
 
         public override async Task<bool> Run()
         {
-            // Load defaults
-            LoadDefaults();
-
             // Fetch next report url
             Uri nextLicenseReport = await FetchNextReportUrl();
 
@@ -110,8 +108,7 @@ namespace UpdateLicenseReport
         }
 
         private void LoadDefaults()
-        {
-            RetryCount = RetryCount ?? DefaultRetryCount;           
+        {         
             // Build credentials
             if (!String.IsNullOrEmpty(LicenseReportUser))
             {
