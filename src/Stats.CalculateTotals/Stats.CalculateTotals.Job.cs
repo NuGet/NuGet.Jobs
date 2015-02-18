@@ -26,9 +26,12 @@ namespace Stats.CalculateTotals
                     (SELECT COUNT([Key]) FROM Packages WITH (NOLOCK) WHERE Listed = 1) AS TotalPackages,
                     (SELECT TotalDownloadCount FROM GallerySettings WITH (NOLOCK)) AS Downloads";
 
-        private const string _sqlGetOperationsStatistics = @"SELECT Operation, SUM(DownloadCount) AS Total
+        private const string _sqlGetOperationsStatistics = @"SELECT Operation , SUM(DownloadCount) AS Total
                     FROM Dimension_Operation
                     INNER JOIN Fact_Download ON Fact_Download.Dimension_Operation_Id = Dimension_Operation.Id
+                    INNER JOIN Dimension_Date ON Dimension_Date.Id = Fact_Download.Dimension_Date_Id 
+                    WHERE Dimension_Date.[Date] >= CONVERT(DATE, DATEADD(hour, -25, GETDATE())) 
+                      AND Dimension_Date.[Date] < CONVERT(DATE, DATEADD(hour, -1, GETDATE())) 
                     GROUP BY Operation
                     ORDER BY Operation";
         
