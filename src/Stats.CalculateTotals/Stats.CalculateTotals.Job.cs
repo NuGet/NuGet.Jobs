@@ -8,7 +8,6 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Stats.CalculateTotals
@@ -17,13 +16,17 @@ namespace Stats.CalculateTotals
     {
         private static readonly JobEventSource JobEventSourceLog = JobEventSource.Log;
 
+        private const string _targetBlobName = "stats-totals.json";
+        private const string _targetContainerName = "v3-stats0";
+
         // Note the NOLOCK hints here!
-        private static readonly string GetStatisticsSql = @"SELECT 
+        private const string _sqlGetStatistics = @"SELECT 
                     (SELECT COUNT([Key]) FROM PackageRegistrations pr WITH (NOLOCK)
                             WHERE EXISTS (SELECT 1 FROM Packages p WITH (NOLOCK) WHERE p.PackageRegistrationKey = pr.[Key] AND p.Listed = 1)) AS UniquePackages,
                     (SELECT COUNT([Key]) FROM Packages WITH (NOLOCK) WHERE Listed = 1) AS TotalPackages,
-                    (SELECT TotalDownloadCount FROM GallerySettings WITH (NOLOCK)) AS Downloads";
-
+                    (SELECT TotalDownloadCount FROM GallerySettings WITH (NOLOCK)) AS Downloads,
+                    (SELECT -1) AS Installs";
+        
         public Job() : base(JobEventSource.Log) { }
 
         private CloudStorageAccount ContentAccount { get; set; }
@@ -60,14 +63,13 @@ namespace Stats.CalculateTotals
         {
             try
             {
-                var contentContainerName = "content";
-                var contentContainer = ContentAccount.CreateCloudBlobClient().GetContainerReference(contentContainerName);
+                var blobContainer = ContentAccount.CreateCloudBlobClient().GetContainerReference(_targetContainerName);
 
                 Totals totals;
                 JobEventSourceLog.BeginningQuery(PackageDatabase.DataSource, PackageDatabase.InitialCatalog);
                 using (var connection = await PackageDatabase.ConnectTo())
                 {
-                    totals = (await connection.QueryAsync<Totals>(GetStatisticsSql)).SingleOrDefault();
+                    totals = (await connection.QueryAsync<Totals>(_sqlGetStatistics)).SingleOrDefault();
                 }
 
                 if (totals == null)
@@ -75,11 +77,10 @@ namespace Stats.CalculateTotals
                     throw new Exception("Failed to get the Totals from the query -- no records were returned..");
                 }
 
-                JobEventSourceLog.FinishedQuery(totals.UniquePackages, totals.TotalPackages, totals.Downloads, totals.LastUpdateDateUtc);
+                JobEventSourceLog.FinishedQuery(totals.UniquePackages, totals.TotalPackages, totals.Downloads, totals.Installs, totals.LastUpdateDateUtc);
 
-                string name = "stats-totals.json";
-                JobEventSourceLog.BeginningBlobUpload(name);
-                await StorageHelpers.UploadJsonBlob(contentContainer, name, JsonConvert.SerializeObject(totals));
+                JobEventSourceLog.BeginningBlobUpload(_targetBlobName);
+                await StorageHelpers.UploadJsonBlob(blobContainer, _targetBlobName, totals.ToJsonLd());
                 JobEventSourceLog.FinishedBlobUpload();
 
                 return true;
@@ -99,9 +100,15 @@ namespace Stats.CalculateTotals
         {
             public int UniquePackages { get; set; }
             public int TotalPackages { get; set; }
-            public int Downloads { get; set; }
+            public long Downloads { get; set; }
+            public long Installs { get; set; }
 
             public DateTime LastUpdateDateUtc { get { return DateTime.UtcNow; } }
+
+            public string ToJsonLd()
+            {
+                return JsonConvert.SerializeObject(this);
+            }
         }
     }
 
@@ -122,12 +129,12 @@ namespace Stats.CalculateTotals
         [Event(
             eventId: 2,
             Level = EventLevel.Informational,
-            Message = "Finished querying the database. Unique Packages: {0}, Total Packages: {1}, Download Count: {2}, Last Updated Date UTC: {3}",
+            Message = "Finished querying the database. Unique Packages: {0}, Total Packages: {1}, Download Count: {2}, Installs Count: {3}, Last Updated Date UTC: {4}",
             Task = Tasks.Querying,
             Opcode = EventOpcode.Stop)]
-        public void FinishedQuery(int uniquePackages, int totalPackages, int downloadCount, DateTime lastUpdatedUtc)
+        public void FinishedQuery(int uniquePackages, int totalPackages, long downloadCount, long installs, DateTime lastUpdatedUtc)
         {
-            WriteEvent(2, uniquePackages, totalPackages, downloadCount, lastUpdatedUtc);
+            WriteEvent(2, uniquePackages, totalPackages, downloadCount, installs, lastUpdatedUtc);
         }
 
         [Event(
