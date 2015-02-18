@@ -1,0 +1,14 @@
+﻿{
+    "@context": {
+        "@vocab": "http://schema.nuget.org/schema#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+        "downloads": { "@type": "xsd:long" },
+        "totalPackages": { "@type": "xsd:integer" },
+        "uniquePackages": { "@type": "xsd:integer" },
+        "lastUpdateDateUtc": { "@type": "xsd:dateTime" },
+        "operationTotals": {
+            "@container": "@set"
+        }
+    }
+}

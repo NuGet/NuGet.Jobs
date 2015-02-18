@@ -1,13 +1,18 @@
 ﻿using Dapper;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using NuGet.Jobs.Common;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Stats.CalculateTotals
@@ -139,7 +144,21 @@ namespace Stats.CalculateTotals
 
             public string ToJsonLd()
             {
-                return JsonConvert.SerializeObject(this);
+                try
+                {
+                    var json = JObject.FromObject(this, new JsonSerializer { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                    var type = new Uri("http://schema.nuget.org/schema#Stats");
+                    JObject frame = JsonLdHelper.GetContext("context.Stats.json", type);
+                    
+                    json.Merge(frame);
+
+                    return json.ToString();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+                return string.Empty;
             }
         }
 
@@ -147,6 +166,30 @@ namespace Stats.CalculateTotals
         {
             public string Operation { get; set; }
             public long Total { get; set; }
+        }
+    }
+
+    public class JsonLdHelper
+    {
+        public static JObject GetContext(string name, Uri type)
+        {
+            var jsonLdContext = new ConcurrentDictionary<string, JObject>();
+
+            return jsonLdContext.GetOrAdd(name + "#" + type.ToString(), (key) =>
+            {
+                using (JsonReader jsonReader = new JsonTextReader(new StreamReader(GetResourceStream(name))))
+                {
+                    JObject obj = JObject.Load(jsonReader);
+                    obj["@type"] = type.ToString();
+                    return obj;
+                }
+            });
+        }
+
+        private static Stream GetResourceStream(string resName)
+        {
+            string name = Assembly.GetExecutingAssembly().GetName().Name.Replace("-", ".");
+            return Assembly.GetExecutingAssembly().GetManifestResourceStream(name + "." + resName);
         }
     }
 
