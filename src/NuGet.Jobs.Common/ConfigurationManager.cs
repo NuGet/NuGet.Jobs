@@ -12,7 +12,7 @@ namespace NuGet.Jobs.Common
     {
         public const string SqlGallery = "NUGETJOBS_SQL_GALLERY";
         public const string SqlWarehouse = "NUGETJOBS_SQL_WAREHOUSE";
-        public const string StorageGallery = "NUGETJOBS_STORAGE_GALLERY";
+        public const string StorageGallery = "NUGETJOBS_STORAGE_V3GALLERY";
         public const string StoragePrimary = "NUGETJOBS_STORAGE_PRIMARY";
         public const string StorageBackup = "NUGETJOBS_STORAGE_BACKUP";
     }
