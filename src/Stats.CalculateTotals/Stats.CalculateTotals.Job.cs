@@ -21,7 +21,7 @@ namespace Stats.CalculateTotals
     {
         private static readonly JobEventSource JobEventSourceLog = JobEventSource.Log;
 
-        private const string _targetBlobName = "stats-totals.json";
+        private const string _targetBlobName = "totals.json";
         private const string _targetContainerName = "v3-stats0";
 
         // Note the NOLOCK hints here!
