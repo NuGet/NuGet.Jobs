@@ -5,14 +5,10 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using NuGet.Jobs.Common;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Stats.CalculateTotals
@@ -23,22 +19,6 @@ namespace Stats.CalculateTotals
 
         private const string _targetBlobName = "totals.json";
         private const string _targetContainerName = "v3-stats0";
-
-        // Note the NOLOCK hints here!
-        private const string _sqlGetStatistics = @"SELECT 
-                    (SELECT COUNT([Key]) FROM PackageRegistrations pr WITH (NOLOCK)
-                            WHERE EXISTS (SELECT 1 FROM Packages p WITH (NOLOCK) WHERE p.PackageRegistrationKey = pr.[Key] AND p.Listed = 1)) AS UniquePackages,
-                    (SELECT COUNT([Key]) FROM Packages WITH (NOLOCK) WHERE Listed = 1) AS TotalPackages,
-                    (SELECT TotalDownloadCount FROM GallerySettings WITH (NOLOCK)) AS Downloads";
-
-        private const string _sqlGetOperationsStatistics = @"SELECT Operation , SUM(DownloadCount) AS Total
-                    FROM Dimension_Operation
-                    INNER JOIN Fact_Download ON Fact_Download.Dimension_Operation_Id = Dimension_Operation.Id
-                    INNER JOIN Dimension_Date ON Dimension_Date.Id = Fact_Download.Dimension_Date_Id 
-                    WHERE Dimension_Date.[Date] >= CONVERT(DATE, DATEADD(hour, -25, GETDATE())) 
-                      AND Dimension_Date.[Date] < CONVERT(DATE, DATEADD(hour, -1, GETDATE())) 
-                    GROUP BY Operation
-                    ORDER BY Operation";
         
         public Job() : base(JobEventSource.Log) { }
 
@@ -90,7 +70,7 @@ namespace Stats.CalculateTotals
                 JobEventSourceLog.BeginningQuery(PackageDatabase.DataSource, PackageDatabase.InitialCatalog);
                 using (var connection = await PackageDatabase.ConnectTo())
                 {
-                    totals = (await connection.QueryAsync<Totals>(_sqlGetStatistics)).SingleOrDefault();
+                    totals = (await connection.QueryAsync<Totals>(Sql.SqlGetStatistics)).SingleOrDefault();
                 }
 
                 if (totals == null)
@@ -104,7 +84,7 @@ namespace Stats.CalculateTotals
                 JobEventSourceLog.BeginningQuery(WarehouseDatabase.DataSource, WarehouseDatabase.InitialCatalog);
                 using (var connection = await WarehouseDatabase.ConnectTo())
                 {
-                    operationTotals = (await connection.QueryAsync<OperationTotal>(_sqlGetOperationsStatistics)).ToList();
+                    operationTotals = (await connection.QueryAsync<OperationTotal>(Sql.SqlGetOperationsStatistics)).ToList();
                 }
 
                 if (!operationTotals.Any())
@@ -112,7 +92,7 @@ namespace Stats.CalculateTotals
                     throw new Exception("Failed to get the OperationTotals from the query -- no records were returned..");
                 }
 
-                JobEventSourceLog.FinishedWarehouseQuery(string.Join(", ", operationTotals.Select(t => string.Format("{0}: {1}", t.Operation, t.Total))));
+                JobEventSourceLog.FinishedWarehouseQuery(string.Join(", ", operationTotals.Select(t => string.Format("{0}: {1} ({2})", t.Operation, t.Total, t.HourOfOperation))));
 
                 totals.OperationTotals = operationTotals;
 
@@ -166,89 +146,7 @@ namespace Stats.CalculateTotals
         {
             public string Operation { get; set; }
             public long Total { get; set; }
-        }
-    }
-
-    public class JsonLdHelper
-    {
-        public static JObject GetContext(string name, Uri type)
-        {
-            var jsonLdContext = new ConcurrentDictionary<string, JObject>();
-
-            return jsonLdContext.GetOrAdd(name + "#" + type.ToString(), (key) =>
-            {
-                using (JsonReader jsonReader = new JsonTextReader(new StreamReader(GetResourceStream(name))))
-                {
-                    JObject obj = JObject.Load(jsonReader);
-                    obj["@type"] = type.ToString();
-                    return obj;
-                }
-            });
-        }
-
-        private static Stream GetResourceStream(string resName)
-        {
-            string name = Assembly.GetExecutingAssembly().GetName().Name.Replace("-", ".");
-            return Assembly.GetExecutingAssembly().GetManifestResourceStream(name + "." + resName);
-        }
-    }
-
-    [EventSource(Name = "Outercurve-NuGet-Jobs-CalculateStatsTotals")]
-    public class JobEventSource : EventSource
-    {
-        public static readonly JobEventSource Log = new JobEventSource();
-        private JobEventSource() { }
-
-        [Event(
-            eventId: 1,
-            Level = EventLevel.Informational,
-            Message = "Begining the query of the database to get statistics from {0}/{1}",
-            Task = Tasks.Querying,
-            Opcode = EventOpcode.Start)]
-        public void BeginningQuery(string server, string database) { WriteEvent(1, server, database); }
-
-        [Event(
-            eventId: 2,
-            Level = EventLevel.Informational,
-            Message = "Finished querying the database. Unique Packages: {0}, Total Packages: {1}, Download Count: {2}, Last Updated Date UTC: {3}",
-            Task = Tasks.Querying,
-            Opcode = EventOpcode.Stop)]
-        public void FinishedQuery(int uniquePackages, int totalPackages, long downloadCount, DateTime lastUpdatedUtc)
-        {
-            WriteEvent(2, uniquePackages, totalPackages, downloadCount, lastUpdatedUtc);
-        }
-
-        [Event(
-            eventId: 3,
-            Level = EventLevel.Informational,
-            Message = "Finished querying the warehouse. {0}",
-            Task = Tasks.Querying,
-            Opcode = EventOpcode.Stop)]
-        public void FinishedWarehouseQuery(string result)
-        {
-            WriteEvent(3, result);
-        }
-
-        [Event(
-            eventId: 4,
-            Level = EventLevel.Informational,
-            Message = "Beginning blob upload: {0}",
-            Task = Tasks.Uploading,
-            Opcode = EventOpcode.Start)]
-        public void BeginningBlobUpload(string blobName) { WriteEvent(4, blobName); }
-
-        [Event(
-            eventId: 5,
-            Level = EventLevel.Informational,
-            Message = "Finished blob upload",
-            Task = Tasks.Uploading,
-            Opcode = EventOpcode.Stop)]
-        public void FinishedBlobUpload() { WriteEvent(5); }
-
-        public static class Tasks
-        {
-            public const EventTask Querying = (EventTask)0x1;
-            public const EventTask Uploading = (EventTask)0x2;
+            public DateTime HourOfOperation { get; set; }
         }
     }
 }

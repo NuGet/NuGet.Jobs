@@ -75,6 +75,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JobEventSource.cs" />
+    <Compile Include="JsonLdHelper.cs" />
+    <Compile Include="Sql.cs" />
     <Compile Include="Stats.CalculateTotals.Job.cs" />
     <Compile Include="Stats.CalculateTotals.Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
