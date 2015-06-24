@@ -71,6 +71,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArgCheck.cs" />
     <Compile Include="Search.GenerateCuratedFeed.Job.cs" />
     <Compile Include="Search.GenerateCuratedFeed.Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
