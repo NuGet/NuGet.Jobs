@@ -23,6 +23,7 @@ namespace Stats.ImportAzureCdnStatistics
         private static IReadOnlyCollection<TimeDimension> _times;
         private static readonly IList<PackageDimension> _cachedPackageDimensions = new List<PackageDimension>();
         private static readonly IList<ToolDimension> _cachedToolDimensions = new List<ToolDimension>();
+        private static readonly IList<DnxDimension> _cachedDnxDimensions = new List<DnxDimension>();
         private static readonly IDictionary<string, int> _cachedClientDimensions = new Dictionary<string, int>();
         private static readonly IDictionary<string, int> _cachedPlatformDimensions = new Dictionary<string, int>();
         private static readonly IDictionary<string, int> _cachedOperationDimensions = new Dictionary<string, int>();
@@ -88,7 +89,108 @@ namespace Stats.ImportAzureCdnStatistics
                 _times = await GetDimension("time", logFileName, connection => RetrieveTimeDimensions(connection));
             }
 
-            throw new NotImplementedException();
+            var platformsTask = GetDimension("platform", logFileName, connection => RetrievePlatformDimensions(sourceData, connection));
+            var datesTask = GetDimension("date", logFileName, connection => RetrieveDateDimensions(connection, sourceData.Min(e => e.EdgeServerTimeDelivered), sourceData.Max(e => e.EdgeServerTimeDelivered)));
+            var dnxsTask = GetDimension("dnx", logFileName, connection => RetrieveDnxDimensions(sourceData, connection));
+            var userAgentsTask = GetDimension("useragent", logFileName, connection => RetrieveUserAgentFacts(sourceData, connection));
+            var logFileNamesTask = GetDimension("logfilename", logFileName, connection => RetrieveLogFileNameFacts(logFileName, connection));
+            var ipAddressesTask = GetDimension("ipaddress", logFileName, connection => RetrieveIpAddressesFacts(sourceData, connection));
+
+            await Task.WhenAll(platformsTask, datesTask, dnxsTask, userAgentsTask, logFileNamesTask, ipAddressesTask);
+
+            var platforms = platformsTask.Result;
+            var dates = datesTask.Result;
+            var dnxs = dnxsTask.Result;
+            var userAgents = userAgentsTask.Result;
+            var logFileNames = logFileNamesTask.Result;
+            var ipAddresses = ipAddressesTask.Result;
+
+            // create facts data rows by linking source data with dimensions
+            var dataImporter = new DataImporter(_targetDatabase);
+            var dataTable = await dataImporter.GetDataTableAsync("Fact_Dnx_Download");
+
+            //var knownClientsAvailable = clients.Any();
+            var knownPlatformsAvailable = platforms.Any();
+            var knownUserAgentsAvailable = userAgents.Any();
+            var knownIpAddressesAvailable = ipAddresses.Any();
+
+            int logFileNameId = DimensionId.Unknown;
+            if (logFileNames.Any() && logFileNames.ContainsKey(logFileName))
+            {
+                logFileNameId = logFileNames[logFileName];
+            }
+
+            Trace.WriteLine("Creating dnxs facts...");
+
+            foreach (var groupedByDnxVersion in sourceData.GroupBy(e => e.DnxVersion, StringComparer.OrdinalIgnoreCase))
+            {
+                var dnxsByVersion = dnxs.Where(e => string.Equals(e.DnxVersion, groupedByDnxVersion.Key, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                foreach (var groupedByDnxVersionandOS in groupedByDnxVersion.GroupBy(e => e.OperatingSystem, StringComparer.OrdinalIgnoreCase))
+                {
+                    var operatingSystem = groupedByDnxVersionandOS.Key;
+                    var dnxsByVersionAndOS = dnxsByVersion.Where(e => string.Equals(e.OperatingSystem, operatingSystem, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                    foreach (var groupedByDnxVersionandOSAndFileName in groupedByDnxVersionandOS.GroupBy(e => e.FileName, StringComparer.OrdinalIgnoreCase))
+                    {
+                        var fileName = groupedByDnxVersionandOSAndFileName.Key;
+                        var dnx = dnxsByVersionAndOS.FirstOrDefault(e => string.Equals(e.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+
+                        int dnxId;
+                        if (dnx == null)
+                        {
+                            // Track it in Application Insights.
+                            ApplicationInsights.TrackToolNotFound(groupedByDnxVersion.Key, operatingSystem, fileName, logFileName);
+
+                            continue;
+                        }
+                        else
+                        {
+                            dnxId = dnx.Id;
+                        }
+
+                        foreach (var element in groupedByDnxVersionandOS)
+                        {
+                            // required dimensions
+                            var dateId = dates.First(e => e.Date.Equals(element.EdgeServerTimeDelivered.Date)).Id;
+                            var timeId = _times.First(e => e.HourOfDay == element.EdgeServerTimeDelivered.Hour).Id;
+
+                            // dimensions that could be "(unknown)"
+                            int platformId = DimensionId.Unknown;
+                            if (knownPlatformsAvailable && platforms.ContainsKey(element.UserAgent))
+                            {
+                                platformId = platforms[element.UserAgent];
+                            }
+
+                            int userAgentId = DimensionId.Unknown;
+                            if (knownUserAgentsAvailable)
+                            {
+                                var trimmedUserAgent = UserAgentFact.TrimUserAgent(element.UserAgent);
+                                if (userAgents.ContainsKey(trimmedUserAgent))
+                                {
+                                    userAgentId = userAgents[trimmedUserAgent];
+                                }
+                            }
+
+                            int edgeServerIpAddressId = DimensionId.Unknown;
+                            if (!string.IsNullOrEmpty(element.EdgeServerIpAddress) && knownIpAddressesAvailable && ipAddresses.ContainsKey(element.EdgeServerIpAddress))
+                            {
+                                edgeServerIpAddressId = ipAddresses[element.EdgeServerIpAddress];
+                            }
+
+                            var dataRow = dataTable.NewRow();
+                            FillDnxDataRow(dataRow, dateId, timeId, dnxId, platformId, userAgentId, logFileNameId, edgeServerIpAddressId);
+                            dataTable.Rows.Add(dataRow);
+                        }
+                    }
+                }
+            }
+
+            stopwatch.Stop();
+            Trace.Write("  DONE (" + dataTable.Rows.Count + " records, " + stopwatch.ElapsedMilliseconds + "ms)");
+
+            return new List<DataTable> { dataTable };
+
         }
 
         public async Task<List<DataTable>> CreateAsync(IReadOnlyCollection<PackageStatistics> sourceData, string logFileName)
@@ -550,6 +652,80 @@ namespace Stats.ImportAzureCdnStatistics
             dataRow["Fact_EdgeServer_IpAddress_Id"] = edgeServerIpAddressId;
             dataRow["DownloadCount"] = 1;
             return id;
+        }
+
+        private static Guid FillDnxDataRow(DataRow dataRow, int dateId, int timeId, int dnxId, int platformId, int userAgentId, int logFileNameId, int edgeServerIpAddressId)
+        {
+            var id = Guid.NewGuid();
+            dataRow["Id"] = id;
+            dataRow["Dimension_Dnx_Id"] = dnxId;
+            dataRow["Dimension_Date_Id"] = dateId;
+            dataRow["Dimension_Time_Id"] = timeId;
+            dataRow["Dimension_Platform_Id"] = platformId;
+            dataRow["Fact_UserAgent_Id"] = userAgentId;
+            dataRow["Fact_LogFileName_Id"] = logFileNameId;
+            dataRow["Fact_EdgeServer_IpAddress_Id"] = edgeServerIpAddressId;
+            dataRow["DownloadCount"] = 1;
+            return id;
+        }
+
+        private static async Task<IReadOnlyCollection<DnxDimension>> RetrieveDnxDimensions(IReadOnlyCollection<DnxStatistics> sourceData, SqlConnection connection)
+        {
+            var dnxs = sourceData
+                   .Select(e => new DnxDimension(e.DnxVersion, e.OperatingSystem, e.FileName))
+                   .Distinct()
+                   .ToList();
+
+            var results = new List<DnxDimension>();
+            if (!dnxs.Any())
+            {
+                return results;
+            }
+
+            results.AddRange(_cachedDnxDimensions
+                .Where(p1 => dnxs
+                    .FirstOrDefault(p2 =>
+                        string.Equals(p1.DnxVersion, p2.DnxVersion, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(p1.OperatingSystem, p2.OperatingSystem, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(p1.FileName, p2.FileName, StringComparison.OrdinalIgnoreCase)) != null
+                    )
+                );
+
+            var nonCachedDnxDimensions = dnxs.Except(results).ToList();
+
+            if (nonCachedDnxDimensions.Any())
+            {
+                var parameterValue = CreateDataTable(nonCachedDnxDimensions);
+
+                var command = connection.CreateCommand();
+                command.CommandText = "[dbo].[EnsureDnxDimensionsExist]";
+                command.CommandTimeout = _defaultCommandTimeout;
+                command.CommandType = CommandType.StoredProcedure;
+
+                var parameter = command.Parameters.AddWithValue("dnxs", parameterValue);
+                parameter.SqlDbType = SqlDbType.Structured;
+                parameter.TypeName = "[dbo].[DnxDimensionTableType]";
+
+                using (var dataReader = await command.ExecuteReaderAsync())
+                {
+                    while (await dataReader.ReadAsync())
+                    {
+                        var dnx = new DnxDimension(dataReader.GetString(1), dataReader.GetString(2), dataReader.GetString(3));
+                        dnx.Id = dataReader.GetInt32(0);
+
+                        if (!results.Contains(dnx))
+                        {
+                            results.Add(dnx);
+                        }
+                        if (!_cachedDnxDimensions.Contains(dnx))
+                        {
+                            _cachedDnxDimensions.Add(dnx);
+                        }
+                    }
+                }
+            }
+
+            return results;
         }
 
         private static async Task<IReadOnlyCollection<ToolDimension>> RetrieveToolDimensions(IReadOnlyCollection<ToolStatistics> sourceData, SqlConnection connection)
@@ -1198,6 +1374,26 @@ namespace Stats.ImportAzureCdnStatistics
                 row["ToolId"] = toolDimension.ToolId;
                 row["ToolVersion"] = toolDimension.ToolVersion;
                 row["FileName"] = toolDimension.FileName;
+
+                table.Rows.Add(row);
+            }
+
+            return table;
+        }
+
+        private static DataTable CreateDataTable(IReadOnlyCollection<DnxDimension> dnxDimensions)
+        {
+            var table = new DataTable();
+            table.Columns.Add("DnxVersion", typeof(string));
+            table.Columns.Add("OperatingSystem", typeof(string));
+            table.Columns.Add("FileName", typeof(string));
+
+            foreach (var dnxDimension in dnxDimensions)
+            {
+                var row = table.NewRow();
+                row["DnxVersion"] = dnxDimension.DnxVersion;
+                row["OperatingSystem"] = dnxDimension.OperatingSystem;
+                row["FileName"] = dnxDimension.FileName;
 
                 table.Rows.Add(row);
             }
