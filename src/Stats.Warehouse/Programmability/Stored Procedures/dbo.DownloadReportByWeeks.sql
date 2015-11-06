@@ -1,5 +1,5 @@
 ﻿CREATE PROCEDURE [dbo].[DownloadReportByWeeks]
-	@weeks int=10
+	@weeks int=6
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -7,7 +7,7 @@ BEGIN
 	DECLARE @Cursor DATETIME = (SELECT MAX([Position]) FROM [dbo].[Cursors] (NOLOCK) WHERE [Name] = 'GetDirtyPackageId')
 	DECLARE @CheckTime DATETIME = getutcdate()
 
-	SELECT	D.WeekOfYearNameInYear,
+	SELECT	Min(D.[Date]) 'FirstDayOfWeek',
 			SUM(ISNULL(Facts.[DownloadCount], 0)) 'Downloads'
 	FROM	[dbo].[Fact_Download] AS Facts (NOLOCK)
 
@@ -20,5 +20,5 @@ BEGIN
 			AND Facts.[Timestamp] <= @Cursor
 
 	GROUP BY D.WeekOfYearNameInYear
-	order by D.WeekOfYearNameInYear desc
+	order by FirstDayOfWeek desc
 END
