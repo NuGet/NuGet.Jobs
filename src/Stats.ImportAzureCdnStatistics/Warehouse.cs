@@ -77,6 +77,20 @@ namespace Stats.ImportAzureCdnStatistics
             Trace.Write("  DONE");
         }
 
+        public async Task<List<DataTable>> CreateAsync(IReadOnlyCollection<DnxStatistics> sourceData, string logFileName)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            // insert any new dimension data first
+            if (_times == null)
+            {
+                // this call is only needed once in the lifetime of the service
+                _times = await GetDimension("time", logFileName, connection => RetrieveTimeDimensions(connection));
+            }
+
+            throw new NotImplementedException();
+        }
+
         public async Task<List<DataTable>> CreateAsync(IReadOnlyCollection<PackageStatistics> sourceData, string logFileName)
         {
             var stopwatch = Stopwatch.StartNew();

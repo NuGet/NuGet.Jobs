@@ -7,13 +7,15 @@ namespace Stats.AzureCdnLogs.Common
 {
     public class CdnStatistics
     {
-        public CdnStatistics(IReadOnlyCollection<PackageStatistics> packageStatistics, IReadOnlyCollection<ToolStatistics> toolStatistics)
+        public CdnStatistics(IReadOnlyCollection<PackageStatistics> packageStatistics, IReadOnlyCollection<ToolStatistics> toolStatistics, IReadOnlyCollection<DnxStatistics> dnxStatistics)
         {
             PackageStatistics = packageStatistics;
             ToolStatistics = toolStatistics;
+            DnxStatistics = dnxStatistics;
         }
 
         public IReadOnlyCollection<PackageStatistics> PackageStatistics { get; set; }
         public IReadOnlyCollection<ToolStatistics> ToolStatistics { get; set; }
+        public IReadOnlyCollection<DnxStatistics> DnxStatistics { get; set; }
     }
 }

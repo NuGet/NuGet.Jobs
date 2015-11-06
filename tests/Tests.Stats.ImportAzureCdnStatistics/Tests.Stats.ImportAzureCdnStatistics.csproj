@@ -88,6 +88,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CdnLogCustomFieldParserFacts.cs" />
+    <Compile Include="DnxStatisticsParserFacts.cs" />
     <Compile Include="PackageDefinitionFacts.cs" />
     <Compile Include="StatisticsParserFacts.cs" />
     <Compile Include="ToolStatisticsParserFacts.cs" />
