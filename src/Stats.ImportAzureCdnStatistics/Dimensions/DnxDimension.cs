@@ -1,6 +1,8 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+
 namespace Stats.ImportAzureCdnStatistics
 {
     public class DnxDimension
@@ -19,7 +21,7 @@ namespace Stats.ImportAzureCdnStatistics
 
         protected bool Equals(DnxDimension other)
         {
-            return string.Equals(DnxVersion, other.DnxVersion) && string.Equals(OperatingSystem, other.OperatingSystem) && string.Equals(FileName, other.FileName);
+            return string.Equals(DnxVersion, other.DnxVersion, StringComparison.OrdinalIgnoreCase) && string.Equals(OperatingSystem, other.OperatingSystem, StringComparison.OrdinalIgnoreCase) && string.Equals(FileName, other.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object obj)
