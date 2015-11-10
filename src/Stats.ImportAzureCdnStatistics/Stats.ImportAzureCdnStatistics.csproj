@@ -89,7 +89,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Dimensions\DnxDimension.cs" />
     <Compile Include="Dimensions\IpAddressFact.cs" />
+    <Compile Include="DnxStatisticsParser.cs" />
     <Compile Include="UserAgentFactTableType.cs" />
     <Compile Include="ClientDimensionTableType.cs" />
     <Compile Include="Dimensions\ToolDimension.cs" />

@@ -124,5 +124,9 @@
     <Build Include="Programmability\Stored Procedures\dbo.SelectTotalDownloadCountsPerToolVersion.sql" />
     <Build Include="Tables\dbo.Fact_Download_Dimension_ProjectType.sql" />
     <Build Include="Programmability\Stored Procedures\dbo.GetLinkedUserAgents.sql" />
+    <Build Include="Tables\dbo.Dimension_Dnx.sql" />
+    <Build Include="Programmability\Stored Procedures\dbo.EnsureDnxlDimensionExists.sql" />
+    <Build Include="Programmability\Types\dbo.DnxDimensionTableType.sql" />
+    <Build Include="Tables\dbo.Fact_Dnx_Download.sql" />
   </ItemGroup>
 </Project>

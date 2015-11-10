@@ -41,8 +41,9 @@ namespace Stats.ImportAzureCdnStatistics
                 var cdnStatistics = await ParseLogEntries(logFile);
                 var hasPackageStatistics = cdnStatistics.PackageStatistics.Any();
                 var hasToolStatistics = cdnStatistics.ToolStatistics.Any();
+                var hasDnxStatistics = cdnStatistics.DnxStatistics.Any();
 
-                if (hasPackageStatistics || hasToolStatistics)
+                if (hasPackageStatistics || hasToolStatistics || hasDnxStatistics)
                 {
                     // replicate data to the statistics database
                     var warehouse = new Warehouse(_jobEventSource, _targetDatabase);
@@ -57,6 +58,12 @@ namespace Stats.ImportAzureCdnStatistics
                         var downloadFacts = await warehouse.CreateAsync(cdnStatistics.ToolStatistics, logFile.Blob.Name);
                         await warehouse.InsertDownloadFactsAsync(downloadFacts, logFile.Blob.Name);
                     }
+                    if (hasDnxStatistics)
+                    {
+                        var downloadFacts = await warehouse.CreateAsync(cdnStatistics.DnxStatistics, logFile.Blob.Name);
+                        await warehouse.InsertDownloadFactsAsync(downloadFacts, logFile.Blob.Name);
+                    }
+
                 }
 
                 await ArchiveBlobAsync(logFile);
@@ -122,6 +129,7 @@ namespace Stats.ImportAzureCdnStatistics
 
             var packageStatistics = new List<PackageStatistics>();
             var toolStatistics = new List<ToolStatistics>();
+            var dnxStatistics = new List<DnxStatistics>();
 
             var stopwatch = Stopwatch.StartNew();
 
@@ -156,7 +164,16 @@ namespace Stats.ImportAzureCdnStatistics
                                             toolStatistics.Add(toolInfo);
                                         }
                                     }
+                                    if (logEntry.RequestUrl.Contains("dist.asp.net"))
+                                    {
+                                        var dnxInfo = DnxStatisticsParser.FromCdnLogEntry(logEntry);
+                                        if (dnxInfo != null)
+                                        {
+                                            dnxStatistics.Add(dnxInfo);
+                                        }
+                                    }
                                 }
+
                             }
                         }
                     } while (!logStreamReader.EndOfStream);
@@ -183,8 +200,7 @@ namespace Stats.ImportAzureCdnStatistics
                 logStream.Dispose();
             }
 
-
-            var cdnStatistics = new CdnStatistics(packageStatistics, toolStatistics);
+            var cdnStatistics = new CdnStatistics(packageStatistics, toolStatistics, dnxStatistics);
             return cdnStatistics;
         }
 
