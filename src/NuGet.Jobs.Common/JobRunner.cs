@@ -182,7 +182,7 @@ namespace NuGet.Jobs
 
                 // Use Console.WriteLine when you don't want it to be logged in Azure blobs
                 Console.WriteLine("Sleeping for {0} before the next job run", PrettyPrintTime(sleepDuration));
-                Thread.Sleep(sleepDuration);
+                await Task.Delay(sleepDuration);
 
                 SetJobTraceListener(job, consoleLogOnly);
             }
