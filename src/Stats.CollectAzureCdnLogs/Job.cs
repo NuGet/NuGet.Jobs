@@ -302,7 +302,7 @@ namespace Stats.CollectAzureCdnLogs
                 (e, line) => _logger.LogError(
                     LogEvents.FailedToParseLogFileEntry,
                     e,
-                    "Failed to parse W3C log entry in {LogFileName} at line {LineNumber}.",
+                    LogMessages.ParseLogEntryLineFailed,
                     fileName,
                     line));
 
