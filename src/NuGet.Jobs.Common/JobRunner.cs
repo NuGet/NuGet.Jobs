@@ -48,14 +48,15 @@ namespace NuGet.Jobs
                 consoleLogOnly = true;
             }
 
-            // Set JobTraceListener. This will be done on every job run as well
-            SetJobTraceListener(job, consoleLogOnly);
             try
             {
                 Trace.TraceInformation("Started...");
 
                 // Get the args passed in or provided as an env variable based on jobName as a dictionary of <string argName, string argValue>
                 var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
+
+                // Set JobTraceListener. This will be done on every job run as well
+                SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
 
                 bool runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
                 int? sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
@@ -72,7 +73,7 @@ namespace NuGet.Jobs
                 JobSetup(job, consoleLogOnly, jobArgsDictionary, ref sleepDuration);
 
                 // Run the job loop
-                await JobLoop(job, runContinuously, sleepDuration.Value, consoleLogOnly);
+                await JobLoop(job, runContinuously, sleepDuration.Value, j => SetJobTraceListener(j, consoleLogOnly, jobArgsDictionary));
             }
             catch (AggregateException ex)
             {
@@ -106,7 +107,7 @@ namespace NuGet.Jobs
                 (milliSeconds / 60000.0).ToString(precisionSpecifier));  // Time in minutes
         }
 
-        private static void SetJobTraceListener(JobBase job, bool consoleLogOnly)
+        private static void SetJobTraceListener(JobBase job, bool consoleLogOnly, IDictionary<string, string> argsDictionary)
         {
             if(consoleLogOnly)
             {
@@ -115,7 +116,8 @@ namespace NuGet.Jobs
             }
             else
             {
-                job.SetJobTraceListener(new AzureBlobJobTraceListener(job.JobName));
+                var connectionString = JobConfigurationManager.GetArgument(argsDictionary, JobArgumentNames.LogsAzureStorageConnectionString);
+                job.SetJobTraceListener(new AzureBlobJobTraceListener(job.JobName, connectionString));
             }
         }
 
@@ -148,7 +150,7 @@ namespace NuGet.Jobs
             }
         }
 
-        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, bool consoleLogOnly)
+        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, Action<JobBase> setTraceListener)
         {
             // Run the job now
             var stopWatch = new Stopwatch();
@@ -195,7 +197,7 @@ namespace NuGet.Jobs
                 Console.WriteLine("Sleeping for {0} before the next job run", PrettyPrintTime(sleepDuration));
                 Thread.Sleep(sleepDuration);
 
-                SetJobTraceListener(job, consoleLogOnly);
+                setTraceListener(job);
             }
 
             return success ? _jobSucceeded : _jobFailed;
