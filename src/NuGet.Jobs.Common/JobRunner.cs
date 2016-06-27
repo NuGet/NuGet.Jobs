@@ -48,6 +48,10 @@ namespace NuGet.Jobs
                 consoleLogOnly = true;
             }
 
+            // Set the default trace listener, so if we get args parsing issues they will be printed. This will be overriden by the configured trace listener
+            // after config is parsed.
+            job.SetJobTraceListener(new JobTraceListener());
+
             try
             {
                 Trace.TraceInformation("Started...");
