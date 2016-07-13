@@ -7,6 +7,8 @@ namespace NuGet.Jobs.Validation.Common
 {
     public static class NuGetPackageQueueExtensions
     {
+        private const int TruncatedPropertyMaxLength = 4000;
+
         /// <summary>
         /// Azure Queues have a max message length of 65536 bytes.
         /// This method truncates potentially long fields so that a serialized representation
@@ -21,10 +23,10 @@ namespace NuGet.Jobs.Validation.Common
                 JsonConvert.SerializeObject(package));
 
             // Truncate long properties
-            clone.Description = Truncate(clone.Description, 4000);
-            clone.ReleaseNotes = Truncate(clone.ReleaseNotes, 4000);
-            clone.Summary = Truncate(clone.Summary, 4000);
-            clone.Tags = Truncate(clone.Tags, 4000);
+            clone.Description = Truncate(clone.Description, TruncatedPropertyMaxLength);
+            clone.ReleaseNotes = Truncate(clone.ReleaseNotes, TruncatedPropertyMaxLength);
+            clone.Summary = Truncate(clone.Summary, TruncatedPropertyMaxLength);
+            clone.Tags = Truncate(clone.Tags, TruncatedPropertyMaxLength);
 
             return clone;
         }
