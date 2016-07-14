@@ -58,7 +58,7 @@ namespace Stats.CollectAzureCdnLogs
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Job failed to initialize {Exception}!", ex);
+                _logger.LogCritical("Job failed to initialize! {Exception}", ex);
 
                 return false;
             }
@@ -250,7 +250,7 @@ namespace Stats.CollectAzureCdnLogs
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Job run failed {Exception}!", exception);
+                _logger.LogCritical("Job run failed! {Exception}", exception);
 
                 return false;
             }
