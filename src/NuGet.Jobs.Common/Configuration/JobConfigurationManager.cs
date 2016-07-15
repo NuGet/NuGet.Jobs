@@ -48,7 +48,7 @@ namespace NuGet.Jobs
                 {
                     if (!allArgsList[i].StartsWith("-"))
                     {
-                        throw new ArgumentException("Argument Name does not start with a hyphen ('-')");
+                        throw new ArgumentException($"Argument Name '{allArgsList[i]}' does not start with a hyphen ('-')");
                     }
 
                     var argName = allArgsList[i].Substring(1);

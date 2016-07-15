@@ -163,7 +163,9 @@
     <Compile Include="DownloadsPerToolVersionReport.cs" />
     <Compile Include="Formatting\JsonFormat.cs" />
     <Compile Include="Formatting\NuGetContractResolver.cs" />
+    <Compile Include="RankingsData.cs" />
     <Compile Include="GalleryTotalsData.cs" />
+    <Compile Include="RankingsReport.cs" />
     <Compile Include="GalleryTotalsReport.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
