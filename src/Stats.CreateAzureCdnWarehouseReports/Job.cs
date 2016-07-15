@@ -157,7 +157,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 stopwatch.Stop();
                 ApplicationInsightsHelper.TrackMetric(GalleryTotalsReport.ReportName + " Generation Time (ms)", stopwatch.ElapsedMilliseconds);
                 ApplicationInsightsHelper.TrackReportProcessed(GalleryTotalsReport.ReportName);
-                //stopwatch.Restart();
+                stopwatch.Restart();
 
                 // build tools.v1.json
                 var toolsReport = new DownloadsPerToolVersionReport(_cloudStorageAccount, _statisticsContainerName, _statisticsDatabase, _galleryDatabase);
