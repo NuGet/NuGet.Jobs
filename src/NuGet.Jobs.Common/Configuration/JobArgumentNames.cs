@@ -20,6 +20,7 @@ namespace NuGet.Jobs
         public const string DestinationDatabase = "DestinationDatabase";
         public const string PackageDatabase = "PackageDatabase";
         public const string GalleryDatabase = "GalleryDatabase";
+        public const string StatisticsDatabase = "StatisticsDatabase";
 
         // Storage Argument names
         public const string TargetStoragePath = "TargetStoragePath";
@@ -97,7 +98,6 @@ namespace NuGet.Jobs
         public const string DashboardStorageAccount = "DashboardStorageAccount";
         public const string DashboardStorageContainer = "DashboardStorageContainer";
         public const string LogFileSuffix = "LogFileSuffix";
-        public const string StatisticsDatabase = "StatisticsDatabase";
 
         // Application Insights
         public const string InstrumentationKey = "InstrumentationKey";
