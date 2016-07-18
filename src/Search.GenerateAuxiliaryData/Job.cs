@@ -31,7 +31,6 @@ namespace Search.GenerateAuxiliaryData
         private const string _scriptRankingsProjectTypes = "SqlScripts.RankingsProjectTypes.sql";
         private const string _scriptRankingsDistinctProjectTypes = "SqlScripts.RankingsDistinctProjectTypes.sql";
         private const string _outputNameRankings = "rankings.v1.json";
-        private const string _col0Rankings = "PackageId";
 
         private List<SqlExporter> _sqlExportScriptsToRun;
         private CloudBlobContainer _destContainer;
@@ -64,9 +63,9 @@ namespace Search.GenerateAuxiliaryData
         {
             var result = true;
 
-            foreach (SqlExporter args in _sqlExportScriptsToRun)
+            foreach (SqlExporter exporter in _sqlExportScriptsToRun)
             {
-                result &= await args.RunSqlExportAsync();
+                result &= await exporter.RunSqlExportAsync();
             }
 
             return result;
