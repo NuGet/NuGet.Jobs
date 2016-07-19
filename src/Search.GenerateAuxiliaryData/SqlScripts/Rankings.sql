@@ -8,15 +8,15 @@ SELECT  TOP(@RankingCount)
                 ELSE (0.5 * [Fact_Download].[DownloadCount])
             END
         ) 'Downloads'
-FROM    [Fact_Download]
+FROM    [Fact_Download] (NOLOCK)
 
-INNER JOIN  [Dimension_Package]
+INNER JOIN  [Dimension_Package] (NOLOCK)
 ON          [Dimension_Package].[Id] = [Fact_Download].[Dimension_Package_Id]
 
-INNER JOIN  [Dimension_Date]
+INNER JOIN  [Dimension_Date] (NOLOCK)
 ON          [Dimension_Date].[Id] = [Fact_Download].[Dimension_Date_Id]
 
-INNER JOIN  [Dimension_Operation]
+INNER JOIN  [Dimension_Operation] (NOLOCK)
 ON          [Dimension_Operation].[Id] = [Fact_Download].[Dimension_Operation_Id]
 
 WHERE   [Dimension_Date].[Date] >= CONVERT(DATE, DATEADD(day, -42, GETUTCDATE()))

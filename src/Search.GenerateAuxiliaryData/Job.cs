@@ -39,6 +39,7 @@ namespace Search.GenerateAuxiliaryData
         {
             var packageDatabaseConnString = new SqlConnectionStringBuilder(
                 JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase)).ToString();
+
             var statisticsDatabaseConnString = new SqlConnectionStringBuilder(
                 JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase)).ToString();
 
@@ -48,6 +49,7 @@ namespace Search.GenerateAuxiliaryData
             var destinationContainerName =
                             JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.DestinationContainerName)
                             ?? _defaultContainerName;
+
             _destContainer = destination.CreateCloudBlobClient().GetContainerReference(destinationContainerName);
 
             _sqlExportScriptsToRun = new List<GenerateAuxiliaryData.SqlExporter> {
