@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
@@ -70,8 +72,10 @@ namespace HandlePackageEdits
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var maxManifestSizeString = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.MaxManifestSize);
-                MaxManifestSize = string.IsNullOrEmpty(maxManifestSizeString) ? DefaultMaxAllowedManifestBytes : Convert.ToInt64(maxManifestSizeString);
+                var retrievedMaxManifestSize = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.MaxManifestSize);
+                MaxManifestSize = retrievedMaxManifestSize == null
+                    ? DefaultMaxAllowedManifestBytes
+                    : Convert.ToInt64(retrievedMaxManifestSize);
 
                 PackageDatabase = new SqlConnectionStringBuilder(
                             JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase));
@@ -86,11 +90,10 @@ namespace HandlePackageEdits
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 BackupsContainer = Backups.CreateCloudBlobClient().GetContainerReference(BackupsContainerName);
-
             }
             catch (Exception exception)
             {
-                _logger.LogError("Failed to initalize job!", exception);
+                Trace.TraceError($"Failed to initalize job! {exception}");
                 return false;
             }
 
@@ -135,37 +138,17 @@ namespace HandlePackageEdits
             // Process packages
             foreach (var edit in edits)
             {
-                _logger.LogInformation("[HandlePackageEdits] Editing {PackageId} {PackageVersion}", edit.Id, edit.Version);
-                Exception thrown = null;
+                Trace.TraceInformation($"Editing {edit.Id} {edit.Version}");
                 try
                 {
                     await ApplyEdit(edit);
+                    Trace.TraceInformation($"Edited {edit.Id} {edit.Version}");
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
-                    thrown = ex;
+                    Trace.TraceError($"Error editing package {edit.Id} {edit.Version}! {exception}");
+                    await UpdatePackageEditDbWithError(exception, edit.Key);
                 }
-
-                if (thrown != null)
-                {
-                    _logger.LogError($"[HandlePackageEdits] Error editing package {edit.Id} {edit.Version}", thrown);
-
-                    using (var connection = await PackageDatabase.ConnectTo())
-                    {
-                        await connection.QueryAsync<int>(@"
-                            UPDATE  PackageEdits
-                            SET
-                                    TriedCount = TriedCount + 1,
-                                    LastError = @error
-                            WHERE   [Key] = @key", new
-                            {
-                                error = thrown.ToString(),
-                                key = edit.Key
-                            });
-                    }
-                }
-
-                _logger.LogInformation("[HandlePackageEdits] Edited {PackageId} {PackageVersion}", edit.Id, edit.Version);
             }
 
             return true;
@@ -173,21 +156,23 @@ namespace HandlePackageEdits
 
         private async Task ApplyEdit(PackageEdit edit)
         {
-            // Download the original file
             string originalPath = null;
-            TempDirectory = Path.Combine(Path.GetTempPath(), "NuGetService", "HandlePackageEdits");
 
             try
             {
+                TempDirectory = Path.Combine(Path.GetTempPath(), "NuGetService", "HandlePackageEdits");
                 string directory = Path.Combine(TempDirectory, edit.Id, edit.Version);
                 if (!Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
                 }
+
                 originalPath = Path.Combine(directory, "original.nupkg");
                 var sourceBlob = SourceContainer.GetBlockBlobReference(
                     StorageHelpers.GetPackageBlobName(edit.Id, edit.Version));
                 Trace.TraceInformation($"Name is {sourceBlob.Name}, storage uri is {sourceBlob.StorageUri}");
+
+                // Download the original file
                 Trace.TraceInformation($"Downloading original copy of {edit.Id} {edit.Version}");
                 await sourceBlob.DownloadToFileAsync(originalPath, FileMode.Create);
                 Trace.TraceInformation($"Downloaded original copy of {edit.Id} {edit.Version}");
@@ -207,7 +192,7 @@ namespace HandlePackageEdits
                 {
                     Trace.TraceInformation($"Rewriting package file for {edit.Id} {edit.Version}");
 
-                    var editActionList = edit.GetEditsAsEnumerableAction();
+                    var editActionList = edit.GetEditsAsActionList();
                     NupkgRewriter.RewriteNupkgManifest(originalStream, editActionList);
 
                     Trace.TraceInformation($"Rewrote package file for {edit.Id} {edit.Version}");
@@ -239,39 +224,71 @@ namespace HandlePackageEdits
                 try
                 {
                     Trace.TraceInformation($"Updating package record for {edit.Id} {edit.Version}");
-                    using (var connection = await PackageDatabase.ConnectTo())
-                    {
-                        var parameters = new DynamicParameters(new
-                        {
-                            edit.Authors,
-                            edit.Copyright,
-                            edit.Description,
-                            edit.IconUrl,
-                            edit.LicenseUrl,
-                            edit.ProjectUrl,
-                            edit.ReleaseNotes,
-                            edit.RequiresLicenseAcceptance,
-                            edit.Summary,
-                            edit.Title,
-                            edit.Tags,
-                            edit.Key,
-                            edit.PackageKey,
-                            edit.UserKey,
-                            PackageFileSize = size,
-                            Hash = hash,
-                            HashAlgorithm = HashAlgorithmName
-                        });
+                    await UpdateDatabaseWithEdit(edit, hash, size);
+                    Trace.TraceInformation($"Updated package record for {edit.Id} {edit.Version}");
+                }
+                catch (Exception exception)
+                {
+                    // Error occurred while updaing database, roll back the blob to the snapshot
+                    // Can't do "await" in a catch block, but this should be pretty quick since it just starts the copy
+                    Trace.TraceError($"Failed to update database! {exception}");
+                    Trace.TraceWarning(
+                        $"Rolling back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
+                    sourceBlob.StartCopy(sourceSnapshot);
+                    Trace.TraceWarning(
+                        $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
 
-                        // Prep SQL for merging in authors
-                        StringBuilder loadAuthorsSql = new StringBuilder();
-                        var authors = edit.Authors.Split(',');
-                        for (int i = 0; i < authors.Length; i++)
-                        {
-                            loadAuthorsSql.Append("INSERT INTO [PackageAuthors]([PackageKey],[Name]) VALUES(@PackageKey, @Author" + i + ")");
-                            parameters.Add("Author" + i, authors[i]);
-                        }
+                    throw;
+                }
 
-                        await connection.QueryAsync<int>(@"
+                Trace.TraceInformation("Deleting snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
+                await sourceSnapshot.DeleteAsync();
+                Trace.TraceInformation("Deleted snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
+            }
+            finally
+            {
+                if (!string.IsNullOrEmpty(originalPath) && File.Exists(originalPath))
+                {
+                    File.Delete(originalPath);
+                }
+            }
+        }
+
+        private async Task UpdateDatabaseWithEdit(PackageEdit edit, string hash, long size)
+        {
+            using (var connection = await PackageDatabase.ConnectTo())
+            {
+                var parameters = new DynamicParameters(new
+                {
+                    edit.Authors,
+                    edit.Copyright,
+                    edit.Description,
+                    edit.IconUrl,
+                    edit.LicenseUrl,
+                    edit.ProjectUrl,
+                    edit.ReleaseNotes,
+                    edit.RequiresLicenseAcceptance,
+                    edit.Summary,
+                    edit.Title,
+                    edit.Tags,
+                    edit.Key,
+                    edit.PackageKey,
+                    edit.UserKey,
+                    PackageFileSize = size,
+                    Hash = hash,
+                    HashAlgorithm = HashAlgorithmName
+                });
+
+                // Prep SQL for merging in authors
+                StringBuilder loadAuthorsSql = new StringBuilder();
+                var authors = edit.Authors.Split(',');
+                for (int i = 0; i < authors.Length; i++)
+                {
+                    loadAuthorsSql.Append("INSERT INTO [PackageAuthors]([PackageKey],[Name]) VALUES(@PackageKey, @Author" + i + ")");
+                    parameters.Add("Author" + i, authors[i]);
+                }
+
+                await connection.QueryAsync<int>(@"
                             BEGIN TRANSACTION
                                 -- Form a comma-separated list of authors
                                 DECLARE @existingAuthors nvarchar(MAX)
@@ -335,35 +352,24 @@ namespace HandlePackageEdits
                                 WHERE [PackageKey] = @PackageKey
                                 AND [Key] <= @Key
                             " + "COMMIT TRANSACTION",
-                            parameters);
-                    }
-
-                    Trace.TraceInformation($"Updated package record for {edit.Id} {edit.Version}");
-                }
-                catch (Exception exception)
-                {
-                    // Error occurred while updaing database, roll back the blob to the snapshot
-                    // Can't do "await" in a catch block, but this should be pretty quick since it just starts the copy
-                    _logger.LogError("[HandlePackageEdits] Failed to update database!", exception);
-                    Trace.TraceWarning(
-                        $"Rolling back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
-                    sourceBlob.StartCopy(sourceSnapshot);
-                    Trace.TraceWarning(
-                        $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
-
-                    throw;
-                }
-
-                Trace.TraceInformation("Deleting snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
-                await sourceSnapshot.DeleteAsync();
-                Trace.TraceInformation("Deleted snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
+                    parameters);
             }
-            finally
+        }
+
+        private async Task UpdatePackageEditDbWithError(Exception exception, int editKey)
+        {
+            using (var connection = await PackageDatabase.ConnectTo())
             {
-                if (!string.IsNullOrEmpty(originalPath) && File.Exists(originalPath))
+                await connection.QueryAsync<int>(@"
+                            UPDATE  PackageEdits
+                            SET
+                                    TriedCount = TriedCount + 1,
+                                    LastError = @error
+                            WHERE   [Key] = @key", new
                 {
-                    File.Delete(originalPath);
-                }
+                    error = exception.ToString(),
+                    key = editKey
+                });
             }
         }
     }

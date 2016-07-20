@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+using System;
 using System.Collections.Generic;
 using NuGetGallery.Packaging;
 
@@ -41,7 +43,7 @@ namespace HandlePackageEdits
         public string Summary { get; set; }
         public string Tags { get; set; }
 
-        public virtual List<Action<ManifestEdit>> GetEditsAsEnumerableAction()
+        public virtual List<Action<ManifestEdit>> GetEditsAsActionList()
         {
             return new List<Action<ManifestEdit>>
             {
