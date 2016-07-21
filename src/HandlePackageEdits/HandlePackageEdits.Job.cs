@@ -1,5 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -147,7 +148,14 @@ namespace HandlePackageEdits
                 catch (Exception exception)
                 {
                     Trace.TraceError($"Error editing package {edit.Id} {edit.Version}! {exception}");
-                    await UpdatePackageEditDbWithError(exception, edit.Key);
+                    try
+                    {
+                        await UpdatePackageEditDbWithError(exception, edit.Key);
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.TraceInformation($"Error updating the package edit database with error for {edit.Id} {edit.Version}! {ex}");
+                    }
                 }
             }
 
