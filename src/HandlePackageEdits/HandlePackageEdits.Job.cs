@@ -148,14 +148,7 @@ namespace HandlePackageEdits
                 catch (Exception exception)
                 {
                     Trace.TraceError($"Error editing package {edit.Id} {edit.Version}! {exception}");
-                    try
-                    {
-                        await UpdatePackageEditDbWithError(exception, edit.Key);
-                    }
-                    catch (Exception ex)
-                    {
-                        Trace.TraceInformation($"Error updating the package edit database with error for {edit.Id} {edit.Version}! {ex}");
-                    }
+                    await UpdatePackageEditDbWithError(exception, edit.Key);
                 }
             }
 
@@ -366,19 +359,27 @@ namespace HandlePackageEdits
 
         private async Task UpdatePackageEditDbWithError(Exception exception, int editKey)
         {
-            using (var connection = await PackageDatabase.ConnectTo())
+            try
             {
-                await connection.QueryAsync<int>(@"
+                using (var connection = await PackageDatabase.ConnectTo())
+                {
+                    await connection.QueryAsync<int>(@"
                             UPDATE  PackageEdits
                             SET
                                     TriedCount = TriedCount + 1,
                                     LastError = @error
                             WHERE   [Key] = @key", new
-                {
-                    error = exception.ToString(),
-                    key = editKey
-                });
+                    {
+                        error = exception.ToString(),
+                        key = editKey
+                    });
+                }
             }
+            catch (Exception ex)
+            {
+                Trace.TraceError($"Error updating the package edit database with error! {ex}");
+            }
+
         }
     }
 }
