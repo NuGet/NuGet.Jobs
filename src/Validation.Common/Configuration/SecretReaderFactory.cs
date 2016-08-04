@@ -5,7 +5,7 @@ using System;
 using System.Security.Cryptography.X509Certificates;
 using NuGet.Services.KeyVault;
 
-namespace NuGet.Jobs.Validation.Common.Configuration
+namespace NuGet.Jobs.Validation.Common
 {
     public class SecretReaderFactory : ISecretReaderFactory
     {

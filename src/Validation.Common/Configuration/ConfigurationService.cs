@@ -6,7 +6,7 @@ using System.Configuration;
 using System.Threading.Tasks;
 using NuGet.Services.KeyVault;
 
-namespace NuGet.Jobs.Validation.Common.Configuration
+namespace NuGet.Jobs.Validation.Common
 {
     public class ConfigurationService : IConfigurationService
     {

@@ -3,7 +3,7 @@
 
 using System.Threading.Tasks;
 
-namespace NuGet.Jobs.Validation.Common.Configuration
+namespace NuGet.Jobs.Validation.Common
 {
     public interface IConfigurationService
     {

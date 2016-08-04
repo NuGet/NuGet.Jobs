@@ -3,7 +3,7 @@
 
 using NuGet.Services.KeyVault;
 
-namespace NuGet.Jobs.Validation.Common.Configuration
+namespace NuGet.Jobs.Validation.Common
 {
     public class EmptySecretReaderFactory : ISecretReaderFactory
     {

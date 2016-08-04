@@ -3,14 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Owin;
 using Microsoft.WindowsAzure.Storage;
-using NuGet.Jobs.Validation.Common.Configuration;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
 using NuGet.Services.VirusScanning.Vcs.Callback;
 using Owin;
@@ -30,7 +28,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         public VcsCallbackServerStartup()
         {
             // Configure to get values from keyvault
-            var configurationService = new ConfigurationService(new Configuration.SecretReaderFactory());
+            var configurationService = new ConfigurationService(new SecretReaderFactory());
 
             // Get configuration
             var cloudStorageAccount = CloudStorageAccount.Parse(configurationService.Get("DataStorageAccount").Result);
