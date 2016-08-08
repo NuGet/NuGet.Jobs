@@ -22,17 +22,6 @@ namespace NuGet.Jobs
         public const string GalleryDatabase = "GalleryDatabase";
         public const string StatisticsDatabase = "StatisticsDatabase";
 
-        // Storage Argument names
-        public const string TargetStoragePath = "TargetStoragePath";
-
-        // Catalog argument names
-        public const string CatalogStorage = "CatalogStorage";
-        public const string CatalogPath = "CatalogPath";
-        public const string CatalogPageSize = "CatalogPageSize";
-        public const string CatalogIndexUrl = "CatalogIndexUrl";
-        public const string CatalogIndexPath = "CatalogIndexPath";
-        public const string DontStoreCursor = "DontStoreCursor";
-
         // Catalog Collector argument names
         public const string ChecksumCollectorBatchSize = "ChecksumCollectorBatchSize";
 
@@ -92,7 +81,7 @@ namespace NuGet.Jobs
         //Arguments specific to ParseAzureCdnLogs
         public const string AzureCdnCloudStorageTableName = "AzureCdnCloudStorageTableName";
         public const string AggregatesOnly = "AggregatesOnly";
-
+        
         //Arguments specific to Heartbeat
         public const string HeartbeatConfig = "HeartbeatConfig";
         public const string DashboardStorageAccount = "DashboardStorageAccount";
@@ -117,6 +106,8 @@ namespace NuGet.Jobs
         public const string ClientId = "ClientId";
         public const string CertificateThumbprint = "CertificateThumbprint";
         public const string ValidateCertificate = "ValidateCertificate";
+        public const string StoreName = "StoreName";
+        public const string StoreLocation = "StoreLocation";
 
         // Arguments specific to e-mail
         public const string MailFrom = "MailFrom";
