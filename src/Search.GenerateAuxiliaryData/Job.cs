@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
+using NuGet.Services.KeyVault;
 
 namespace Search.GenerateAuxiliaryData
 {
@@ -35,19 +36,16 @@ namespace Search.GenerateAuxiliaryData
         private List<SqlExporter> _sqlExportScriptsToRun;
         private CloudBlobContainer _destContainer;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
-            var packageDatabaseConnString = new SqlConnectionStringBuilder(
-                JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase)).ToString();
+            var packageDatabaseConnString = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase)).ToString();
 
-            var statisticsDatabaseConnString = new SqlConnectionStringBuilder(
-                JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase)).ToString();
+            var statisticsDatabaseConnString = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase)).ToString();
 
-            var destination = CloudStorageAccount.Parse(
-                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PrimaryDestination));
+            var destination = CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.PrimaryDestination));
 
             var destinationContainerName =
-                            JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.DestinationContainerName)
+                            await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DestinationContainerName)
                             ?? _defaultContainerName;
 
             _destContainer = destination.CreateCloudBlobClient().GetContainerReference(destinationContainerName);

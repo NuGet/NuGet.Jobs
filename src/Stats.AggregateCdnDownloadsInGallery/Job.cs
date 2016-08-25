@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
+using NuGet.Services.KeyVault;
 
 namespace Stats.AggregateCdnDownloadsInGallery
 {
@@ -54,25 +55,25 @@ namespace Stats.AggregateCdnDownloadsInGallery
         private ILoggerFactory _loggerFactory;
         private ILogger _logger;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var statisticsDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
+                var statisticsDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
                 _statisticsDatabase = new SqlConnectionStringBuilder(statisticsDatabaseConnectionString);
 
-                var destinationDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DestinationDatabase);
+                var destinationDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.DestinationDatabase);
                 _destinationDatabase = new SqlConnectionStringBuilder(destinationDatabaseConnectionString);
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Failed to initialize job! {Exception}", exception);
+                _logger?.LogCritical("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

@@ -13,6 +13,7 @@ using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
 using Stats.AzureCdnLogs.Common;
+using NuGet.Services.KeyVault;
 
 namespace Stats.ImportAzureCdnStatistics
 {
@@ -30,28 +31,28 @@ namespace Stats.ImportAzureCdnStatistics
         private ILogger _logger;
         private LogFileProvider _blobLeaseManager;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
                 _loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var azureCdnPlatform = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnPlatform);
-                var cloudStorageAccountConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageAccount);
-                var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
+                var azureCdnPlatform = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnPlatform);
+                var cloudStorageAccountConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                var databaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
                 _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccountConnectionString);
 
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
-                _azureCdnAccountNumber = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnAccountNumber);
+                _azureCdnAccountNumber = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnAccountNumber);
                 _azureCdnPlatform = ValidateAzureCdnPlatform(azureCdnPlatform);
-                _cloudStorageContainerName = ValidateAzureContainerName(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageContainerName));
+                _cloudStorageContainerName = ValidateAzureContainerName(await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageContainerName));
 
-                _aggregatesOnly = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.AggregatesOnly);
+                _aggregatesOnly = await jobArgsDictionary.GetOrDefault<bool>(JobArgumentNames.AggregatesOnly);
 
                 // construct a cloud blob client for the configured storage account
                 _cloudBlobClient = _cloudStorageAccount.CreateCloudBlobClient();
@@ -64,7 +65,7 @@ namespace Stats.ImportAzureCdnStatistics
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Failed to initialize job! {Exception}", exception);
+                _logger?.LogCritical("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

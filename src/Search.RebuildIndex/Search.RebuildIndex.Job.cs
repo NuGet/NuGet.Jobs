@@ -9,6 +9,7 @@ using NuGet.Indexing;
 using Lucene.Net.Store;
 using System.IO;
 using NuGet.Jobs;
+using NuGet.Services.KeyVault;
 
 namespace Search.RebuildIndex
 {
@@ -36,26 +37,22 @@ namespace Search.RebuildIndex
         private string DataContainerName { get; set; }
         private string LocalIndexFolder { get; set; }
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             PackageDatabase =
-            new SqlConnectionStringBuilder(
-                JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase));
+            new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase));
 
             DataStorageAccount =
-                CloudStorageAccount.Parse(
-                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount));
+                CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.DataStorageAccount));
 
-            DataContainerName =
-                JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.DataContainerName);
+            DataContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DataContainerName);
 
             if (string.IsNullOrEmpty(DataContainerName))
             {
                 DataContainerName = DefaultDataContainerName;
             }
 
-            LocalIndexFolder =
-                JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.LocalIndexFolder);
+            LocalIndexFolder = await jobArgsDictionary.Get<string>(JobArgumentNames.LocalIndexFolder);
 
             // Initialized successfully, return true
             return true;

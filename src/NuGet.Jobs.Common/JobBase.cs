@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using NuGet.Services.KeyVault;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
@@ -47,7 +48,7 @@ namespace NuGet.Jobs
             }
         }
 
-        public abstract bool Init(IDictionary<string, string> jobArgsDictionary);
+        public abstract Task<bool> Init(IArgumentsDictionary jobArgsDictionary);
 
         public abstract Task<bool> Run();
     }

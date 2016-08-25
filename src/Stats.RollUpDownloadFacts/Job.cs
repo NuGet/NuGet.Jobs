@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
+using NuGet.Services.KeyVault;
 
 namespace Stats.RollUpDownloadFacts
 {
@@ -26,27 +27,28 @@ namespace Stats.RollUpDownloadFacts
         private ILoggerFactory _loggerFactory;
         private ILogger _logger;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
+                var databaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-                _minAgeInDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, "MinAgeInDays") ?? DefaultMinAgeInDays;
+                var minAgeInDays = await jobArgsDictionary.GetOrDefault<int>("MinAgeInDays");
+                _minAgeInDays = minAgeInDays != default(int) ? minAgeInDays : DefaultMinAgeInDays;
                 Trace.TraceInformation("Min age in days: " + _minAgeInDays);
 
                 return true;
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Job failed to initialize. {Exception}", exception);
+                _logger?.LogCritical("Job failed to initialize. {Exception}", exception);
             }
 
             return false;

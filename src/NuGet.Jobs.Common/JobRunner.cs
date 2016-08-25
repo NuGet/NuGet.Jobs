@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using NuGet.Services.KeyVault;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
@@ -60,24 +61,29 @@ namespace NuGet.Jobs
                 var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
 
                 // Set JobTraceListener. This will be done on every job run as well
-                SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
+                await SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
 
-                bool runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
-                int? sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
-                if (!sleepDuration.HasValue)
+                bool runContinuously = !await jobArgsDictionary.GetOrDefault<bool>(JobArgumentNames.Once);
+                int sleepDuration = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.Sleep); // sleep is in milliseconds
+                if (sleepDuration != default(int))
                 {
-                    sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Interval);
-                    if (sleepDuration.HasValue)
+                    sleepDuration = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.Interval);
+                    if (sleepDuration != default(int))
                     {
-                        sleepDuration = sleepDuration.Value * 1000; // interval is in seconds
+                        sleepDuration = sleepDuration * 1000; // interval is in seconds
+                    }
+                    else
+                    {
+                        Trace.TraceWarning("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
+                        sleepDuration = 5000;
                     }
                 }
 
                 // Setup the job for running
-                JobSetup(job, consoleLogOnly, jobArgsDictionary, ref sleepDuration);
+                await JobSetup(job, consoleLogOnly, jobArgsDictionary);
 
                 // Run the job loop
-                await JobLoop(job, runContinuously, sleepDuration.Value, j => SetJobTraceListener(j, consoleLogOnly, jobArgsDictionary));
+                await JobLoop(job, runContinuously, sleepDuration, consoleLogOnly, jobArgsDictionary);
             }
             catch (AggregateException ex)
             {
@@ -111,52 +117,39 @@ namespace NuGet.Jobs
                 (milliSeconds / 60000.0).ToString(precisionSpecifier));  // Time in minutes
         }
 
-        private static void SetJobTraceListener(JobBase job, bool consoleLogOnly, IDictionary<string, string> argsDictionary)
+        private static async Task SetJobTraceListener(JobBase job, bool consoleLogOnly, IArgumentsDictionary argsDictionary)
         {
-            if(consoleLogOnly)
+            if (consoleLogOnly)
             {
                 job.SetJobTraceListener(new JobTraceListener());
             }
             else
             {
-                var connectionString = JobConfigurationManager.GetArgument(argsDictionary, JobArgumentNames.LogsAzureStorageConnectionString);
+                var connectionString = await argsDictionary.Get<string>(JobArgumentNames.LogsAzureStorageConnectionString);
                 job.SetJobTraceListener(new AzureBlobJobTraceListener(job.JobName, connectionString));
             }
         }
 
-        private static void JobSetup(JobBase job, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary, ref int? sleepDuration)
+        private static async Task JobSetup(JobBase job, bool consoleLogOnly, IArgumentsDictionary jobArgsDictionary)
         {
-            if (JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, "dbg"))
+            if (await jobArgsDictionary.GetOrDefault<bool>("dbg"))
             {
                 throw new ArgumentException("-dbg is a special argument and should be the first argument...");
             }
 
-            if (JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, "ConsoleLogOnly"))
+            if (await jobArgsDictionary.GetOrDefault<bool>("ConsoleLogOnly"))
             {
                 throw new ArgumentException("-ConsoleLogOnly is a special argument and should be the first argument (can be the second if '-dbg' is used)...");
             }
 
-            if (sleepDuration == null)
-            {
-                Trace.TraceWarning("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
-                sleepDuration = 5000;
-            }
-
             job.ConsoleLogOnly = consoleLogOnly;
-
-            // Initialize the job once with everything needed.
-            // JobTraceListener(s) are already initialized
-            if (!job.Init(jobArgsDictionary))
-            {
-                // If the job could not be initialized successfully, STOP!
-                Trace.TraceError("Exiting. The job could not be initialized successfully with the arguments passed");
-            }
         }
 
-        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, Action<JobBase> setTraceListener)
+        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, bool consoleLogOnly, IArgumentsDictionary jobArgsDictionary)
         {
             // Run the job now
             var stopWatch = new Stopwatch();
+            bool initialized;
             bool success;
 
             while (true)
@@ -169,14 +162,19 @@ namespace NuGet.Jobs
                 job.JobTraceListener.Flush();
 
                 stopWatch.Restart();
-                success = await job.Run();
+                initialized = await job.Init(jobArgsDictionary);
+                success = initialized && await job.Run();
                 stopWatch.Stop();
 
                 Trace.WriteLine("Job run ended...");
                 Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
-                if(success)
+                if (success)
                 {
                     Trace.TraceInformation(_jobSucceeded);
+                }
+                else if (!initialized)
+                {
+                    Trace.TraceWarning("The job could not be initialized successfully with the arguments passed");
                 }
                 else
                 {
@@ -200,7 +198,7 @@ namespace NuGet.Jobs
                 Console.WriteLine("Sleeping for {0} before the next job run", PrettyPrintTime(sleepDuration));
                 Thread.Sleep(sleepDuration);
 
-                setTraceListener(job);
+                await SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
             }
 
             return success ? _jobSucceeded : _jobFailed;

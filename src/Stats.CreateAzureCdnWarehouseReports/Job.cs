@@ -12,6 +12,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using NuGet.Services.KeyVault;
 
 namespace Stats.CreateAzureCdnWarehouseReports
 {
@@ -42,29 +43,29 @@ namespace Stats.CreateAzureCdnWarehouseReports
         };
 
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var cloudStorageAccountConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageAccount);
-                var statisticsDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
-                var galleryDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SourceDatabase);
-                var dataStorageAccountConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
+                var cloudStorageAccountConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                var statisticsDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
+                var galleryDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.SourceDatabase);
+                var dataStorageAccountConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.DataStorageAccount);
 
                 _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccountConnectionString, JobArgumentNames.AzureCdnCloudStorageAccount);
-                _statisticsContainerName = ValidateAzureContainerName(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageContainerName), JobArgumentNames.AzureCdnCloudStorageContainerName);
+                _statisticsContainerName = ValidateAzureContainerName(await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageContainerName), JobArgumentNames.AzureCdnCloudStorageContainerName);
                 _dataStorageAccount = ValidateAzureCloudStorageAccount(dataStorageAccountConnectionString, JobArgumentNames.DataStorageAccount);
-                _reportName = ValidateReportName(JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.WarehouseReportName));
+                _reportName = ValidateReportName(await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.WarehouseReportName));
                 _statisticsDatabase = new SqlConnectionStringBuilder(statisticsDatabaseConnectionString);
                 _galleryDatabase = new SqlConnectionStringBuilder(galleryDatabaseConnectionString);
 
-                var containerNames = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataContainerName)
+                var containerNames = (await jobArgsDictionary.Get<string>(JobArgumentNames.DataContainerName))
                         .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var containerName in containerNames)
                 {
@@ -75,7 +76,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
             }
             catch (Exception exception)
             {
-                _logger.LogError("Failed to initialize job! {Exception}", exception);
+                _logger?.LogError("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

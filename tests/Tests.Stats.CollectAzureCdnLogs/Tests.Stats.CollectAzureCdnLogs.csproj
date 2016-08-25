@@ -143,6 +143,10 @@
       <Project>{4B4B1EFB-8F33-42E6-B79F-54E7F3293D31}</Project>
       <Name>NuGet.Jobs.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\NuGet.Services.KeyVault\NuGet.Services.KeyVault.csproj">
+      <Project>{C87D0EF1-54AA-4B0B-89DE-CFF2DC941D11}</Project>
+      <Name>NuGet.Services.KeyVault</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\src\Stats.AzureCdnLogs.Common\Stats.AzureCdnLogs.Common.csproj">
       <Project>{f72c31a7-424d-48c6-924c-ebfd4be0918b}</Project>
       <Name>Stats.AzureCdnLogs.Common</Name>
