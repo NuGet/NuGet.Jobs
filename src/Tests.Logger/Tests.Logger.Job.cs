@@ -32,13 +32,13 @@ namespace Tests.AzureJobTraceListener
 
         public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
-            JobScenario = await jobArgsDictionary.Get<int>(ScenarioArgumentName);
+            JobScenario = await jobArgsDictionary.GetOrDefault<int>(ScenarioArgumentName);
             if (JobScenario == default(int))
             {
                 throw new ArgumentException("Argument '"+ ScenarioArgumentName +"' is mandatory." + HelpMessage);
             }
 
-            LogCount = await jobArgsDictionary.Get<int>(LogCountArgumentName);
+            LogCount = await jobArgsDictionary.GetOrDefault<int>(LogCountArgumentName);
 
             return await Task.FromResult(true);
         }
