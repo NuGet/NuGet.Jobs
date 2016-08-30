@@ -68,11 +68,11 @@ namespace ArchivePackages
         {
             try
             {
-                PackageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase));
+                PackageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.Source));
+                Source = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.Source));
 
-                PrimaryDestination = CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.PrimaryDestination));
+                PrimaryDestination = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PrimaryDestination));
 
                 var secondaryDestinationCstr = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.SecondaryDestination);
                 SecondaryDestination = string.IsNullOrEmpty(secondaryDestinationCstr) ? null : CloudStorageAccount.Parse(secondaryDestinationCstr);

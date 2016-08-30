@@ -42,15 +42,15 @@ namespace Stats.ImportAzureCdnStatistics
                 _loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var azureCdnPlatform = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnPlatform);
-                var cloudStorageAccountConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
-                var databaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
+                var azureCdnPlatform = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnPlatform);
+                var cloudStorageAccountConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                var databaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccountConnectionString);
 
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
-                _azureCdnAccountNumber = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnAccountNumber);
+                _azureCdnAccountNumber = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnAccountNumber);
                 _azureCdnPlatform = ValidateAzureCdnPlatform(azureCdnPlatform);
-                _cloudStorageContainerName = ValidateAzureContainerName(await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageContainerName));
+                _cloudStorageContainerName = ValidateAzureContainerName(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageContainerName));
 
                 _aggregatesOnly = await jobArgsDictionary.GetOrDefault<bool>(JobArgumentNames.AggregatesOnly);
 

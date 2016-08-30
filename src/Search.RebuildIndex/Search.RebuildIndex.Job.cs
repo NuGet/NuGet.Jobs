@@ -40,10 +40,10 @@ namespace Search.RebuildIndex
         public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             PackageDatabase =
-            new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase));
+            new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
             DataStorageAccount =
-                CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.DataStorageAccount));
+                CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount));
 
             DataContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DataContainerName);
 
@@ -52,7 +52,7 @@ namespace Search.RebuildIndex
                 DataContainerName = DefaultDataContainerName;
             }
 
-            LocalIndexFolder = await jobArgsDictionary.Get<string>(JobArgumentNames.LocalIndexFolder);
+            LocalIndexFolder = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.LocalIndexFolder);
 
             // Initialized successfully, return true
             return true;

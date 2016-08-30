@@ -57,7 +57,7 @@ namespace UpdateLicenseReports
 
         public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
-            _packageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase));
+            _packageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
             var retryCountString = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.RetryCount);
             if (string.IsNullOrEmpty(retryCountString))

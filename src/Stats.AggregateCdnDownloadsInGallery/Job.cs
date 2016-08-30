@@ -65,10 +65,10 @@ namespace Stats.AggregateCdnDownloadsInGallery
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var statisticsDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
+                var statisticsDatabaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _statisticsDatabase = new SqlConnectionStringBuilder(statisticsDatabaseConnectionString);
 
-                var destinationDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.DestinationDatabase);
+                var destinationDatabaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DestinationDatabase);
                 _destinationDatabase = new SqlConnectionStringBuilder(destinationDatabaseConnectionString);
             }
             catch (Exception exception)

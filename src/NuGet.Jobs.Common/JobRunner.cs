@@ -19,6 +19,8 @@ namespace NuGet.Jobs
         private const string _jobSucceeded = "Job Succeeded";
         private const string _jobFailed = "Job Failed";
 
+        private const int DefaultSleepDuration = 5000;
+
         static JobRunner()
         {
             ServiceContainer = new ServiceContainer();
@@ -64,18 +66,20 @@ namespace NuGet.Jobs
                 await SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
 
                 bool runContinuously = !await jobArgsDictionary.GetOrDefault<bool>(JobArgumentNames.Once);
-                int sleepDuration = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.Sleep); // sleep is in milliseconds
-                if (sleepDuration != default(int))
+
+                var sleepDurationNotFound = -1;
+                int sleepDuration = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.Sleep, sleepDurationNotFound); // sleep is in milliseconds
+                if (sleepDuration == sleepDurationNotFound)
                 {
-                    sleepDuration = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.Interval);
-                    if (sleepDuration != default(int))
+                    sleepDuration = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.Interval, sleepDurationNotFound);
+                    if (sleepDuration != sleepDurationNotFound)
                     {
                         sleepDuration = sleepDuration * 1000; // interval is in seconds
                     }
                     else
                     {
                         Trace.TraceWarning("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
-                        sleepDuration = 5000;
+                        sleepDuration = DefaultSleepDuration;
                     }
                 }
 
@@ -125,7 +129,7 @@ namespace NuGet.Jobs
             }
             else
             {
-                var connectionString = await argsDictionary.Get<string>(JobArgumentNames.LogsAzureStorageConnectionString);
+                var connectionString = await argsDictionary.GetOrThrow<string>(JobArgumentNames.LogsAzureStorageConnectionString);
                 job.SetJobTraceListener(new AzureBlobJobTraceListener(job.JobName, connectionString));
             }
         }

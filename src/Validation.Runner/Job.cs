@@ -33,15 +33,15 @@ namespace NuGet.Jobs.Validation.Runner
             try
             {
                 // Configure job
-                _galleryBaseAddress = await jobArgsDictionary.Get<string>(JobArgumentNames.GalleryBaseAddress);
+                _galleryBaseAddress = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.GalleryBaseAddress);
 
-                var storageConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.DataStorageAccount);
+                var storageConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount);
                 _cloudStorageAccount = CreateCloudStorageAccount(JobArgumentNames.DataStorageAccount, storageConnectionString);
 
-                _containerName = await jobArgsDictionary.Get<string>(JobArgumentNames.ContainerName);
+                _containerName = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.ContainerName);
 
-                _runValidationTasks = (await jobArgsDictionary.Get<string>(JobArgumentNames.RunValidationTasks)).Split(';');
-                _requestValidationTasks = (await jobArgsDictionary.Get<string>(JobArgumentNames.RequestValidationTasks)).Split(';');
+                _runValidationTasks = (await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.RunValidationTasks)).Split(';');
+                _requestValidationTasks = (await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.RequestValidationTasks)).Split(';');
 
                 // Add validators
                 if (_runValidationTasks.Contains(UnzipValidator.ValidatorName))
@@ -51,10 +51,10 @@ namespace NuGet.Jobs.Validation.Runner
                 if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
                 {
                     _validators.Add(new VcsValidator(
-                        await jobArgsDictionary.Get<string>(JobArgumentNames.VcsValidatorServiceUrl),
-                        await jobArgsDictionary.Get<string>(JobArgumentNames.VcsValidatorCallbackUrl),
-                        await jobArgsDictionary.Get<string>(JobArgumentNames.VcsValidatorAlias),
-                        await jobArgsDictionary.Get<string>(JobArgumentNames.VcsPackageUrlTemplate)));
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorServiceUrl),
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorCallbackUrl),
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorAlias),
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsPackageUrlTemplate)));
                 }
 
                 return true;

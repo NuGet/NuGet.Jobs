@@ -53,19 +53,19 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var cloudStorageAccountConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
-                var statisticsDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
-                var galleryDatabaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.SourceDatabase);
-                var dataStorageAccountConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.DataStorageAccount);
+                var cloudStorageAccountConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                var statisticsDatabaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
+                var galleryDatabaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SourceDatabase);
+                var dataStorageAccountConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount);
 
                 _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccountConnectionString, JobArgumentNames.AzureCdnCloudStorageAccount);
-                _statisticsContainerName = ValidateAzureContainerName(await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageContainerName), JobArgumentNames.AzureCdnCloudStorageContainerName);
+                _statisticsContainerName = ValidateAzureContainerName(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageContainerName), JobArgumentNames.AzureCdnCloudStorageContainerName);
                 _dataStorageAccount = ValidateAzureCloudStorageAccount(dataStorageAccountConnectionString, JobArgumentNames.DataStorageAccount);
                 _reportName = ValidateReportName(await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.WarehouseReportName));
                 _statisticsDatabase = new SqlConnectionStringBuilder(statisticsDatabaseConnectionString);
                 _galleryDatabase = new SqlConnectionStringBuilder(galleryDatabaseConnectionString);
 
-                var containerNames = (await jobArgsDictionary.Get<string>(JobArgumentNames.DataContainerName))
+                var containerNames = (await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataContainerName))
                         .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var containerName in containerNames)
                 {

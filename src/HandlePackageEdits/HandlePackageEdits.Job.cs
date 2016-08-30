@@ -79,10 +79,10 @@ namespace HandlePackageEdits
                     ? DefaultMaxAllowedManifestBytes
                     : Convert.ToInt64(retrievedMaxManifestSize);
 
-                PackageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase));
+                PackageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.SourceStorage));
-                Backups = CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.BackupStorage));
+                Source = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SourceStorage));
+                Backups = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.BackupStorage));
 
                 SourceContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
                 BackupsContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;

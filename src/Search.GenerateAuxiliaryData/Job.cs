@@ -38,11 +38,11 @@ namespace Search.GenerateAuxiliaryData
 
         public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
-            var packageDatabaseConnString = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.PackageDatabase)).ToString();
+            var packageDatabaseConnString = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase)).ToString();
 
-            var statisticsDatabaseConnString = new SqlConnectionStringBuilder(await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase)).ToString();
+            var statisticsDatabaseConnString = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase)).ToString();
 
-            var destination = CloudStorageAccount.Parse(await jobArgsDictionary.Get<string>(JobArgumentNames.PrimaryDestination));
+            var destination = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PrimaryDestination));
 
             var destinationContainerName =
                             await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DestinationContainerName)

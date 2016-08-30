@@ -37,7 +37,7 @@ namespace Stats.RollUpDownloadFacts
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var databaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
+                var databaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
                 var minAgeInDays = await jobArgsDictionary.GetOrDefault<int>("MinAgeInDays");

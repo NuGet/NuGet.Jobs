@@ -45,13 +45,13 @@ namespace Stats.CollectAzureCdnLogs
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var ftpLogFolder = await jobArgsDictionary.Get<string>(JobArgumentNames.FtpSourceUri);
-                var azureCdnPlatform = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnPlatform);
-                var cloudStorageAccount = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
-                _cloudStorageContainerName = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnCloudStorageContainerName);
-                _azureCdnAccountNumber = await jobArgsDictionary.Get<string>(JobArgumentNames.AzureCdnAccountNumber);
-                _ftpUsername = await jobArgsDictionary.Get<string>(JobArgumentNames.FtpSourceUsername);
-                _ftpPassword = await jobArgsDictionary.Get<string>(JobArgumentNames.FtpSourcePassword);
+                var ftpLogFolder = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourceUri);
+                var azureCdnPlatform = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnPlatform);
+                var cloudStorageAccount = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                _cloudStorageContainerName = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageContainerName);
+                _azureCdnAccountNumber = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnAccountNumber);
+                _ftpUsername = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourceUsername);
+                _ftpPassword = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourcePassword);
 
                 _ftpServerUri = ValidateFtpUri(ftpLogFolder);
                 _azureCdnPlatform = ValidateAzureCdnPlatform(azureCdnPlatform);

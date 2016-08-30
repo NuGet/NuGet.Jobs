@@ -148,7 +148,7 @@ namespace Stats.RefreshClientDimension
         {
             try
             {
-                var databaseConnectionString = await argsDictionary.Get<string>(JobArgumentNames.StatisticsDatabase);
+                var databaseConnectionString = await argsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
                 _targetClientName = await argsDictionary.GetOrDefault<string>("TargetClientName");

@@ -53,15 +53,15 @@ namespace Gallery.CredentialExpiration
 
                 _whatIf = await jobArgsDictionary.GetOrDefault<bool>(JobArgumentNames.WhatIf);
 
-                var databaseConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.GalleryDatabase);
+                var databaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.GalleryDatabase);
                 _galleryDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-                _galleryBrand = await jobArgsDictionary.Get<string>(MyJobArgumentNames.GalleryBrand);
-                _galleryAccountUrl = await jobArgsDictionary.Get<string>(MyJobArgumentNames.GalleryAccountUrl);
+                _galleryBrand = await jobArgsDictionary.GetOrThrow<string>(MyJobArgumentNames.GalleryBrand);
+                _galleryAccountUrl = await jobArgsDictionary.GetOrThrow<string>(MyJobArgumentNames.GalleryAccountUrl);
 
-                _mailFrom = await jobArgsDictionary.Get<string>(JobArgumentNames.MailFrom);
+                _mailFrom = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.MailFrom);
 
-                var smtpConnectionString = await jobArgsDictionary.Get<string>(JobArgumentNames.SmtpUri);
+                var smtpConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SmtpUri);
                 var smtpUri = new SmtpUri(new Uri(smtpConnectionString));
                 _smtpClient = CreateSmtpClient(smtpUri);
 
