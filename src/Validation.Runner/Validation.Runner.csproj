@@ -89,6 +89,10 @@
     <None Include="Validation.Runner.nuspec" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NuGet.Services.KeyVault\NuGet.Services.KeyVault.csproj">
+      <Project>{C87D0EF1-54AA-4B0B-89DE-CFF2DC941D11}</Project>
+      <Name>NuGet.Services.KeyVault</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Validation.Common\Validation.Common.csproj">
       <Project>{2539DDF3-0CC5-4A03-B5F9-39B47744A7BD}</Project>
       <Name>Validation.Common</Name>

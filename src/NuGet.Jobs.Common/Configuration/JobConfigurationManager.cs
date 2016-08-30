@@ -1,16 +1,19 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using NuGet.Services.KeyVault;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NuGet.Jobs
 {
     /// <summary>
-    /// This class is used to retrieve and expose the known azure configuration settings
+    /// This class is used to retrieve and expose the known Azure configuration settings
     /// from Environment Variables and command line arguments
     /// </summary>
     public static class JobConfigurationManager
@@ -23,7 +26,7 @@ namespace NuGet.Jobs
         /// <param name="jobName">Jobname to be used to infer environment variable settings</param>
         /// <param name="secretReaderFactory">Creates a secret reader.</param>
         /// <returns>Returns a dictionary of arguments</returns>
-        public static IDictionary<string, string> GetJobArgsDictionary(string[] commandLineArgs, string jobName, ISecretReaderFactory secretReaderFactory)
+        public static IArgumentsDictionary GetJobArgsDictionary(string[] commandLineArgs, string jobName, ISecretReaderFactory secretReaderFactory)
         {
             if (secretReaderFactory == null)
             {
@@ -87,7 +90,7 @@ namespace NuGet.Jobs
                 }
             }
 
-            return InjectSecrets(secretReaderFactory, argsDictionary);
+            return CreateArgumentsDictionary(secretReaderFactory, argsDictionary);
         }
 
         /// <summary>
@@ -179,7 +182,7 @@ namespace NuGet.Jobs
             return null;
         }
 
-        private static IDictionary<string, string> InjectSecrets(ISecretReaderFactory secretReaderFactory, Dictionary<string, string> argsDictionary)
+        private static IArgumentsDictionary CreateArgumentsDictionary(ISecretReaderFactory secretReaderFactory, Dictionary<string, string> argsDictionary)
         {
             var secretReader = secretReaderFactory.CreateSecterReader(argsDictionary);
             var secretInjector = secretReaderFactory.CreateSecretInjector(secretReader);
@@ -188,15 +191,8 @@ namespace NuGet.Jobs
             {
                 throw new ApplicationException("Could not create a secret reader. Please check your configuration.");
             }
-           
-            var argsWithSecrets = new Dictionary<string, string>();
 
-            foreach (var keyValuePair in argsDictionary)
-            {
-                argsWithSecrets[keyValuePair.Key] = secretInjector.InjectAsync(keyValuePair.Value).Result;
-            }
-
-            return argsWithSecrets;
+            return new RefreshingArgumentsDictionary(secretInjector, argsDictionary);
         }
     }
 }

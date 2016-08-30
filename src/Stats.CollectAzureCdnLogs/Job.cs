@@ -17,6 +17,7 @@ using NuGet.Services.Logging;
 using Stats.AzureCdnLogs.Common;
 using Stats.CollectAzureCdnLogs.Blob;
 using Stats.CollectAzureCdnLogs.Ftp;
+using NuGet.Services.KeyVault;
 
 namespace Stats.CollectAzureCdnLogs
 {
@@ -34,23 +35,23 @@ namespace Stats.CollectAzureCdnLogs
         private ILoggerFactory _loggerFactory;
         private ILogger _logger;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var ftpLogFolder = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.FtpSourceUri);
-                var azureCdnPlatform = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnPlatform);
-                var cloudStorageAccount = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageAccount);
-                _cloudStorageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageContainerName);
-                _azureCdnAccountNumber = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnAccountNumber);
-                _ftpUsername = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.FtpSourceUsername);
-                _ftpPassword = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.FtpSourcePassword);
+                var ftpLogFolder = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourceUri);
+                var azureCdnPlatform = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnPlatform);
+                var cloudStorageAccount = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                _cloudStorageContainerName = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageContainerName);
+                _azureCdnAccountNumber = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnAccountNumber);
+                _ftpUsername = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourceUsername);
+                _ftpPassword = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourcePassword);
 
                 _ftpServerUri = ValidateFtpUri(ftpLogFolder);
                 _azureCdnPlatform = ValidateAzureCdnPlatform(azureCdnPlatform);
@@ -58,7 +59,7 @@ namespace Stats.CollectAzureCdnLogs
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Job failed to initialize! {Exception}", ex);
+                _logger?.LogCritical("Job failed to initialize! {Exception}", ex);
 
                 return false;
             }

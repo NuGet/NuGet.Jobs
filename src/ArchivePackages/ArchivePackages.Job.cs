@@ -13,6 +13,7 @@ using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Jobs;
+using NuGet.Services.KeyVault;
 
 namespace ArchivePackages
 {
@@ -63,32 +64,29 @@ namespace ArchivePackages
 
         public Job() : base(JobEventSource.Log) { }
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                PackageDatabase = new SqlConnectionStringBuilder(
-                            JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase));
+                PackageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(
-                            JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Source));
+                Source = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.Source));
 
-                PrimaryDestination = CloudStorageAccount.Parse(
-                                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PrimaryDestination));
+                PrimaryDestination = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PrimaryDestination));
 
-                var secondaryDestinationCstr = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SecondaryDestination);
+                var secondaryDestinationCstr = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.SecondaryDestination);
                 SecondaryDestination = string.IsNullOrEmpty(secondaryDestinationCstr) ? null : CloudStorageAccount.Parse(secondaryDestinationCstr);
 
-                SourceContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultPackagesContainerName;
+                SourceContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.SourceContainerName) ?? DefaultPackagesContainerName;
 
-                DestinationContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.DestinationContainerName) ?? DefaultPackagesArchiveContainerName;
+                DestinationContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DestinationContainerName) ?? DefaultPackagesArchiveContainerName;
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 PrimaryDestinationContainer = PrimaryDestination.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
                 SecondaryDestinationContainer = SecondaryDestination == null ? null :
                     SecondaryDestination.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
 
-                CursorBlobName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.CursorBlob) ?? DefaultCursorBlobName;
+                CursorBlobName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.CursorBlob) ?? DefaultCursorBlobName;
 
                 // Initialized successfully
                 return true;

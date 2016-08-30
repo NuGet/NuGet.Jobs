@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Jobs;
 using Stats.ImportAzureCdnStatistics;
+using NuGet.Services.KeyVault;
 
 namespace Stats.RefreshClientDimension
 {
@@ -20,9 +21,14 @@ namespace Stats.RefreshClientDimension
 
         public static void Main(string[] args)
         {
+            MainAsync(args).Wait();
+        }
+
+        public static async Task MainAsync(string[] args)
+        {
             Trace.TraceInformation("Started...");
             var argsDictionary = ParseArgsDictionary(args);
-            if (Init(argsDictionary))
+            if (await Init(argsDictionary))
             {
                 Run().Wait();
             }
@@ -138,15 +144,15 @@ namespace Stats.RefreshClientDimension
             return results;
         }
 
-        private static bool Init(IDictionary<string, string> argsDictionary)
+        private static async Task<bool> Init(IArgumentsDictionary argsDictionary)
         {
             try
             {
-                var databaseConnectionString = JobConfigurationManager.GetArgument(argsDictionary, JobArgumentNames.StatisticsDatabase);
+                var databaseConnectionString = await argsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-                _targetClientName = JobConfigurationManager.TryGetArgument(argsDictionary, "TargetClientName");
-                _userAgentFilter = JobConfigurationManager.TryGetArgument(argsDictionary, "UserAgentFilter");
+                _targetClientName = await argsDictionary.GetOrDefault<string>("TargetClientName");
+                _userAgentFilter = await argsDictionary.GetOrDefault<string>("UserAgentFilter");
 
                 return true;
             }
@@ -157,7 +163,7 @@ namespace Stats.RefreshClientDimension
             return false;
         }
 
-        private static IDictionary<string, string> ParseArgsDictionary(string[] commandLineArgs)
+        private static IArgumentsDictionary ParseArgsDictionary(string[] commandLineArgs)
         {
             if (commandLineArgs.Length > 0 && string.Equals(commandLineArgs[0], "-dbg", StringComparison.OrdinalIgnoreCase))
             {

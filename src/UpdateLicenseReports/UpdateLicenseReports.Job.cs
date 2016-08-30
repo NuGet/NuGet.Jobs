@@ -11,6 +11,7 @@ using Dapper;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using NuGet.Jobs;
+using NuGet.Services.KeyVault;
 
 namespace UpdateLicenseReports
 {
@@ -54,12 +55,11 @@ namespace UpdateLicenseReports
             return report;
         }
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
-            _packageDatabase = new SqlConnectionStringBuilder(
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase));
+            _packageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-            var retryCountString = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.RetryCount);
+            var retryCountString = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.RetryCount);
             if (string.IsNullOrEmpty(retryCountString))
             {
                 _retryCount = _defaultRetryCount;
@@ -69,9 +69,9 @@ namespace UpdateLicenseReports
                 _retryCount = Convert.ToInt32(retryCountString);
             }
 
-            _licenseReportService = new Uri(JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportService));
-            _licenseReportUser = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportUser);
-            _licenseReportPassword = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportPassword);
+            _licenseReportService = new Uri(await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.LicenseReportService));
+            _licenseReportUser = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.LicenseReportUser);
+            _licenseReportPassword = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.LicenseReportPassword);
 
             // Build credentials
             if (!string.IsNullOrEmpty(_licenseReportUser))

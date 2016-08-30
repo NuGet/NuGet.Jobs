@@ -4,38 +4,40 @@
 using System.Collections.Generic;
 using Stats.CollectAzureCdnLogs;
 using Xunit;
+using NuGet.Jobs;
+using NuGet.Services.KeyVault;
 
 namespace Tests.Stats.CollectAzureCdnLogs
 {
     public class JobTests
     {
         [Fact]
-        public void InitFailsWhenNoArguments()
+        public async void InitFailsWhenNoArguments()
         {
             var job = new Job();
-            var initResult = job.Init(null);
+            var initResult = await job.Init(null);
 
             Assert.False(initResult);
         }
 
         [Fact]
-        public void InitFailsWhenEmptyArguments()
+        public async void InitFailsWhenEmptyArguments()
         {
-            var jobArgsDictionary = new Dictionary<string, string>();
+            var jobArgsDictionary = CreateEmptyJobArgsDictionary();
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.False(initResult);
         }
 
         [Fact]
-        public void InitSucceedsWhenValidArguments()
+        public async void InitSucceedsWhenValidArguments()
         {
             var jobArgsDictionary = CreateValidJobArgsDictionary();
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.True(initResult);
         }
@@ -46,13 +48,13 @@ namespace Tests.Stats.CollectAzureCdnLogs
         [InlineData("http://localhost")]
         [InlineData("ftps://someserver/folder")]
         [InlineData("ftp://")]
-        public void InitFailsForInvalidFtpServerUri(string serverUri)
+        public async void InitFailsForInvalidFtpServerUri(string serverUri)
         {
             var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["FtpSourceUri"] = serverUri;
+            jobArgsDictionary.Set("FtpSourceUri", serverUri);
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.False(initResult);
         }
@@ -60,13 +62,13 @@ namespace Tests.Stats.CollectAzureCdnLogs
         [Theory]
         [InlineData("")]
         [InlineData(null)]
-        public void InitFailsForMissingFtpUsername(string username)
+        public async void InitFailsForMissingFtpUsername(string username)
         {
             var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["FtpSourceUsername"] = username;
+            jobArgsDictionary.Set("FtpSourceUsername", username);
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.False(initResult);
         }
@@ -74,42 +76,13 @@ namespace Tests.Stats.CollectAzureCdnLogs
         [Theory]
         [InlineData("")]
         [InlineData(null)]
-        public void InitFailsForMissingFtpPassword(string password)
+        public async void InitFailsForMissingFtpPassword(string password)
         {
             var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["FtpSourcePassword"] = password;
+            jobArgsDictionary.Set("FtpSourcePassword", password);
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
-
-            Assert.False(initResult);
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData(null)]
-        [InlineData("bla")]
-        public void InitFailsForMissingOrInvalidAzureCdnPlatform(string platform)
-        {
-            var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["AzureCdnPlatform"] = platform;
-
-            var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
-
-            Assert.False(initResult);
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData(null)]
-        public void InitFailsForMissingAzureCdnAccountNumber(string accountNumber)
-        {
-            var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["AzureCdnAccountNumber"] = accountNumber;
-
-            var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.False(initResult);
         }
@@ -118,13 +91,13 @@ namespace Tests.Stats.CollectAzureCdnLogs
         [InlineData("")]
         [InlineData(null)]
         [InlineData("bla")]
-        public void InitFailsForMissingOrInvalidAzureCdnCloudStorageAccount(string cloudStorageAccount)
+        public async void InitFailsForMissingOrInvalidAzureCdnPlatform(string platform)
         {
             var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["AzureCdnCloudStorageAccount"] = cloudStorageAccount;
+            jobArgsDictionary.Set("AzureCdnPlatform", platform);
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.False(initResult);
         }
@@ -132,18 +105,52 @@ namespace Tests.Stats.CollectAzureCdnLogs
         [Theory]
         [InlineData("")]
         [InlineData(null)]
-        public void InitFailsForMissingAzureCdnCloudStorageContainerName(string containerName)
+        public async void InitFailsForMissingAzureCdnAccountNumber(string accountNumber)
         {
             var jobArgsDictionary = CreateValidJobArgsDictionary();
-            jobArgsDictionary["AzureCdnCloudStorageContainerName"] = containerName;
+            jobArgsDictionary.Set("AzureCdnAccountNumber", accountNumber);
 
             var job = new Job();
-            var initResult = job.Init(jobArgsDictionary);
+            var initResult = await job.Init(jobArgsDictionary);
 
             Assert.False(initResult);
         }
 
-        private static Dictionary<string, string> CreateValidJobArgsDictionary()
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        [InlineData("bla")]
+        public async void InitFailsForMissingOrInvalidAzureCdnCloudStorageAccount(string cloudStorageAccount)
+        {
+            var jobArgsDictionary = CreateValidJobArgsDictionary();
+            jobArgsDictionary.Set("AzureCdnCloudStorageAccount", cloudStorageAccount);
+
+            var job = new Job();
+            var initResult = await job.Init(jobArgsDictionary);
+
+            Assert.False(initResult);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public async void InitFailsForMissingAzureCdnCloudStorageContainerName(string containerName)
+        {
+            var jobArgsDictionary = CreateValidJobArgsDictionary();
+            jobArgsDictionary.Set("AzureCdnCloudStorageContainerName", containerName);
+
+            var job = new Job();
+            var initResult = await job.Init(jobArgsDictionary);
+
+            Assert.False(initResult);
+        }
+
+        private static IArgumentsDictionary CreateEmptyJobArgsDictionary()
+        {
+            return CreateArgsDictionaryFromDictionary(new Dictionary<string, string>());
+        }
+
+        private static IArgumentsDictionary CreateValidJobArgsDictionary()
         {
             var jobArgsDictionary = new Dictionary<string, string>();
             jobArgsDictionary.Add("FtpSourceUri", "ftp://someserver/logFolder");
@@ -154,7 +161,12 @@ namespace Tests.Stats.CollectAzureCdnLogs
             jobArgsDictionary.Add("AzureCdnCloudStorageAccount", "UseDevelopmentStorage=true;");
             jobArgsDictionary.Add("AzureCdnCloudStorageContainerName", "cdnLogs");
 
-            return jobArgsDictionary;
+            return CreateArgsDictionaryFromDictionary(jobArgsDictionary);
+        }
+
+        private static IArgumentsDictionary CreateArgsDictionaryFromDictionary(Dictionary<string, string> dictionary)
+        {
+            return new RefreshingArgumentsDictionary(new SecretReaderFactory().CreateSecretInjector(new EmptySecretReader()), dictionary);
         }
     }
 }

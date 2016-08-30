@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
+using NuGet.Services.KeyVault;
 
 namespace Gallery.CredentialExpiration
 {
@@ -39,40 +40,40 @@ namespace Gallery.CredentialExpiration
         
         private ILogger _logger;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                _whatIf = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.WhatIf);
+                _whatIf = await jobArgsDictionary.GetOrDefault<bool>(JobArgumentNames.WhatIf);
 
-                var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryDatabase);
+                var databaseConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.GalleryDatabase);
                 _galleryDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-                _galleryBrand = JobConfigurationManager.GetArgument(jobArgsDictionary, MyJobArgumentNames.GalleryBrand);
-                _galleryAccountUrl = JobConfigurationManager.GetArgument(jobArgsDictionary, MyJobArgumentNames.GalleryAccountUrl);
+                _galleryBrand = await jobArgsDictionary.GetOrThrow<string>(MyJobArgumentNames.GalleryBrand);
+                _galleryAccountUrl = await jobArgsDictionary.GetOrThrow<string>(MyJobArgumentNames.GalleryAccountUrl);
 
-                _mailFrom = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.MailFrom);
+                _mailFrom = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.MailFrom);
 
-                var smtpConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SmtpUri);
+                var smtpConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SmtpUri);
                 var smtpUri = new SmtpUri(new Uri(smtpConnectionString));
                 _smtpClient = CreateSmtpClient(smtpUri);
 
-                var temp = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.WarnDaysBeforeExpiration);
-                if (temp.HasValue)
+                var temp = await jobArgsDictionary.GetOrDefault<int>(MyJobArgumentNames.WarnDaysBeforeExpiration);
+                if (temp != default(int))
                 {
-                    _warnDaysBeforeExpiration = temp.Value;
+                    _warnDaysBeforeExpiration = temp;
                 }
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Failed to initialize job! {Exception}", exception);
+                _logger?.LogCritical("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

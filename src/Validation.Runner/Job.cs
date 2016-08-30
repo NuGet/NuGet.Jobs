@@ -13,6 +13,7 @@ using NuGet.Jobs.Validation.Common.OData;
 using NuGet.Jobs.Validation.Common.Validators;
 using NuGet.Jobs.Validation.Common.Validators.Unzip;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
+using NuGet.Services.KeyVault;
 
 namespace NuGet.Jobs.Validation.Runner
 {
@@ -27,20 +28,20 @@ namespace NuGet.Jobs.Validation.Runner
         private string[] _runValidationTasks;
         private string[] _requestValidationTasks;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
                 // Configure job
-                _galleryBaseAddress = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryBaseAddress);
+                _galleryBaseAddress = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.GalleryBaseAddress);
 
-                var storageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
+                var storageConnectionString = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount);
                 _cloudStorageAccount = CreateCloudStorageAccount(JobArgumentNames.DataStorageAccount, storageConnectionString);
 
-                _containerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
+                _containerName = await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.ContainerName);
 
-                _runValidationTasks = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.RunValidationTasks).Split(';');
-                _requestValidationTasks = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.RequestValidationTasks).Split(';');
+                _runValidationTasks = (await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.RunValidationTasks)).Split(';');
+                _requestValidationTasks = (await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.RequestValidationTasks)).Split(';');
 
                 // Add validators
                 if (_runValidationTasks.Contains(UnzipValidator.ValidatorName))
@@ -50,10 +51,10 @@ namespace NuGet.Jobs.Validation.Runner
                 if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
                 {
                     _validators.Add(new VcsValidator(
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorServiceUrl),
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorCallbackUrl),
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorAlias),
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsPackageUrlTemplate)));
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorServiceUrl),
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorCallbackUrl),
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorAlias),
+                        await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsPackageUrlTemplate)));
                 }
 
                 return true;

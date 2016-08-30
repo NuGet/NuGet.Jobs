@@ -17,6 +17,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
 using NuGetGallery.Packaging;
+using NuGet.Services.KeyVault;
 
 namespace HandlePackageEdits
 {
@@ -63,31 +64,28 @@ namespace HandlePackageEdits
         protected long MaxManifestSize { get; set; }
         private ILogger _logger;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
             try
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var retrievedMaxManifestSize = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.MaxManifestSize);
-                MaxManifestSize = retrievedMaxManifestSize == null
+                var retrievedMaxManifestSize = await jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.MaxManifestSize);
+                MaxManifestSize = retrievedMaxManifestSize == default(int)
                     ? DefaultMaxAllowedManifestBytes
                     : Convert.ToInt64(retrievedMaxManifestSize);
 
-                PackageDatabase = new SqlConnectionStringBuilder(
-                            JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase));
+                PackageDatabase = new SqlConnectionStringBuilder(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(
-                                           JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SourceStorage));
-                Backups = CloudStorageAccount.Parse(
-                                           JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.BackupStorage));
+                Source = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SourceStorage));
+                Backups = CloudStorageAccount.Parse(await jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.BackupStorage));
 
-                SourceContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
-                BackupsContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;
+                SourceContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
+                BackupsContainerName = await jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 BackupsContainer = Backups.CreateCloudBlobClient().GetContainerReference(BackupsContainerName);

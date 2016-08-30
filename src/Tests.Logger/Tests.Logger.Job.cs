@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Jobs;
+using NuGet.Services.KeyVault;
 
 namespace Tests.AzureJobTraceListener
 {
@@ -25,20 +26,21 @@ namespace Tests.AzureJobTraceListener
                         6 for job that calls Trace.Close from multiple threads,
                         7 for job that calls Job.JobTraceListener.Close from multiple threads";
 
-        private int? JobScenario { get; set; }
+        private int JobScenario { get; set; }
 
         private int? LogCount { get; set; }
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+
+        public override async Task<bool> Init(IArgumentsDictionary jobArgsDictionary)
         {
-            JobScenario = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ScenarioArgumentName);
-            if(JobScenario == null)
+            JobScenario = await jobArgsDictionary.GetOrDefault<int>(ScenarioArgumentName);
+            if (JobScenario == default(int))
             {
                 throw new ArgumentException("Argument '"+ ScenarioArgumentName +"' is mandatory." + HelpMessage);
             }
 
-            LogCount = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, LogCountArgumentName);
+            LogCount = await jobArgsDictionary.GetOrDefault<int>(LogCountArgumentName);
 
-            return true;
+            return await Task.FromResult(true);
         }
 
         public async override Task<bool> Run()

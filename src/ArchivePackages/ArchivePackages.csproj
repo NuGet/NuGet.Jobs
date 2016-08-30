@@ -92,6 +92,10 @@
       <Project>{4b4b1efb-8f33-42e6-b79f-54e7f3293d31}</Project>
       <Name>NuGet.Jobs.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\NuGet.Services.KeyVault\NuGet.Services.KeyVault.csproj">
+      <Project>{C87D0EF1-54AA-4B0B-89DE-CFF2DC941D11}</Project>
+      <Name>NuGet.Services.KeyVault</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
