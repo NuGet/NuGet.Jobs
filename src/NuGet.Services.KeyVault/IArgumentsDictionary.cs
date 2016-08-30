@@ -26,6 +26,8 @@ namespace NuGet.Services.KeyVault
 
         bool Remove(string key);
 
+        void Clear();
+
         void ClearCache();
     }
 }
