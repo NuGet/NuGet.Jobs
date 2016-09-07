@@ -67,6 +67,10 @@
       <HintPath>..\..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NuGet.Services.KeyVault, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NuGet.Services.KeyVault.1.0.16-r-scottbom-keyrot\lib\net45\NuGet.Services.KeyVault.dll</HintPath>
+    </Reference>
     <Reference Include="NuGet.Services.VirusScanning.Core, Version=3.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NuGet.Services.VirusScanning.Vcs.3.0.2\lib\net452\NuGet.Services.VirusScanning.Core.dll</HintPath>
       <Private>True</Private>
