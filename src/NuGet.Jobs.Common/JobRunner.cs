@@ -15,6 +15,7 @@ namespace NuGet.Jobs
     {
         public static IServiceContainer ServiceContainer;
 
+        private const string _jobUninitialized = "Job Failed to Initialize";
         private const string _jobSucceeded = "Job Succeeded";
         private const string _jobFailed = "Job Failed";
 
@@ -77,7 +78,7 @@ namespace NuGet.Jobs
                 JobSetup(job, consoleLogOnly, jobArgsDictionary, ref sleepDuration);
 
                 // Run the job loop
-                await JobLoop(job, runContinuously, sleepDuration.Value, j => SetJobTraceListener(j, consoleLogOnly, jobArgsDictionary));
+                await JobLoop(job, runContinuously, sleepDuration.Value, consoleLogOnly, jobArgsDictionary);
             }
             catch (AggregateException ex)
             {
@@ -143,21 +144,13 @@ namespace NuGet.Jobs
             }
 
             job.ConsoleLogOnly = consoleLogOnly;
-
-            // Initialize the job once with everything needed.
-            // JobTraceListener(s) are already initialized
-            if (!job.Init(jobArgsDictionary))
-            {
-                // If the job could not be initialized successfully, STOP!
-                Trace.TraceError("Exiting. The job could not be initialized successfully with the arguments passed");
-            }
         }
 
-        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, Action<JobBase> setTraceListener)
+        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary)
         {
             // Run the job now
             var stopWatch = new Stopwatch();
-            bool success;
+            bool initialized, success;
 
             while (true)
             {
@@ -169,18 +162,23 @@ namespace NuGet.Jobs
                 job.JobTraceListener.Flush();
 
                 stopWatch.Restart();
-                success = await job.Run();
+                initialized = job.Init(jobArgsDictionary);
+                success = initialized && await job.Run();
                 stopWatch.Stop();
 
                 Trace.WriteLine("Job run ended...");
                 Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
-                if(success)
+                if (success)
                 {
                     Trace.TraceInformation(_jobSucceeded);
                 }
-                else
+                else if (initialized)
                 {
                     Trace.TraceWarning(_jobFailed);
+                }
+                else
+                {
+                    Trace.TraceWarning(_jobUninitialized);
                 }
 
                 // At this point, FlushAll is not called, So, what happens when the job is run only once?
@@ -200,10 +198,10 @@ namespace NuGet.Jobs
                 Console.WriteLine("Sleeping for {0} before the next job run", PrettyPrintTime(sleepDuration));
                 Thread.Sleep(sleepDuration);
 
-                setTraceListener(job);
+                SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
             }
 
-            return success ? _jobSucceeded : _jobFailed;
+            return success ? _jobSucceeded : (initialized ? _jobFailed : _jobUninitialized);
         }
     }
 }
