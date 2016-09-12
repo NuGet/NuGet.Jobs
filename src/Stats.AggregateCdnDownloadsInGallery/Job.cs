@@ -111,7 +111,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
                     using (var destinationDatabase = await _destinationDatabase.ConnectTo())
                     {
                         // Fetch package registrations so we can match
-                        var packageRegistrationLookup = await GetPackageRegistrations(destinationDatabase, _logger);
+                        var packageRegistrationLookup = await GetPackageRegistrations(destinationDatabase);
 
                         // Create a temporary table
                         _logger.LogDebug("Creating temporary table...");
@@ -189,33 +189,39 @@ namespace Stats.AggregateCdnDownloadsInGallery
             return true;
         }
 
-        private async Task<IDictionary<string, string>> GetPackageRegistrations(SqlConnection sqlConnection, ILogger logger)
+        private async Task<IDictionary<string, string>> GetPackageRegistrations(SqlConnection sqlConnection)
         {
             _logger.LogDebug("Retrieving package registrations...");
 
             var packageRegistrationDictionary = new Dictionary<string, string>();
 
             // Ensure results are sorted deterministically.
-            var packageRegistrationData = await sqlConnection.QueryWithRetryAsync<PackageRegistrationData>(
-                    "SELECT [Key], LOWER([Id]) AS Id FROM [dbo].[PackageRegistrations] (NOLOCK) ORDER BY [Id] ASC",
+            var packageRegistrationData = (await sqlConnection.QueryWithRetryAsync<PackageRegistrationData>(
+                    "SELECT [Key], LOWER([Id]) AS LowercasedId, [Id] AS OriginalId FROM [dbo].[PackageRegistrations] (NOLOCK) ORDER BY [Id] ASC",
                     commandTimeout: (int)TimeSpan.FromMinutes(10).TotalSeconds,
-                    maxRetries: 5);
+                    maxRetries: 5)).ToList();
 
+            // We are not using .ToDictionary() and instead explicitly looping through these items to be able to detect
+            // and avoid potential duplicate keys caused by LOWER([Id]) conflicts that may occur.
             foreach (var item in packageRegistrationData)
             {
-                if (string.IsNullOrEmpty(item.Id))
+                if (string.IsNullOrEmpty(item.LowercasedId))
                 {
                     continue;
                 }
 
-                if (!packageRegistrationDictionary.ContainsKey(item.Id))
+                if (!packageRegistrationDictionary.ContainsKey(item.LowercasedId))
                 {
-                    packageRegistrationDictionary.Add(item.Id, item.Key);
+                    packageRegistrationDictionary.Add(item.LowercasedId, item.Key);
                 }
                 else
                 {
+                    var conflictingPackageRegistration = packageRegistrationDictionary[item.LowercasedId];
+                    var conflictingPackageOriginalId = packageRegistrationData.Single(p => p.Key == conflictingPackageRegistration);
+
                     // Lowercased package ID's should be unique, however, there's the case of the Turkish i...
-                    _logger.LogWarning($"Package registration conflict detected: skipping package registration with key {item.Key} and ID {item.Id}");
+                    _logger.LogWarning($"Package registration conflict detected: skipping package registration with key {item.Key} and ID {item.LowercasedId}." +
+                                       $"Package {item.OriginalId} conflicts with package {conflictingPackageOriginalId}");
                 }
             }
 
