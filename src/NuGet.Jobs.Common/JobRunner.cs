@@ -150,7 +150,7 @@ namespace NuGet.Jobs
         {
             // Run the job now
             var stopWatch = new Stopwatch();
-            bool initialized, success;
+            bool initialized, succeeded;
 
             while (true)
             {
@@ -163,12 +163,12 @@ namespace NuGet.Jobs
 
                 stopWatch.Restart();
                 initialized = job.Init(jobArgsDictionary);
-                success = initialized && await job.Run();
+                succeeded = initialized && await job.Run();
                 stopWatch.Stop();
 
                 Trace.WriteLine("Job run ended...");
                 Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
-                if (success)
+                if (succeeded)
                 {
                     Trace.TraceInformation(_jobSucceeded);
                 }
@@ -201,7 +201,7 @@ namespace NuGet.Jobs
                 SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
             }
 
-            return success ? _jobSucceeded : (initialized ? _jobFailed : _jobUninitialized);
+            return succeeded ? _jobSucceeded : (initialized ? _jobFailed : _jobUninitialized);
         }
     }
 }
