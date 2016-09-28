@@ -146,11 +146,10 @@ namespace NuGet.Jobs
             job.ConsoleLogOnly = consoleLogOnly;
         }
 
-        private static async Task<string> JobLoop(JobBase job, bool runContinuously, int sleepDuration, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary)
+        private static async Task JobLoop(JobBase job, bool runContinuously, int sleepDuration, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary)
         {
             // Run the job now
             var stopWatch = new Stopwatch();
-            bool initialized, succeeded;
 
             while (true)
             {
@@ -162,8 +161,8 @@ namespace NuGet.Jobs
                 job.JobTraceListener.Flush();
 
                 stopWatch.Restart();
-                initialized = job.Init(jobArgsDictionary);
-                succeeded = initialized && await job.Run();
+                var initialized = job.Init(jobArgsDictionary);
+                var succeeded = initialized && await job.Run();
                 stopWatch.Stop();
 
                 Trace.WriteLine("Job run ended...");
@@ -200,8 +199,6 @@ namespace NuGet.Jobs
 
                 SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
             }
-
-            return succeeded ? _jobSucceeded : (initialized ? _jobFailed : _jobUninitialized);
         }
     }
 }
