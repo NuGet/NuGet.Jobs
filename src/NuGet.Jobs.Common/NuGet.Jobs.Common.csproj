@@ -111,9 +111,9 @@
       <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NuGet.Services.KeyVault, Version=1.0.24-r-scottbom-keyrot, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NuGet.Services.KeyVault.1.0.24-r-scottbom-keyrot\lib\net45\NuGet.Services.KeyVault.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="NuGet.Services.KeyVault, Version=1.0.24.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NuGet.Services.KeyVault.1.0.33-r-scottbom-keyrot\lib\net45\NuGet.Services.KeyVault.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

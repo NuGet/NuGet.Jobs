@@ -189,7 +189,7 @@ namespace NuGet.Jobs
                 throw new ApplicationException("Could not create a secret reader. Please check your configuration.");
             }
            
-            return new ConfigurationDictionary(secretInjector, argsDictionary);
+            return new SecretDictionary(secretInjector, argsDictionary);
         }
     }
 }

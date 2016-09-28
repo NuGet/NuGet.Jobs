@@ -85,8 +85,7 @@ namespace ArchivePackages
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 PrimaryDestinationContainer = PrimaryDestination.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
-                SecondaryDestinationContainer = SecondaryDestination == null ? null :
-                    SecondaryDestination.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
+                SecondaryDestinationContainer = SecondaryDestination?.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
 
                 CursorBlobName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.CursorBlob) ?? DefaultCursorBlobName;
 

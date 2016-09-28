@@ -114,7 +114,7 @@ namespace NuGet.Jobs
 
         private static void SetJobTraceListener(JobBase job, bool consoleLogOnly, IDictionary<string, string> argsDictionary)
         {
-            if(consoleLogOnly)
+            if (consoleLogOnly)
             {
                 job.SetJobTraceListener(new JobTraceListener());
             }
