@@ -26,10 +26,9 @@ namespace Search.GenerateAuxiliaryData
             SqlScript = defaultSqlScript;
         }
 
-        override protected JContainer GetResultOfQuery(SqlConnection connection)
+        protected override JContainer GetResultOfQuery(SqlConnection connection)
         {
-            var command = new SqlCommand(GetEmbeddedSqlScript(SqlScript), connection);
-            command.CommandType = CommandType.Text;
+            var command = new SqlCommand(GetEmbeddedSqlScript(SqlScript), connection) {CommandType = CommandType.Text};
 
             return SqlDataReaderToNestedJArrays(command.ExecuteReader(), Col0, Col1);
         }

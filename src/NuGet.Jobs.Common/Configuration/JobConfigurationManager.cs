@@ -23,13 +23,8 @@ namespace NuGet.Jobs
         /// <param name="jobName">Jobname to be used to infer environment variable settings</param>
         /// <param name="secretReaderFactory">Creates a secret reader.</param>
         /// <returns>Returns a dictionary of arguments</returns>
-        public static IDictionary<string, string> GetJobArgsDictionary(string[] commandLineArgs, string jobName, ISecretReaderFactory secretReaderFactory)
+        public static IDictionary<string, string> GetJobArgsDictionary(string[] commandLineArgs, string jobName)
         {
-            if (secretReaderFactory == null)
-            {
-                throw new ArgumentNullException(nameof(secretReaderFactory));
-            }
-
             var argsDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var allArgsList = commandLineArgs.ToList();
@@ -87,7 +82,7 @@ namespace NuGet.Jobs
                 }
             }
 
-            return InjectSecrets(secretReaderFactory, argsDictionary);
+            return InjectSecrets(argsDictionary);
         }
 
         /// <summary>
@@ -179,10 +174,10 @@ namespace NuGet.Jobs
             return null;
         }
 
-        private static IDictionary<string, string> InjectSecrets(ISecretReaderFactory secretReaderFactory, Dictionary<string, string> argsDictionary)
+        private static IDictionary<string, string> InjectSecrets(Dictionary<string, string> argsDictionary)
         {
-            var secretReader = secretReaderFactory.CreateSecterReader(argsDictionary);
-            var secretInjector = secretReaderFactory.CreateSecretInjector(secretReader);
+            var secretReader = SecretReaderFactory.CreateSecterReader(argsDictionary);
+            var secretInjector = SecretReaderFactory.CreateSecretInjector(secretReader);
 
             if (secretReader == null)
             {

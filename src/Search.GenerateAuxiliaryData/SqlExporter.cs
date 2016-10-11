@@ -66,9 +66,11 @@ namespace Search.GenerateAuxiliaryData
 
         private static string TracableConnectionString(string connectionString)
         {
-            var connStr = new SqlConnectionStringBuilder(connectionString);
-            connStr.UserID = "########";
-            connStr.Password = "########";
+            var connStr = new SqlConnectionStringBuilder(connectionString)
+            {
+                UserID = "########",
+                Password = "########"
+            };
             return connStr.ToString();
         }
 

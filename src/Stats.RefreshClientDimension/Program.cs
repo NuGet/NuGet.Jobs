@@ -171,8 +171,7 @@ namespace Stats.RefreshClientDimension
 
             var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(
                 commandLineArgs,
-                "Stats.RefreshClientDimension",
-                (ISecretReaderFactory)JobRunner.ServiceContainer.GetService(typeof(ISecretReaderFactory)));
+                "Stats.RefreshClientDimension");
             return jobArgsDictionary;
         }
     }

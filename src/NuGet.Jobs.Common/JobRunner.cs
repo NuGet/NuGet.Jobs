@@ -21,7 +21,6 @@ namespace NuGet.Jobs
         static JobRunner()
         {
             ServiceContainer = new ServiceContainer();
-            ServiceContainer.AddService(typeof(ISecretReaderFactory), new SecretReaderFactory());
         }
 
         /// <summary>
@@ -57,7 +56,7 @@ namespace NuGet.Jobs
                 Trace.TraceInformation("Started...");
 
                 // Get the args passed in or provided as an env variable based on jobName as a dictionary of <string argName, string argValue>
-                var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
+                var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(commandLineArgs, job.JobName);
 
                 // Set JobTraceListener. This will be done on every job run as well
                 SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
