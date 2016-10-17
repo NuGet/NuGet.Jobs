@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -21,16 +20,18 @@ namespace RotateSecrets.SecretRotators
         /// <summary>
         /// Passwords regenerated during rotation have exactly this length.
         /// </summary>
-        private const int PasswordLength = 16;
+        public const int PasswordLength = 16;
+
         /// <summary>
-        /// Passwords regenerated during rotator have exactly this many alphanumerical characters.
+        /// Passwords regenerated during rotator have exactly this many nonalphanumeric characters.
         /// </summary>
-        private const int PasswordNumberOfAlphanumericalCharacters = 4;
+        public const int PasswordNumberOfNonAlphanumericCharacters = 4;
 
         /// <summary>
         /// The url of the server that this account is on.
         /// </summary>
         public virtual string ServerUrl { get; }
+
         /// <summary>
         /// The name of the database that this account is on.
         /// </summary>
@@ -40,6 +41,7 @@ namespace RotateSecrets.SecretRotators
         /// The secret that represents the primary username of this account.
         /// </summary>
         public virtual SqlAccountSecret PrimaryUsernameSecret { get; }
+
         /// <summary>
         /// The secret that represents the primary password of this account.
         /// </summary>
@@ -49,6 +51,7 @@ namespace RotateSecrets.SecretRotators
         /// The secret that represents the secondary username of this account.
         /// </summary>
         public virtual SqlAccountSecret SecondaryUsernameSecret { get; }
+
         /// <summary>
         /// The secret that represents the secondary password of this account.
         /// </summary>
@@ -221,13 +224,23 @@ namespace RotateSecrets.SecretRotators
 
         public virtual async Task<TaskResult> IsAccountValid(SqlAccountSecret.Rank rank)
         {
-            SqlAccountSecret username, password;
+            SqlAccountSecret usernameSecret, passwordSecret;
             int usernameLogIndex, passwordLogIndex;
-            GetAccountAndLogIndexesFromRank(rank, out username, out password, out usernameLogIndex, out passwordLogIndex);
+            GetAccountAndLogIndexesFromRank(rank, out usernameSecret, out passwordSecret, out usernameLogIndex, out passwordLogIndex);
 
             try
             {
-                await TestSqlConnection(BuildConnectionString(username, password));
+                if (rank == SqlAccountSecret.Rank.Secondary &&
+                    PrimaryUsernameSecret.Value == SecondaryUsernameSecret.Value &&
+                    PrimaryPasswordSecret.Value == SecondaryPasswordSecret.Value)
+                {
+                    // If the secondary and primary secrets are identical, then attempt to restore the actual secondary account from temporary secrets.
+                    throw new ArgumentException(
+                        $"{PrimaryUsernameSecret.Name}: Primary account ({PrimaryUsernameSecret.Name} and {PrimaryPasswordSecret.Name}) " +
+                        $"and secondary account ({SecondaryUsernameSecret.Name} and {SecondaryPasswordSecret.Name}) are identical!");
+                }
+
+                await TestSqlConnection(BuildConnectionString(usernameSecret, passwordSecret));
                 LogHelper(LogLevel.Warning, "{0}: Connected to account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}).");
                 return TaskResult.Valid;
             }
@@ -238,8 +251,8 @@ namespace RotateSecrets.SecretRotators
                 {
                     LogHelper(LogLevel.Warning, "{0}: Could not connect to account ({" + usernameLogIndex + "} and {" + passwordLogIndex +"}): {6}", exception);
 
-                    var tempUsername = await username.GetTemporary();
-                    var tempPassword = await password.GetTemporary();
+                    var tempUsername = await usernameSecret.GetTemporary();
+                    var tempPassword = await passwordSecret.GetTemporary();
                     await TestSqlConnection(BuildConnectionString(tempUsername, tempPassword));
 
                     // The temporary credentials are valid. Update KeyVault and don't rotate!
@@ -274,25 +287,9 @@ namespace RotateSecrets.SecretRotators
                 LogHelper(LogLevel.Information, "{0}: Rotating SQL account for account on server {4} and database {5}.");
 
                 var connectionStringBuilder = BuildConnectionString(SecondaryUsernameSecret, SecondaryPasswordSecret);
+                await ReplacePasswordOfSecondary(connectionStringBuilder);
 
-                try
-                {
-                    await ReplacePasswordOfSecondary(connectionStringBuilder);
-                }
-                catch (Exception)
-                {
-                    throw new ArgumentException($"{PrimaryUsernameSecret.Name}: Cannot connect to the secondary account " +
-                                                $"({SecondaryUsernameSecret.Name} and {SecondaryPasswordSecret.Name}).");
-                }
-
-                await ReplaceSecretsForAccountWithOtherRank(SqlAccountSecret.Rank.Secondary);
-
-                await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Primary);
-
-                await ReplaceSecretsForAccountWithOtherRank(SqlAccountSecret.Rank.Primary);
-
-                await DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
-                await DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank.Primary);
+                await SwapSecretsForAccounts();
 
                 LogHelper(LogLevel.Information, "{0}: Successfully rotated SQL account.");
                 return TaskResult.Success;
@@ -304,7 +301,7 @@ namespace RotateSecrets.SecretRotators
             }
         }
 
-        private SqlConnectionStringBuilder BuildConnectionString(SecretToRotate username, SecretToRotate password)
+        public SqlConnectionStringBuilder BuildConnectionString(SecretToRotate username, SecretToRotate password)
         {
             return new SqlConnectionStringBuilder
             {
@@ -331,10 +328,8 @@ namespace RotateSecrets.SecretRotators
             }
         }
 
-        private async Task ReplacePasswordOfSecondary(SqlConnectionStringBuilder connectionStringBuilder)
+        public virtual async Task ReplacePasswordOfSecondary(SqlConnectionStringBuilder connectionStringBuilder)
         {
-            var newPassword = Membership.GeneratePassword(PasswordLength, PasswordNumberOfAlphanumericalCharacters);
-
             if (connectionStringBuilder.UserID == PrimaryUsernameSecret.Value &&
                 connectionStringBuilder.Password == PrimaryPasswordSecret.Value)
             {
@@ -346,65 +341,77 @@ namespace RotateSecrets.SecretRotators
 
             LogHelper(LogLevel.Information, "{0}: Testing connection for secondary account ({2} and {3}).");
             await TestSqlConnection(connectionStringBuilder);
-
+            
+            // Save the old login in temporary secrets in case there is an error in the process.
             await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
+
+            // Set the secret in KeyVault to the desired new password BEFORE changing the login on the SQL server!
+            //
+            // We do this in this order because if we changed the actual login on the SQL server first (AlterSqlPassword),
+            // but then failed to store the new value in KeyVault (connection issues, etc), the new password would be lost!
+            //
+            // In the case that AlterSqlPassword fails, we can retrieve the old login from the temporary secrets.
+            var newPassword = Membership.GeneratePassword(PasswordLength, PasswordNumberOfNonAlphanumericCharacters);
+            LogHelper(LogLevel.Information, "{0}: Storing new password for secondary account ({2} and {3}) in KeyVault.");
+            await SecondaryPasswordSecret.Set(newPassword);
 
             LogHelper(LogLevel.Information, "{0}: Changing password for secondary account ({2} and {3}).");
             await AlterSqlPassword(connectionStringBuilder, newPassword);
 
-            // Store the new password in the local Secret.
-            SecondaryPasswordSecret.Secret.Value = newPassword;
-
-            LogHelper(LogLevel.Information, "{0}: Storing new password for secondary account ({2} and {3}) in KeyVault.");
-            await SecondaryPasswordSecret.Set(newPassword);
+            // Delete the old login from temporary secrets because it is no longer needed.
+            await DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
         }
 
-        private async Task ReplaceSecretsForAccountWithOtherRank(SqlAccountSecret.Rank rank)
+        public virtual async Task SwapSecretsForAccounts()
         {
-            var otherRank = rank == SqlAccountSecret.Rank.Primary
-                ? SqlAccountSecret.Rank.Secondary
-                : SqlAccountSecret.Rank.Primary;
+            LogHelper(LogLevel.Information,
+                "{0}: Swapping primary account ({0} and {1}) and secondary account ({2} and {3}).");
 
-            SqlAccountSecret oldUsername, oldPassword, newUsername, newPassword;
-            int oldUsernameLogIndex, oldPasswordLogIndex, newUsernameLogIndex, newPasswordLogIndex;
+            await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Primary);
+            await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
 
-            GetAccountAndLogIndexesFromRank(rank, out oldUsername, out oldPassword, out oldUsernameLogIndex, out oldPasswordLogIndex);
-            GetAccountAndLogIndexesFromRank(otherRank, out newUsername, out newPassword, out newUsernameLogIndex, out newPasswordLogIndex);
+            var oldSecondaryUsername = SecondaryUsernameSecret.Value;
+            var oldSecondaryPassword = SecondaryPasswordSecret.Value;
 
-            LogHelper(LogLevel.Information, "{0}: Replacing account ({" + oldUsernameLogIndex + "} and {" + oldPasswordLogIndex + "}) " +
-                                            "with account ({" + newUsernameLogIndex + "} and {" + newPasswordLogIndex + "}).");
+            // Replace the secondary account first because if it fails the primary account remains intact.
+            await SecondaryUsernameSecret.Set(PrimaryUsernameSecret.Value);
+            await SecondaryPasswordSecret.Set(PrimaryPasswordSecret.Value);
 
-            await oldUsername.Set(newUsername.Value);
-            await oldPassword.Set(newPassword.Value);
+            await PrimaryUsernameSecret.Set(oldSecondaryUsername);
+            await PrimaryPasswordSecret.Set(oldSecondaryPassword);
+
+            await DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank.Primary);
+            await DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
         }
 
-        private async Task ReplaceSecretsForAccountWithTemporary(SqlAccountSecret.Rank rank)
+        public virtual async Task ReplaceSecretsForAccountWithTemporary(SqlAccountSecret.Rank rank)
         {
             SqlAccountSecret username, password;
             int usernameLogIndex, passwordLogIndex;
             GetAccountAndLogIndexesFromRank(rank, out username, out password, out usernameLogIndex, out passwordLogIndex);
 
-            var tempUsername = await username.GetTemporary();
-            var tempPassword = await password.GetTemporary();
-
             LogHelper(LogLevel.Information, "{0}: Replacing account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}) with values stored in temporary.");
 
-            await username.Set(tempUsername.Value);
-            await password.Set(tempPassword.Value);
+            await username.Set((await username.GetTemporary()).Value);
+            await password.Set((await password.GetTemporary()).Value);
+
+            // Delete the temporary secrets because they are no longer needed.
+            await DeleteTemporarySecretsForAccount(rank);
         }
 
-        private async Task GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank rank)
+        public virtual async Task GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank rank)
         {
             SqlAccountSecret username, password;
             int usernameLogIndex, passwordLogIndex;
             GetAccountAndLogIndexesFromRank(rank, out username, out password, out usernameLogIndex, out passwordLogIndex);
 
             LogHelper(LogLevel.Information, "{0}: Generating temporary secrets for account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}).");
+
             await username.SetTemporary(username.Value);
             await password.SetTemporary(password.Value);
         }
 
-        private async Task DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank rank)
+        public virtual async Task DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank rank)
         {
             SqlAccountSecret username, password;
             int usernameLogIndex, passwordLogIndex;

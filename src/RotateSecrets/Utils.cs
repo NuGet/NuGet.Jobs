@@ -58,16 +58,6 @@ namespace RotateSecrets
             return VaultClient.GetSecretAsync(GetVaultUrl(), secretName);
         }
 
-        public virtual DateTime GetSecretTimestamp(Secret secret)
-        {
-            return secret.Attributes.Updated ?? secret.Attributes.Created ?? DateTime.MinValue;
-        }
-
-        public virtual bool IsSecretOutdated(Secret secret, DateTime secretOutdatedTimestamp)
-        {
-            return GetSecretTimestamp(secret) <= secretOutdatedTimestamp;
-        }
-
         public virtual Task SetSecret(Secret secret, string value, Dictionary<string, string> tags = null)
         {
             return SetSecret(secret.SecretIdentifier.Name, value, tags ?? secret.Tags);
@@ -93,7 +83,7 @@ namespace RotateSecrets
 
         public virtual string GetTemporarySecretName(Secret secret)
         {
-            return secret + "TEMP";
+            return secret.SecretIdentifier.Name + "TEMP";
         }
 
         public virtual async Task<Secret> GetTemporarySecret(Secret secret)

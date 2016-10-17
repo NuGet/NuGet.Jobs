@@ -7,7 +7,7 @@ namespace RotateSecrets.SecretsToRotate
 {
     public class SecretToRotate
     {
-        public virtual Secret Secret { get; }
+        public virtual Secret Secret { get; private set; }
 
         public virtual string Name => Secret.SecretIdentifier.Name;
         public virtual string Value
@@ -21,11 +21,6 @@ namespace RotateSecrets.SecretsToRotate
         /// </summary>
         public DateTime SecretOutdatedTimestamp { get; }
 
-        public static async Task<SecretToRotate> Get(string secretName)
-        {
-            return new SecretToRotate(await Utils.Instance.GetSecret(secretName));
-        }
-
         public SecretToRotate(Secret secret)
         {
             Secret = secret;
@@ -34,12 +29,14 @@ namespace RotateSecrets.SecretsToRotate
 
         public virtual bool IsOutdated()
         {
-            return Utils.Instance.IsSecretOutdated(Secret, SecretOutdatedTimestamp);
+            return (Secret.Attributes.Updated ??
+                    Secret.Attributes.Created ?? DateTime.MinValue) <= SecretOutdatedTimestamp;
         }
 
-        public virtual Task Set(string value)
+        public virtual async Task Set(string value)
         {
-            return Utils.Instance.SetSecret(Secret, value);
+            await Utils.Instance.SetSecret(Secret, value);
+            Secret = await Utils.Instance.GetSecret(Secret.SecretIdentifier.Name);
         }
 
         public virtual Task Delete()
