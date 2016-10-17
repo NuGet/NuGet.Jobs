@@ -165,14 +165,18 @@ namespace NuGet.Jobs
                 stopWatch.Stop();
 
                 Trace.WriteLine("Job run ended...");
-                if (succeeded)
+                if (initialized)
                 {
                     Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
-                    Trace.TraceInformation(JobSucceeded);
-                }
-                else if (initialized)
-                {
-                    Trace.TraceWarning(JobFailed);
+
+                    if (succeeded)
+                    {
+                        Trace.TraceInformation(JobSucceeded);
+                    }
+                    else
+                    {
+                        Trace.TraceWarning(JobFailed);
+                    }
                 }
                 else
                 {
