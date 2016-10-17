@@ -15,9 +15,9 @@ namespace NuGet.Jobs
     {
         public static IServiceContainer ServiceContainer;
 
-        private const string _jobUninitialized = "Job Failed to Initialize";
-        private const string _jobSucceeded = "Job Succeeded";
-        private const string _jobFailed = "Job Failed";
+        private const string JobUninitialized = "Job Failed to Initialize";
+        private const string JobSucceeded = "Job Succeeded";
+        private const string JobFailed = "Job Failed";
 
         static JobRunner()
         {
@@ -63,8 +63,8 @@ namespace NuGet.Jobs
                 // Set JobTraceListener. This will be done on every job run as well
                 SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
 
-                bool runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
-                int? sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
+                var runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
+                var sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
                 if (!sleepDuration.HasValue)
                 {
                     sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Interval);
@@ -97,19 +97,18 @@ namespace NuGet.Jobs
                 Trace.TraceError("[FAILED]: " + ex);
             }
 
-            // Call FlushAll here. This is VERY IMPORTANT
-            // Exception message(s) when the job faults are still in the queue. Need to be flushed
-            // Also, when the job is only run once, FlushAll is important again
+            // Flush here. This is VERY IMPORTANT!
+            // Exception messages from when the job faults are still in the queue and need to be flushed.
+            // Also, if the job is only run once, this is what flushes the queue.
             job.JobTraceListener.Close();
         }
 
         private static string PrettyPrintTime(double milliSeconds)
         {
-            const string precisionSpecifier = "F3";
-            return string.Format("'{0}' ms (or '{1}' seconds or '{2}' mins)",
-                milliSeconds.ToString(precisionSpecifier),  // Time in milliSeconds
-                (milliSeconds / 1000.0).ToString(precisionSpecifier),  // Time in seconds
-                (milliSeconds / 60000.0).ToString(precisionSpecifier));  // Time in minutes
+            var seconds = (milliSeconds/1000.0);
+            var minutes = (milliSeconds/60000.0);
+            return
+                $"'{milliSeconds:F3}' ms (or '{seconds:F3}' seconds or '{minutes:F3}' mins)";
         }
 
         private static void SetJobTraceListener(JobBase job, bool consoleLogOnly, IDictionary<string, string> argsDictionary)
@@ -166,35 +165,32 @@ namespace NuGet.Jobs
                 stopWatch.Stop();
 
                 Trace.WriteLine("Job run ended...");
-                Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
                 if (succeeded)
                 {
-                    Trace.TraceInformation(_jobSucceeded);
+                    Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
+                    Trace.TraceInformation(JobSucceeded);
                 }
                 else if (initialized)
                 {
-                    Trace.TraceWarning(_jobFailed);
+                    Trace.TraceWarning(JobFailed);
                 }
                 else
                 {
-                    Trace.TraceWarning(_jobUninitialized);
+                    Trace.TraceWarning(JobUninitialized);
                 }
-
-                // At this point, FlushAll is not called, So, what happens when the job is run only once?
-                // Since, FlushAll is called right at the end of the program, this is no issue
+                
                 if (!runContinuously)
                 {
+                    // It is ok that we do not flush the logs here.
+                    // Logs will be flushed at the end of Run().
                     break;
                 }
 
                 // Wait for <sleepDuration> milliSeconds and run the job again
                 Trace.TraceInformation("Will sleep for {0} before the next Job run", PrettyPrintTime(sleepDuration));
 
-                // Flush All the logs for this run
+                // Flush all the logs for this run
                 job.JobTraceListener.Close();
-
-                // Use Console.WriteLine when you don't want it to be logged in Azure blobs
-                Console.WriteLine("Sleeping for {0} before the next job run", PrettyPrintTime(sleepDuration));
                 Thread.Sleep(sleepDuration);
 
                 SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
