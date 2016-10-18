@@ -57,7 +57,7 @@ namespace NuGet.Jobs
         // Arguments specific to RotateSecrets
         public const string TenantId = "TenantId";
         public const string SubscriptionId = "SubscriptionId";
-        public const string SecretLongevityDays = "SecretLongevityDays";
+        public const string SecretLongevitySec = "SecretLongevitySec";
 
         // Arguments specific to HandlePackageEdits
         public const string SourceStorage = "SourceStorage";

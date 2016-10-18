@@ -29,9 +29,9 @@ namespace RotateSecrets.SecretRotators
         /// <summary>
         /// Default number of days before a secret becomes outdated.
         /// </summary>
-        public const int DefaultSecretLongevityDays = 7;
+        public const int DefaultSecretLongevitySec = 7 * 24 * 60 * 60;
 
-        public int SecretLongevityDays { get; set; } = DefaultSecretLongevityDays;
+        public int SecretLongevitySec { get; set; } = DefaultSecretLongevitySec;
 
         private readonly IDictionary<string, IList<SqlAccountSecret>> _unmatchedSqlAccountSecrets = new Dictionary<string, IList<SqlAccountSecret>>();
         private readonly ILogger _logger;
@@ -92,26 +92,23 @@ namespace RotateSecrets.SecretRotators
                     if (_unmatchedSqlAccountSecrets.TryGetValue(matchingIndex,
                         out matchingSecrets))
                     {
-                        if (matchingSecrets.Count < 3)
+                        _logger.LogInformation("Adding {SecretName} to the group of secrets associated with {PrimaryUsernameSecretName}.", secret.SecretIdentifier.Name, matchingIndex);
+                        matchingSecrets.Add(sqlAccountSecret);
+
+                        if (matchingSecrets.Count != 4)
                         {
-                            _logger.LogInformation("Adding {SecretName} to the group of secrets associated with {PrimaryUsernameSecretName}.", secret.SecretIdentifier.Name, matchingIndex);
-
-                            matchingSecrets.Add(sqlAccountSecret);
+                            // Haven't completed the group yet!
+                            return new EmptySecretRotator();
                         }
-                        else
-                        {
-                            _logger.LogInformation("{SecretName} completes the group of secrets associated with {PrimaryUsernameSecretName}.", secret.SecretIdentifier.Name, matchingIndex);
 
-                            _unmatchedSqlAccountSecrets.Remove(matchingIndex);
-                            return new SqlAccountRotator(matchingSecrets);
-                        }
-                    }
-                    else
-                    {
-                        _logger.LogInformation("{SecretName} is the first secret associated with {PrimaryUsernameSecretName}.", secret.SecretIdentifier.Name, matchingIndex);
+                        _logger.LogInformation("{SecretName} completes the group of secrets associated with {PrimaryUsernameSecretName}.", secret.SecretIdentifier.Name, matchingIndex);
 
-                        _unmatchedSqlAccountSecrets.Add(matchingIndex, new List<SqlAccountSecret> { sqlAccountSecret });
+                        _unmatchedSqlAccountSecrets.Remove(matchingIndex);
+                        return new SqlAccountRotator(matchingSecrets);
                     }
+
+                    _logger.LogInformation("{SecretName} is the first secret associated with {PrimaryUsernameSecretName}.", secret.SecretIdentifier.Name, matchingIndex);
+                    _unmatchedSqlAccountSecrets.Add(matchingIndex, new List<SqlAccountSecret> { sqlAccountSecret });
 
                     return new EmptySecretRotator();
                 case Tags.TypeStorageAccountAccessKey:

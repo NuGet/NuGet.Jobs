@@ -67,7 +67,7 @@ namespace RotateSecrets
             Dictionary<string, string> tags = null)
         {
             await VaultClient.SetSecretAsync(GetVaultUrl(), name, value, tags);
-            Logger.LogInformation("{SecretName}: set value in KeyVault.", name);
+            Logger.LogInformation("Set value of {SecretName} in KeyVault.", name);
         }
 
         public virtual Task DeleteSecret(Secret secret)
@@ -78,7 +78,7 @@ namespace RotateSecrets
         public virtual async Task DeleteSecret(string name)
         {
             await VaultClient.DeleteSecretAsync(GetVaultUrl(), name);
-            Logger.LogInformation("{SecretName}: deleted from KeyVault.", name);
+            Logger.LogInformation("Deleted {SecretName} from KeyVault.", name);
         }
 
         public virtual string GetTemporarySecretName(Secret secret)

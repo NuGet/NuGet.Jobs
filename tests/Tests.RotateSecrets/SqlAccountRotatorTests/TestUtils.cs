@@ -168,7 +168,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
             return (connectionStringBuilder) =>
             {
                 Assert.Equal(ServerUrl, connectionStringBuilder.DataSource);
-                Assert.Equal(DatabaseName, connectionStringBuilder.InitialCatalog);
+                Assert.Equal("master", connectionStringBuilder.InitialCatalog);
                 Assert.Contains(connectionStringBuilder.UserID, logins.Select(login => login.Item1));
                 Assert.Contains(connectionStringBuilder.Password, logins.Select(login => login.Item2));
 

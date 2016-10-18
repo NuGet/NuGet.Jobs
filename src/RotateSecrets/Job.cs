@@ -30,11 +30,11 @@ namespace RotateSecrets
                 JobRunner.ServiceContainer.AddService(loggerFactory);
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var secretLongevityDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary,
-                    JobArgumentNames.SecretLongevityDays);
-                if (secretLongevityDays.HasValue)
+                var secretLongevitySec = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary,
+                    JobArgumentNames.SecretLongevitySec);
+                if (secretLongevitySec.HasValue)
                 {
-                    SecretRotatorFactory.Instance.SecretLongevityDays = secretLongevityDays.Value;
+                    SecretRotatorFactory.Instance.SecretLongevitySec = secretLongevitySec.Value;
                 }
                 
                 var subscriptionId = JobConfigurationManager.TryGetArgument(jobArgsDictionary,
@@ -73,9 +73,12 @@ namespace RotateSecrets
 
             foreach (var secretItem in await Utils.Instance.ListSecrets())
             {
-                var secret = await Utils.Instance.GetSecret(secretItem.Identifier.Name);
                 try
                 {
+                    // Note: GetSecret may fail if the secret was temporary secret
+                    // and was removed by the job during the processing of another secret.
+                    var secret = await Utils.Instance.GetSecret(secretItem.Identifier.Name);
+
                     var secretRotator = SecretRotatorFactory.Instance.GetSecretRotator(secret);
                     var result = await secretRotator.ProcessSecret();
 
@@ -133,7 +136,7 @@ namespace RotateSecrets
 
             if (numErrors > 0)
             {
-                _logger.LogInformation("Failed to rotate {numErrors} secrets.", numErrors);
+                _logger.LogInformation("Failed to process {numErrors} secrets.", numErrors);
             }
 
             return true;

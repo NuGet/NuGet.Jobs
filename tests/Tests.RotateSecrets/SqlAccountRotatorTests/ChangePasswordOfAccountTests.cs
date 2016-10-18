@@ -11,10 +11,10 @@ using Xunit;
 
 namespace Tests.RotateSecrets.SqlAccountRotatorTests
 {
-    public class ReplacePasswordOfSecondaryTests : RotateSecretsBaseTests
+    public class ChangePasswordOfAccountTests : RotateSecretsBaseTests
     {
         [Fact]
-        public async void ReplacePasswordOfSecondaryFailsIfPrimaryGiven()
+        public async void ChangePasswordOfAccountFailsIfPrimaryGiven()
         {
             const string primaryUsername = "primaryUsername";
             const string primaryPassword = "primaryPassword";
@@ -38,7 +38,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
                 primaryPasswordMock.Object);
 
             await Assert.ThrowsAsync<ArgumentException>(
-                async () => await sqlAccountRotator.Object.ReplacePasswordOfSecondary(primaryConnectionStringBuilder));
+                async () => await sqlAccountRotator.Object.ChangePasswordOfAccount(primaryConnectionStringBuilder));
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
         ///     4 - The correct credentials are used in every SQL connection.
         /// </summary>
         [Fact]
-        public async void ReplacePasswordOfSecondaryChangesPasswordCorrectly()
+        public async void ChangePasswordOfAccountChangesPasswordCorrectly()
         {
             // Arrange
             const string secondaryUsername = "secondaryUsername";
@@ -101,7 +101,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
                 secondaryPasswordMock.Object);
 
             // Act
-            await sqlAccountRotator.Object.ReplacePasswordOfSecondary(secondaryConnectionStringBuilder);
+            await sqlAccountRotator.Object.ChangePasswordOfAccount(secondaryConnectionStringBuilder);
 
             // Assert
             // Verify that the password has been altered on the SQL server.
@@ -123,7 +123,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
         ///     2 - Temporary secrets are deleted after changing the value in KeyVault and the login on the SQL server.
         /// </summary>
         [Fact]
-        public async void ReplacePasswordOfSecondaryGeneratesAndDeletesTemporary()
+        public async void ChangePasswordOfAccountGeneratesAndDeletesTemporary()
         {
             // Arrange
             const string secondaryUsername = "secondaryUsername";
@@ -194,7 +194,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
                 secondaryPasswordMock.Object);
 
             // Act
-            await sqlAccountRotator.Object.ReplacePasswordOfSecondary(secondaryConnectionStringBuilder);
+            await sqlAccountRotator.Object.ChangePasswordOfAccount(secondaryConnectionStringBuilder);
 
             // Assert
             // Verify we have both generated and deleted the temporary secrets.

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Security;
+using Microsoft.Azure.KeyVault;
 using Microsoft.Extensions.Logging;
 using RotateSecrets.SecretsToRotate;
 
@@ -103,108 +104,223 @@ namespace RotateSecrets.SecretRotators
         public static SqlAccountSecret GetSecret(IEnumerable<SqlAccountSecret> secrets, SqlAccountSecret.Rank rank,
             SqlAccountSecret.SqlType type)
         {
-            return secrets.Single(secret => secret.Type == type && secret.CurrentRank == rank);
+            return secrets.Single(secret => secret != null && secret.Type == type && secret.CurrentRank == rank);
         }
 
-        private void GetAccountAndLogIndexesFromRank(SqlAccountSecret.Rank rank,
-            out SqlAccountSecret username, out SqlAccountSecret password, out int usernameLogIndex,
-            out int passwordLogIndex)
+        public SqlAccountSecret GetSecret(SqlAccountSecret.Rank rank, SqlAccountSecret.SqlType type)
         {
-            GetAccountFromRank(rank, out username, out password);
-            GetLogIndexesFromRank(rank, out usernameLogIndex, out passwordLogIndex);
-        }
-        
-        private void GetAccountFromRank(SqlAccountSecret.Rank rank, 
-            out SqlAccountSecret username, out SqlAccountSecret password)
-        {
-            var isPrimary = rank == SqlAccountSecret.Rank.Primary;
-            username = isPrimary ? PrimaryUsernameSecret : SecondaryUsernameSecret;
-            password = isPrimary ? PrimaryPasswordSecret : SecondaryPasswordSecret;
+            return
+                GetSecret(
+                    new[]
+                        {PrimaryUsernameSecret, PrimaryPasswordSecret, SecondaryUsernameSecret, SecondaryPasswordSecret},
+                    rank, type);
         }
 
-        private static void GetLogIndexesFromRank(SqlAccountSecret.Rank rank, 
-            out int usernameLogIndex, out int passwordLogIndex)
+        private static readonly Dictionary<Tuple<SqlAccountSecret.Rank, SqlAccountSecret.SqlType, bool>, LogKeyword>
+            _tupleToKeyword = new Dictionary<Tuple<SqlAccountSecret.Rank, SqlAccountSecret.SqlType, bool>, LogKeyword>
+            {
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Primary, SqlAccountSecret.SqlType.Username, false),
+                    LogKeyword.PrimaryUsernameSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Primary, SqlAccountSecret.SqlType.Password, false),
+                    LogKeyword.PrimaryPasswordSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Secondary, SqlAccountSecret.SqlType.Username, false),
+                    LogKeyword.SecondaryUsernameSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Secondary, SqlAccountSecret.SqlType.Password, false),
+                    LogKeyword.SecondaryPasswordSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Primary, SqlAccountSecret.SqlType.Username, true),
+                    LogKeyword.TempPrimaryUsernameSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Primary, SqlAccountSecret.SqlType.Password, true),
+                    LogKeyword.TempPrimaryPasswordSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Secondary, SqlAccountSecret.SqlType.Username, true),
+                    LogKeyword.TempSecondaryUsernameSecretName
+                },
+                {
+                    Tuple.Create(SqlAccountSecret.Rank.Secondary, SqlAccountSecret.SqlType.Password, true),
+                    LogKeyword.TempSecondaryPasswordSecretName
+                }
+            };
+
+        private static void GetLogKeywordsFromRank(SqlAccountSecret.Rank rank,
+            out LogKeyword usernameLogKeyword,
+            out LogKeyword passwordLogKeyword)
         {
-            var isPrimary = rank == SqlAccountSecret.Rank.Primary;
-            usernameLogIndex = isPrimary ? 0 : 2;
-            passwordLogIndex = isPrimary ? 1 : 3;
+            try
+            {
+                usernameLogKeyword = _tupleToKeyword[Tuple.Create(rank, SqlAccountSecret.SqlType.Username, false)];
+                passwordLogKeyword = _tupleToKeyword[Tuple.Create(rank, SqlAccountSecret.SqlType.Password, false)];
+            }
+            catch (KeyNotFoundException)
+            {
+                usernameLogKeyword = LogKeyword.None;
+                passwordLogKeyword = LogKeyword.None;
+            }
         }
 
-        private const string FormatStringRegEx = "\\{([0-9]*)\\}";
+        private LogKeyword GetLogKeywordFromValue(string value)
+        {
+            var secrets = new[]
+                {PrimaryUsernameSecret, PrimaryPasswordSecret, SecondaryUsernameSecret, SecondaryPasswordSecret};
+
+            try
+            {
+                var isTemp = false;
+                var secret = secrets.Single(secretToCheck =>
+                {
+                    if (secretToCheck.Value == value)
+                    {
+                        return true;
+                    }
+
+                    try
+                    {
+                        return isTemp = secretToCheck.GetTemporary().Result.Value == value;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                });
+
+                return _tupleToKeyword[Tuple.Create(secret.CurrentRank, secret.Type, isTemp)];
+            }
+            catch
+            {
+                return LogKeyword.None;
+            }
+        }
+
+        private void GetLogKeywordsFromConnectionString(SqlConnectionStringBuilder connectionString,
+            out LogKeyword usernameLogKeyword, out LogKeyword passwordLogKeyword)
+        {
+            usernameLogKeyword = GetLogKeywordFromValue(connectionString.UserID);
+            passwordLogKeyword = GetLogKeywordFromValue(connectionString.Password);
+        }
+
+        private enum LogKeyword
+        {
+            PrimaryUsernameSecretName,
+            PrimaryPasswordSecretName,
+            SecondaryUsernameSecretName,
+            SecondaryPasswordSecretName,
+            TempPrimaryUsernameSecretName,
+            TempPrimaryPasswordSecretName,
+            TempSecondaryUsernameSecretName,
+            TempSecondaryPasswordSecretName,
+            ServerUrl,
+            DatabaseName,
+
+            /// <summary> Must be provided when calling LogHelper. </summary>
+            Exception,
+            None,
+
+            /// <summary> Only used in logging exceptions. </summary>
+            LogMessage
+        }
 
         /// <summary>
         /// Logs to Logger by formatting a message with a set of parameters.
         /// </summary>
         /// <param name="logLevel">LogLevel to log with. Only supports Information, Warning, Error, and Critical.</param>
         /// <param name="message">
-        /// A formattable string. Supports the following values:
-        /// {0}: PrimaryUsernameSecretName,
-        /// {1}: PrimaryPasswordSecretName,
-        /// {2}: SecondaryUsernameSecretName,
-        /// {3}: SecondaryPasswordSecretName,
-        /// {4}: ServerUrl,
-        /// {5}: DatabaseName,
-        /// {6}: Exception.
+        /// A formattable string. Look at LogIndex for the values it supports
         /// </param>
         /// <param name="exception">An exception to log (optional).</param>
-        private void LogHelper(LogLevel logLevel, string message, Exception exception = null)
+        private string LogHelper(LogLevel logLevel, string message, Exception exception = null)
         {
-            IList<Tuple<string, Func<object>>> loggerParameters = new List
-                <Tuple<string, Func<object>>>
-                {
-                    Tuple.Create<string, Func<object>>("PrimaryUsernameSecretName",
-                        () => PrimaryUsernameSecret.Name),
-                    Tuple.Create<string, Func<object>>("PrimaryPasswordSecretName",
-                        () => PrimaryPasswordSecret.Name),
-                    Tuple.Create<string, Func<object>>("SecondaryUsernameSecretName",
-                        () => SecondaryUsernameSecret.Name),
-                    Tuple.Create<string, Func<object>>("SecondaryPasswordSecretName",
-                        () => SecondaryPasswordSecret.Name),
-                    Tuple.Create<string, Func<object>>("ServerUrl",
-                        () => ServerUrl),
-                    Tuple.Create<string, Func<object>>("DatabaseName",
-                        () => DatabaseName),
-                    Tuple.Create<string, Func<object>>("Exception", 
-                        () => exception)
-                };
-
-            // Format the message to convert the indices to parameter names.
-            // E.g. {0} becomes {PrimaryUsernameSecretName}
-            var logMessage = string.Format(message, loggerParameters.Select(tuple => "{" + tuple.Item1 + "}").ToArray());
-
-            // We only want the params list to contain the parameters we included in our message.
-            // Find the indices that are actually used in the log message.
-            var indicesInFormatString = new HashSet<int>();
-            foreach (Match match in Regex.Matches(message, FormatStringRegEx))
+            try
             {
-                int index;
-                if (int.TryParse(match.Groups[0].Value, out index))
+                IDictionary<LogKeyword, Func<object>> logDictionary = new Dictionary<LogKeyword, Func<object>>
+            {
+                {LogKeyword.PrimaryUsernameSecretName, () => PrimaryUsernameSecret.Name},
+                {LogKeyword.PrimaryPasswordSecretName, () => PrimaryPasswordSecret.Name},
+                {LogKeyword.SecondaryUsernameSecretName, () => SecondaryUsernameSecret.Name},
+                {LogKeyword.SecondaryPasswordSecretName, () => SecondaryPasswordSecret.Name},
+                {LogKeyword.TempPrimaryUsernameSecretName, () => PrimaryUsernameSecret.GetTemporary().Result.Name},
+                {LogKeyword.TempPrimaryPasswordSecretName, () => PrimaryPasswordSecret.GetTemporary().Result.Name},
+                {LogKeyword.TempSecondaryUsernameSecretName, () => SecondaryUsernameSecret.GetTemporary().Result.Name},
+                {LogKeyword.TempSecondaryPasswordSecretName, () => SecondaryPasswordSecret.GetTemporary().Result.Name},
+                {LogKeyword.ServerUrl, () => ServerUrl},
+                {LogKeyword.DatabaseName, () => DatabaseName},
+                {LogKeyword.Exception, () => exception},
+                {LogKeyword.None, () => "?" }
+            };
+
+                // Format the message to convert the indices to parameter names.
+                // Remember the keywords that are used so that we can include only them in the logger parameters.
+                var logMessage = message;
+                var outputMessage = message;
+                var keywordsInMessage = new List<Tuple<int, object>>();
+                foreach (var logKeyword in logDictionary.Keys)
                 {
-                    indicesInFormatString.Add(index);
+                    var logKeywordString = logKeyword.ToString();
+
+                    if (!logMessage.Contains(logKeywordString))
+                    {
+                        continue;
+                    }
+
+                    // Find every occurrence of the keyword and add it to a list with the index at which it was found.
+                    var index = 0;
+                    int foundIndex;
+                    do
+                    {
+                        foundIndex = message.IndexOf(logKeywordString, index);
+                        index = foundIndex + logKeywordString.Length;
+                        if (foundIndex != -1)
+                        {
+                            keywordsInMessage.Add(Tuple.Create(foundIndex, logDictionary[logKeyword]()));
+                        }
+                    } while (foundIndex != -1);
+
+                    logMessage = logMessage.Replace(logKeywordString, "{" + logKeywordString + "}");
+                    outputMessage = outputMessage.Replace(logKeywordString, logDictionary[logKeyword]().ToString());
                 }
+
+                var usedLoggerParams = keywordsInMessage.OrderBy(tuple => tuple.Item1).Select(tuple => tuple.Item2).ToArray();
+
+                switch (logLevel)
+                {
+                    case LogLevel.Information:
+                        Logger.LogInformation(logMessage, usedLoggerParams);
+                        break;
+                    case LogLevel.Warning:
+                        Logger.LogWarning(logMessage, usedLoggerParams);
+                        break;
+                    case LogLevel.Error:
+                        Logger.LogError(logMessage, usedLoggerParams);
+                        break;
+                    case LogLevel.Critical:
+                        Logger.LogCritical(logMessage, usedLoggerParams);
+                        break;
+                }
+
+                return outputMessage;
             }
-            var usedLoggerParameters = indicesInFormatString.Select(index => loggerParameters[index]);
-            
-            switch (logLevel)
+            catch (Exception logException)
             {
-                case LogLevel.Information:
-                    Logger.LogInformation(logMessage, usedLoggerParameters.Select(tuple => tuple.Item2()).ToArray());
-                    break;
-                case LogLevel.Warning:
-                    Logger.LogWarning(logMessage, usedLoggerParameters.Select(tuple => tuple.Item2()).ToArray());
-                    break;
-                case LogLevel.Error:
-                    Logger.LogError(logMessage, usedLoggerParameters.Select(tuple => tuple.Item2()).ToArray());
-                    break;
-                case LogLevel.Critical:
-                    Logger.LogCritical(logMessage, usedLoggerParameters.Select(tuple => tuple.Item2()).ToArray());
-                    break;
+                Logger.LogError("Threw exception while logging: {" + LogKeyword.Exception + "}", logException);
+                Logger.LogWarning("Attempted to log: {" + LogKeyword.LogMessage + "}", message);
+                return message;
             }
         }
 
         public override async Task<TaskResult> IsSecretValid()
         {
-            LogHelper(LogLevel.Information, "{0}: Validating SQL account with server {4} and database {5}.");
+            LogHelper(LogLevel.Information,
+                $"{LogKeyword.PrimaryUsernameSecretName}: Validating SQL account with server {LogKeyword.ServerUrl} and database {LogKeyword.DatabaseName}.");
 
             var isPrimaryValidResult = await IsAccountValid(SqlAccountSecret.Rank.Primary);
             var isSecondaryValidResult = await IsAccountValid(SqlAccountSecret.Rank.Secondary);
@@ -215,7 +331,8 @@ namespace RotateSecrets.SecretRotators
                 return TaskResult.Error;
             }
 
-            LogHelper(LogLevel.Information, "{0}: Primary account ({0} and {1}) and secondary account ({2} and {3}) are both valid.");
+            LogHelper(LogLevel.Information,
+                $"{LogKeyword.PrimaryUsernameSecretName}: Primary account ({LogKeyword.PrimaryUsernameSecretName} and {LogKeyword.PrimaryPasswordSecretName}) and secondary account ({LogKeyword.SecondaryUsernameSecretName} and {LogKeyword.SecondaryPasswordSecretName}) are both valid.");
 
             // Return whether or not the primary should be rotated.
             // It is ok to rotate the secondary if it returned TaskResult.ShouldNotRotate because it is not used by live services.
@@ -224,9 +341,10 @@ namespace RotateSecrets.SecretRotators
 
         public virtual async Task<TaskResult> IsAccountValid(SqlAccountSecret.Rank rank)
         {
-            SqlAccountSecret usernameSecret, passwordSecret;
-            int usernameLogIndex, passwordLogIndex;
-            GetAccountAndLogIndexesFromRank(rank, out usernameSecret, out passwordSecret, out usernameLogIndex, out passwordLogIndex);
+            var usernameSecret = GetSecret(rank, SqlAccountSecret.SqlType.Username);
+            var passwordSecret = GetSecret(rank, SqlAccountSecret.SqlType.Password);
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromRank(rank, out usernameLogKeyword, out passwordLogKeyword);
 
             try
             {
@@ -235,21 +353,19 @@ namespace RotateSecrets.SecretRotators
                     PrimaryPasswordSecret.Value == SecondaryPasswordSecret.Value)
                 {
                     // If the secondary and primary secrets are identical, then attempt to restore the actual secondary account from temporary secrets.
-                    throw new ArgumentException(
-                        $"{PrimaryUsernameSecret.Name}: Primary account ({PrimaryUsernameSecret.Name} and {PrimaryPasswordSecret.Name}) " +
-                        $"and secondary account ({SecondaryUsernameSecret.Name} and {SecondaryPasswordSecret.Name}) are identical!");
+                    throw new ArgumentException(LogHelper(LogLevel.Error,
+                        $"{LogKeyword.PrimaryUsernameSecretName}: Primary account ({LogKeyword.PrimaryUsernameSecretName} and {LogKeyword.PrimaryPasswordSecretName}) and secondary account ({LogKeyword.SecondaryUsernameSecretName} and {LogKeyword.SecondaryPasswordSecretName}) are identical!"));
                 }
 
                 await TestSqlConnection(BuildConnectionString(usernameSecret, passwordSecret));
-                LogHelper(LogLevel.Warning, "{0}: Connected to account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}).");
                 return TaskResult.Valid;
             }
-            catch (Exception exception)
+            catch
             {
-                // Connecting to account failed! Attempt to connect using temporary secrets for account.
                 try
                 {
-                    LogHelper(LogLevel.Warning, "{0}: Could not connect to account ({" + usernameLogIndex + "} and {" + passwordLogIndex +"}): {6}", exception);
+                    LogHelper(LogLevel.Warning,
+                        $"{LogKeyword.PrimaryUsernameSecretName}: Attempting to connect to account ({usernameLogKeyword} and {passwordLogKeyword}) using temporary secrets.");
 
                     var tempUsername = await usernameSecret.GetTemporary();
                     var tempPassword = await passwordSecret.GetTemporary();
@@ -258,13 +374,14 @@ namespace RotateSecrets.SecretRotators
                     // The temporary credentials are valid. Update KeyVault and don't rotate!
                     await ReplaceSecretsForAccountWithTemporary(rank);
 
-                    LogHelper(LogLevel.Information, "{0}: Recovered account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}) successfully.");
+                    LogHelper(LogLevel.Information,
+                        $"{LogKeyword.PrimaryUsernameSecretName}: Recovered account ({usernameLogKeyword} and {passwordLogKeyword}) successfully.");
                     return TaskResult.Recovered;
                 }
-                catch (Exception exception2)
+                catch
                 {
-                    LogHelper(LogLevel.Error, "{0}: Could not connect to account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}) with temporary: {6}", exception2);
-                    LogHelper(LogLevel.Error, "{0}: Account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}) is not valid.");
+                    LogHelper(LogLevel.Error,
+                        $"{LogKeyword.PrimaryUsernameSecretName}: Account ({usernameLogKeyword} and {passwordLogKeyword}) is not valid.");
                     return TaskResult.Error;
                 }
             }
@@ -284,19 +401,20 @@ namespace RotateSecrets.SecretRotators
         {
             try
             {
-                LogHelper(LogLevel.Information, "{0}: Rotating SQL account for account on server {4} and database {5}.");
+                LogHelper(LogLevel.Information,
+                    $"{LogKeyword.PrimaryUsernameSecretName}: Rotating SQL account for account on server {LogKeyword.ServerUrl} and database {LogKeyword.DatabaseName}.");
 
                 var connectionStringBuilder = BuildConnectionString(SecondaryUsernameSecret, SecondaryPasswordSecret);
-                await ReplacePasswordOfSecondary(connectionStringBuilder);
+                await ChangePasswordOfAccount(connectionStringBuilder);
 
                 await SwapSecretsForAccounts();
 
-                LogHelper(LogLevel.Information, "{0}: Successfully rotated SQL account.");
+                LogHelper(LogLevel.Information, $"{LogKeyword.PrimaryUsernameSecretName}: Successfully rotated SQL account.");
                 return TaskResult.Success;
             }
             catch (Exception ex)
             {
-                LogHelper(LogLevel.Error, "{0}: Failed to rotate SQL account: {6}", ex);
+                LogHelper(LogLevel.Error, $"{LogKeyword.PrimaryUsernameSecretName}: Failed to rotate SQL account: {LogKeyword.Exception}", ex);
                 return TaskResult.Error;
             }
         }
@@ -306,7 +424,7 @@ namespace RotateSecrets.SecretRotators
             return new SqlConnectionStringBuilder
             {
                 DataSource = ServerUrl,
-                InitialCatalog = DatabaseName,
+                InitialCatalog = "master", // we must be able to connect to master in order to change the password
                 UserID = username.Value,
                 Password = password.Value
             };
@@ -314,49 +432,84 @@ namespace RotateSecrets.SecretRotators
 
         public virtual async Task TestSqlConnection(SqlConnectionStringBuilder connectionStringBuilder)
         {
-            using (var sqlConnection = new SqlConnection(connectionStringBuilder.ConnectionString))
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromConnectionString(connectionStringBuilder, out usernameLogKeyword, out passwordLogKeyword);
+            LogHelper(LogLevel.Information,
+                $"{LogKeyword.PrimaryUsernameSecretName}: Testing connection for account ({usernameLogKeyword} and {passwordLogKeyword}).");
+
+            try
             {
-                await sqlConnection.OpenAsync();
+                using (var sqlConnection = new SqlConnection(connectionStringBuilder.ConnectionString))
+                {
+                    await sqlConnection.OpenAsync();
+                }
+
+                LogHelper(LogLevel.Information,
+                    $"{LogKeyword.PrimaryUsernameSecretName}: Successfully connected to account ({usernameLogKeyword} and {passwordLogKeyword})!");
+            }
+            catch (Exception exception)
+            {
+                LogHelper(LogLevel.Warning,
+                    $"{LogKeyword.PrimaryUsernameSecretName}: Could not connect to account ({usernameLogKeyword} and {passwordLogKeyword}): {LogKeyword.Exception}",
+                    exception);
+                throw;
             }
         }
 
-        public virtual async Task AlterSqlPassword(SqlConnectionStringBuilder connectionStringBuilder, string newPassword)
+        public virtual async Task ChangeSqlPasswordOfAccount(SqlConnectionStringBuilder connectionStringBuilder,
+            string newPassword)
         {
-            using (var sqlConnection = new SqlConnection(connectionStringBuilder.ConnectionString))
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromConnectionString(connectionStringBuilder, out usernameLogKeyword, out passwordLogKeyword);
+            LogHelper(LogLevel.Information,
+                $"{LogKeyword.PrimaryUsernameSecretName}: Changing password for account ({usernameLogKeyword} and {passwordLogKeyword}).");
+
+            try
             {
-                await sqlConnection.ExecuteAsync($"ALTER LOGIN {connectionStringBuilder.UserID} WITH PASSWORD='{newPassword}' OLD_PASSWORD='{connectionStringBuilder.Password}'");
+                using (var sqlConnection = new SqlConnection(connectionStringBuilder.ConnectionString))
+                {
+                    await sqlConnection.OpenAsync();
+                    // This query must run on the master database to succeed!
+                    await sqlConnection.ExecuteAsync($"ALTER LOGIN {connectionStringBuilder.UserID} WITH PASSWORD='{newPassword}' OLD_PASSWORD='{connectionStringBuilder.Password}'");
+                }
+
+                LogHelper(LogLevel.Information, $"{LogKeyword.PrimaryUsernameSecretName}: Successfully changed password for account ({usernameLogKeyword} and {passwordLogKeyword}).");
+            }
+            catch (Exception exception)
+            {
+                LogHelper(LogLevel.Warning,
+                    $"{LogKeyword.PrimaryUsernameSecretName}: Could not change password for account ({usernameLogKeyword} and {passwordLogKeyword}): {LogKeyword.Exception}", exception);
+                throw;
             }
         }
 
-        public virtual async Task ReplacePasswordOfSecondary(SqlConnectionStringBuilder connectionStringBuilder)
+        public virtual async Task ChangePasswordOfAccount(SqlConnectionStringBuilder connectionStringBuilder)
         {
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromConnectionString(connectionStringBuilder, out usernameLogKeyword, out passwordLogKeyword);
+            LogHelper(LogLevel.Information, $"{LogKeyword.PrimaryUsernameSecretName}: Changing the password for account ({usernameLogKeyword} and {passwordLogKeyword}).");
+
             if (connectionStringBuilder.UserID == PrimaryUsernameSecret.Value &&
                 connectionStringBuilder.Password == PrimaryPasswordSecret.Value)
             {
-                throw new ArgumentException(
-                    $"{PrimaryUsernameSecret.Name}: Attempted to replace the password for the primary account! " +
-                    $"Either the secondary account ({SecondaryUsernameSecret.Name} and {SecondaryPasswordSecret.Name}) " +
-                    "or the temporary secondary account is identical to the primary account.");
+                throw new ArgumentException(LogHelper(LogLevel.Warning, $"{LogKeyword.PrimaryUsernameSecretName}: Attempted to replace the password for the primary account! This is not safe because it may be in use by services! Either the secondary account ({LogKeyword.SecondaryUsernameSecretName} and {LogKeyword.SecondaryPasswordSecretName}) or the temporary secondary account is identical to the primary account."));
             }
-
-            LogHelper(LogLevel.Information, "{0}: Testing connection for secondary account ({2} and {3}).");
+            
             await TestSqlConnection(connectionStringBuilder);
             
             // Save the old login in temporary secrets in case there is an error in the process.
             await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
 
-            // Set the secret in KeyVault to the desired new password BEFORE changing the login on the SQL server!
+            // Set the secret in KeyVault to the desired new password BEFORE changing the password on the SQL server!
             //
             // We do this in this order because if we changed the actual login on the SQL server first (AlterSqlPassword),
             // but then failed to store the new value in KeyVault (connection issues, etc), the new password would be lost!
             //
             // In the case that AlterSqlPassword fails, we can retrieve the old login from the temporary secrets.
             var newPassword = Membership.GeneratePassword(PasswordLength, PasswordNumberOfNonAlphanumericCharacters);
-            LogHelper(LogLevel.Information, "{0}: Storing new password for secondary account ({2} and {3}) in KeyVault.");
             await SecondaryPasswordSecret.Set(newPassword);
-
-            LogHelper(LogLevel.Information, "{0}: Changing password for secondary account ({2} and {3}).");
-            await AlterSqlPassword(connectionStringBuilder, newPassword);
+            
+            await ChangeSqlPasswordOfAccount(connectionStringBuilder, newPassword);
 
             // Delete the old login from temporary secrets because it is no longer needed.
             await DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
@@ -365,7 +518,7 @@ namespace RotateSecrets.SecretRotators
         public virtual async Task SwapSecretsForAccounts()
         {
             LogHelper(LogLevel.Information,
-                "{0}: Swapping primary account ({0} and {1}) and secondary account ({2} and {3}).");
+                $"{LogKeyword.PrimaryUsernameSecretName}: Swapping primary account ({LogKeyword.PrimaryUsernameSecretName} and {LogKeyword.PrimaryPasswordSecretName}) and secondary account ({LogKeyword.SecondaryUsernameSecretName} and {LogKeyword.SecondaryPasswordSecretName}).");
 
             await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Primary);
             await GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank.Secondary);
@@ -386,14 +539,15 @@ namespace RotateSecrets.SecretRotators
 
         public virtual async Task ReplaceSecretsForAccountWithTemporary(SqlAccountSecret.Rank rank)
         {
-            SqlAccountSecret username, password;
-            int usernameLogIndex, passwordLogIndex;
-            GetAccountAndLogIndexesFromRank(rank, out username, out password, out usernameLogIndex, out passwordLogIndex);
+            var usernameSecret = GetSecret(rank, SqlAccountSecret.SqlType.Username);
+            var passwordSecret = GetSecret(rank, SqlAccountSecret.SqlType.Password);
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromRank(rank, out usernameLogKeyword, out passwordLogKeyword);
 
-            LogHelper(LogLevel.Information, "{0}: Replacing account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}) with values stored in temporary.");
+            LogHelper(LogLevel.Information, $"{LogKeyword.PrimaryUsernameSecretName}: Replacing account ({usernameLogKeyword} and {passwordLogKeyword}) with values stored in temporary.");
 
-            await username.Set((await username.GetTemporary()).Value);
-            await password.Set((await password.GetTemporary()).Value);
+            await usernameSecret.Set((await usernameSecret.GetTemporary()).Value);
+            await passwordSecret.Set((await passwordSecret.GetTemporary()).Value);
 
             // Delete the temporary secrets because they are no longer needed.
             await DeleteTemporarySecretsForAccount(rank);
@@ -401,26 +555,28 @@ namespace RotateSecrets.SecretRotators
 
         public virtual async Task GenerateTemporarySecretsForAccount(SqlAccountSecret.Rank rank)
         {
-            SqlAccountSecret username, password;
-            int usernameLogIndex, passwordLogIndex;
-            GetAccountAndLogIndexesFromRank(rank, out username, out password, out usernameLogIndex, out passwordLogIndex);
+            var usernameSecret = GetSecret(rank, SqlAccountSecret.SqlType.Username);
+            var passwordSecret = GetSecret(rank, SqlAccountSecret.SqlType.Password);
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromRank(rank, out usernameLogKeyword, out passwordLogKeyword);
 
-            LogHelper(LogLevel.Information, "{0}: Generating temporary secrets for account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}).");
+            LogHelper(LogLevel.Information, $"{LogKeyword.PrimaryUsernameSecretName}: Generating temporary secrets for account ({usernameLogKeyword} and {passwordLogKeyword}).");
 
-            await username.SetTemporary(username.Value);
-            await password.SetTemporary(password.Value);
+            await usernameSecret.SetTemporary(usernameSecret.Value);
+            await passwordSecret.SetTemporary(passwordSecret.Value);
         }
 
         public virtual async Task DeleteTemporarySecretsForAccount(SqlAccountSecret.Rank rank)
         {
-            SqlAccountSecret username, password;
-            int usernameLogIndex, passwordLogIndex;
-            GetAccountAndLogIndexesFromRank(rank, out username, out password, out usernameLogIndex, out passwordLogIndex);
+            var usernameSecret = GetSecret(rank, SqlAccountSecret.SqlType.Username);
+            var passwordSecret = GetSecret(rank, SqlAccountSecret.SqlType.Password);
+            LogKeyword usernameLogKeyword, passwordLogKeyword;
+            GetLogKeywordsFromRank(rank, out usernameLogKeyword, out passwordLogKeyword);
 
-            LogHelper(LogLevel.Information, "{0}: Deleting temporary secrets for account ({" + usernameLogIndex + "} and {" + passwordLogIndex + "}).");
+            LogHelper(LogLevel.Information, $"{LogKeyword.PrimaryUsernameSecretName}: Deleting temporary secrets for account ({usernameLogKeyword} and {passwordLogKeyword}).");
 
-            await username.DeleteTemporary();
-            await password.DeleteTemporary();
+            await usernameSecret.DeleteTemporary();
+            await passwordSecret.DeleteTemporary();
         }
     }
 }

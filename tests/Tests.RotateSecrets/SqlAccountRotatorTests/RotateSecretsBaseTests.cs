@@ -27,6 +27,6 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
                 It.Is<SqlAccountSecret.Rank>(rank => rank == SqlAccountSecret.Rank.Secondary));
 
         public static readonly Expression<Func<SqlAccountRotator, Task>> AlterPasswordOfSecondary =
-            x => x.AlterSqlPassword(It.IsAny<SqlConnectionStringBuilder>(), It.IsAny<string>());
+            x => x.ChangeSqlPasswordOfAccount(It.IsAny<SqlConnectionStringBuilder>(), It.IsAny<string>());
     }
 }

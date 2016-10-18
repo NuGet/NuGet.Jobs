@@ -17,7 +17,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
 
         private void SetupReplacePasswordOfSecondary(Mock<SqlAccountRotator> sqlAccountRotatorMock, IEnumerable<Mock<SqlAccountSecret>> secretMocks)
         {
-            sqlAccountRotatorMock.Setup(x => x.ReplacePasswordOfSecondary(It.IsAny<SqlConnectionStringBuilder>()))
+            sqlAccountRotatorMock.Setup(x => x.ChangePasswordOfAccount(It.IsAny<SqlConnectionStringBuilder>()))
                 .Returns<SqlConnectionStringBuilder>(
                     async connString =>
                     {
@@ -101,7 +101,7 @@ namespace Tests.RotateSecrets.SqlAccountRotatorTests
             
             if (parameter == RotateSecretsErrorParameter.FailOnReplacePasswordOfSecondary)
             {
-                sqlAccountRotatorMock.Setup(x => x.ReplacePasswordOfSecondary(It.IsAny<SqlConnectionStringBuilder>()))
+                sqlAccountRotatorMock.Setup(x => x.ChangePasswordOfAccount(It.IsAny<SqlConnectionStringBuilder>()))
                     .Throws<ArgumentException>();
             }
             else

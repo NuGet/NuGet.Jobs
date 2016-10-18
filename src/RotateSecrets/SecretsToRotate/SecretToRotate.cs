@@ -24,7 +24,7 @@ namespace RotateSecrets.SecretsToRotate
         public SecretToRotate(Secret secret)
         {
             Secret = secret;
-            SecretOutdatedTimestamp = DateTime.UtcNow.Subtract(new TimeSpan(SecretRotatorFactory.Instance.SecretLongevityDays, 0, 0));
+            SecretOutdatedTimestamp = DateTime.UtcNow.Subtract(new TimeSpan(0, 0, SecretRotatorFactory.Instance.SecretLongevitySec));
         }
 
         public virtual bool IsOutdated()
