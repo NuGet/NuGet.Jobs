@@ -81,7 +81,7 @@ namespace NuGet.Jobs
         //Arguments specific to ParseAzureCdnLogs
         public const string AzureCdnCloudStorageTableName = "AzureCdnCloudStorageTableName";
         public const string AggregatesOnly = "AggregatesOnly";
-        
+
         //Arguments specific to Heartbeat
         public const string HeartbeatConfig = "HeartbeatConfig";
         public const string DashboardStorageAccount = "DashboardStorageAccount";
@@ -116,5 +116,11 @@ namespace NuGet.Jobs
 
         // Arguments for Azure logs
         public const string LogsAzureStorageConnectionString = "LogsAzureStorageConnectionString";
+
+        // Arguments specific to SupportRequests Report scheduler job
+        public const string ScheduledTask = "Task";
+        public const string PagerDutyAccountName = "PagerDutyAccountName";
+        public const string PagerDutyApiKey = "PagerDutyApiKey";
+        public const string TargetEmailAddress = "TargetEmailAddress";
     }
 }
