@@ -32,9 +32,9 @@ namespace Tests.AzureJobTraceListener
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
             JobScenario = jobArgsDictionary.GetOrNull<int>(ScenarioArgumentName);
-            if(JobScenario == null)
+            if (JobScenario == null)
             {
-                throw new ArgumentException("Argument '"+ ScenarioArgumentName +"' is mandatory." + HelpMessage);
+                throw new ArgumentException("Argument '" + ScenarioArgumentName + "' is mandatory." + HelpMessage);
             }
 
             LogCount = jobArgsDictionary.GetOrNull<int>(LogCountArgumentName);
@@ -45,7 +45,7 @@ namespace Tests.AzureJobTraceListener
         public override Task<bool> Run()
         {
             LogCount = LogCount ?? AzureBlobJobTraceListener.MaxLogBatchSize * 2;
-            switch(JobScenario)
+            switch (JobScenario)
             {
                 case 1:
                     return Task.FromResult(true);
@@ -57,16 +57,16 @@ namespace Tests.AzureJobTraceListener
                     throw new Exception("Job crashed test");
 
                 case 4:
-                    for(int i = 0; i < LogCount; i++)
+                    for (int i = 0; i < LogCount; i++)
                     {
                         Trace.WriteLine("Message number : " + i);
                     }
                     return Task.FromResult(true);
 
                 case 5:
-	                Trace.TraceInformation("Started");
+                    Trace.TraceInformation("Started");
                     LogALotSetup(3);
-	                Trace.TraceInformation("Ended");
+                    Trace.TraceInformation("Ended");
                     return Task.FromResult(true);
 
                 case 6:
@@ -113,7 +113,7 @@ namespace Tests.AzureJobTraceListener
             Task.WaitAll(tasks);
         }
 
-        private async Task LogALot()
+        private Task LogALot()
         {
             int baseNumber = Interlocked.Increment(ref BaseNumber);
             for (int i = 1; i <= 10; i++)
@@ -122,16 +122,22 @@ namespace Tests.AzureJobTraceListener
                 // Following sleep is simple emulation of some work taking place
                 Thread.Sleep(100);
             }
+
+            return Task.FromResult(true);
         }
 
-        private async Task TraceClose()
+        private Task TraceClose()
         {
             Trace.Close();
+
+            return Task.FromResult(true);
         }
 
-        private async Task JobTraceListenerClose()
+        private Task JobTraceListenerClose()
         {
             JobTraceListener.Close();
+
+            return Task.FromResult(true);
         }
     }
 }

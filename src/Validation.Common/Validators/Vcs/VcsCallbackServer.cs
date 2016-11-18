@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Owin;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
@@ -24,6 +26,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         private readonly PackageValidationTable _packageValidationTable;
         private readonly PackageValidationAuditor _packageValidationAuditor;
         private readonly INotificationService _notificationService;
+        private readonly string _instrumentationKey;
 
         public VcsCallbackServerStartup()
         {
@@ -38,10 +41,26 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerName);
             _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerName);
             _notificationService = new NotificationService(cloudStorageAccount, containerName);
+
+            // Setup telemetry
+            _instrumentationKey = configurationService.Get("AppInsightsInstrumentationKey").Result;
         }
 
         public void Configuration(IAppBuilder app)
         {
+            app.Use<GlobalExceptionHandlerMiddleware>();
+
+            if (string.IsNullOrEmpty(_instrumentationKey))
+            {
+                TelemetryConfiguration.Active.DisableTelemetry = true;
+            }
+            else
+            {
+                TelemetryConfiguration.Active.InstrumentationKey = _instrumentationKey;
+
+                app.Use<ApplicationInsightsMiddleware>();
+            }
+
             app.Run(Invoke);
         }
 
@@ -63,6 +82,12 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
                         if (validationEntity == null)
                         {
+                            var telemetry = new EventTelemetry(TelemetryConstants.RequestNotFound);
+                            telemetry.Properties.Add(TelemetryConstants.RequestId, result.SrcId);
+                            telemetry.Properties.Add(TelemetryConstants.RequestBody, body);
+
+                            TelemetryClient.TrackEvent(telemetry);
+
                             // Notify us about the fact that no valiation was found
                             await _notificationService.SendNotificationAsync(
                                 "vcscallback-notfound",
@@ -107,9 +132,11 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     }
                                 }
 
+                                TrackEvent(TelemetryConstants.ScanUnclean, result, validationEntity, body);
+
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
-                                
+
                                 // Notify
                                 await _notificationService.SendNotificationAsync(
                                     $"vcscallback-notclean/{validationEntity.Created.ToString("yyyy-MM-dd")}",
@@ -117,7 +144,9 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     body);
                             }
                             else
-                            { 
+                            {
+                                TrackEvent(TelemetryConstants.Investigate, result, validationEntity, body);
+
                                 // To investigate
                                 await _notificationService.SendNotificationAsync(
                                     $"vcscallback-investigate/{validationEntity.Created.ToString("yyyy-MM-dd")}",
@@ -135,6 +164,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 // The result is clean.
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
                                 await _packageValidationTable.StoreAsync(validationEntity);
+
+                                TrackEvent(TelemetryConstants.ScanPassed, result, validationEntity, body);
 
                                 await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
                                     new PackageValidationAuditEntry
@@ -171,6 +202,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     }
                                 }
 
+                                TrackEvent(TelemetryConstants.ScanFailed, result, validationEntity, body);
+
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
 
@@ -183,24 +216,38 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         }
                     }
                 }
-
-                // "OK"
-                context.Response.ContentType = "text/plain";
-                await context.Response.WriteAsync("Thank you, come again.");
             }
             else if (context.Request.Method == "GET")
             {
-                // "OK"
                 context.Response.ContentType = "text/plain";
-                await context.Response.WriteAsync("Running.");
+                await context.Response.WriteAsync("OK");
             }
             else
             {
-                // Bad request
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                context.Response.ContentType = "text/plain";
-                await context.Response.WriteAsync("An invalid request has been attempted.");
             }
+        }
+
+        private static void TrackEvent(string eventName, Job job, PackageValidationEntity entity, string requestBody)
+        {
+            var telemetry = new EventTelemetry(eventName);
+
+            telemetry.Properties.Add(TelemetryConstants.RequestId, job.SrcId);
+            telemetry.Properties.Add(TelemetryConstants.State, job.State);
+            telemetry.Properties.Add(TelemetryConstants.Result, job.Result);
+            telemetry.Properties.Add(TelemetryConstants.PackageId, entity.PackageId);
+            telemetry.Properties.Add(TelemetryConstants.PackageVersion, entity.PackageVersion);
+            telemetry.Properties.Add(TelemetryConstants.RqsJobId, job.RqsJobId);
+            telemetry.Properties.Add(TelemetryConstants.RqsRequestId, job.RqsRequestId);
+            telemetry.Properties.Add(TelemetryConstants.JobStartDate, job.JobStartDate);
+            telemetry.Properties.Add(TelemetryConstants.ScanEndDate, job.ScanEndDate);
+            telemetry.Properties.Add(TelemetryConstants.JobEndDate, job.JobEndDate);
+            telemetry.Properties.Add(TelemetryConstants.CustomerLogsLocation, job.CustomerLogsLocation);
+            telemetry.Properties.Add(TelemetryConstants.LogFilesPath, job.LogFilesPath);
+            telemetry.Properties.Add(TelemetryConstants.SourceBitsLocation, job.SourceBitsLocation);
+            telemetry.Properties.Add(TelemetryConstants.RequestBody, requestBody);
+
+            TelemetryClient.TrackEvent(telemetry);
         }
     }
 }
