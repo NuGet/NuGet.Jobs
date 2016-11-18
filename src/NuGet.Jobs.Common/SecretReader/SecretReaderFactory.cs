@@ -13,7 +13,7 @@ namespace NuGet.Jobs
     {
         public ISecretReader CreateSecretReader(IDictionary<string, string> settings)
         {
-            var vaultName = settings.GetOrNull(JobArgumentNames.VaultName);
+            var vaultName = settings.GetOrDefault<string>(JobArgumentNames.VaultName);
             if (vaultName == null)
             {
                 return new EmptySecretReader();
@@ -24,12 +24,12 @@ namespace NuGet.Jobs
                     vaultName,
                     settings[JobArgumentNames.ClientId],
                     settings[JobArgumentNames.CertificateThumbprint],
-                    settings.GetOrNull<StoreName>(JobArgumentNames.StoreName) ?? StoreName.My,
-                    settings.GetOrNull<StoreLocation>(JobArgumentNames.StoreLocation) ?? StoreLocation.LocalMachine,
-                    settings.GetOrNull<bool>(JobArgumentNames.ValidateCertificate) ?? true);
+                    settings.GetOrDefault(JobArgumentNames.StoreName, StoreName.My),
+                    settings.GetOrDefault(JobArgumentNames.StoreLocation, StoreLocation.LocalMachine),
+                    settings.GetOrDefault(JobArgumentNames.ValidateCertificate, true));
 
-            var refreshIntervalSec = settings.GetOrNull<int>(JobArgumentNames.RefreshIntervalSec) ??
-                                     CachingSecretReader.DefaultRefreshIntervalSec;
+            var refreshIntervalSec = settings.GetOrDefault<int>(JobArgumentNames.RefreshIntervalSec,
+                CachingSecretReader.DefaultRefreshIntervalSec);
 
             return new CachingSecretReader(new KeyVaultReader(keyVaultConfiguration), refreshIntervalSec);
         }

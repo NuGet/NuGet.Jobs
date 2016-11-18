@@ -57,13 +57,13 @@ namespace UpdateLicenseReports
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
-            _packageDatabase = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.PackageDatabase]);
+            _packageDatabase = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-            _retryCount = jobArgsDictionary.GetOrNull<int>(JobArgumentNames.RetryCount);
+            _retryCount = jobArgsDictionary.GetOrDefault<int>(JobArgumentNames.RetryCount);
 
-            _licenseReportService = new Uri(jobArgsDictionary.GetOrNull(JobArgumentNames.LicenseReportService));
-            _licenseReportUser = jobArgsDictionary.GetOrNull(JobArgumentNames.LicenseReportUser);
-            _licenseReportPassword = jobArgsDictionary.GetOrNull(JobArgumentNames.LicenseReportPassword);
+            _licenseReportService = new Uri(jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.LicenseReportService));
+            _licenseReportUser = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.LicenseReportUser);
+            _licenseReportPassword = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.LicenseReportPassword);
 
             // Build credentials
             if (!string.IsNullOrEmpty(_licenseReportUser))

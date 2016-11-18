@@ -59,18 +59,18 @@ namespace Stats.AggregateCdnDownloadsInGallery
         {
             try
             {
-                var instrumentationKey = jobArgsDictionary.GetOrNull(JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
                 
-                _statisticsDatabase = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.StatisticsDatabase]);
-                _destinationDatabase = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.DestinationDatabase]);
+                _statisticsDatabase = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase));
+                _destinationDatabase = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DestinationDatabase));
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Failed to initialize job! {Exception}", exception);
+                _logger?.LogCritical("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

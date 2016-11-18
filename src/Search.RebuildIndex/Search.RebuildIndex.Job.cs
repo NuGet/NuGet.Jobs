@@ -40,19 +40,19 @@ namespace Search.RebuildIndex
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
             PackageDatabase =
-            new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.PackageDatabase]);
+            new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
             DataStorageAccount =
-                CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.DataStorageAccount]);
+                CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount));
 
-            DataContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.DataContainerName);
+            DataContainerName = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DataContainerName);
 
             if (string.IsNullOrEmpty(DataContainerName))
             {
                 DataContainerName = DefaultDataContainerName;
             }
 
-            LocalIndexFolder = jobArgsDictionary[JobArgumentNames.LocalIndexFolder];
+            LocalIndexFolder = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.LocalIndexFolder);
 
             // Initialized successfully, return true
             return true;

@@ -38,19 +38,19 @@ namespace Search.UpdateIndex
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
             PackageDatabase =
-            new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.PackageDatabase]);
+            new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
             DataStorageAccount =
-                CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.DataStorageAccount]);
+                CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount));
 
-            DataContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.DataContainerName);
+            DataContainerName = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.DataContainerName);
 
             if (string.IsNullOrEmpty(DataContainerName))
             {
                 DataContainerName = DefaultDataContainerName;
             }
 
-            ContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.ContainerName);
+            ContainerName = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.ContainerName);
 
             // Initialized successfully, return true
             return true;

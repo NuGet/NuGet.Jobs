@@ -47,25 +47,25 @@ namespace Stats.CreateAzureCdnWarehouseReports
         {
             try
             {
-                var instrumentationKey = jobArgsDictionary.GetOrNull(JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var cloudStorageAccountConnectionString = jobArgsDictionary[JobArgumentNames.AzureCdnCloudStorageAccount];
-                var statisticsDatabaseConnectionString = jobArgsDictionary[JobArgumentNames.StatisticsDatabase];
-                var galleryDatabaseConnectionString = jobArgsDictionary[JobArgumentNames.SourceDatabase];
-                var dataStorageAccountConnectionString = jobArgsDictionary[JobArgumentNames.DataStorageAccount];
+                var cloudStorageAccountConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                var statisticsDatabaseConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
+                var galleryDatabaseConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SourceDatabase);
+                var dataStorageAccountConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount);
 
                 _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccountConnectionString, JobArgumentNames.AzureCdnCloudStorageAccount);
-                _statisticsContainerName = ValidateAzureContainerName(jobArgsDictionary[JobArgumentNames.AzureCdnCloudStorageContainerName], JobArgumentNames.AzureCdnCloudStorageContainerName);
+                _statisticsContainerName = ValidateAzureContainerName(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageContainerName), JobArgumentNames.AzureCdnCloudStorageContainerName);
                 _dataStorageAccount = ValidateAzureCloudStorageAccount(dataStorageAccountConnectionString, JobArgumentNames.DataStorageAccount);
-                _reportName = ValidateReportName(jobArgsDictionary.GetOrNull(JobArgumentNames.WarehouseReportName));
+                _reportName = ValidateReportName(jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.WarehouseReportName));
                 _statisticsDatabase = new SqlConnectionStringBuilder(statisticsDatabaseConnectionString);
                 _galleryDatabase = new SqlConnectionStringBuilder(galleryDatabaseConnectionString);
 
-                var containerNames = jobArgsDictionary[JobArgumentNames.DataContainerName]
+                var containerNames = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataContainerName)
                         .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var containerName in containerNames)
                 {
@@ -76,7 +76,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
             }
             catch (Exception exception)
             {
-                _logger.LogError("Failed to initialize job! {Exception}", exception);
+                _logger?.LogError("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

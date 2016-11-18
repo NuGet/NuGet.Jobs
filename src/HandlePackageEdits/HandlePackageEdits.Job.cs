@@ -68,24 +68,21 @@ namespace HandlePackageEdits
         {
             try
             {
-                var instrumentationKey = jobArgsDictionary.GetOrNull(JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                var retrievedMaxManifestSize = jobArgsDictionary.GetOrNull<int>(JobArgumentNames.MaxManifestSize);
-                MaxManifestSize = retrievedMaxManifestSize == null
-                    ? DefaultMaxAllowedManifestBytes
-                    : Convert.ToInt64(retrievedMaxManifestSize);
+                MaxManifestSize = jobArgsDictionary.GetOrDefault(JobArgumentNames.MaxManifestSize, DefaultMaxAllowedManifestBytes);
 
-                PackageDatabase = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.PackageDatabase]);
+                PackageDatabase = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.SourceStorage]);
-                Backups = CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.BackupStorage]);
+                Source = CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SourceStorage));
+                Backups = CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.BackupStorage));
 
-                SourceContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
-                BackupsContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;
+                SourceContainerName = jobArgsDictionary.GetOrDefault(JobArgumentNames.SourceContainerName, DefaultSourceContainerName);
+                BackupsContainerName = jobArgsDictionary.GetOrDefault(JobArgumentNames.BackupContainerName, DefaultBackupContainerName);
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 BackupsContainer = Backups.CreateCloudBlobClient().GetContainerReference(BackupsContainerName);

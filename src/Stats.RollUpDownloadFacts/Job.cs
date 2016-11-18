@@ -31,23 +31,23 @@ namespace Stats.RollUpDownloadFacts
         {
             try
             {
-                var instrumentationKey = jobArgsDictionary.GetOrNull(JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var databaseConnectionString = jobArgsDictionary[JobArgumentNames.StatisticsDatabase];
+                var databaseConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-                _minAgeInDays = jobArgsDictionary.GetOrNull<int>(JobArgumentNames.MinAgeInDays) ?? DefaultMinAgeInDays;
+                _minAgeInDays = jobArgsDictionary.GetOrDefault(JobArgumentNames.MinAgeInDays, DefaultMinAgeInDays);
                 Trace.TraceInformation("Min age in days: " + _minAgeInDays);
 
                 return true;
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Job failed to initialize. {Exception}", exception);
+                _logger?.LogCritical("Job failed to initialize. {Exception}", exception);
             }
 
             return false;

@@ -41,7 +41,7 @@ namespace NuGet.Jobs
         public const string DestinationContainerName = "DestinationContainerName";
         public const string CursorBlob = "CursorBlob";
 
-        //Arguments specific to CreateWarehouseReports job
+        // Arguments specific to CreateWarehouseReports job
         public const string WarehouseReportName = "WarehouseReportName";
 
         // Arguments specific to Search* jobs
@@ -51,36 +51,40 @@ namespace NuGet.Jobs
         public const string IndexFolder = "IndexFolder";
         public const string ContainerName = "ContainerName";
 
-        //Other
+        // Other
         public const string CommandTimeOut = "CommandTimeOut";
         public const string RetryCount = "RetryCount";
         public const string MaxManifestSize = "MaxManifestSize";
         public const string OutputDirectory = "OutputDirectory";
 
-        //Arguments specific to HandlePackageEdits
+        // Arguments specific to HandlePackageEdits
         public const string SourceStorage = "SourceStorage";
         public const string BackupStorage = "BackupStorage";
         public const string BackupContainerName = "BackupContainerName";
 
-        //Arguments specific to UpdateLicenseReports
+        // Arguments specific to UpdateLicenseReports
         public const string LicenseReportService = "LicenseReportService";
         public const string LicenseReportUser = "LicenseReportUser";
         public const string LicenseReportPassword = "LicenseReportPassword";
 
-        //Arguments specific to CollectAzureCdnLogs
+        // Arguments specific to CollectAzureCdnLogs
         public const string FtpSourceUri = "FtpSourceUri";
         public const string FtpSourceUsername = "FtpSourceUsername";
         public const string FtpSourcePassword = "FtpSourcePassword";
         public const string AzureCdnAccountNumber = "AzureCdnAccountNumber";
         public const string AzureCdnPlatform = "AzureCdnPlatform";
 
-        //Arguments shared by CollectAzureCdnLogs and ParseAzureCdnLogs
+        // Arguments shared by CollectAzureCdnLogs and ParseAzureCdnLogs
         public const string AzureCdnCloudStorageAccount = "AzureCdnCloudStorageAccount";
         public const string AzureCdnCloudStorageContainerName = "AzureCdnCloudStorageContainerName";
 
-        //Arguments specific to ParseAzureCdnLogs
+        // Arguments specific to ParseAzureCdnLogs
         public const string AzureCdnCloudStorageTableName = "AzureCdnCloudStorageTableName";
         public const string AggregatesOnly = "AggregatesOnly";
+
+        // Arguments specific to RefreshClientDimension
+        public const string TargetClientName = "TargetClientName";
+        public const string UserAgentFilter = "UserAgentFilter";
 
         // Arguments specific to RollUpDownloadFacts
         public const string MinAgeInDays = "MinAgeInDays";

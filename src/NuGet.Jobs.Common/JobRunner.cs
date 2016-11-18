@@ -64,11 +64,11 @@ namespace NuGet.Jobs
                 // Set JobTraceListener. This will be done on every job run as well
                 SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
 
-                var runContinuously = !jobArgsDictionary.GetOrNull<bool>(JobArgumentNames.Once) ?? true;
-                var sleepDuration = jobArgsDictionary.GetOrNull<int>(JobArgumentNames.Sleep); // sleep is in milliseconds
+                var runContinuously = !jobArgsDictionary.GetOrDefault(JobArgumentNames.Once, true);
+                var sleepDuration = jobArgsDictionary.GetOrDefault<int?>(JobArgumentNames.Sleep); // sleep is in milliseconds
                 if (!sleepDuration.HasValue)
                 {
-                    sleepDuration = jobArgsDictionary.GetOrNull<int>(JobArgumentNames.Interval);
+                    sleepDuration = jobArgsDictionary.GetOrDefault<int?>(JobArgumentNames.Interval);
                     if (sleepDuration.HasValue)
                     {
                         sleepDuration = sleepDuration.Value * 1000; // interval is in seconds
@@ -127,12 +127,12 @@ namespace NuGet.Jobs
 
         private static void JobSetup(JobBase job, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary, ref int? sleepDuration)
         {
-            if (jobArgsDictionary.GetOrNull<bool>("dbg") ?? false)
+            if (jobArgsDictionary.GetOrDefault<bool>("dbg"))
             {
                 throw new ArgumentException("-dbg is a special argument and should be the first argument...");
             }
 
-            if (jobArgsDictionary.GetOrNull<bool>("ConsoleLogOnly") ?? false)
+            if (jobArgsDictionary.GetOrDefault<bool>("ConsoleLogOnly"))
             {
                 throw new ArgumentException("-ConsoleLogOnly is a special argument and should be the first argument (can be the second if '-dbg' is used)...");
             }

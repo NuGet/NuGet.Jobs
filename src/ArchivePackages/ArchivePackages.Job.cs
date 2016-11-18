@@ -68,24 +68,24 @@ namespace ArchivePackages
         {
             try
             {
-                PackageDatabase = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.PackageDatabase]);
+                PackageDatabase = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.Source]);
+                Source = CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.Source));
 
-                PrimaryDestination = CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.PrimaryDestination]);
+                PrimaryDestination = CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PrimaryDestination));
 
-                var secondaryDestinationCstr = jobArgsDictionary.GetOrNull(JobArgumentNames.SecondaryDestination);
+                var secondaryDestinationCstr = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.SecondaryDestination);
                 SecondaryDestination = string.IsNullOrEmpty(secondaryDestinationCstr) ? null : CloudStorageAccount.Parse(secondaryDestinationCstr);
 
-                SourceContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.SourceContainerName) ?? DefaultPackagesContainerName;
+                SourceContainerName = jobArgsDictionary.GetOrDefault(JobArgumentNames.SourceContainerName, DefaultPackagesContainerName);
 
-                DestinationContainerName = jobArgsDictionary.GetOrNull(JobArgumentNames.DestinationContainerName) ?? DefaultPackagesArchiveContainerName;
+                DestinationContainerName = jobArgsDictionary.GetOrDefault(JobArgumentNames.DestinationContainerName, DefaultPackagesArchiveContainerName);
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 PrimaryDestinationContainer = PrimaryDestination.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
                 SecondaryDestinationContainer = SecondaryDestination?.CreateCloudBlobClient().GetContainerReference(DestinationContainerName);
 
-                CursorBlobName = jobArgsDictionary.GetOrNull(JobArgumentNames.CursorBlob) ?? DefaultCursorBlobName;
+                CursorBlobName = jobArgsDictionary.GetOrDefault(JobArgumentNames.CursorBlob, DefaultCursorBlobName);
 
                 // Initialized successfully
                 return true;
