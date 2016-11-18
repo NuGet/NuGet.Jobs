@@ -26,18 +26,14 @@ namespace Tests.AzureJobTraceListener
                         6 for job that calls Trace.Close from multiple threads,
                         7 for job that calls Job.JobTraceListener.Close from multiple threads";
 
-        private int? JobScenario { get; set; }
+        private int JobScenario { get; set; }
 
         private int? LogCount { get; set; }
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
-            JobScenario = jobArgsDictionary.GetOrNull<int>(ScenarioArgumentName);
-            if(JobScenario == null)
-            {
-                throw new ArgumentException("Argument '"+ ScenarioArgumentName +"' is mandatory." + HelpMessage);
-            }
+            JobScenario = jobArgsDictionary.GetOrThrow<int>(ScenarioArgumentName);
 
-            LogCount = jobArgsDictionary.GetOrNull<int>(LogCountArgumentName);
+            LogCount = jobArgsDictionary.GetOrDefault<int>(LogCountArgumentName);
 
             return true;
         }
