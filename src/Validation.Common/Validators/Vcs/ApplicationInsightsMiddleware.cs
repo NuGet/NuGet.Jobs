@@ -41,7 +41,6 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                 Name = TelemetryConstants.Vcs,
                 ResponseCode = context.Response.StatusCode.ToString(),
                 StartTime = startTime,
-                Success = context.Response.StatusCode < 400,
                 Timestamp = DateTimeOffset.UtcNow,
                 Url = context.Request.Uri
             };
