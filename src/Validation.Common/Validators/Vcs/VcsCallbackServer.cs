@@ -109,7 +109,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
-                                
+
                                 // Notify
                                 await _notificationService.SendNotificationAsync(
                                     $"vcscallback-notclean/{validationEntity.Created.ToString("yyyy-MM-dd")}",
@@ -117,7 +117,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     body);
                             }
                             else
-                            { 
+                            {
                                 // To investigate
                                 await _notificationService.SendNotificationAsync(
                                     $"vcscallback-investigate/{validationEntity.Created.ToString("yyyy-MM-dd")}",
@@ -184,7 +184,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                     }
                 }
 
-                // The caller requires a SOAP response.
+                // The VCS caller requires a SOAP response.
                 context.Response.ContentType = "text/xml";
                 await context.Response.WriteAsync(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
