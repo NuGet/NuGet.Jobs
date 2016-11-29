@@ -34,7 +34,7 @@ namespace Tests.AzureJobTraceListener
             JobScenario = jobArgsDictionary.GetOrNull<int>(ScenarioArgumentName);
             if (JobScenario == null)
             {
-                throw new ArgumentException("Argument '" + ScenarioArgumentName + "' is mandatory." + HelpMessage);
+                throw new ArgumentException($"Argument '{ScenarioArgumentName}' is mandatory. {HelpMessage}");
             }
 
             LogCount = jobArgsDictionary.GetOrNull<int>(LogCountArgumentName);
