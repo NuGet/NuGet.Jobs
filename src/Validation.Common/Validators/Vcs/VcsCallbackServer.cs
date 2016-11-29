@@ -216,6 +216,14 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         }
                     }
                 }
+                // The VCS caller requires a SOAP response.
+                context.Response.ContentType = "text/xml";
+                await context.Response.WriteAsync(@"<?xml version=""1.0"" encoding=""utf-8""?>
+<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">
+  <soap:Body>
+    <StatusChangedResponse xmlns=""http://roq/"" />
+  </soap:Body>
+</soap:Envelope>");
             }
             else if (context.Request.Method == "GET")
             {
