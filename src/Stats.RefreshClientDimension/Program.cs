@@ -143,11 +143,11 @@ namespace Stats.RefreshClientDimension
         {
             try
             {
-                var databaseConnectionString = jobArgsDictionary[JobArgumentNames.StatisticsDatabase];
+                var databaseConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase);
                 _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-                _targetClientName = jobArgsDictionary.GetOrNull("TargetClientName");
-                _userAgentFilter = jobArgsDictionary.GetOrNull("UserAgentFilter");
+                _targetClientName = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.TargetClientName);
+                _userAgentFilter = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.UserAgentFilter);
 
                 return true;
             }

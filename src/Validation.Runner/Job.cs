@@ -13,6 +13,7 @@ using NuGet.Jobs.Validation.Common.OData;
 using NuGet.Jobs.Validation.Common.Validators;
 using NuGet.Jobs.Validation.Common.Validators.Unzip;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
+using NuGet.Services.Configuration;
 
 namespace NuGet.Jobs.Validation.Runner
 {
@@ -32,15 +33,15 @@ namespace NuGet.Jobs.Validation.Runner
             try
             {
                 // Configure job
-                _galleryBaseAddress = jobArgsDictionary[JobArgumentNames.GalleryBaseAddress];
+                _galleryBaseAddress = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.GalleryBaseAddress);
 
-                var storageConnectionString = jobArgsDictionary[JobArgumentNames.DataStorageAccount];
+                var storageConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.DataStorageAccount);
                 _cloudStorageAccount = CreateCloudStorageAccount(JobArgumentNames.DataStorageAccount, storageConnectionString);
 
-                _containerName = jobArgsDictionary[JobArgumentNames.ContainerName];
+                _containerName = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.ContainerName);
 
-                _runValidationTasks = jobArgsDictionary[JobArgumentNames.RunValidationTasks].Split(';');
-                _requestValidationTasks = jobArgsDictionary[JobArgumentNames.RequestValidationTasks].Split(';');
+                _runValidationTasks = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.RunValidationTasks).Split(';');
+                _requestValidationTasks = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.RequestValidationTasks).Split(';');
 
                 // Add validators
                 if (_runValidationTasks.Contains(UnzipValidator.ValidatorName))
@@ -50,10 +51,10 @@ namespace NuGet.Jobs.Validation.Runner
                 if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
                 {
                     _validators.Add(new VcsValidator(
-                        jobArgsDictionary[JobArgumentNames.VcsValidatorServiceUrl],
-                        jobArgsDictionary[JobArgumentNames.VcsValidatorCallbackUrl],
-                        jobArgsDictionary[JobArgumentNames.VcsValidatorAlias],
-                        jobArgsDictionary[JobArgumentNames.VcsPackageUrlTemplate]));
+                        jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorServiceUrl),
+                        jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorCallbackUrl),
+                        jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsValidatorAlias),
+                        jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.VcsPackageUrlTemplate)));
                 }
 
                 return true;

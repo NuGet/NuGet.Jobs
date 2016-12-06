@@ -22,6 +22,7 @@ namespace Gallery.CredentialExpiration
     public class Job : JobBase
     {
         private const int DefaultCommandTimeout = 1800; // 30 minutes max
+        private const int DefaultWarnDaysBeforeExpiration = 10;
 
         private readonly ConcurrentDictionary<string, DateTimeOffset> _contactedUsers = new ConcurrentDictionary<string, DateTimeOffset>();
         private readonly string _cursorFile = "cursor.json";
@@ -36,7 +37,7 @@ namespace Gallery.CredentialExpiration
         private string _mailFrom;
         private SmtpClient _smtpClient;
 
-        private int _warnDaysBeforeExpiration = 10;
+        private int _warnDaysBeforeExpiration = DefaultWarnDaysBeforeExpiration;
         
         private ILogger _logger;
 
@@ -44,36 +45,32 @@ namespace Gallery.CredentialExpiration
         {
             try
             {
-                var instrumentationKey = jobArgsDictionary.GetOrNull(JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 _logger = loggerFactory.CreateLogger<Job>();
 
-                _whatIf = jobArgsDictionary.GetOrNull<bool>(JobArgumentNames.WhatIf) ?? false;
+                _whatIf = jobArgsDictionary.GetOrDefault(JobArgumentNames.WhatIf, false);
 
-                var databaseConnectionString = jobArgsDictionary[JobArgumentNames.GalleryDatabase];
+                var databaseConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.GalleryDatabase);
                 _galleryDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
                 _galleryBrand = jobArgsDictionary[MyJobArgumentNames.GalleryBrand];
                 _galleryAccountUrl = jobArgsDictionary[MyJobArgumentNames.GalleryAccountUrl];
 
-                _mailFrom = jobArgsDictionary[JobArgumentNames.MailFrom];
+                _mailFrom = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.MailFrom);
 
-                var smtpConnectionString = jobArgsDictionary[JobArgumentNames.SmtpUri];
+                var smtpConnectionString = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.SmtpUri);
                 var smtpUri = new SmtpUri(new Uri(smtpConnectionString));
                 _smtpClient = CreateSmtpClient(smtpUri);
 
-                var temp = jobArgsDictionary.GetOrNull<int>(MyJobArgumentNames.WarnDaysBeforeExpiration);
-                if (temp.HasValue)
-                {
-                    _warnDaysBeforeExpiration = temp.Value;
-                }
+                _warnDaysBeforeExpiration = jobArgsDictionary.GetOrDefault(MyJobArgumentNames.WarnDaysBeforeExpiration, DefaultWarnDaysBeforeExpiration);
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Failed to initialize job! {Exception}", exception);
+                _logger?.LogCritical("Failed to initialize job! {Exception}", exception);
 
                 return false;
             }

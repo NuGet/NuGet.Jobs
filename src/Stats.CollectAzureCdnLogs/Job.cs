@@ -39,19 +39,19 @@ namespace Stats.CollectAzureCdnLogs
         {
             try
             {
-                var instrumentationKey = jobArgsDictionary.GetOrNull(JobArgumentNames.InstrumentationKey);
+                var instrumentationKey = jobArgsDictionary.GetOrDefault<string>(JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 _loggerFactory = LoggingSetup.CreateLoggerFactory();
                 _logger = _loggerFactory.CreateLogger<Job>();
 
-                var ftpLogFolder = jobArgsDictionary[JobArgumentNames.FtpSourceUri];
-                var azureCdnPlatform = jobArgsDictionary[JobArgumentNames.AzureCdnPlatform];
-                var cloudStorageAccount = jobArgsDictionary[JobArgumentNames.AzureCdnCloudStorageAccount];
-                _cloudStorageContainerName = jobArgsDictionary[JobArgumentNames.AzureCdnCloudStorageContainerName];
-                _azureCdnAccountNumber = jobArgsDictionary[JobArgumentNames.AzureCdnAccountNumber];
-                _ftpUsername = jobArgsDictionary[JobArgumentNames.FtpSourceUsername];
-                _ftpPassword = jobArgsDictionary[JobArgumentNames.FtpSourcePassword];
+                var ftpLogFolder = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourceUri);
+                var azureCdnPlatform = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnPlatform);
+                var cloudStorageAccount = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageAccount);
+                _cloudStorageContainerName = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnCloudStorageContainerName);
+                _azureCdnAccountNumber = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.AzureCdnAccountNumber);
+                _ftpUsername = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourceUsername);
+                _ftpPassword = jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.FtpSourcePassword);
 
                 _ftpServerUri = ValidateFtpUri(ftpLogFolder);
                 _azureCdnPlatform = ValidateAzureCdnPlatform(azureCdnPlatform);
@@ -59,7 +59,7 @@ namespace Stats.CollectAzureCdnLogs
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Job failed to initialize! {Exception}", ex);
+                _logger?.LogCritical("Job failed to initialize! {Exception}", ex);
 
                 return false;
             }

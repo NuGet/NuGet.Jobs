@@ -39,15 +39,14 @@ namespace Search.GenerateAuxiliaryData
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
-            var packageDatabaseConnString = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.PackageDatabase]).ToString();
+            var packageDatabaseConnString = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PackageDatabase)).ToString();
 
-            var statisticsDatabaseConnString = new SqlConnectionStringBuilder(jobArgsDictionary[JobArgumentNames.StatisticsDatabase]).ToString();
+            var statisticsDatabaseConnString = new SqlConnectionStringBuilder(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.StatisticsDatabase)).ToString();
 
-            var destination = CloudStorageAccount.Parse(jobArgsDictionary[JobArgumentNames.PrimaryDestination]);
+            var destination = CloudStorageAccount.Parse(jobArgsDictionary.GetOrThrow<string>(JobArgumentNames.PrimaryDestination));
 
             var destinationContainerName =
-                            jobArgsDictionary.GetOrNull(JobArgumentNames.DestinationContainerName)
-                            ?? DefaultContainerName;
+                jobArgsDictionary.GetOrDefault(JobArgumentNames.DestinationContainerName, DefaultContainerName);
 
             _destContainer = destination.CreateCloudBlobClient().GetContainerReference(destinationContainerName);
 
