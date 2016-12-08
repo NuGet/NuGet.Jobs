@@ -143,7 +143,7 @@ namespace NuGet.Jobs.Validation.Runner
                     {
                         Timestamp = DateTimeOffset.UtcNow,
                         ValidatorName = validator.Name,
-                        Message = $"Message has been attempted too many times and is being deadlettered. Aborting validator."
+                        Message = "Message has been attempted too many times and is being deadlettered. Aborting validator."
                     });
                 }
 

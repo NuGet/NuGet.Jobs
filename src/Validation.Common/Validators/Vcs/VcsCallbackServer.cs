@@ -7,28 +7,56 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.ApplicationInsights.DataContracts;
-using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Microsoft.WindowsAzure.Storage;
+using NuGet.ApplicationInsights.Owin;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
+using NuGet.Services.Logging;
 using NuGet.Services.VirusScanning.Vcs.Callback;
 using Owin;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-[assembly: OwinStartup(typeof(VcsCallbackServerStartup))]
+[assembly: OwinStartup(typeof(VcsCallbackServer))]
 
 namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 {
-    public class VcsCallbackServerStartup
+    public class VcsCallbackServer
     {
+        internal static class VirusScanEventNames
+        {
+            /// <summary>
+            /// The virus scan returned in an unknown state.
+            /// The status of the virus scan should be investigated.
+            /// </summary>
+            internal const string Investigate = "Investigate";
+            /// <summary>
+            /// The validation ID specified by the request was not found.
+            /// </summary>
+            internal const string RequestNotFound = "RequestNotFound";
+            /// <summary>
+            /// The scan failed and did not complete.
+            /// </summary>
+            internal const string ScanFailed = "ScanFailed";
+            /// <summary>
+            /// The scan completed and has determined the package is clean.
+            /// </summary>
+            internal const string ScanPassed = "ScanPassed";
+            /// <summary>
+            /// The scan completed and determined the package is unclean and contains a virus or other issue.
+            /// </summary>
+            internal const string ScanUnclean = "ScanUnclean";
+        }
+
         private readonly VcsStatusCallbackParser _callbackParser = new VcsStatusCallbackParser();
+
+        private readonly ILogger _logger;
 
         private readonly PackageValidationTable _packageValidationTable;
         private readonly PackageValidationAuditor _packageValidationAuditor;
         private readonly INotificationService _notificationService;
-        private readonly string _instrumentationKey;
 
-        public VcsCallbackServerStartup()
+        public VcsCallbackServer()
         {
             // Configure to get values from keyvault
             var configurationService = new ConfigurationService(new SecretReaderFactory());
@@ -42,23 +70,19 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerName);
             _notificationService = new NotificationService(cloudStorageAccount, containerName);
 
-            // Setup telemetry
-            _instrumentationKey = configurationService.Get("AppInsightsInstrumentationKey").Result;
+            // Set up AppInsights
+            var instrumentationKey = configurationService.Get("AppInsightsInstrumentationKey").Result;
+            Services.Logging.ApplicationInsights.Initialize(instrumentationKey);
+
+            // Set up Logging
+            _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<VcsCallbackServer>();
         }
 
         public void Configuration(IAppBuilder app)
         {
-            app.Use<GlobalExceptionHandlerMiddleware>();
-
-            if (string.IsNullOrEmpty(_instrumentationKey))
+            if (Services.Logging.ApplicationInsights.Initialized)
             {
-                TelemetryConfiguration.Active.DisableTelemetry = true;
-            }
-            else
-            {
-                TelemetryConfiguration.Active.InstrumentationKey = _instrumentationKey;
-
-                app.Use<ApplicationInsightsMiddleware>();
+                app.Use<RequestTrackingMiddleware>();
             }
 
             app.Run(Invoke);
@@ -82,13 +106,9 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
                         if (validationEntity == null)
                         {
-                            var telemetry = new EventTelemetry(TelemetryConstants.RequestNotFound);
-                            telemetry.Properties.Add(TelemetryConstants.RequestId, result.SrcId);
-                            telemetry.Properties.Add(TelemetryConstants.RequestBody, body);
+                            TrackValidationEvent(LogLevel.Warning, VirusScanEventNames.RequestNotFound, result, body);
 
-                            TelemetryClient.TrackEvent(telemetry);
-
-                            // Notify us about the fact that no valiation was found
+                            // Notify us about the fact that no validation was found
                             await _notificationService.SendNotificationAsync(
                                 "vcscallback-notfound",
                                 "Validation " + validationId + " was not found.",
@@ -132,7 +152,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     }
                                 }
 
-                                TrackEvent(TelemetryConstants.ScanUnclean, result, validationEntity, body);
+                                TrackValidationEvent(LogLevel.Error, VirusScanEventNames.ScanUnclean, result, validationEntity, body);
 
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
@@ -145,7 +165,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                             }
                             else
                             {
-                                TrackEvent(TelemetryConstants.Investigate, result, validationEntity, body);
+                                TrackValidationEvent(LogLevel.Warning, VirusScanEventNames.Investigate, result, validationEntity, body);
 
                                 // To investigate
                                 await _notificationService.SendNotificationAsync(
@@ -165,7 +185,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
-                                TrackEvent(TelemetryConstants.ScanPassed, result, validationEntity, body);
+                                TrackValidationEvent(LogLevel.Information, VirusScanEventNames.ScanPassed, result, validationEntity, body);
 
                                 await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
                                     new PackageValidationAuditEntry
@@ -202,7 +222,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     }
                                 }
 
-                                TrackEvent(TelemetryConstants.ScanFailed, result, validationEntity, body);
+                                TrackValidationEvent(LogLevel.Error, VirusScanEventNames.ScanFailed, result, validationEntity, body);
 
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
@@ -235,27 +255,75 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             }
         }
-
-        private static void TrackEvent(string eventName, Job job, PackageValidationEntity entity, string requestBody)
+        
+        private void TrackValidationEvent(LogLevel level, string eventName, Job job, string requestBody)
         {
-            var telemetry = new EventTelemetry(eventName);
+            var validationEntityLog = "{ValidationId} missing";
 
-            telemetry.Properties.Add(TelemetryConstants.RequestId, job.SrcId);
-            telemetry.Properties.Add(TelemetryConstants.State, job.State);
-            telemetry.Properties.Add(TelemetryConstants.Result, job.Result);
-            telemetry.Properties.Add(TelemetryConstants.PackageId, entity.PackageId);
-            telemetry.Properties.Add(TelemetryConstants.PackageVersion, entity.PackageVersion);
-            telemetry.Properties.Add(TelemetryConstants.RqsJobId, job.RqsJobId);
-            telemetry.Properties.Add(TelemetryConstants.RqsRequestId, job.RqsRequestId);
-            telemetry.Properties.Add(TelemetryConstants.JobStartDate, job.JobStartDate);
-            telemetry.Properties.Add(TelemetryConstants.ScanEndDate, job.ScanEndDate);
-            telemetry.Properties.Add(TelemetryConstants.JobEndDate, job.JobEndDate);
-            telemetry.Properties.Add(TelemetryConstants.CustomerLogsLocation, job.CustomerLogsLocation);
-            telemetry.Properties.Add(TelemetryConstants.LogFilesPath, job.LogFilesPath);
-            telemetry.Properties.Add(TelemetryConstants.SourceBitsLocation, job.SourceBitsLocation);
-            telemetry.Properties.Add(TelemetryConstants.RequestBody, requestBody);
+            var validationEntityParameters = new object[]
+            {
+                job.SrcId
+            };
 
-            TelemetryClient.TrackEvent(telemetry);
+            TrackValidationEventCore(level, eventName, job, validationEntityLog, validationEntityParameters, requestBody);
+        }
+
+        private void TrackValidationEvent(LogLevel level, string eventName, Job job, PackageValidationEntity entity, string requestBody)
+        {
+            var validationEntityLog =
+                "{ValidationId} for {PackageId} version {PackageVersion} created on {PackageValidationCreated}";
+
+            var validationEntityParameters = new object[]
+            {
+                entity.ValidationId, entity.PackageId, entity.PackageVersion, entity.Created,
+            };
+
+            TrackValidationEventCore(level, eventName, job, validationEntityLog, validationEntityParameters, requestBody);
+        }
+
+        private void TrackValidationEventCore(LogLevel level, string eventName, Job job, string validationEntityLog,
+            object[] validationEntityParameters, string requestBody)
+        {
+            var logMessage = string.Join(" - ",
+                validationEntityLog,
+                "{EventName}",
+                "Job {JobState} {JobResult} ran from {JobStartDate} to {JobEndDate}",
+                "Scan {RqsRequestId} {RqsJobId} ended at {ScanEndDate}",
+                "{CustomerLogsLocation}", "{LogFilesPath}", "{SourceBitsLocation}",
+                "{RequestBody}");
+
+            var parameters = new object[]
+            {
+                eventName,
+                job.State, job.Result, job.JobStartDate, job.JobEndDate,
+                job.RqsRequestId, job.RqsJobId, job.ScanEndDate,
+                job.CustomerLogsLocation, job.LogFilesPath, job.SourceBitsLocation,
+                requestBody
+            };
+
+            parameters = validationEntityParameters.Concat(parameters).ToArray();
+
+            switch (level)
+            {
+                case LogLevel.Trace:
+                    _logger.LogTrace(logMessage, parameters);
+                    break;
+                case LogLevel.Debug:
+                    _logger.LogDebug(logMessage, parameters);
+                    break;
+                case LogLevel.Information:
+                    _logger.LogInformation(logMessage, parameters);
+                    break;
+                case LogLevel.Warning:
+                    _logger.LogWarning(logMessage, parameters);
+                    break;
+                case LogLevel.Error:
+                    _logger.LogError(logMessage, parameters);
+                    break;
+                case LogLevel.Critical:
+                    _logger.LogCritical(logMessage, parameters);
+                    break;
+            }
         }
     }
 }
