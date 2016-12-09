@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 
 namespace Stats.ImportAzureCdnStatistics
 {
@@ -22,7 +23,7 @@ namespace Stats.ImportAzureCdnStatistics
         {
             unchecked
             {
-                return ((PackageId != null ? PackageId.GetHashCode() : 0)*397) ^ (PackageVersion != null ? PackageVersion.GetHashCode() : 0);
+                return ((PackageId != null ? PackageId.ToLower().GetHashCode() : 0)*397) ^ (PackageVersion != null ? PackageVersion.GetHashCode() : 0);
             }
         }
 
