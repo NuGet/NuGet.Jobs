@@ -23,7 +23,7 @@ namespace Stats.ImportAzureCdnStatistics
         {
             unchecked
             {
-                return ((PackageId != null ? PackageId.ToLower().GetHashCode() : 0)*397) ^ (PackageVersion != null ? PackageVersion.GetHashCode() : 0);
+                return ((PackageId != null ? PackageId.ToLowerInvariant().GetHashCode() : 0)*397) ^ (PackageVersion != null ? PackageVersion.GetHashCode() : 0);
             }
         }
 
