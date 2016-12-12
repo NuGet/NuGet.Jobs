@@ -37,6 +37,10 @@ Select-AzureSubscription -SubscriptionName '$AzureSubscriptionName'
 Write-Host "Current SubscriptionName" $AzureSubscriptionName
 Write-Host "Selected default azure subscription. Publishing azure website..."
 Write-Host "Listing available Azure Websites"
+$Subscriptions = Get-AzureSubscription
+Write-Host $Subscriptions.SubscriptionName
+$CurrentSubscription = Get-AzureSubscription -Current
+Write-Host $CurrentSubscription.SubscriptionName
 $Websites = Get-AzureWebsite
 Write-Host $Websites.Name
 Publish-AzureWebsiteProject -Name $AzureWebsiteName -Package $WebPackagePath -Slot staging
