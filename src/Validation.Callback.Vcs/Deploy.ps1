@@ -36,5 +36,8 @@ Write-Host "Azure subscription was set successfully using the certificate obtain
 Select-AzureSubscription -SubscriptionName '$AzureSubscriptionName'
 Write-Host "Current SubscriptionName" $AzureSubscriptionName
 Write-Host "Selected default azure subscription. Publishing azure website..."
+Write-Host "Listing available Azure Websites"
+$Websites = Get-AzureWebsite
+Write-Host $Websites.Name
 Publish-AzureWebsiteProject -Name $AzureWebsiteName -Package $WebPackagePath -Slot staging
 Write-Host "Published azure website successfully."
