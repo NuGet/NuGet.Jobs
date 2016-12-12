@@ -31,17 +31,10 @@ if(!$cert)
 }
 
 Write-Host "Certificate was found. Setting azure subscription using the certificate..."
-Set-AzureSubscription -SubscriptionName '$AzureSubscriptionName' -Certificate $cert -SubscriptionId $AzureSubscriptionId
+Set-AzureSubscription -SubscriptionName "$AzureSubscriptionName" -Certificate $cert -SubscriptionId $AzureSubscriptionId
 Write-Host "Azure subscription was set successfully using the certificate obtained. Selecting default azure subscription..."
-Select-AzureSubscription -SubscriptionName '$AzureSubscriptionName'
+Select-AzureSubscription -SubscriptionName "$AzureSubscriptionName"
 Write-Host "Current SubscriptionName" $AzureSubscriptionName
 Write-Host "Selected default azure subscription. Publishing azure website..."
-Write-Host "Listing available Azure Websites"
-$Subscriptions = Get-AzureSubscription
-Write-Host $Subscriptions.SubscriptionName
-$CurrentSubscription = Get-AzureSubscription -Current
-Write-Host $CurrentSubscription.SubscriptionName
-$Websites = Get-AzureWebsite
-Write-Host $Websites.Name
 Publish-AzureWebsiteProject -Name $AzureWebsiteName -Package $WebPackagePath -Slot staging
 Write-Host "Published azure website successfully."
