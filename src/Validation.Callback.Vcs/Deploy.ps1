@@ -36,5 +36,5 @@ Write-Host "Azure subscription was set successfully using the certificate obtain
 Select-AzureSubscription -SubscriptionName "$AzureSubscriptionName"
 Write-Host "Current SubscriptionName" $AzureSubscriptionName
 Write-Host "Selected default azure subscription. Publishing azure website..."
-Publish-AzureWebsiteProject -Name $AzureWebsiteName -Package $WebPackagePath -Slot staging
+Publish-AzureWebsiteProject -Name $AzureWebsiteName -Package $WebPackagePath -AppSettings $OctopusParameters -Slot staging
 Write-Host "Published azure website successfully."
