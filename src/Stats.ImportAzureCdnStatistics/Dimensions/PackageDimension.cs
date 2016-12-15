@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Globalization;
 
 namespace Stats.ImportAzureCdnStatistics
 {
@@ -15,14 +16,14 @@ namespace Stats.ImportAzureCdnStatistics
 
         protected bool Equals(PackageDimension other)
         {
-            return string.Equals(PackageId, other.PackageId, StringComparison.OrdinalIgnoreCase) && string.Equals(PackageVersion, other.PackageVersion, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(PackageId.ToLower(CultureInfo.GetCultureInfo("en-US")), other.PackageId.ToLower(CultureInfo.GetCultureInfo("en-US"))) && string.Equals(PackageVersion, other.PackageVersion, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                return ((PackageId != null ? PackageId.ToLowerInvariant().GetHashCode() : 0)*397) ^ (PackageVersion != null ? PackageVersion.GetHashCode() : 0);
+                return ((PackageId != null ? PackageId.ToLower(CultureInfo.GetCultureInfo("en-US")).GetHashCode() : 0)*397) ^ (PackageVersion != null ? PackageVersion.GetHashCode() : 0);
             }
         }
 

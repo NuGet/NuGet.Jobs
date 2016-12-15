@@ -10,7 +10,7 @@ namespace Tests.Stats.ImportAzureCdnStatistics
     {
         [Theory]
         [InlineData("abc", "1.0.0", "ABC", "1.0.0", true)] // Lowercase and uppercase are equal
-        [InlineData("İ", "1.0.0", "i", "1.0.0", false)] // Turkish capital i is not like regular i
+        [InlineData("İ", "1.0.0", "i", "1.0.0", true)] // Turkish capital i is like regular i
         [InlineData("abc", "1.0.0", "cbd", "1.0.0", false)] // Different package ids
         [InlineData("abc", "1.0.0", "abc", "2.0.0", false)] // Different package versions
         public void ComparesPackageDimensionsCorrectly(string packageId1, string version1, string packageId2, string version2, bool expectedAreEqual)
