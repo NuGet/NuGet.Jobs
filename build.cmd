@@ -17,9 +17,9 @@ if not "%errorlevel%"=="0" goto failure
 REM Build VCS Callback Server
 %msbuild% src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj /p:OutputPath=obj/"%config%" /t:Package /m /v:M /fl /flp:LogFile=msbuild.log;Verbosity=Normal /nr:false
 if not "%errorlevel%"=="0" goto failure
-echo "src/Validation.Callback.Vcs/obj/%config%/_PublishedWebsites/Validation.Callback.Vcs_Package/Validation.Callback.Vcs.zip"
-echo "src/Validation.Callback.Vcs/obj/Validation.Callback.Vcs.zip"
-copy "src/Validation.Callback.Vcs/obj/%config%/_PublishedWebsites/Validation.Callback.Vcs_Package/Validation.Callback.Vcs.zip" "src/Validation.Callback.Vcs/obj/Validation.Callback.Vcs.zip"
+echo "src\Validation.Callback.Vcs\obj\%config%\_PublishedWebsites\Validation.Callback.Vcs_Package\Validation.Callback.Vcs.zip"
+echo "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
+copy "src\Validation.Callback.Vcs\obj\Debug\_PublishedWebsites\Validation.Callback.Vcs_Package\Validation.Callback.Vcs.zip" "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
 if not "%errorlevel%"=="0" goto failure
 
 REM Test
