@@ -1,377 +1,380 @@
 ﻿CREATE PROCEDURE [dbo].[RollUpDownloadFacts]
-	@MinAgeInDays INT = 90
+  @MinAgeInDays INT = 90
 AS
 BEGIN
-	SET NOCOUNT ON;
+  SET NOCOUNT ON;
 
-    -- This procedure will roll-up the datapoints to only retain the specificed T-@MinAgeInDays window of facts.
-    -- Rolled-up datapoints are aggregated by the SUM of the downloadcount for a given package id and version,
-    -- and decoupled from any dimensions we don't care about.
+  -- This procedure will roll-up the datapoints to only retain the specificed T-@MinAgeInDays window of facts.
+  -- Rolled-up datapoints are aggregated by the SUM of the downloadcount for a given package id and version,
+  -- and decoupled from any dimensions we don't care about.
 
-    -- For the most popular packages which are generating the most download facts, we'll do a roll-up to T-1 days.
-    -- However, for the rolled-up datapoints for those facts in the window between T-@MinAgeInDays and T-1,
-    -- we do want to retain the dimensions linked to the daily roll-ups, so we don't lose reporting capabilities on them.
+  -- For the most popular packages which are generating the most download facts, we'll do a roll-up to T-1 days.
+  -- However, for the rolled-up datapoints for those facts in the window between T-@MinAgeInDays and T-1,
+  -- we do want to retain the dimensions linked to the daily roll-ups, so we don't lose reporting capabilities on them.
 
-	IF @MinAgeInDays IS NOT NULL
-	BEGIN
+  IF @MinAgeInDays IS NOT NULL
+  BEGIN
 
-        -- This threshold defines the number of records to remove we consider as being 'popular' enough
-        -- to trigger a roll-up to a single day instead of retaining the configured T-@MinAgeInDays period.
-        DECLARE @RecordsToRemoveThresholdForRollUpsToOneDay INT = 100000
+    -- This threshold defines the number of records to remove we consider as being 'popular' enough
+    -- to trigger a roll-up to a single day instead of retaining the configured T-@MinAgeInDays period.
+    DECLARE @RecordsToRemoveThresholdForRollUpsToOneDay INT = 100000
 
-		DECLARE @MaxDimensionDateId INT = -1
-        DECLARE @MaxDimensionDateForRollUpsToOneDay INT = -1
-		DECLARE @Dimension_Package_Id INT
-		DECLARE @DownloadCount INT = 0
-		DECLARE @RecordCountInT1Window INT = 0
-        DECLARE @RollUpToDimensionDateId INT = 0
-		DECLARE @CursorPosition INT = 0
-		DECLARE @TotalCursorPositions INT = 0
-		DECLARE @Msg NVARCHAR(MAX) = ''
+    DECLARE @MaxDimensionDateId INT = -1
+    DECLARE @MaxDimensionDateForRollUpsToOneDay INT = -1
+    DECLARE @Dimension_Package_Id INT
+    DECLARE @DownloadCount INT = 0
+    DECLARE @RecordCountInT1Window INT = 0
+    DECLARE @RollUpToDimensionDateId INT = 0
+    DECLARE @CursorPosition INT = 0
+    DECLARE @TotalCursorPositions INT = 0
+    DECLARE @Msg NVARCHAR(MAX) = ''
 
-        -- In memory table that tracks how many records can be rolled-up per package,
-        -- and what target Date we should roll-up to.
-        -- If the record count we can remove in this roll-up window exceeds the threshold
-        -- (defined by @RecordsToRemoveThresholdForRollupsToOneDay),
-        -- then the MaxDimensionDateId will aim to roll-up to T-1 day, instead of the default T-@MinAgeInDays period.
-		DECLARE @PackageIdTable TABLE
-		(
-			[Id] INT NOT NULL PRIMARY KEY,
-			[RecordCountInT1Window] INT NOT NULL,
-            [MaxDimensionDateId] INT NOT NULL
-		)
+    -- In memory table that tracks how many records can be rolled-up per package,
+    -- and what target Date we should roll-up to.
+    -- If the record count we can remove in this roll-up window exceeds the threshold
+    -- (defined by @RecordsToRemoveThresholdForRollupsToOneDay),
+    -- then the MaxDimensionDateId will aim to roll-up to T-1 day, instead of the default T-@MinAgeInDays period.
+    DECLARE @PackageIdTable TABLE
+    (
+      [Id] INT NOT NULL PRIMARY KEY,
+      [RecordCountInT1Window] INT NOT NULL,
+      [MaxDimensionDateId] INT NOT NULL
+    )
 
-        -- Get the Dimension_Date_Id for the maximum date in this T-@MinAgeInDays period
-		SELECT	@MaxDimensionDateId = MAX([Id])
-		FROM	[dbo].[Dimension_Date] (NOLOCK)
-		WHERE	[Date] IS NOT NULL
-			AND	[Date] < DATEADD(DAY, -@MinAgeInDays, GETUTCDATE())
+    -- Get the Dimension_Date_Id for the maximum date in this T-@MinAgeInDays period
+    SELECT  @MaxDimensionDateId = MAX([Id])
+    FROM    [dbo].[Dimension_Date] (NOLOCK)
+    WHERE   [Date] IS NOT NULL
+        AND [Date] < DATEADD(DAY, -@MinAgeInDays, GETUTCDATE())
 
-        -- Get the Dimension_Date_Id for the maximum date in this T-1 period
-        SELECT  @MaxDimensionDateForRollUpsToOneDay = MAX([Id])
-        FROM    [dbo].[Dimension_Date] (NOLOCK)
-        WHERE   [Date] IS NOT NULL
-            AND [Date] < DATEADD(DAY, -1, GETUTCDATE())
+    -- Get the Dimension_Date_Id for the maximum date in this T-1 period
+    SELECT  @MaxDimensionDateForRollUpsToOneDay = MAX([Id])
+    FROM    [dbo].[Dimension_Date] (NOLOCK)
+    WHERE   [Date] IS NOT NULL
+        AND [Date] < DATEADD(DAY, -1, GETUTCDATE())
 
-		INSERT INTO @PackageIdTable
-		SELECT	DISTINCT p.[Id],
-				'RecordCountInT1Window' = COUNT(f.[Id]),
-                'MaxDimensionDateId' =
-                  CASE
-                    WHEN COUNT(f.[Id]) >= @RecordsToRemoveThresholdForRollUpsToOneDay
-                    THEN @MaxDimensionDateForRollUpsToOneDay
-                    ELSE @MaxDimensionDateId
-                  END
-		FROM	[dbo].[Dimension_Package] AS p (NOLOCK)
-		INNER JOIN	[dbo].[Fact_Download] AS f (NOLOCK)
-		ON		f.[Dimension_Package_Id] = p.[Id]
-		WHERE	f.[Dimension_Date_Id] <> -1
-			AND f.[Dimension_Date_Id] <= @MaxDimensionDateForRollUpsToOneDay
-		GROUP BY	p.[Id]
-		ORDER BY	RecordCountInT1Window DESC;
+    INSERT INTO @PackageIdTable
+    SELECT  DISTINCT p.[Id],
+            'RecordCountInT1Window' = COUNT(f.[Id]),
+            'MaxDimensionDateId' =
+              CASE
+                WHEN COUNT(f.[Id]) >= @RecordsToRemoveThresholdForRollUpsToOneDay
+                THEN @MaxDimensionDateForRollUpsToOneDay
+                ELSE @MaxDimensionDateId
+              END
+    FROM  [dbo].[Dimension_Package] AS p (NOLOCK)
+    INNER JOIN  [dbo].[Fact_Download] AS f (NOLOCK)
+    ON    f.[Dimension_Package_Id] = p.[Id]
+    WHERE f.[Dimension_Date_Id] <> -1
+      AND f.[Dimension_Date_Id] <= @MaxDimensionDateForRollUpsToOneDay
+    GROUP BY  p.[Id]
+    ORDER BY  RecordCountInT1Window DESC;
 
-		SELECT	@TotalCursorPositions = COUNT(DISTINCT [Id])
-		FROM	@PackageIdTable;
+    SELECT  @TotalCursorPositions = COUNT(DISTINCT [Id])
+    FROM    @PackageIdTable;
 
-		SET @Msg = 'Fetched ' + CAST(@TotalCursorPositions AS VARCHAR) + ' package dimension IDs.';
-		RAISERROR(@Msg, 0, 1) WITH NOWAIT;
+    SET @Msg = 'Fetched ' + CAST(@TotalCursorPositions AS VARCHAR) + ' package dimension IDs.';
+    RAISERROR(@Msg, 0, 1) WITH NOWAIT;
 
-        -- This cursor will run over the package ID's, sorted by number of records to remove.
-        -- This is a good indicator of package ID popularity at a given point in time (since the previous roll-up).
-		DECLARE PackageCursor CURSOR FOR
-			SELECT	[Id],
-					[RecordCountInT1Window],
-                    [MaxDimensionDateId]
-			FROM	@PackageIdTable
-	        -- Optimization: no need to roll-up if only a single download was recorded for a given package id and version
-	        WHERE	[RecordCountInT1Window] > 1
-			ORDER BY	[RecordCountInT1Window] DESC;
+    -- This cursor will run over the package ID's, sorted by number of records to remove.
+    -- This is a good indicator of package ID popularity at a given point in time (since the previous roll-up).
+    DECLARE PackageCursor CURSOR FOR
+    SELECT  [Id],
+            [RecordCountInT1Window],
+            [MaxDimensionDateId]
+    FROM    @PackageIdTable
+    -- Optimization: no need to roll-up if only a single download was recorded for a given package id and version
+    WHERE   [RecordCountInT1Window] > 1
+    ORDER BY  [RecordCountInT1Window] DESC;
 
-		OPEN PackageCursor
+    OPEN PackageCursor
 
-		FETCH NEXT FROM PackageCursor
-		INTO @Dimension_Package_Id, @RecordCountInT1Window, @RollUpToDimensionDateId
+    FETCH NEXT FROM PackageCursor
+    INTO @Dimension_Package_Id, @RecordCountInT1Window, @RollUpToDimensionDateId
 
-		WHILE @@FETCH_STATUS = 0
+    WHILE @@FETCH_STATUS = 0
         BEGIN
 
-	        SET @CursorPosition = @CursorPosition + 1
+          SET @CursorPosition = @CursorPosition + 1
 
-            DECLARE @DeletedRecords INT = 0
-			DECLARE @InsertedRecords INT = 0
-	        DECLARE @RecordCountToRemove INT = @RecordCountInT1Window
-	        DECLARE @ProgressPct FLOAT = ROUND((@CursorPosition / (@TotalCursorPositions * 1.0))* 100, 2)
+          DECLARE @DeletedRecords INT = 0
+          DECLARE @InsertedRecords INT = 0
+          DECLARE @RecordCountToRemove INT = @RecordCountInT1Window
+          DECLARE @ProgressPct FLOAT = ROUND((@CursorPosition / (@TotalCursorPositions * 1.0))* 100, 2)
 
-	        SET @Msg = 'Cursor: ' + CAST(@CursorPosition AS VARCHAR) + '/' + CAST(@TotalCursorPositions AS VARCHAR) + ' [' + CAST(@ProgressPct AS VARCHAR) + ' pct.]';
-	        RAISERROR(@Msg, 0, 1) WITH NOWAIT;
+          SET @Msg = 'Cursor: ' + CAST(@CursorPosition AS VARCHAR) + '/' + CAST(@TotalCursorPositions AS VARCHAR) + ' [' + CAST(@ProgressPct AS VARCHAR) + ' pct.]';
+          RAISERROR(@Msg, 0, 1) WITH NOWAIT;
 
-	        IF @RollUpToDimensionDateId = @MaxDimensionDateForRollUpsToOneDay
-		        BEGIN
-                    -- This is a T-1 roll-up: keep track of linked dimensions
-			        DECLARE @T1RollUpTable TABLE
-		            (
-			            [Dimension_Package_Id] INT NOT NULL,
-                        [Dimension_Date_Id] INT NOT NULL,
-                        [Dimension_Operation_Id] INT NOT NULL,
-                        [Dimension_Client_Id] INT NOT NULL,
-                        [Dimension_Platform_Id] INT NOT NULL,
-                        [DownloadCount] INT NOT NULL,
-                        [RecordCountToRemove] INT NOT NULL
-		            )
+          IF @RollUpToDimensionDateId = @MaxDimensionDateForRollUpsToOneDay
+            BEGIN
+              -- This is a T-1 roll-up: keep track of linked dimensions
+              DECLARE @T1RollUpTable TABLE
+              (
+                [Dimension_Package_Id] INT NOT NULL,
+                [Dimension_Date_Id] INT NOT NULL,
+                [Dimension_Operation_Id] INT NOT NULL,
+                [Dimension_Client_Id] INT NOT NULL,
+                [Dimension_Platform_Id] INT NOT NULL,
+                [DownloadCount] INT NOT NULL,
+                [RecordCountToRemove] INT NOT NULL
+              )
 
-			        -- This is a T-1 roll-up: keep track of linked dimensions
-                    INSERT INTO @T1RollUpTable
-                    SELECT	f.[Dimension_Package_Id],
-                            f.[Dimension_Date_Id],
-                            f.[Dimension_Operation_Id],
-                            f.[Dimension_Client_Id],
-                            f.[Dimension_Platform_Id],
-                            'DownloadCount' = SUM(f.[DownloadCount]),
-					        'RecordCountToRemove' = COUNT(f.[Id])
-			        FROM	[dbo].[Fact_Download] AS f (NOLOCK)
-			        WHERE	f.[Dimension_Date_Id] <> -1
-			            AND f.[Dimension_Date_Id] <= @MaxDimensionDateId
-				        AND f.[Dimension_Package_Id] = @Dimension_Package_Id
-			        GROUP BY	f.[Dimension_Package_Id],
-                                f.[Dimension_Date_Id],
-                                f.[Dimension_Operation_Id],
-                                f.[Dimension_Client_Id],
-                                f.[Dimension_Platform_Id]
+              -- This is a T-1 roll-up: keep track of linked dimensions
+              INSERT INTO @T1RollUpTable
+              SELECT  f.[Dimension_Package_Id],
+                      f.[Dimension_Date_Id],
+                      f.[Dimension_Operation_Id],
+                      f.[Dimension_Client_Id],
+                      f.[Dimension_Platform_Id],
+                      'DownloadCount' = SUM(f.[DownloadCount]),
+                      'RecordCountToRemove' = COUNT(f.[Id])
+              FROM    [dbo].[Fact_Download] AS f (NOLOCK)
+              WHERE   f.[Dimension_Date_Id] <> -1
+                  AND f.[Dimension_Date_Id] <= @MaxDimensionDateId
+                  AND f.[Dimension_Package_Id] = @Dimension_Package_Id
+              GROUP BY  f.[Dimension_Package_Id],
+                        f.[Dimension_Date_Id],
+                        f.[Dimension_Operation_Id],
+                        f.[Dimension_Client_Id],
+                        f.[Dimension_Platform_Id]
 
-                    -- This cursor will run over the package ID's with linked dimensions, sorted by number of records to remove.
-			        -- This is a good indicator of package ID popularity at a given point in time (since the previous roll-up).
-                    DECLARE @LinkedPackageId INT
-                    DECLARE @LinkedDateId INT
-                    DECLARE @LinkedOperationId INT
-                    DECLARE @LinkedClientId INT
-                    DECLARE @LinkedPlatformId INT
-                    DECLARE @LinkedDownloadCount INT
-                    DECLARE @LinkedRecordCountToRemove INT
+              -- This cursor will run over the package ID's with linked dimensions, sorted by number of records to remove.
+              -- This is a good indicator of package ID popularity at a given point in time (since the previous roll-up).
+              DECLARE @LinkedPackageId INT
+              DECLARE @LinkedDateId INT
+              DECLARE @LinkedOperationId INT
+              DECLARE @LinkedClientId INT
+              DECLARE @LinkedPlatformId INT
+              DECLARE @LinkedDownloadCount INT
+              DECLARE @LinkedRecordCountToRemove INT
 
-			        DECLARE LinkedPackageCursor CURSOR FOR
-				        SELECT	[Dimension_Package_Id],
-						        [Dimension_Date_Id],
-						        [Dimension_Operation_Id],
-						        [Dimension_Client_Id],
-						        [Dimension_Platform_Id],
-						        [DownloadCount],
-						        [RecordCountToRemove]
-				        FROM	@T1RollUpTable
-				        -- Optimization: no need to roll-up if only a single record matches these linked dimensions
-				        -- for a given package id download in this T-1 roll-up window
-				        WHERE	[RecordCountToRemove] > 1
-				        ORDER BY [RecordCountToRemove] DESC;
+              DECLARE LinkedPackageCursor CURSOR FOR
+                SELECT  [Dimension_Package_Id],
+                        [Dimension_Date_Id],
+                        [Dimension_Operation_Id],
+                        [Dimension_Client_Id],
+                        [Dimension_Platform_Id],
+                        [DownloadCount],
+                        [RecordCountToRemove]
+                FROM    @T1RollUpTable
+                -- Optimization: no need to roll-up if only a single record matches these linked dimensions
+                -- for a given package id download in this T-1 roll-up window
+                WHERE  [RecordCountToRemove] > 1
+                ORDER BY [RecordCountToRemove] DESC;
 
-                    OPEN LinkedPackageCursor
+              OPEN LinkedPackageCursor
 
-			        FETCH NEXT FROM LinkedPackageCursor
-			        INTO @LinkedPackageId, @LinkedDateId, @LinkedOperationId, @LinkedClientId, @LinkedPlatformId, @LinkedDownloadCount, @LinkedRecordCountToRemove
+              FETCH NEXT FROM LinkedPackageCursor
+              INTO @LinkedPackageId, @LinkedDateId, @LinkedOperationId, @LinkedClientId, @LinkedPlatformId, @LinkedDownloadCount, @LinkedRecordCountToRemove
 
-			        WHILE @@FETCH_STATUS = 0
-			        BEGIN
-				        -- Roll-up operation for a single package ID linked to its dimensions within the T-1 roll-up window
+              WHILE @@FETCH_STATUS = 0
+              BEGIN
+                -- Roll-up operation for a single package ID linked to its dimensions within the T-1 roll-up window
 
-			            BEGIN TRANSACTION
+                BEGIN TRANSACTION
 
-                        BEGIN TRY
+                BEGIN TRY
 
-                            SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR)
-                                        + ' (linked to date ' + CAST(@LinkedDateId AS VARCHAR)
-                                        + ', operation ' + CAST(@LinkedOperationId AS VARCHAR)
-                                        + ', client ' + CAST(@LinkedClientId AS VARCHAR)
-                                        + ', platform ' + CAST(@LinkedPlatformId AS VARCHAR)
-                                        + '): '
-                                        + CAST(@LinkedDownloadCount AS VARCHAR) + ' downloads, ' + CAST(@LinkedRecordCountToRemove AS VARCHAR) + ' records to be removed';
-			                RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                  SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR)
+                              + ' (linked to date ' + CAST(@LinkedDateId AS VARCHAR)
+                              + ', operation ' + CAST(@LinkedOperationId AS VARCHAR)
+                              + ', client ' + CAST(@LinkedClientId AS VARCHAR)
+                              + ', platform ' + CAST(@LinkedPlatformId AS VARCHAR)
+                              + '): '
+                              + CAST(@LinkedDownloadCount AS VARCHAR) + ' downloads, ' + CAST(@LinkedRecordCountToRemove AS VARCHAR) + ' records to be removed';
+                  RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-                            SET @DeletedRecords = 0
-				            SET @InsertedRecords = 0
+                  SET @DeletedRecords = 0
+                  SET @InsertedRecords = 0
 
-                            -- Fetch the Fact_Download Id's matching the records to be rolled-up
-                            DECLARE @LinkedPackageIdTable TABLE
-                            (
-                              [Id] INT NOT NULL
-                            )
+                  -- Fetch the Fact_Download Id's matching the records to be rolled-up
+                  DECLARE @LinkedPackageIdTable TABLE
+                  (
+                    [Id] INT NOT NULL
+                  )
 
-                            INSERT INTO @LinkedPackageIdTable
-                            SELECT	[Id]
-							FROM	[dbo].[Fact_Download] (NOLOCK)
-							WHERE	[Dimension_Package_Id] = @LinkedPackageId
-								AND	[Dimension_Date_Id] = @LinkedDateId
-                                AND [Dimension_Operation_Id] = @LinkedOperationId
-                                AND [Dimension_Client_Id] = @LinkedClientId
-                                AND [Dimension_Platform_Id] = @LinkedPlatformId
+                  INSERT INTO @LinkedPackageIdTable
+                  SELECT  [Id]
+                  FROM    [dbo].[Fact_Download] (NOLOCK)
+                  WHERE   [Dimension_Package_Id] = @LinkedPackageId
+                      AND [Dimension_Date_Id] = @LinkedDateId
+                      AND [Dimension_Operation_Id] = @LinkedOperationId
+                      AND [Dimension_Client_Id] = @LinkedClientId
+                      AND [Dimension_Platform_Id] = @LinkedPlatformId
 
-                            -- No need to keep track of linked project-type dimensions
-				            DELETE
-				            FROM	[dbo].[Fact_Download_Dimension_ProjectType]
-				            WHERE	[Fact_Download_Id] IN (SELECT [Id] FROM @LinkedPackageIdTable)
+                  -- No need to keep track of linked project-type dimensions
+                  DELETE
+                  FROM  [dbo].[Fact_Download_Dimension_ProjectType]
+                  WHERE [Fact_Download_Id] IN (SELECT [Id] FROM @LinkedPackageIdTable)
 
-				            SET @DeletedRecords = @@rowcount
+                  SET @DeletedRecords = @@rowcount
 
-				            SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download_Dimension_ProjectType]';
-				            RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                  SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download_Dimension_ProjectType]';
+                  RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-				            SET @DeletedRecords = 0
+                  SET @DeletedRecords = 0
 
-                            DELETE
-				            FROM	[dbo].[Fact_Download]
-				            WHERE	[Id] IN (SELECT [Id] FROM @LinkedPackageIdTable)
+                  DELETE
+                  FROM  [dbo].[Fact_Download]
+                  WHERE [Id] IN (SELECT [Id] FROM @LinkedPackageIdTable)
 
-				            SET @DeletedRecords = @@rowcount
+                  SET @DeletedRecords = @@rowcount
 
-				            SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download]';
-				            RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                  SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download]';
+                  RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-                            INSERT INTO [dbo].[Fact_Download]
-				            (
-					            [Dimension_Package_Id],
-					            [Dimension_Date_Id],
-					            [Dimension_Time_Id],
-					            [Dimension_Operation_Id],
-					            [Dimension_Client_Id],
-					            [Dimension_Platform_Id],
-					            [Fact_UserAgent_Id],
-					            [Fact_LogFileName_Id],
-					            [Fact_EdgeServer_IpAddress_Id],
-					            [DownloadCount],
-					            [Timestamp]
-				            )
-				            VALUES
-				            (
-					            @LinkedPackageId,
-					            @LinkedDateId,
-					            0, -- no longer track the Time dimension on T-1 roll-ups
-					            @LinkedOperationId,
-					            @LinkedClientId,
-					            @LinkedPlatformId,
-					            1, -- no longer track the raw user agent on T-1 roll-ups
-					            1, -- no longer track the log file name on T-1 roll-ups
-					            1, -- no longer track the edge server IP on T-1 roll-ups
-					            @LinkedDownloadCount,
-					            GETUTCDATE()
-				            )
+                  INSERT INTO [dbo].[Fact_Download]
+                  (
+                    [Dimension_Package_Id],
+                    [Dimension_Date_Id],
+                    [Dimension_Time_Id],
+                    [Dimension_Operation_Id],
+                    [Dimension_Client_Id],
+                    [Dimension_Platform_Id],
+                    [Fact_UserAgent_Id],
+                    [Fact_LogFileName_Id],
+                    [Fact_EdgeServer_IpAddress_Id],
+                    [DownloadCount],
+                    [Timestamp]
+                  )
+                  VALUES
+                  (
+                    @LinkedPackageId,
+                    @LinkedDateId,
+                    0, -- no longer track the Time dimension on T-1 roll-ups
+                    @LinkedOperationId,
+                    @LinkedClientId,
+                    @LinkedPlatformId,
+                    1, -- no longer track the raw user agent on T-1 roll-ups
+                    1, -- no longer track the log file name on T-1 roll-ups
+                    1, -- no longer track the edge server IP on T-1 roll-ups
+                    @LinkedDownloadCount,
+                    GETUTCDATE()
+                  )
 
-				            SET @InsertedRecords = @@rowcount
-				            SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR) + ': Inserted ' + CAST(@InsertedRecords AS VARCHAR) + ' record for ' + CAST(@LinkedDownloadCount AS VARCHAR) + ' downloads';
-				            RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                  SET @InsertedRecords = @@rowcount
+                  SET @Msg = 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR) + ': Inserted ' + CAST(@InsertedRecords AS VARCHAR) + ' record for ' + CAST(@LinkedDownloadCount AS VARCHAR) + ' downloads';
+                  RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-                            COMMIT TRANSACTION
-			            END TRY
-			            BEGIN CATCH
-				            ROLLBACK TRANSACTION
+                  COMMIT TRANSACTION
 
-				            PRINT 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR)
-                                        + ' (linked to date ' + CAST(@LinkedDateId AS VARCHAR)
-                                        + ', operation ' + CAST(@LinkedOperationId AS VARCHAR)
-                                        + ', client ' + CAST(@LinkedClientId AS VARCHAR)
-                                        + ', platform ' + CAST(@LinkedPlatformId AS VARCHAR)
-                                        + '): Rolled back transaction - ' + ERROR_MESSAGE();
+                END TRY
+                BEGIN CATCH
 
-			            END CATCH
+                  ROLLBACK TRANSACTION
 
-                        FETCH NEXT FROM LinkedPackageCursor
-			            INTO @LinkedPackageId, @LinkedDateId, @LinkedOperationId, @LinkedClientId, @LinkedPlatformId, @LinkedDownloadCount, @LinkedRecordCountToRemove
-			        END
+                  PRINT 'Package Dimension ID ' + CAST(@LinkedPackageId AS VARCHAR)
+                          + ' (linked to date ' + CAST(@LinkedDateId AS VARCHAR)
+                          + ', operation ' + CAST(@LinkedOperationId AS VARCHAR)
+                          + ', client ' + CAST(@LinkedClientId AS VARCHAR)
+                          + ', platform ' + CAST(@LinkedPlatformId AS VARCHAR)
+                          + '): Rolled back transaction - ' + ERROR_MESSAGE();
 
-		            CLOSE LinkedPackageCursor;
-		            DEALLOCATE LinkedPackageCursor;
-		        END
-	        ELSE
-		        BEGIN
-			        -- This is a T-@MinAgeInDays roll-up: don't keep track of linked dimensions
-			        SELECT	@DownloadCount = SUM(f.[DownloadCount]),
-					        @RecordCountToRemove = COUNT(f.[Id])
-			        FROM	[dbo].[Fact_Download] AS f (NOLOCK)
-			        WHERE	f.[Dimension_Date_Id] <= @MaxDimensionDateId
-				        AND f.[Dimension_Package_Id] = @Dimension_Package_Id
-			        GROUP BY	f.[Dimension_Package_Id]
+                END CATCH
 
-			        SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': ' + CAST(@DownloadCount AS VARCHAR) + ' downloads, ' + CAST(@RecordCountToRemove AS VARCHAR) + ' records to be removed';
-			        RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                FETCH NEXT FROM LinkedPackageCursor
+                INTO @LinkedPackageId, @LinkedDateId, @LinkedOperationId, @LinkedClientId, @LinkedPlatformId, @LinkedDownloadCount, @LinkedRecordCountToRemove
+              END
 
-			        BEGIN TRANSACTION
+              CLOSE LinkedPackageCursor;
+              DEALLOCATE LinkedPackageCursor;
+            END
+          ELSE
+            BEGIN
 
-			        BEGIN TRY
+              -- This is a T-@MinAgeInDays roll-up: don't keep track of linked dimensions
+              SELECT  @DownloadCount = SUM(f.[DownloadCount]),
+                      @RecordCountToRemove = COUNT(f.[Id])
+              FROM    [dbo].[Fact_Download] AS f (NOLOCK)
+              WHERE   f.[Dimension_Date_Id] <= @MaxDimensionDateId
+                  AND f.[Dimension_Package_Id] = @Dimension_Package_Id
+              GROUP BY f.[Dimension_Package_Id]
 
-				        SET @DeletedRecords = 0
-				        SET @InsertedRecords = 0
+              SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': ' + CAST(@DownloadCount AS VARCHAR) + ' downloads, ' + CAST(@RecordCountToRemove AS VARCHAR) + ' records to be removed';
+              RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-				        DELETE
-				        FROM	[dbo].[Fact_Download_Dimension_ProjectType]
-				        WHERE	[Fact_Download_Id] IN	(
-														        SELECT	[Id]
-														        FROM	[dbo].[Fact_Download] (NOLOCK)
-														        WHERE	[Dimension_Package_Id] = @Dimension_Package_Id
-															        AND	[Dimension_Date_Id] <= @MaxDimensionDateId
-												        )
-				        SET @DeletedRecords = @@rowcount
+              BEGIN TRANSACTION
 
-				        SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download_Dimension_ProjectType]';
-				        RAISERROR(@Msg, 0, 1) WITH NOWAIT
+              BEGIN TRY
 
-				        SET @DeletedRecords = 0
+                SET @DeletedRecords = 0
+                SET @InsertedRecords = 0
 
-				        DELETE
-				        FROM	[dbo].[Fact_Download]
-				        WHERE	[Dimension_Package_Id] = @Dimension_Package_Id
-					        AND	[Dimension_Date_Id] <= @MaxDimensionDateId
+                DELETE
+                FROM   [dbo].[Fact_Download_Dimension_ProjectType]
+                WHERE  [Fact_Download_Id] IN  (
+                                                SELECT  [Id]
+                                                FROM  [dbo].[Fact_Download] (NOLOCK)
+                                                WHERE  [Dimension_Package_Id] = @Dimension_Package_Id
+                                                  AND  [Dimension_Date_Id] <= @MaxDimensionDateId
+                                              )
+                SET @DeletedRecords = @@rowcount
 
-				        SET @DeletedRecords = @@rowcount
+                SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download_Dimension_ProjectType]';
+                RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-				        SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download]';
-				        RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                SET @DeletedRecords = 0
 
-				        INSERT INTO [dbo].[Fact_Download]
-				        (
-					        [Dimension_Package_Id],
-					        [Dimension_Date_Id],
-					        [Dimension_Time_Id],
-					        [Dimension_Operation_Id],
-					        [Dimension_Client_Id],
-					        [Dimension_Platform_Id],
-					        [Fact_UserAgent_Id],
-					        [Fact_LogFileName_Id],
-					        [Fact_EdgeServer_IpAddress_Id],
-					        [DownloadCount],
-					        [Timestamp]
-				        )
-				        VALUES
-				        (
-					        @Dimension_Package_Id,
-					        -1,
-					        0,
-					        1,
-					        1,
-					        1,
-					        1,
-					        1,
-					        1,
-					        @DownloadCount,
-					        GETUTCDATE()
-				        )
+                DELETE
+                FROM    [dbo].[Fact_Download]
+                WHERE   [Dimension_Package_Id] = @Dimension_Package_Id
+                    AND [Dimension_Date_Id] <= @MaxDimensionDateId
 
-				        SET @InsertedRecords = @@rowcount
-				        SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Inserted ' + CAST(@InsertedRecords AS VARCHAR) + ' record for ' + CAST(@DownloadCount AS VARCHAR) + ' downloads';
-				        RAISERROR(@Msg, 0, 1) WITH NOWAIT
+                SET @DeletedRecords = @@rowcount
 
-				        COMMIT TRANSACTION
-			        END TRY
-			        BEGIN CATCH
-				        ROLLBACK TRANSACTION
+                SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Deleted ' + CAST(@DeletedRecords AS VARCHAR) + ' records from [dbo].[Fact_Download]';
+                RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-				        PRINT 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Rolled back transaction - ' + ERROR_MESSAGE();
+                INSERT INTO [dbo].[Fact_Download]
+                (
+                  [Dimension_Package_Id],
+                  [Dimension_Date_Id],
+                  [Dimension_Time_Id],
+                  [Dimension_Operation_Id],
+                  [Dimension_Client_Id],
+                  [Dimension_Platform_Id],
+                  [Fact_UserAgent_Id],
+                  [Fact_LogFileName_Id],
+                  [Fact_EdgeServer_IpAddress_Id],
+                  [DownloadCount],
+                  [Timestamp]
+                )
+                VALUES
+                (
+                  @Dimension_Package_Id,
+                  -1,
+                  0,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  @DownloadCount,
+                  GETUTCDATE()
+                )
 
-			        END CATCH
-		        END
+                SET @InsertedRecords = @@rowcount
+                SET @Msg = 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Inserted ' + CAST(@InsertedRecords AS VARCHAR) + ' record for ' + CAST(@DownloadCount AS VARCHAR) + ' downloads';
+                RAISERROR(@Msg, 0, 1) WITH NOWAIT
 
-			FETCH NEXT FROM PackageCursor
-			INTO @Dimension_Package_Id, @RecordCountInT1Window, @RollUpToDimensionDateId
-		END
+                COMMIT TRANSACTION
+              END TRY
+              BEGIN CATCH
+                ROLLBACK TRANSACTION
 
-		CLOSE PackageCursor;
-		DEALLOCATE PackageCursor;
+                PRINT 'Package Dimension ID ' + CAST(@Dimension_Package_Id AS VARCHAR) + ': Rolled back transaction - ' + ERROR_MESSAGE();
 
-		PRINT 'FINISHED!';
-	END
+              END CATCH
+            END
+
+      FETCH NEXT FROM PackageCursor
+      INTO @Dimension_Package_Id, @RecordCountInT1Window, @RollUpToDimensionDateId
+    END
+
+    CLOSE PackageCursor;
+    DEALLOCATE PackageCursor;
+
+    PRINT 'FINISHED!';
+  END
 END
