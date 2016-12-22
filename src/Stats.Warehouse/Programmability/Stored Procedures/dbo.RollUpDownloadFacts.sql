@@ -130,7 +130,7 @@ BEGIN
                       'RecordCountToRemove' = COUNT(f.[Id])
               FROM    [dbo].[Fact_Download] AS f (NOLOCK)
               WHERE   f.[Dimension_Date_Id] <> -1
-                  AND f.[Dimension_Date_Id] <= @MaxDimensionDateId
+                  AND f.[Dimension_Date_Id] <= @RollUpToDimensionDateId
                   AND f.[Dimension_Package_Id] = @Dimension_Package_Id
               GROUP BY  f.[Dimension_Package_Id],
                         f.[Dimension_Date_Id],
