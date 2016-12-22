@@ -188,12 +188,12 @@ BEGIN
                   SET @InsertedRecords = 0
 
                   -- Fetch the Fact_Download Id's matching the records to be rolled-up
-                  DECLARE @LinkedPackageIdTable TABLE
+                  DECLARE @LinkedFactIdTable TABLE
                   (
-                    [Id] INT NOT NULL
+                    [Id] UNIQUEIDENTIFIER NOT NULL
                   )
 
-                  INSERT INTO @LinkedPackageIdTable
+                  INSERT INTO @LinkedFactIdTable
                   SELECT  [Id]
                   FROM    [dbo].[Fact_Download] (NOLOCK)
                   WHERE   [Dimension_Package_Id] = @LinkedPackageId
@@ -205,7 +205,7 @@ BEGIN
                   -- No need to keep track of linked project-type dimensions
                   DELETE
                   FROM  [dbo].[Fact_Download_Dimension_ProjectType]
-                  WHERE [Fact_Download_Id] IN (SELECT [Id] FROM @LinkedPackageIdTable)
+                  WHERE [Fact_Download_Id] IN (SELECT [Id] FROM @LinkedFactIdTable)
 
                   SET @DeletedRecords = @@rowcount
 
@@ -216,7 +216,7 @@ BEGIN
 
                   DELETE
                   FROM  [dbo].[Fact_Download]
-                  WHERE [Id] IN (SELECT [Id] FROM @LinkedPackageIdTable)
+                  WHERE [Id] IN (SELECT [Id] FROM @LinkedFactIdTable)
 
                   SET @DeletedRecords = @@rowcount
 
