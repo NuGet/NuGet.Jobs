@@ -27,9 +27,24 @@ namespace Stats.AzureCdnLogs.Common
 
 
             var urlSegments = requestUrl.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var maybePackageId = urlSegments[urlSegments.Length - 3];
+            var maybePackageVersion = urlSegments[urlSegments.Length - 2];
+            var reconstructV3FileName = maybePackageId + "." + maybePackageVersion + _nupkgExtension;
             var fileName = urlSegments.Last();
 
-            if (fileName.EndsWith(_nupkgExtension))
+            var isV3Url = String.Compare(fileName, reconstructV3FileName, ignoreCase: true) == 0;
+
+            if (isV3Url)
+            {
+                var packageDefinition = new PackageDefinition()
+                {
+                    PackageId = maybePackageId,
+                    PackageVersion = maybePackageVersion
+                };
+
+                return packageDefinition;
+            }
+            else if (fileName.EndsWith(_nupkgExtension))
             {
                 var fileNameSegments = fileName.Substring(0, fileName.Length - _nupkgExtension.Length).Split('.');
                 var packageIdSegments = new List<string>();

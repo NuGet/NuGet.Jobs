@@ -16,6 +16,9 @@ namespace Tests.Stats.ImportAzureCdnStatistics
         [InlineData("dnx-mono", "1.0.0-beta7", "http://localhost/packages/dnx-mono.1.0.0-beta7.nupkg")]
         [InlineData("Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling.ServiceBus", "6.0.1304", "http://localhost/packages/Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling.ServiceBus.6.0.1304.nupkg")]
         [InlineData("新包", "1.0.0", "http://localhost/packages/%E6%96%B0%E5%8C%85.1.0.0.nupkg")]
+        [InlineData("fakexrmeasy.365", "1.19.2", "https://v3Url/fakexrmeasy.365/1.19.2/fakexrmeasy.365.1.19.2.nupkg")]
+        [InlineData("fakexrmeasy", "365.1.19.2", "https://v2Url/packages/fakexrmeasy.365.1.19.2.nupkg")] // This case is here to make sure that we don't try to pass v2 urls through the new v3 style parser. Note that this is a failure case of the parser.
+        [InlineData("fakexrm.1.easy", "1.0", "https://localhost/packages/fakexrm.1.easy/1.0/fakexrm.1.easy.1.0.nupkg")]
         //[InlineData("5.0.0.0", "5.0.0", "http://localhost/packages/5.0.0.0.5.0.0.nupkg")] -- can't determine for 100% what the correct id and version is without reaching out to the main gallery db
         public void ExtractsPackageIdAndVersionFromRequestUrl(string expectedPackageId, string expectedPackageVersion, string requestUrl)
         {
