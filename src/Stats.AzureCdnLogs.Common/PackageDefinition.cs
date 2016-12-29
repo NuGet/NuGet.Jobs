@@ -25,23 +25,13 @@ namespace Stats.AzureCdnLogs.Common
 
             requestUrl = HttpUtility.UrlDecode(requestUrl);
 
-
             var urlSegments = requestUrl.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            var maybePackageId = urlSegments[urlSegments.Length - 3];
-            var maybePackageVersion = urlSegments[urlSegments.Length - 2];
-            var reconstructV3FileName = maybePackageId + "." + maybePackageVersion + _nupkgExtension;
+            PackageDefinition packageDefinition;
+            var isV3Url = TryGetV3PackageDefinition(urlSegments, out packageDefinition);
             var fileName = urlSegments.Last();
-
-            var isV3Url = String.Compare(fileName, reconstructV3FileName, ignoreCase: true) == 0;
 
             if (isV3Url)
             {
-                var packageDefinition = new PackageDefinition()
-                {
-                    PackageId = maybePackageId,
-                    PackageVersion = maybePackageVersion
-                };
-
                 return packageDefinition;
             }
             else if (fileName.EndsWith(_nupkgExtension))
@@ -84,13 +74,41 @@ namespace Stats.AzureCdnLogs.Common
                     }
                 }
 
-                var packageDefinition = new PackageDefinition();
+                packageDefinition = new PackageDefinition();
                 packageDefinition.PackageId = string.Join(_dotSeparator, packageIdSegments);
                 packageDefinition.PackageVersion = string.Join(_dotSeparator, packageVersionSegments);
 
                 return packageDefinition;
             }
             else return null;
+        }
+
+        private static bool TryGetV3PackageDefinition(string[] urlSegments, out PackageDefinition result)
+        {
+            result = null;
+            if (urlSegments.Length < 3)
+            {
+                return false;
+            }
+
+            var maybePackageId = urlSegments[urlSegments.Length - 3];
+            var maybePackageVersion = urlSegments[urlSegments.Length - 2];
+            var reconstructV3FileName = maybePackageId + "." + maybePackageVersion + _nupkgExtension;
+            var fileName = urlSegments.Last();
+
+            var isV3Url = String.Compare(fileName, reconstructV3FileName, StringComparison.OrdinalIgnoreCase) == 0;
+            if (isV3Url)
+            {
+                result = new PackageDefinition()
+                {
+                    PackageId = maybePackageId,
+                    PackageVersion = maybePackageVersion
+                };
+
+                return true;
+            }
+
+            return false;
         }
     }
 }
