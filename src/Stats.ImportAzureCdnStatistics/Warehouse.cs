@@ -620,7 +620,7 @@ namespace Stats.ImportAzureCdnStatistics
                 return results;
             }
 
-            var nonCachedToolDimensions = tools.Except(results, new ToolDimensionOrdinalIgnoreCaseComparer()).ToList();
+            var nonCachedToolDimensions = tools.Except(_cachedToolDimensions, new ToolDimensionOrdinalIgnoreCaseComparer()).ToList();
 
             if (nonCachedToolDimensions.Any())
             {
