@@ -5,33 +5,6 @@ using System.Collections.Generic;
 
 namespace Stats.ImportAzureCdnStatistics
 {
-    /// <summary>
-    /// An IEqualityComparer that compares ToolDimension properties' values using StringComparison.OrdinalIgnoreCase.
-    /// </summary>
-    public class ToolDimensionOrdinalIgnoreCaseComparer : IEqualityComparer<ToolDimension>
-    {
-        public ToolDimensionOrdinalIgnoreCaseComparer()
-        {
-
-        }
-        public bool Equals(ToolDimension x, ToolDimension y)
-        {
-            if(x != null && y != null)
-            {
-                return string.Equals(x.ToolId, y.ToolId, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(x.ToolVersion, y.ToolVersion, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(x.FileName, y.FileName, StringComparison.OrdinalIgnoreCase);
-            }
-            return x == null && y == null;
-        }
-
-        public int GetHashCode(ToolDimension obj)
-        {
-            //let only the Equals to participate in Linq equality checks
-            return 1;
-        }
-    }
-
     public class ToolDimension
     {
         public ToolDimension(string toolId, string toolVersion, string fileName)
@@ -48,7 +21,9 @@ namespace Stats.ImportAzureCdnStatistics
 
         protected bool Equals(ToolDimension other)
         {
-            return string.Equals(ToolId, other.ToolId) && string.Equals(ToolVersion, other.ToolVersion) && string.Equals(FileName, other.FileName);
+            return string.Equals(ToolId, other.ToolId, StringComparison.OrdinalIgnoreCase) 
+                && string.Equals(ToolVersion, other.ToolVersion, StringComparison.OrdinalIgnoreCase) 
+                && string.Equals(FileName, other.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override bool Equals(object obj)
@@ -63,9 +38,9 @@ namespace Stats.ImportAzureCdnStatistics
         {
             unchecked
             {
-                var hashCode = (ToolId != null ? ToolId.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (ToolVersion != null ? ToolVersion.GetHashCode() : 0);
-                hashCode = (hashCode*397) ^ (FileName != null ? FileName.GetHashCode() : 0);
+                var hashCode = (ToolId != null ? ToolId.ToLower().GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (ToolVersion != null ? ToolVersion.ToLower().GetHashCode() : 0);
+                hashCode = (hashCode*397) ^ (FileName != null ? FileName.ToLower().GetHashCode() : 0);
                 return hashCode;
             }
         }
