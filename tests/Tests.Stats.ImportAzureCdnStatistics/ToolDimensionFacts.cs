@@ -25,10 +25,12 @@ namespace Tests.Stats.ImportAzureCdnStatistics
             var tool2 = new ToolDimension(toolId2, toolVersion2, fileName2);
 
             //Act
-            var actualResult = tool1.Equals(tool2);
+            var actualResultEquals = tool1.Equals(tool2);
+            var actualResultGetHashCode = tool1.GetHashCode() == tool2.GetHashCode();
 
             // Assert
-            Assert.Equal(expectedResult, actualResult);
+            Assert.Equal(expectedResult, actualResultEquals);
+            Assert.Equal(expectedResult, actualResultGetHashCode);
         }
     }
 }
