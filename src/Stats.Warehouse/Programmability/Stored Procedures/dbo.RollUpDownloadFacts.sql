@@ -4,7 +4,7 @@ AS
 BEGIN
   SET NOCOUNT ON;
 
-  -- This procedure will roll-up the datapoints to only retain the specificed T-@MinAgeInDays window of facts.
+  -- This procedure will roll-up the datapoints to only retain the specified T-@MinAgeInDays window of facts.
   -- Rolled-up datapoints are aggregated by the SUM of the downloadcount for a given package id and version,
   -- and decoupled from any dimensions we don't care about.
 
