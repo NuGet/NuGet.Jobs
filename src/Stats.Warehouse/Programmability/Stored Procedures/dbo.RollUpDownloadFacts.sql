@@ -31,7 +31,7 @@ BEGIN
 
     -- In memory table that tracks how many records can be rolled-up per package,
     -- and what target Date we should roll-up to.
-    -- If the record count we can remove in this roll-up window exceeds the threshold
+    -- If the record count we can remove in this roll-up window is greater than or equal to the threshold
     -- (defined by @RecordsToRemoveThresholdForRollupsToOneDay),
     -- then the MaxDimensionDateId will aim to roll-up to T-1 day, instead of the default T-@MinAgeInDays period.
     DECLARE @PackageIdTable TABLE
