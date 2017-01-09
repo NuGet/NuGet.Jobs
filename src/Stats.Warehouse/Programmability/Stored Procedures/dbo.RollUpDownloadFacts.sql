@@ -41,17 +41,19 @@ BEGIN
       [MaxDimensionDateId] INT NOT NULL
     )
 
+    DECLARE @NowUtc DATETIME = GETUTCDATE()
+
     -- Get the Dimension_Date_Id for the maximum date in this T-@MinAgeInDays period
     SELECT  @MaxDimensionDateId = MAX([Id])
     FROM    [dbo].[Dimension_Date] (NOLOCK)
     WHERE   [Date] IS NOT NULL
-        AND [Date] < DATEADD(DAY, -@MinAgeInDays, GETUTCDATE())
+        AND [Date] < DATEADD(DAY, -@MinAgeInDays, @NowUtc)
 
     -- Get the Dimension_Date_Id for the maximum date in this T-1 period
     SELECT  @MaxDimensionDateForRollUpsToOneDay = MAX([Id])
     FROM    [dbo].[Dimension_Date] (NOLOCK)
     WHERE   [Date] IS NOT NULL
-        AND [Date] < DATEADD(DAY, -1, GETUTCDATE())
+        AND [Date] < DATEADD(DAY, -1, @NowUtc)
 
     INSERT INTO @PackageIdTable
     SELECT  DISTINCT p.[Id],
