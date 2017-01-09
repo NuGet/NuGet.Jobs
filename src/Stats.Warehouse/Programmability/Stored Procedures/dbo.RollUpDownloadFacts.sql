@@ -20,7 +20,7 @@ BEGIN
     DECLARE @RecordsToRemoveThresholdForRollUpsToOneDay INT = 100000
 
     DECLARE @MaxDimensionDateId INT = -1
-    DECLARE @MaxDimensionDateForRollUpsToOneDay INT = -1
+    DECLARE @MaxDimensionDateIdForRollUpsToOneDay INT = -1
     DECLARE @Dimension_Package_Id INT
     DECLARE @DownloadCount INT = 0
     DECLARE @RecordCountInT1Window INT = 0
@@ -50,7 +50,7 @@ BEGIN
         AND [Date] < DATEADD(DAY, -@MinAgeInDays, @NowUtc)
 
     -- Get the Dimension_Date_Id for the maximum date in this T-1 period
-    SELECT  @MaxDimensionDateForRollUpsToOneDay = MAX([Id])
+    SELECT  @MaxDimensionDateIdForRollUpsToOneDay = MAX([Id])
     FROM    [dbo].[Dimension_Date] (NOLOCK)
     WHERE   [Date] IS NOT NULL
         AND [Date] < DATEADD(DAY, -1, @NowUtc)
@@ -61,14 +61,14 @@ BEGIN
             'MaxDimensionDateId' =
               CASE
                 WHEN COUNT(f.[Id]) >= @RecordsToRemoveThresholdForRollUpsToOneDay
-                THEN @MaxDimensionDateForRollUpsToOneDay
+                THEN @MaxDimensionDateIdForRollUpsToOneDay
                 ELSE @MaxDimensionDateId
               END
     FROM  [dbo].[Dimension_Package] AS p (NOLOCK)
     INNER JOIN  [dbo].[Fact_Download] AS f (NOLOCK)
     ON    f.[Dimension_Package_Id] = p.[Id]
     WHERE f.[Dimension_Date_Id] <> -1
-      AND f.[Dimension_Date_Id] <= @MaxDimensionDateForRollUpsToOneDay
+      AND f.[Dimension_Date_Id] <= @MaxDimensionDateIdForRollUpsToOneDay
     GROUP BY  p.[Id]
     ORDER BY  RecordCountInT1Window DESC;
 
@@ -107,7 +107,7 @@ BEGIN
           SET @Msg = 'Cursor: ' + CAST(@CursorPosition AS VARCHAR) + '/' + CAST(@TotalCursorPositions AS VARCHAR) + ' [' + CAST(@ProgressPct AS VARCHAR) + ' pct.]';
           RAISERROR(@Msg, 0, 1) WITH NOWAIT;
 
-          IF @RollUpToDimensionDateId = @MaxDimensionDateForRollUpsToOneDay
+          IF @RollUpToDimensionDateId = @MaxDimensionDateIdForRollUpsToOneDay
             BEGIN
               -- This is a T-1 roll-up: keep track of linked dimensions
               DECLARE @T1RollUpTable TABLE
