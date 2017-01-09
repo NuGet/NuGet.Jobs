@@ -72,7 +72,7 @@ BEGIN
     GROUP BY  p.[Id]
     ORDER BY  RecordCountInT1Window DESC;
 
-    SELECT  @TotalCursorPositions = COUNT(DISTINCT [Id])
+    SELECT  @TotalCursorPositions = COUNT([Id])
     FROM    @PackageIdTable;
 
     SET @Msg = 'Fetched ' + CAST(@TotalCursorPositions AS VARCHAR) + ' package dimension IDs.';
