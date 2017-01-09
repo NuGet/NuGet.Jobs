@@ -344,14 +344,14 @@ BEGIN
                 VALUES
                 (
                   @Dimension_Package_Id,
-                  -1,
-                  0,
-                  1,
-                  1,
-                  1,
-                  1,
-                  1,
-                  1,
+                  -1, -- no longer track the Date dimension on T-@MinAgeInDays roll-ups
+                  0, -- no longer track the Time dimension on T-@MinAgeInDays roll-ups
+                  1, -- no longer track the Operation dimension on T-@MinAgeInDays roll-ups
+                  1, -- no longer track the Client dimension on T-@MinAgeInDays roll-ups
+                  1, -- no longer track the Platform dimension on T-@MinAgeInDays roll-ups
+                  1, -- no longer track the raw user agent on T-@MinAgeInDays roll-ups
+                  1, -- no longer track the log file name on T-@MinAgeInDays roll-ups
+                  1, -- no longer track the edge server IP on T-@MinAgeInDays roll-ups
                   @DownloadCount,
                   GETUTCDATE()
                 )
