@@ -15,6 +15,10 @@ BEGIN
   IF @MinAgeInDays IS NOT NULL
   BEGIN
 
+    -- Ensure no leftovers are consumed when a previous run exited prematurely.
+    DROP TABLE IF EXISTS [Temp_RollUp_PackageIdTable];
+    DROP TABLE IF EXISTS [Temp_RollUp_T1RollUpTable];
+
     -- This threshold defines the number of records to remove we consider as being 'popular' enough
     -- to trigger a roll-up to a single day instead of retaining the configured T-@MinAgeInDays period.
     DECLARE @RecordsToRemoveThresholdForRollUpsToOneDay INT = 100000
@@ -29,17 +33,17 @@ BEGIN
     DECLARE @TotalCursorPositions INT = 0
     DECLARE @Msg NVARCHAR(MAX) = ''
 
-    -- In memory table that tracks how many records can be rolled-up per package,
+    -- Temporary table that tracks how many records can be rolled-up per package,
     -- and what target Date we should roll-up to.
     -- If the record count we can remove in this roll-up window is greater than or equal to the threshold
     -- (defined by @RecordsToRemoveThresholdForRollupsToOneDay),
     -- then the MaxDimensionDateId will aim to roll-up to T-1 day, instead of the default T-@MinAgeInDays period.
-    DECLARE @PackageIdTable TABLE
+    CREATE TABLE Temp_RollUp_PackageIdTable
     (
       [Id] INT NOT NULL PRIMARY KEY,
       [RecordCountInT1Window] INT NOT NULL,
       [MaxDimensionDateId] INT NOT NULL
-    )
+    );
 
     DECLARE @NowUtc DATETIME = GETUTCDATE()
 
@@ -55,7 +59,7 @@ BEGIN
     WHERE   [Date] IS NOT NULL
         AND [Date] < DATEADD(DAY, -1, @NowUtc)
 
-    INSERT INTO @PackageIdTable
+    INSERT INTO [Temp_RollUp_PackageIdTable]
     SELECT  DISTINCT p.[Id],
             'RecordCountInT1Window' = COUNT(f.[Id]),
             'MaxDimensionDateId' =
@@ -73,7 +77,7 @@ BEGIN
     ORDER BY  RecordCountInT1Window DESC;
 
     SELECT  @TotalCursorPositions = COUNT([Id])
-    FROM    @PackageIdTable;
+    FROM    [Temp_RollUp_PackageIdTable] (NOLOCK);
 
     SET @Msg = 'Fetched ' + CAST(@TotalCursorPositions AS VARCHAR) + ' package dimension IDs.';
     RAISERROR(@Msg, 0, 1) WITH NOWAIT;
@@ -84,7 +88,7 @@ BEGIN
     SELECT  [Id],
             [RecordCountInT1Window],
             [MaxDimensionDateId]
-    FROM    @PackageIdTable
+    FROM    [Temp_RollUp_PackageIdTable] (NOLOCK)
     -- Optimization: no need to roll-up if only a single download was recorded for a given package id and version
     WHERE   [RecordCountInT1Window] > 1
     ORDER BY  [RecordCountInT1Window] DESC;
@@ -110,7 +114,7 @@ BEGIN
           IF @RollUpToDimensionDateId = @MaxDimensionDateIdForRollUpsToOneDay
             BEGIN
               -- This is a T-1 roll-up: keep track of linked dimensions
-              DECLARE @T1RollUpTable TABLE
+              CREATE TABLE Temp_RollUp_T1RollUpTable
               (
                 [Dimension_Package_Id] INT NOT NULL,
                 [Dimension_Date_Id] INT NOT NULL,
@@ -119,10 +123,10 @@ BEGIN
                 [Dimension_Platform_Id] INT NOT NULL,
                 [DownloadCount] INT NOT NULL,
                 [RecordCountToRemove] INT NOT NULL
-              )
+              );
 
               -- This is a T-1 roll-up: keep track of linked dimensions
-              INSERT INTO @T1RollUpTable
+              INSERT INTO [Temp_RollUp_T1RollUpTable]
               SELECT  f.[Dimension_Package_Id],
                       f.[Dimension_Date_Id],
                       f.[Dimension_Operation_Id],
@@ -158,7 +162,7 @@ BEGIN
                         [Dimension_Platform_Id],
                         [DownloadCount],
                         [RecordCountToRemove]
-                FROM    @T1RollUpTable
+                FROM    [Temp_RollUp_T1RollUpTable] (NOLOCK)
                 -- Optimization: no need to roll-up if only a single record matches these linked dimensions
                 -- for a given package id download in this T-1 roll-up window
                 WHERE  [RecordCountToRemove] > 1
@@ -280,6 +284,9 @@ BEGIN
 
               CLOSE LinkedPackageCursor;
               DEALLOCATE LinkedPackageCursor;
+
+              DROP TABLE IF EXISTS [Temp_RollUp_T1RollUpTable];
+
             END
           ELSE
             BEGIN
@@ -376,6 +383,8 @@ BEGIN
 
     CLOSE PackageCursor;
     DEALLOCATE PackageCursor;
+
+    DROP TABLE IF EXISTS [Temp_RollUp_PackageIdTable];
 
     PRINT 'FINISHED!';
   END
