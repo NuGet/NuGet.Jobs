@@ -39,7 +39,7 @@ Function Prepare-Vcs-Callback {
     
     Trace-Log 'Preparing Validation.Callback.Vcs Package'
     
-    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package"
+    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -SkipRestore
     Copy-Item "src\Validation.Callback.Vcs\obj\$Configuration\_PublishedWebsites\Validation.Callback.Vcs_Package\Validation.Callback.Vcs.zip" "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
 }
 
