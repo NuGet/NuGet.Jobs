@@ -325,14 +325,11 @@ Function New-Package {
 	}
 	
 	$opts += '-OutputDirectory', $Artifacts
-    Write-Host $Branch
     $Properties = "Configuration=$Configuration"
     if ($Branch) {
-        Write-Host "inside"
         $Properties += ";branch=$Branch"
     }
-    Write-Host $Properties
-	$opts += '-Properties', "Configuration=$Configuration"
+	$opts += '-Properties', $Properties
 	
 	if (-not $BuildNumber) {
 		$BuildNumber = Get-BuildNumber
