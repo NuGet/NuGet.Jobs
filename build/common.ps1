@@ -313,7 +313,8 @@ Function New-Package {
 		[string]$ReleaseLabel = "zlocal",
 		[string]$BuildNumber,
 		[switch]$NoPackageAnalysis,
-		[string]$Version
+		[string]$Version,
+        [string]$Branch
 	)
 	Trace-Log "Creating package from @""$TargetFilePath"""
 	$opts = , 'pack'
@@ -324,6 +325,11 @@ Function New-Package {
 	}
 	
 	$opts += '-OutputDirectory', $Artifacts
+    
+    $Properties = "Configuration=$Configuration"
+    if ($Branch) {
+        $Properties += ";branch=$Branch"
+    }
 	$opts += '-Properties', "Configuration=$Configuration"
 	
 	if (-not $BuildNumber) {
