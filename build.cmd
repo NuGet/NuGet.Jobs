@@ -22,8 +22,8 @@ if not "%errorlevel%"=="0" goto failure
 
 REM Test
 tools\nuget.exe install xunit.runner.console -Version 2.0.0 -OutputDirectory packages
-packages\xunit.runner.console.2.0.0\tools\xunit.console.exe tests\Tests.Stats.CollectAzureCdnLogs\bin\%config%\Tests.Stats.CollectAzureCdnLogs.dll
-packages\xunit.runner.console.2.0.0\tools\xunit.console.exe tests\Tests.Stats.ImportAzureCdnStatistics\bin\%config%\Tests.Stats.ImportAzureCdnStatistics.dll
+packages\xunit.runner.console.2.0.0\tools\xunit.console.exe tests\Tests.Stats.CollectAzureCdnLogs\bin\%config%\Tests.Stats.CollectAzureCdnLogs.dll -xml Results.Tests.Stats.CollectAzureCdnLogs.xml
+packages\xunit.runner.console.2.0.0\tools\xunit.console.exe tests\Tests.Stats.ImportAzureCdnStatistics\bin\%config%\Tests.Stats.ImportAzureCdnStatistics.dll -xml Results.Tests.Stats.ImportAzureCdnStatistics.xml
 if not "%errorlevel%"=="0" goto failure
 
 :success
