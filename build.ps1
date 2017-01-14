@@ -39,8 +39,13 @@ Function Prepare-Vcs-Callback {
     
     Trace-Log 'Preparing Validation.Callback.Vcs Package'
     
+    $ZipPackagePath = "src\Validation.Callback.Vcs\obj\$Configuration\Package\Validation.Callback.Vcs.zip"
+    # For whatever reason, the location of the compiled "Validation.Callback.Vcs.zip" changes location sometimes.
+    # By removing the file we expect to create before we compile, we guarantee that we are never accidentally packing the wrong zipped package.
+    Remove-Item $ZipPackagePath
+    
     Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -SkipRestore
-    Copy-Item "src\Validation.Callback.Vcs\obj\$Configuration\_PublishedWebsites\Validation.Callback.Vcs_Package\Validation.Callback.Vcs.zip" "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
+    Copy-Item $ZipPackagePath "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
 }
 
 Write-Host ("`r`n" * 3)
