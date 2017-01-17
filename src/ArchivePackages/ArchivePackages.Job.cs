@@ -221,25 +221,25 @@ namespace ArchivePackages
         private JobEventSource() { }
 
         [Event(
-            eventId: 1,
+            1,
             Level = EventLevel.Informational,
             Message = "Preparing to archive packages from {0}/{1} to primary destination {2}/{3} using package data from {4}/{5}")]
         public void PreparingToArchive(string sourceAccount, string sourceContainer, string destAccount, string destContainer, string dbServer, string dbName) { WriteEvent(1, sourceAccount, sourceContainer, destAccount, destContainer, dbServer, dbName); }
 
         [Event(
-            eventId: 2,
+            2,
             Level = EventLevel.Informational,
             Message = "Preparing to archive packages to secondary destination {0}/{1}")]
         public void PreparingToArchive2(string destAccount, string destContainer) { WriteEvent(2, destAccount, destContainer); }
 
         [Event(
-            eventId: 3,
+            3,
             Level = EventLevel.Informational,
             Message = "Cursor data: CursorDateTime is {0}")]
         public void CursorData(string cursorDateTime) { WriteEvent(3, cursorDateTime); }
 
         [Event(
-            eventId: 4,
+            4,
             Level = EventLevel.Informational,
             Task = Tasks.GatheringDbPackages,
             Opcode = EventOpcode.Start,
@@ -247,7 +247,7 @@ namespace ArchivePackages
         public void GatheringPackagesToArchiveFromDb(string dbServer, string dbName) { WriteEvent(4, dbServer, dbName); }
 
         [Event(
-            eventId: 5,
+            5,
             Level = EventLevel.Informational,
             Task = Tasks.GatheringDbPackages,
             Opcode = EventOpcode.Stop,
@@ -255,7 +255,7 @@ namespace ArchivePackages
         public void GatheredPackagesToArchiveFromDb(int gathered, string dbServer, string dbName) { WriteEvent(5, gathered, dbServer, dbName); }
 
         [Event(
-            eventId: 6,
+            6,
             Level = EventLevel.Informational,
             Task = Tasks.ArchivingPackages,
             Opcode = EventOpcode.Start,
@@ -263,7 +263,7 @@ namespace ArchivePackages
         public void StartingArchive(int count) { WriteEvent(6, count); }
 
         [Event(
-            eventId: 7,
+            7,
             Level = EventLevel.Informational,
             Task = Tasks.ArchivingPackages,
             Opcode = EventOpcode.Stop,
@@ -271,19 +271,19 @@ namespace ArchivePackages
         public void StartedArchive() { WriteEvent(7); }
 
         [Event(
-            eventId: 8,
+            8,
             Level = EventLevel.Informational,
             Message = "Archive already exists: {0}")]
         public void ArchiveExists(string blobName) { WriteEvent(8, blobName); }
 
         [Event(
-            eventId: 9,
+            9,
             Level = EventLevel.Warning,
             Message = "Source Blob does not exist: {0}")]
         public void SourceBlobMissing(string blobName) { WriteEvent(9, blobName); }
 
         [Event(
-            eventId: 12,
+            12,
             Level = EventLevel.Informational,
             Task = Tasks.StartingPackageCopy,
             Opcode = EventOpcode.Start,
@@ -291,7 +291,7 @@ namespace ArchivePackages
         public void StartingCopy(string source, string dest) { WriteEvent(12, source, dest); }
 
         [Event(
-            eventId: 13,
+            13,
             Level = EventLevel.Informational,
             Task = Tasks.StartingPackageCopy,
             Opcode = EventOpcode.Stop,
@@ -299,7 +299,7 @@ namespace ArchivePackages
         public void StartedCopy(string source, string dest) { WriteEvent(13, source, dest); }
 
         [Event(
-            eventId: 14,
+            14,
             Level = EventLevel.Informational,
             Message = "NewCursor data: CursorDateTime is {0}")]
         public void NewCursorData(string cursorDateTime) { WriteEvent(14, cursorDateTime); }
