@@ -39,16 +39,13 @@ Function Prepare-Vcs-Callback {
     
     Trace-Log 'Preparing Validation.Callback.Vcs Package'
     
-    $ZipPackagePath = "src\Validation.Callback.Vcs\"
+    $ZipPackagePath = "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
     
-    Get-ChildItem $ZipPackagePath | Where-Object {$_.Name = "Validation.Callback.Vcs.zip"} | ForEach-Object {
-        Remove-Item "$_"
+    if (Test-Path $ZipPackagePath) {
+        Remove-Item $ZipPackagePath
     }
     
-    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -SkipRestore
-    Get-ChildItem $ZipPackagePath | Where-Object {$_.Name = "Validation.Callback.Vcs.zip"} | ForEach-Object {
-        Copy-Item "$_" "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip" -Force
-    }
+    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=$ZipPackagePath" -SkipRestore
 }
 
 Write-Host ("`r`n" * 3)
