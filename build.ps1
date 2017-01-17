@@ -45,7 +45,7 @@ Function Prepare-Vcs-Callback {
         Remove-Item $ZipPackagePath
     }
     
-    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=$ZipPackagePath" -SkipRestore
+    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=obj\Validation.Callback.Vcs.zip" -SkipRestore
 }
 
 Write-Host ("`r`n" * 3)
