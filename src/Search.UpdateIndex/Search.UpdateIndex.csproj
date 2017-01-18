@@ -151,6 +151,9 @@
       <HintPath>..\..\packages\NuGet.Indexing.3.0.43-r-master\lib\net45\NuGet.Indexing.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NuGet.Versioning, Version=1.0.7.0, Culture=neutral, PublicKeyToken=2e465378e3b1a8dd, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NuGet.Versioning.1.0.7\lib\portable-net40+win\NuGet.Versioning.dll</HintPath>
+    </Reference>
     <Reference Include="NuGetGallery.Core, Version=3.0.102.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NuGetGallery.Core.3.0.102-r-master\lib\net45\NuGetGallery.Core.dll</HintPath>
     </Reference>
