@@ -17,21 +17,21 @@ trap {
 . "$PSScriptRoot\build\common.ps1"
 
 Function Run-Tests {
-	[CmdletBinding()]
-	param()
-	
-	Trace-Log 'Running tests'
-	
-	$xUnitExe = (Join-Path $PSScriptRoot "packages\xunit.runner.console\tools\xunit.console.exe")
-	
-	$TestAssemblies = "tests\Tests.Stats.CollectAzureCdnLogs\bin\$Configuration\Tests.Stats.CollectAzureCdnLogs.dll", "tests\Tests.Stats.ImportAzureCdnStatistics\bin\$Configuration\Tests.Stats.ImportAzureCdnStatistics.dll"
-	
-	$TestCount = 0
-	
-	foreach ($Test in $TestAssemblies) {
-		& $xUnitExe (Join-Path $PSScriptRoot $Test) -xml "Results.$TestCount.xml"
-		$TestCount++
-	}
+    [CmdletBinding()]
+    param()
+    
+    Trace-Log 'Running tests'
+    
+    $xUnitExe = (Join-Path $PSScriptRoot "packages\xunit.runner.console\tools\xunit.console.exe")
+    
+    $TestAssemblies = "tests\Tests.Stats.CollectAzureCdnLogs\bin\$Configuration\Tests.Stats.CollectAzureCdnLogs.dll", "tests\Tests.Stats.ImportAzureCdnStatistics\bin\$Configuration\Tests.Stats.ImportAzureCdnStatistics.dll"
+    
+    $TestCount = 0
+    
+    foreach ($Test in $TestAssemblies) {
+        & $xUnitExe (Join-Path $PSScriptRoot $Test) -xml "Results.$TestCount.xml"
+        $TestCount++
+    }
 }
 
 Write-Host ("`r`n" * 3)
@@ -46,7 +46,7 @@ Trace-Log "Build #$BuildNumber started at $startTime"
 $BuildErrors = @()
 
 Invoke-BuildStep 'Running tests' { Run-Tests } `
-	-ev +BuildErrors
+    -ev +BuildErrors
 
 Trace-Log ('-' * 60)
 

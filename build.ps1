@@ -2,15 +2,15 @@
 param (
     [ValidateSet("debug", "release")]
     [string]$Configuration = 'debug',
-	[ValidateSet("Release","rtm", "rc", "beta", "beta2", "final", "xprivate", "zlocal")]
+    [ValidateSet("Release","rtm", "rc", "beta", "beta2", "final", "xprivate", "zlocal")]
     [string]$ReleaseLabel = 'zlocal',
     [int]$BuildNumber,
     [switch]$SkipRestore,
     [switch]$CleanCache,
-	[string]$SimpleVersion = '1.0.0',
-	[string]$SemanticVersion = '1.0.0-zlocal',
-	[string]$Branch,
-	[string]$CommitSHA,
+    [string]$SimpleVersion = '1.0.0',
+    [string]$SemanticVersion = '1.0.0-zlocal',
+    [string]$Branch,
+    [string]$CommitSHA,
     [string]$BuildBranch = 'bff597e5990a14bb6ca53e371313d54bec48b4a6'
 )
 
@@ -30,12 +30,12 @@ wget -Uri "https://raw.githubusercontent.com/NuGet/ServerCommon/$BuildBranch/bui
 . "$PSScriptRoot/build/init.ps1" -Branch "$BuildBranch"
 
 Function Clean-Tests {
-	[CmdletBinding()]
-	param()
-	
-	Trace-Log 'Cleaning test results'
-	
-	Remove-Item (Join-Path $PSScriptRoot "Results.*.xml")
+    [CmdletBinding()]
+    param()
+    
+    Trace-Log 'Cleaning test results'
+    
+    Remove-Item (Join-Path $PSScriptRoot "Results.*.xml")
 }
 
 Function Prepare-Vcs-Callback {
@@ -63,50 +63,50 @@ if (-not $BuildNumber) {
 Trace-Log "Build #$BuildNumber started at $startTime"
 
 $BuildErrors = @()
-	
+    
 Invoke-BuildStep 'Cleaning test results' { Clean-Tests } `
-	-ev +BuildErrors
+    -ev +BuildErrors
 
 Invoke-BuildStep 'Installing NuGet.exe' { Install-NuGet } `
     -ev +BuildErrors
-	
+    
 Invoke-BuildStep 'Clearing package cache' { Clear-PackageCache } `
     -skip:(-not $CleanCache) `
     -ev +BuildErrors
-	
+    
 Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     -ev +BuildErrors
-	
+    
 Invoke-BuildStep 'Restoring solution packages' { `
-	Install-SolutionPackages -path (Join-Path $PSScriptRoot ".nuget\packages.config") -output (Join-Path $PSScriptRoot "packages") -ExcludeVersion } `
+    Install-SolutionPackages -path (Join-Path $PSScriptRoot ".nuget\packages.config") -output (Join-Path $PSScriptRoot "packages") -ExcludeVersion } `
     -skip:$SkipRestore `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Building solution' { 
-	param($Configuration, $BuildNumber, $SolutionPath, $SkipRestore)
-	Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" $SolutionPath -SkipRestore:$SkipRestore `
-	} `
-	-args $Configuration, $BuildNumber, (Join-Path $PSScriptRoot "NuGet.Jobs.sln"), $SkipRestore `
+    param($Configuration, $BuildNumber, $SolutionPath, $SkipRestore)
+    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" $SolutionPath -SkipRestore:$SkipRestore `
+    } `
+    -args $Configuration, $BuildNumber, (Join-Path $PSScriptRoot "NuGet.Jobs.sln"), $SkipRestore `
     -ev +BuildErrors
-	
+    
 Invoke-BuildStep 'Prepare Validation.Callback.Vcs Package' { Prepare-Vcs-Callback } `
-	-ev +BuildErrors
-	
+    -ev +BuildErrors
+    
 Invoke-BuildStep 'Creating artifacts' {
-		New-Package (Join-Path $PSScriptRoot "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/UpdateLicenseReports/UpdateLicenseReports.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Gallery.CredentialExpiration/Gallery.CredentialExpiration.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/ArchivePackages/ArchivePackages.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/HandlePackageEdits/HandlePackageEdits.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-		New-Package (Join-Path $PSScriptRoot "src/Validation.Runner/Validation.Runner.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-	} `
-	-ev +BuildErrors
+        New-Package (Join-Path $PSScriptRoot "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/UpdateLicenseReports/UpdateLicenseReports.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Gallery.CredentialExpiration/Gallery.CredentialExpiration.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/ArchivePackages/ArchivePackages.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/HandlePackageEdits/HandlePackageEdits.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        New-Package (Join-Path $PSScriptRoot "src/Validation.Runner/Validation.Runner.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+    } `
+    -ev +BuildErrors
 
 Trace-Log ('-' * 60)
 
