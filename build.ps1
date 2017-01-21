@@ -14,7 +14,7 @@ param (
     [string]$BuildBranch = 'bff597e5990a14bb6ca53e371313d54bec48b4a6'
 )
 
-# For TeamCity - If any issue occurs, this script fail the build. - By default, TeamCity returns an exit code of 0 for all powershell scripts, even if they fail
+# For TeamCity - If any issue occurs, this script fails the build. - By default, TeamCity returns an exit code of 0 for all powershell scripts, even if they fail
 trap {
     Write-Host "BUILD FAILED: $_" -ForegroundColor Red
     Write-Host "ERROR DETAILS:" -ForegroundColor Red
@@ -93,18 +93,22 @@ Invoke-BuildStep 'Prepare Validation.Callback.Vcs Package' { Prepare-Vcs-Callbac
     -ev +BuildErrors
     
 Invoke-BuildStep 'Creating artifacts' {
-        New-Package (Join-Path $PSScriptRoot "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/UpdateLicenseReports/UpdateLicenseReports.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Gallery.CredentialExpiration/Gallery.CredentialExpiration.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/ArchivePackages/ArchivePackages.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/HandlePackageEdits/HandlePackageEdits.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
-        New-Package (Join-Path $PSScriptRoot "src/Validation.Runner/Validation.Runner.csproj") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        $Projects = "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
+            "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj", `
+            "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj", `
+            "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj", `
+            "src/UpdateLicenseReports/UpdateLicenseReports.csproj", `
+            "src/Gallery.CredentialExpiration/Gallery.CredentialExpiration.csproj", `
+            "src/ArchivePackages/ArchivePackages.csproj", `
+            "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj", `
+            "src/HandlePackageEdits/HandlePackageEdits.csproj", `
+            "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj", `
+            "src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj", `
+            "src/Validation.Runner/Validation.Runner.csproj"
+        
+        Foreach ($Project in $Projects) {
+            New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -ReleaseLabel $ReleaseLabel -Version $SemanticVersion -Branch $Branch
+        }
     } `
     -ev +BuildErrors
 
