@@ -17,6 +17,10 @@ bld/
 [Bb]in/
 [Oo]bj/
 
+# Files created and used by our build scripts
+build/ 
+tools/
+
 # Roslyn cache directories
 *.ide/
 
