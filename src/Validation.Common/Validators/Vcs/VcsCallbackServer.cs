@@ -7,25 +7,56 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Microsoft.WindowsAzure.Storage;
+using NuGet.ApplicationInsights.Owin;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
+using NuGet.Services.Logging;
 using NuGet.Services.VirusScanning.Vcs.Callback;
 using Owin;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
-[assembly: OwinStartup(typeof(VcsCallbackServerStartup))]
+[assembly: OwinStartup(typeof(VcsCallbackServer))]
 
 namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 {
-    public class VcsCallbackServerStartup
+    public class VcsCallbackServer
     {
+        internal static class VirusScanEventNames
+        {
+            /// <summary>
+            /// The virus scan returned in an unknown state.
+            /// The status of the virus scan should be investigated.
+            /// </summary>
+            internal const string Investigate = "Investigate";
+            /// <summary>
+            /// The validation ID specified by the request was not found.
+            /// </summary>
+            internal const string RequestNotFound = "RequestNotFound";
+            /// <summary>
+            /// The scan failed and did not complete.
+            /// </summary>
+            internal const string ScanFailed = "ScanFailed";
+            /// <summary>
+            /// The scan completed and has determined the package is clean.
+            /// </summary>
+            internal const string ScanPassed = "ScanPassed";
+            /// <summary>
+            /// The scan completed and determined the package is unclean and contains a virus or other issue.
+            /// </summary>
+            internal const string ScanUnclean = "ScanUnclean";
+        }
+
         private readonly VcsStatusCallbackParser _callbackParser = new VcsStatusCallbackParser();
+
+        private readonly ILogger _logger;
 
         private readonly PackageValidationTable _packageValidationTable;
         private readonly PackageValidationAuditor _packageValidationAuditor;
         private readonly INotificationService _notificationService;
 
-        public VcsCallbackServerStartup()
+        public VcsCallbackServer()
         {
             // Configure to get values from keyvault
             var configurationService = new ConfigurationService(new SecretReaderFactory());
@@ -38,10 +69,22 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerName);
             _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerName);
             _notificationService = new NotificationService(cloudStorageAccount, containerName);
+
+            // Set up AppInsights
+            var instrumentationKey = configurationService.Get("AppInsightsInstrumentationKey").Result;
+            Services.Logging.ApplicationInsights.Initialize(instrumentationKey);
+
+            // Set up Logging
+            _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<VcsCallbackServer>();
         }
 
         public void Configuration(IAppBuilder app)
         {
+            if (Services.Logging.ApplicationInsights.Initialized)
+            {
+                app.Use<RequestTrackingMiddleware>();
+            }
+
             app.Run(Invoke);
         }
 
@@ -63,7 +106,9 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
                         if (validationEntity == null)
                         {
-                            // Notify us about the fact that no valiation was found
+                            TrackValidationEvent(LogLevel.Warning, VirusScanEventNames.RequestNotFound, result, body);
+
+                            // Notify us about the fact that no validation was found
                             await _notificationService.SendNotificationAsync(
                                 "vcscallback-notfound",
                                 "Validation " + validationId + " was not found.",
@@ -107,6 +152,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     }
                                 }
 
+                                TrackValidationEvent(LogLevel.Error, VirusScanEventNames.ScanUnclean, result, validationEntity, body);
+
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
 
@@ -118,6 +165,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                             }
                             else
                             {
+                                TrackValidationEvent(LogLevel.Warning, VirusScanEventNames.Investigate, result, validationEntity, body);
+
                                 // To investigate
                                 await _notificationService.SendNotificationAsync(
                                     $"vcscallback-investigate/{validationEntity.Created.ToString("yyyy-MM-dd")}",
@@ -135,6 +184,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 // The result is clean.
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
                                 await _packageValidationTable.StoreAsync(validationEntity);
+
+                                TrackValidationEvent(LogLevel.Information, VirusScanEventNames.ScanPassed, result, validationEntity, body);
 
                                 await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
                                     new PackageValidationAuditEntry
@@ -171,6 +222,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     }
                                 }
 
+                                TrackValidationEvent(LogLevel.Error, VirusScanEventNames.ScanFailed, result, validationEntity, body);
+
                                 await _packageValidationAuditor.WriteAuditEntriesAsync(
                                     validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
 
@@ -183,7 +236,6 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         }
                     }
                 }
-
                 // The VCS caller requires a SOAP response.
                 context.Response.ContentType = "text/xml";
                 await context.Response.WriteAsync(@"<?xml version=""1.0"" encoding=""utf-8""?>
@@ -201,6 +253,76 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             else
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            }
+        }
+        
+        private void TrackValidationEvent(LogLevel level, string eventName, Job job, string requestBody)
+        {
+            var validationEntityLog = "{ValidationId} missing";
+
+            var validationEntityParameters = new object[]
+            {
+                job.SrcId
+            };
+
+            TrackValidationEventCore(level, eventName, job, validationEntityLog, validationEntityParameters, requestBody);
+        }
+
+        private void TrackValidationEvent(LogLevel level, string eventName, Job job, PackageValidationEntity entity, string requestBody)
+        {
+            var validationEntityLog =
+                "{ValidationId} for {PackageId} version {PackageVersion} created on {PackageValidationCreated}";
+
+            var validationEntityParameters = new object[]
+            {
+                entity.ValidationId, entity.PackageId, entity.PackageVersion, entity.Created,
+            };
+
+            TrackValidationEventCore(level, eventName, job, validationEntityLog, validationEntityParameters, requestBody);
+        }
+
+        private void TrackValidationEventCore(LogLevel level, string eventName, Job job, string validationEntityLog,
+            object[] validationEntityParameters, string requestBody)
+        {
+            var logMessage = string.Join(" - ",
+                validationEntityLog,
+                "{EventName}",
+                "Job {JobState} {JobResult} ran from {JobStartDate} to {JobEndDate}",
+                "Scan {RqsRequestId} {RqsJobId} ended at {ScanEndDate}",
+                "{CustomerLogsLocation}", "{LogFilesPath}", "{SourceBitsLocation}",
+                "{RequestBody}");
+
+            var parameters = new object[]
+            {
+                eventName,
+                job.State, job.Result, job.JobStartDate, job.JobEndDate,
+                job.RqsRequestId, job.RqsJobId, job.ScanEndDate,
+                job.CustomerLogsLocation, job.LogFilesPath, job.SourceBitsLocation,
+                requestBody
+            };
+
+            parameters = validationEntityParameters.Concat(parameters).ToArray();
+
+            switch (level)
+            {
+                case LogLevel.Trace:
+                    _logger.LogTrace(logMessage, parameters);
+                    break;
+                case LogLevel.Debug:
+                    _logger.LogDebug(logMessage, parameters);
+                    break;
+                case LogLevel.Information:
+                    _logger.LogInformation(logMessage, parameters);
+                    break;
+                case LogLevel.Warning:
+                    _logger.LogWarning(logMessage, parameters);
+                    break;
+                case LogLevel.Error:
+                    _logger.LogError(logMessage, parameters);
+                    break;
+                case LogLevel.Critical:
+                    _logger.LogCritical(logMessage, parameters);
+                    break;
             }
         }
     }

@@ -33,7 +33,7 @@ namespace Tests.AzureJobTraceListener
             JobScenario = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ScenarioArgumentName);
             if(JobScenario == null)
             {
-                throw new ArgumentException("Argument '"+ ScenarioArgumentName +"' is mandatory." + HelpMessage);
+                throw new ArgumentException($"Argument '{ScenarioArgumentName}' is mandatory. {HelpMessage}");
             }
 
             LogCount = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, LogCountArgumentName);
@@ -44,7 +44,7 @@ namespace Tests.AzureJobTraceListener
         public async override Task<bool> Run()
         {
             LogCount = LogCount ?? AzureBlobJobTraceListener.MaxLogBatchSize * 2;
-            switch(JobScenario)
+            switch (JobScenario)
             {
                 case 1:
                     return true;
@@ -56,14 +56,14 @@ namespace Tests.AzureJobTraceListener
                     throw new Exception("Job crashed test");
 
                 case 4:
-                    for(int i = 0; i < LogCount; i++)
+                    for (int i = 0; i < LogCount; i++)
                     {
                         Trace.WriteLine("Message number : " + i);
                     }
                     return true;
 
                 case 5:
-	                Trace.TraceInformation("Started");
+                    Trace.TraceInformation("Started");
                     LogALotSetup(3);
 	                Trace.TraceInformation("Ended");
                     return true;
