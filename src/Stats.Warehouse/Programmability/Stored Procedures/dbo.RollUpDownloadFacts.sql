@@ -21,7 +21,7 @@ BEGIN
 
     -- This threshold defines the number of records to remove we consider as being 'popular' enough
     -- to trigger a roll-up to a single day instead of retaining the configured T-@MinAgeInDays period.
-    DECLARE @RecordsToRemoveThresholdForRollUpsToOneDay INT = 100000
+    DECLARE @RecordsToRemoveThresholdForRollUpsToOneDay INT = 1000000
 
     DECLARE @MaxDimensionDateId INT = -1
     DECLARE @MaxDimensionDateIdForRollUpsToOneDay INT = -1
