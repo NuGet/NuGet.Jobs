@@ -61,7 +61,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 if (result != FtpStatusCode.FileActionOK)
                 {
                     // Failed (multiple times) to rename the file on the origin. No point in continuing with this file.
-                    Logger.LogError("Failed to rename file. Processing aborted.");
+                    Logger.LogError("Failed to rename file. Processing aborted. (FtpStatusCode={FtpStatusCode})", result.ToString());
 
                     return false;
                 }
