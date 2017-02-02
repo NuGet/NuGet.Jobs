@@ -16,8 +16,9 @@ BEGIN
   BEGIN
 
     -- Ensure no leftovers are consumed when a previous run exited prematurely.
-    DROP TABLE IF EXISTS [Temp_RollUp_PackageIdTable];
-    DROP TABLE IF EXISTS [Temp_RollUp_T1RollUpTable];
+    DROP TABLE IF EXISTS [dbo].[Temp_RollUp_PackageIdTable];
+    DROP TABLE IF EXISTS [dbo].[Temp_RollUp_T1RollUpTable];
+    DROP TABLE IF EXISTS [dbo].[Temp_RollUp_LinkedFactIdTable];
 
     -- This threshold defines the number of records to remove we consider as being 'popular' enough
     -- to trigger a roll-up to a single day instead of retaining the configured T-@MinAgeInDays period.
@@ -38,7 +39,7 @@ BEGIN
     -- If the record count we can remove in this roll-up window is greater than or equal to the threshold
     -- (defined by @RecordsToRemoveThresholdForRollupsToOneDay),
     -- then the MaxDimensionDateId will aim to roll-up to T-1 day, instead of the default T-@MinAgeInDays period.
-    CREATE TABLE Temp_RollUp_PackageIdTable
+    CREATE TABLE [dbo].[Temp_RollUp_PackageIdTable]
     (
       [Id] INT NOT NULL PRIMARY KEY,
       [RecordCountInT1Window] INT NOT NULL,
@@ -59,7 +60,7 @@ BEGIN
     WHERE   [Date] IS NOT NULL
         AND [Date] < DATEADD(DAY, -1, @NowUtc)
 
-    INSERT INTO [Temp_RollUp_PackageIdTable]
+    INSERT INTO [dbo].[Temp_RollUp_PackageIdTable]
     SELECT  DISTINCT p.[Id],
             'RecordCountInT1Window' = COUNT(f.[Id]),
             'MaxDimensionDateId' =
@@ -77,7 +78,7 @@ BEGIN
     ORDER BY  RecordCountInT1Window DESC;
 
     SELECT  @TotalCursorPositions = COUNT([Id])
-    FROM    [Temp_RollUp_PackageIdTable] (NOLOCK);
+    FROM    [dbo].[Temp_RollUp_PackageIdTable] (NOLOCK);
 
     SET @Msg = 'Fetched ' + CAST(@TotalCursorPositions AS VARCHAR) + ' package dimension IDs.';
     RAISERROR(@Msg, 0, 1) WITH NOWAIT;
@@ -88,7 +89,7 @@ BEGIN
     SELECT  [Id],
             [RecordCountInT1Window],
             [MaxDimensionDateId]
-    FROM    [Temp_RollUp_PackageIdTable] (NOLOCK)
+    FROM    [dbo].[Temp_RollUp_PackageIdTable] (NOLOCK)
     -- Optimization: no need to roll-up if only a single download was recorded for a given package id and version
     WHERE   [RecordCountInT1Window] > 1
     ORDER BY  [RecordCountInT1Window] DESC;
@@ -114,7 +115,7 @@ BEGIN
           IF @RollUpToDimensionDateId = @MaxDimensionDateIdForRollUpsToOneDay
             BEGIN
               -- This is a T-1 roll-up: keep track of linked dimensions
-              CREATE TABLE Temp_RollUp_T1RollUpTable
+              CREATE TABLE [dbo].[Temp_RollUp_T1RollUpTable]
               (
                 [Dimension_Package_Id] INT NOT NULL,
                 [Dimension_Date_Id] INT NOT NULL,
@@ -126,7 +127,7 @@ BEGIN
               );
 
               -- This is a T-1 roll-up: keep track of linked dimensions
-              INSERT INTO [Temp_RollUp_T1RollUpTable]
+              INSERT INTO [dbo].[Temp_RollUp_T1RollUpTable]
               SELECT  f.[Dimension_Package_Id],
                       f.[Dimension_Date_Id],
                       f.[Dimension_Operation_Id],
@@ -162,7 +163,7 @@ BEGIN
                         [Dimension_Platform_Id],
                         [DownloadCount],
                         [RecordCountToRemove]
-                FROM    [Temp_RollUp_T1RollUpTable] (NOLOCK)
+                FROM    [dbo].[Temp_RollUp_T1RollUpTable] (NOLOCK)
                 -- Optimization: no need to roll-up if only a single record matches these linked dimensions
                 -- for a given package id download in this T-1 roll-up window
                 WHERE  [RecordCountToRemove] > 1
@@ -194,12 +195,12 @@ BEGIN
                   SET @InsertedRecords = 0
 
                   -- Fetch the Fact_Download Id's matching the records to be rolled-up
-                  DECLARE @LinkedFactIdTable TABLE
+                  CREATE TABLE [dbo].[Temp_RollUp_LinkedFactIdTable]
                   (
                     [Id] UNIQUEIDENTIFIER NOT NULL
                   )
 
-                  INSERT INTO @LinkedFactIdTable
+                  INSERT INTO [dbo].[Temp_RollUp_LinkedFactIdTable]
                   SELECT  [Id]
                   FROM    [dbo].[Fact_Download] (NOLOCK)
                   WHERE   [Dimension_Package_Id] = @LinkedPackageId
@@ -211,7 +212,7 @@ BEGIN
                   -- No need to keep track of linked project-type dimensions
                   DELETE
                   FROM  [dbo].[Fact_Download_Dimension_ProjectType]
-                  WHERE [Fact_Download_Id] IN (SELECT [Id] FROM @LinkedFactIdTable)
+                  WHERE [Fact_Download_Id] IN (SELECT [Id] FROM [dbo].[Temp_RollUp_LinkedFactIdTable] (NOLOCK))
 
                   SET @DeletedRecords = @@rowcount
 
@@ -222,7 +223,7 @@ BEGIN
 
                   DELETE
                   FROM  [dbo].[Fact_Download]
-                  WHERE [Id] IN (SELECT [Id] FROM @LinkedFactIdTable)
+                  WHERE [Id] IN (SELECT [Id] FROM [dbo].[Temp_RollUp_LinkedFactIdTable] (NOLOCK))
 
                   SET @DeletedRecords = @@rowcount
 
@@ -278,6 +279,8 @@ BEGIN
 
                 END CATCH
 
+                DROP TABLE IF EXISTS [dbo].[Temp_RollUp_LinkedFactIdTable];
+
                 FETCH NEXT FROM LinkedPackageCursor
                 INTO @LinkedPackageId, @LinkedDateId, @LinkedOperationId, @LinkedClientId, @LinkedPlatformId, @LinkedDownloadCount, @LinkedRecordCountToRemove
               END
@@ -285,7 +288,7 @@ BEGIN
               CLOSE LinkedPackageCursor;
               DEALLOCATE LinkedPackageCursor;
 
-              DROP TABLE IF EXISTS [Temp_RollUp_T1RollUpTable];
+              DROP TABLE IF EXISTS [dbo].[Temp_RollUp_T1RollUpTable];
 
             END
           ELSE
@@ -384,7 +387,7 @@ BEGIN
     CLOSE PackageCursor;
     DEALLOCATE PackageCursor;
 
-    DROP TABLE IF EXISTS [Temp_RollUp_PackageIdTable];
+    DROP TABLE IF EXISTS [dbo].[Temp_RollUp_PackageIdTable];
 
     PRINT 'FINISHED!';
   END
