@@ -57,14 +57,16 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 request.Method = WebRequestMethods.Ftp.Rename;
                 request.RenameTo = newFileName;
 
-                var result = await TryGetResponseAsync(request, FtpStatusCode.FileActionOK);
-                if (!result)
+                var result = await GetResponseAsync(request);
+                if (result != FtpStatusCode.FileActionOK)
                 {
                     // Failed (multiple times) to rename the file on the origin. No point in continuing with this file.
                     Logger.LogError("Failed to rename file. Processing aborted.");
+
+                    return false;
                 }
 
-                return result;
+                return true;
             }
         }
 
@@ -81,15 +83,15 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 var request = CreateRequest(uri);
                 request.Method = WebRequestMethods.Ftp.DeleteFile;
 
-                var result = await TryGetResponseAsync(request, FtpStatusCode.FileActionOK);
-                if (!result)
-                {
-                    // A warning is OK here as the job should retry downloading and processing the file
-                    Logger.LogWarning("Failed to delete file.");
-                }
-                else
+                var result = await GetResponseAsync(request);
+                if (result == FtpStatusCode.FileActionOK)
                 {
                     Logger.LogInformation("Finishing delete file.");
+                }
+                else if (result != FtpStatusCode.ActionNotTakenFileUnavailable)
+                {
+                    // A warning is OK here as the job should retry downloading and processing the file
+                    Logger.LogWarning("Failed to delete file. (FtpStatusCode={FtpStatusCode})", result.ToString());
                 }
             }
         }
@@ -133,17 +135,28 @@ namespace Stats.CollectAzureCdnLogs.Ftp
             }
         }
 
-        private static async Task<bool> TryGetResponseAsync(FtpWebRequest request, FtpStatusCode expectedResult)
+        private static async Task<FtpStatusCode> GetResponseAsync(FtpWebRequest request)
         {
             for (var attempts = 0; attempts < 5; attempts++)
             {
-                var response = (FtpWebResponse)await request.GetResponseAsync();
-                if (response.StatusCode == expectedResult)
+                try
                 {
-                    return true;
+                    var response = (FtpWebResponse) await request.GetResponseAsync();
+                    return response.StatusCode;
+                }
+                catch (WebException exception)
+                {
+                    var response = exception.Response as FtpWebResponse;
+                    if (response != null)
+                    {
+                        return response.StatusCode;
+                    }
                 }
             }
-            return false;
+
+            // This status code is never returned by a real FTP server
+            // (if we reach this code, we didn't get a response from the server...)
+            return FtpStatusCode.Undefined;
         }
 
         internal async Task<Stream> StartOrResumeFtpDownload(Uri uri, int contentOffset = 0)
@@ -183,6 +196,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
             {
                 throw new ArgumentNullException(nameof(rawLogFile));
             }
+
             if (string.IsNullOrWhiteSpace(newFileName))
             {
                 throw new ArgumentNullException(nameof(newFileName));
@@ -204,6 +218,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
             {
                 rawLogUri = rawLogFile.Uri;
             }
+
             return rawLogUri;
         }
     }

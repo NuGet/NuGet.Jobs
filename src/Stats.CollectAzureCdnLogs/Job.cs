@@ -163,6 +163,9 @@ namespace Stats.CollectAzureCdnLogs
                         }
                         else
                         {
+                            // Delete the ".download" file if it already exists, as we may be reprocessing this file.
+                            await ftpClient.DeleteAsync(new Uri(rawLogFile.Uri + FileExtensions.Download));
+
                             // Rename the file on the origin to ensure we're not locking a file that still can be written to.
                             rawLogUri = await ftpClient.RenameAsync(rawLogFile, rawLogFile.FileName + FileExtensions.Download);
 
