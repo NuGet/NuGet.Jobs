@@ -147,7 +147,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 catch (WebException exception)
                 {
                     var response = exception.Response as FtpWebResponse;
-                    if (response != null)
+                    if (response != null && attempts == 4)
                     {
                         return response.StatusCode;
                     }
