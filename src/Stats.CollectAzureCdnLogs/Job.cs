@@ -226,7 +226,7 @@ namespace Stats.CollectAzureCdnLogs
                                         }
                                         catch (Exception exception)
                                         {
-                                            _logger.LogError("Failed to upload file. {Exception}", exception);
+                                            _logger.LogError(LogEvents.FailedBlobUpload, exception, LogMessages.FailedBlobUpload);
                                         }
                                     }
                                 }
@@ -242,18 +242,18 @@ namespace Stats.CollectAzureCdnLogs
                     catch (UnknownAzureCdnPlatformException exception)
                     {
                         // Trace, but ignore the failing file. Other files should go through just fine.
-                        _logger.LogWarning("Unknown Azure CDN platform. {Exception}", exception);
+                        _logger.LogWarning(LogEvents.UnknownAzureCdnPlatform, exception, LogMessages.UnknownAzureCdnPlatform);
                     }
                     catch (InvalidRawLogFileNameException exception)
                     {
                         // Trace, but ignore the failing file. Other files should go through just fine.
-                        _logger.LogWarning("Invalid raw log filename. {Exception}", exception);
+                        _logger.LogWarning(LogEvents.InvalidRawLogFileName, exception, LogMessages.InvalidRawLogFileName);
                     }
                 }
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Job run failed! {Exception}", exception);
+                _logger.LogCritical(LogEvents.JobRunFailed, exception, LogMessages.JobRunFailed);
 
                 return false;
             }
@@ -289,7 +289,7 @@ namespace Stats.CollectAzureCdnLogs
                     catch (SharpZipBaseException e)
                     {
                         // this raw log file may be corrupt...
-                        _logger.LogError("Error processing log stream. {Exception}", e);
+                        _logger.LogError(LogEvents.FailedToProcessLogStream, e, LogMessages.ProcessingLogStreamFailed);
 
                         throw;
                     }

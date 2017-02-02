@@ -10,6 +10,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Stats.AzureCdnLogs.Common;
 
 namespace Stats.CollectAzureCdnLogs.Ftp
 {
@@ -129,13 +130,14 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 }
                 catch (Exception e)
                 {
-                    Logger.LogError("Failed to get raw log files.", e);
+                    Logger.LogError(LogEvents.FailedBlobListing, e, "Failed to get raw log files.");
+
                     return Enumerable.Empty<RawLogFileInfo>();
                 }
             }
         }
 
-        private static async Task<FtpStatusCode> GetResponseAsync(FtpWebRequest request)
+        private async Task<FtpStatusCode> GetResponseAsync(FtpWebRequest request)
         {
             for (var attempts = 0; attempts < 5; attempts++)
             {
@@ -147,9 +149,16 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 catch (WebException exception)
                 {
                     var response = exception.Response as FtpWebResponse;
-                    if (response != null && attempts == 4)
+                    if (response != null)
                     {
-                        return response.StatusCode;
+                        if (attempts == 4)
+                        {
+                            return response.StatusCode;
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogError(LogEvents.FailedToGetFtpResponse, exception, "Failed to get FTP response.");
                     }
                 }
             }
