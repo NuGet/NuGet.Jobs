@@ -151,21 +151,37 @@ namespace Stats.CollectAzureCdnLogs
                             continue;
                         }
 
-                        var alreadyUploaded = false;
+                        var skipProcessing = false;
                         var uploadSucceeded = false;
                         var rawLogUri = rawLogFile.Uri;
 
-                        // Check if this is an already renamed file.
+                        // Check if this is an already renamed file:
+                        // This would indicate that the file is being processed already (by another instance of this job),
+                        // or that the file is being reprocessed (and the ".download" renamed file was left behind).
                         if (rawLogFile.IsPendingDownload)
                         {
-                            // Check if the file has already been uploaded to blob storage.
-                            alreadyUploaded = await azureClient.CheckIfBlobExistsAsync(cloudBlobContainer, rawLogFile);
+                            // In order to support reprocessing ".gz" files,
+                            // we only skip processing ".download" files that have been successfully uploaded to blob storage,
+                            // which only happens when they have been processed successfully.
+                            // Check if the original ".gz" file has already been uploaded to blob storage.
+                            // If it already was uploaded to blob storage,
+                            // we can skip processing this ".download" file and delete it from the FTP server.
+                            var originalFileName = rawLogFile.FileName.Substring(0, rawLogFile.FileName.Length - FileExtensions.Download.Length);
+                            skipProcessing = await azureClient.CheckIfBlobExistsAsync(cloudBlobContainer, originalFileName);
                         }
                         else
                         {
-                            // Delete the ".download" file if it already exists, as we may be reprocessing this file.
-                            var downloadFileUri = new Uri(rawLogFile.Uri + FileExtensions.Download);
-                            await ftpClient.DeleteAsync(downloadFileUri);
+                            // We are processing a ".gz" file.
+                            // Check if the file has already been uploaded to blob storage: are we reprocessing it?
+                            var isReprocessing = await azureClient.CheckIfBlobExistsAsync(cloudBlobContainer, rawLogFile.FileName);
+
+                            if (isReprocessing)
+                            {
+                                // As we are reprocessing this ".gz" file,
+                                // we should first delete the ".download" file if it already exists on the FTP server.
+                                var downloadFileUri = new Uri(rawLogFile.Uri + FileExtensions.Download);
+                                await ftpClient.DeleteAsync(downloadFileUri);
+                            }
 
                             // Rename the file on the origin to ensure we're not locking a file that still can be written to.
                             var downloadFileName = rawLogFile.FileName + FileExtensions.Download;
@@ -178,7 +194,8 @@ namespace Stats.CollectAzureCdnLogs
                             }
                         }
 
-                        if (!alreadyUploaded)
+                        // Skip already processed ".download" files.
+                        if (!skipProcessing)
                         {
                             // open the raw log from FTP
                             using (var rawLogStream = await ftpClient.OpenReadAsync(rawLogUri))
@@ -240,7 +257,7 @@ namespace Stats.CollectAzureCdnLogs
                         }
 
                         // Delete the renamed file from the origin.
-                        if (alreadyUploaded || uploadSucceeded)
+                        if (skipProcessing || uploadSucceeded)
                         {
                             await ftpClient.DeleteAsync(rawLogUri);
                         }
