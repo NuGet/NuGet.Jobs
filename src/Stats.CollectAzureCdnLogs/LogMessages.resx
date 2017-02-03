@@ -118,10 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="FailedBlobUpload" xml:space="preserve">
-    <value>Failed to upload file.</value>
+    <value>Failed to upload file: {fileName}.</value>
   </data>
   <data name="InvalidRawLogFileName" xml:space="preserve">
-    <value>InvalidRawLogFileName</value>
+    <value>Invalid raw log file name.</value>
   </data>
   <data name="JobRunFailed" xml:space="preserve">
     <value>Job run failed!</value>

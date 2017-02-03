@@ -61,7 +61,7 @@ namespace Stats.CollectAzureCdnLogs {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Failed to upload file..
+        ///   Looks up a localized string similar to Failed to upload file: {fileName}..
         /// </summary>
         internal static string FailedBlobUpload {
             get {
@@ -70,7 +70,7 @@ namespace Stats.CollectAzureCdnLogs {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to InvalidRawLogFileName.
+        ///   Looks up a localized string similar to Invalid raw log file name..
         /// </summary>
         internal static string InvalidRawLogFileName {
             get {

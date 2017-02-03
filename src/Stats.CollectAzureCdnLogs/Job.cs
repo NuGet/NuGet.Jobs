@@ -164,10 +164,12 @@ namespace Stats.CollectAzureCdnLogs
                         else
                         {
                             // Delete the ".download" file if it already exists, as we may be reprocessing this file.
-                            await ftpClient.DeleteAsync(new Uri(rawLogFile.Uri + FileExtensions.Download));
+                            var downloadFileUri = new Uri(rawLogFile.Uri + FileExtensions.Download);
+                            await ftpClient.DeleteAsync(downloadFileUri);
 
                             // Rename the file on the origin to ensure we're not locking a file that still can be written to.
-                            rawLogUri = await ftpClient.RenameAsync(rawLogFile, rawLogFile.FileName + FileExtensions.Download);
+                            var downloadFileName = rawLogFile.FileName + FileExtensions.Download;
+                            rawLogUri = await ftpClient.RenameAsync(rawLogFile, downloadFileName);
 
                             if (rawLogUri == null)
                             {
@@ -226,7 +228,11 @@ namespace Stats.CollectAzureCdnLogs
                                         }
                                         catch (Exception exception)
                                         {
-                                            _logger.LogError(LogEvents.FailedBlobUpload, exception, LogMessages.FailedBlobUpload);
+                                            _logger.LogError(
+                                                LogEvents.FailedBlobUpload,
+                                                exception,
+                                                LogMessages.FailedBlobUpload,
+                                                rawLogUri);
                                         }
                                     }
                                 }
@@ -242,12 +248,18 @@ namespace Stats.CollectAzureCdnLogs
                     catch (UnknownAzureCdnPlatformException exception)
                     {
                         // Trace, but ignore the failing file. Other files should go through just fine.
-                        _logger.LogWarning(LogEvents.UnknownAzureCdnPlatform, exception, LogMessages.UnknownAzureCdnPlatform);
+                        _logger.LogWarning(
+                            LogEvents.UnknownAzureCdnPlatform,
+                            exception,
+                            LogMessages.UnknownAzureCdnPlatform);
                     }
                     catch (InvalidRawLogFileNameException exception)
                     {
                         // Trace, but ignore the failing file. Other files should go through just fine.
-                        _logger.LogWarning(LogEvents.InvalidRawLogFileName, exception, LogMessages.InvalidRawLogFileName);
+                        _logger.LogWarning(
+                            LogEvents.InvalidRawLogFileName,
+                            exception,
+                            LogMessages.InvalidRawLogFileName);
                     }
                 }
             }

@@ -17,6 +17,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
     internal sealed class FtpRawLogClient
         : IRawLogClient
     {
+        private const int _maxFtpRequestAttempts = 5;
         private readonly string _username;
         private readonly string _password;
 
@@ -139,7 +140,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
 
         private async Task<FtpStatusCode> GetResponseAsync(FtpWebRequest request)
         {
-            for (var attempts = 0; attempts < 5; attempts++)
+            for (var attempts = 0; attempts < _maxFtpRequestAttempts; attempts++)
             {
                 try
                 {
@@ -151,14 +152,27 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                     var response = exception.Response as FtpWebResponse;
                     if (response != null)
                     {
-                        if (attempts == 4)
+                        Logger.LogWarning(
+                                LogEvents.FailedToGetFtpResponse,
+                                exception,
+                                "Captured WebException from FTP response: {ftpStatusCode}. (attempt {attempts}/{maxAttempts})",
+                                response.StatusCode,
+                                attempts,
+                                _maxFtpRequestAttempts);
+
+                        if (attempts == _maxFtpRequestAttempts - 1)
                         {
                             return response.StatusCode;
                         }
                     }
                     else
                     {
-                        Logger.LogError(LogEvents.FailedToGetFtpResponse, exception, "Failed to get FTP response.");
+                        Logger.LogError(
+                            LogEvents.FailedToGetFtpResponse,
+                            exception,
+                            "Failed to get FTP response. (attempt {attempts}/{maxAttempts})",
+                            attempts,
+                            _maxFtpRequestAttempts);
                     }
                 }
             }
