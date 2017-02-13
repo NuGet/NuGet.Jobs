@@ -113,14 +113,14 @@ namespace Gallery.CredentialExpiration {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT cr.[Type], cr.[Created], cr.[Expires], u.[EmailAddress], u.[Username]
+        ///   Looks up a localized string similar to SELECT cr.[Type], cr.[Created], cr.[Expires], cr.[Description], u.[EmailAddress], u.[Username]
         ///FROM [Credentials] AS cr
         ///INNER JOIN Users AS u ON u.[Key] = cr.[UserKey]
         ///WHERE u.[EmailAllowed] = 1
         ///  AND u.[EmailAddress] &lt;&gt; &apos;&apos;
         ///  AND cr.[Expires] &lt;= DATEADD(day,{0},GETUTCDATE())
         ///  AND cr.[Expires] &gt; DATEADD(day,-1,GETUTCDATE())
-        ///  AND cr.[Type] = &apos;apikey.v1&apos;
+        ///  AND (cr.[Type] = &apos;apikey.v1&apos; or cr.[Type] = &apos;apikey.v2&apos;)
         ///ORDER BY u.[Username].
         /// </summary>
         public static string GetExpiredCredentialsQuery {
