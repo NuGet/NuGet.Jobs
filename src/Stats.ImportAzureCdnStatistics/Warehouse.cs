@@ -620,14 +620,7 @@ namespace Stats.ImportAzureCdnStatistics
                 return results;
             }
 
-            results.AddRange(_cachedToolDimensions
-                .Where(p1 => tools
-                    .FirstOrDefault(p2 =>
-                        string.Equals(p1.ToolId, p2.ToolId, StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(p1.ToolVersion, p2.ToolVersion, StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(p1.FileName, p2.FileName, StringComparison.OrdinalIgnoreCase)) != null
-                    )
-                );
+            results.AddRange(_cachedToolDimensions.Where(p1 => tools.FirstOrDefault(p2 => p2.Equals(p1)) != null));
 
             var nonCachedToolDimensions = tools.Except(results).ToList();
 
@@ -713,6 +706,7 @@ namespace Stats.ImportAzureCdnStatistics
                         {
                             results.Add(package);
                         }
+
                         if (!_cachedPackageDimensions.Contains(package))
                         {
                             _cachedPackageDimensions.Add(package);
@@ -1062,7 +1056,10 @@ namespace Stats.ImportAzureCdnStatistics
                             _cachedUserAgentFacts.Add(userAgent, userAgentId);
                         }
 
-                        results.Add(userAgent, userAgentId);
+                        if (!results.ContainsKey(userAgent))
+                        {
+                            results.Add(userAgent, userAgentId);
+                        }
                     }
                 }
             }

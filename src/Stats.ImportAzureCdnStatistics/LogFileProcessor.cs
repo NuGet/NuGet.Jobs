@@ -90,7 +90,7 @@ namespace Stats.ImportAzureCdnStatistics
                         var logFileAggregates = new LogFileAggregates(logFileName);
                         foreach (var table in downloadFacts)
                         {
-                            if (string.Equals(table.TableName, "Fact_Download", StringComparison.InvariantCultureIgnoreCase))
+                            if (string.Equals(table.TableName, "dbo.Fact_Download", StringComparison.InvariantCultureIgnoreCase))
                             {
                                 // aggregate download counts by date
                                 var downloadsByDate =
@@ -383,7 +383,7 @@ namespace Stats.ImportAzureCdnStatistics
                 }
                 catch (Exception exception)
                 {
-                    _logger.LogError(LogEvents.FailedBlobDelete, exception, "Finished to delete blob {FtpBlobUri}", logFile.Uri);
+                    _logger.LogError(LogEvents.FailedBlobDelete, exception, "Failed to delete blob {FtpBlobUri}", logFile.Uri);
                     ApplicationInsightsHelper.TrackException(exception, logFile.Blob.Name);
                     throw;
                 }
