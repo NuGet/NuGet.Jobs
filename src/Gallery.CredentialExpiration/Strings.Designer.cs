@@ -81,13 +81,14 @@ namespace Gallery.CredentialExpiration {
         /// <summary>
         ///   Looks up a localized string similar to Hi {0},
         ///
-        ///We wanted to inform you that your following API key(s) on {1} have expired.
+        ///We wanted to inform you that the following API key(s) on {1} have expired.
         ///
         ///{2}
         ///
         ///Visit {3} to generate a new API key(s) so that you can continue pushing packages.
         ///
         ///Best regards,
+        ///
         ///{1}.
         /// </summary>
         public static string ExpiredEmailBody {
@@ -108,13 +109,14 @@ namespace Gallery.CredentialExpiration {
         /// <summary>
         ///   Looks up a localized string similar to Hi {0},
         ///
-        ///We wanted to inform you that your following API key(s) on {1} will expire soon: 
+        ///We wanted to inform you that the following API key(s) on {1} will expire soon: 
         ///
         ///{2}
         ///
         ///Visit {3} to generate a new API key(s) so that you can continue pushing packages using them.
         ///
         ///Best regards,
+        ///
         ///{1}.
         /// </summary>
         public static string ExpiringEmailBody {
@@ -139,7 +141,7 @@ namespace Gallery.CredentialExpiration {
         ///WHERE u.[EmailAllowed] = 1
         ///  AND u.[EmailAddress] &lt;&gt; &apos;&apos;
         ///  AND cr.[Expires] &lt;= DATEADD(day,{0},GETUTCDATE())
-        ///  AND cr.[Expires] &gt; DATEADD(day,-1,GETUTCDATE())
+        ///  AND cr.[Expires] &gt; DATEADD(day,-1 * {0},GETUTCDATE())
         ///  AND (cr.[Type] = &apos;apikey.v1&apos; or cr.[Type] = &apos;apikey.v2&apos;)
         ///ORDER BY u.[Username].
         /// </summary>
