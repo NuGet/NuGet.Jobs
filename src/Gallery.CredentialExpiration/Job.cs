@@ -35,8 +35,8 @@ namespace Gallery.CredentialExpiration
         private string _mailFrom;
         private SmtpClient _smtpClient;
 
-        private int _warnDaysBeforeExpiration = 10;
         private int _allowEmailResendAfterDays = 7;
+        private int _warnDaysBeforeExpiration = 10;
 
         private ILogger _logger;
 
@@ -126,7 +126,7 @@ namespace Gallery.CredentialExpiration
                     .ForEach(ecd => ecd.Description = Constants.NonScopedApiKeyDescription);
 
                 // Group credentials for each user
-                Dictionary<string, List<ExpiredCredentialData>> userToExpiredCredsMapping = expiredCredentials
+                var userToExpiredCredsMapping = expiredCredentials
                     .GroupBy(x => x.Username)
                     .ToDictionary(user => user.Key, value => value.ToList());
 
@@ -135,21 +135,23 @@ namespace Gallery.CredentialExpiration
                 foreach (var userCredMapping in userToExpiredCredsMapping)
                 {
                     var username = userCredMapping.Key;
-                    List<ExpiredCredentialData> allExpiringCredsForUser = userCredMapping.Value;
+                    var credentialList = userCredMapping.Value;
 
                     // Split credentials into two lists: Expired and Expiring to aggregate messages
-                    List<ExpiredCredentialData> expiringCreds = allExpiringCredsForUser
-                        .Where(x => (x.Expires - jobRunTime).TotalDays > 0).ToList();
-                    List<ExpiredCredentialData> expiredCreds = allExpiringCredsForUser
-                        .Where(x => (x.Expires - jobRunTime).TotalDays <= 0).ToList();
+                    var expiringCredendtialList = credentialList
+                        .Where(x => (x.Expires - jobRunTime).TotalDays > 0)
+                        .ToList();
+                    var expiredCredentialList = credentialList
+                        .Where(x => (x.Expires - jobRunTime).TotalDays <= 0)
+                        .ToList();
 
                     if (!_contactedUsers.ContainsKey(username))
                     {
                         // send expiring API keys email notification
-                        await HandleExpiredCredentialEmail(username, expiringCreds, jobRunTime, expired: false);
+                        await HandleExpiredCredentialEmail(username, expiringCredendtialList, jobRunTime, expired: false);
 
                         // send expired API keys email notification
-                        await HandleExpiredCredentialEmail(username, expiredCreds, jobRunTime, expired: true);
+                        await HandleExpiredCredentialEmail(username, expiredCredentialList, jobRunTime, expired: true);
 
                         _logger.LogInformation("Handled expired/expiring credential for user {Username}.", username);
                         _contactedUsers.AddOrUpdate(username, jobRunTime, (s, offset) => jobRunTime);
