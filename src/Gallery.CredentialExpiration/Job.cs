@@ -238,7 +238,7 @@ namespace Gallery.CredentialExpiration
                 : string.Format(Strings.ApiKeyExpiring, description, (int)expiryInDays);
 
             // \u2022 - Unicode for bullet point.
-            return "\u2022 "+ message + "\r\n";
+            return "\u2022 "+ message + Environment.NewLine;
         }
 
         private SmtpClient CreateSmtpClient(SmtpUri smtpUri)
