@@ -118,26 +118,28 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ExpiredEmailBody" xml:space="preserve">
-    <value>Hi,
+    <value>Hi {0},
 
-We wanted to inform you that your API key on {0} has expired.
+We wanted to inform you that your following API key(s) on {1} have expired.
 
-Visit {1} to generate a new API key so that you can continue pushing packages.
+{2}
+
+Visit {3} to generate a new API key(s) so that you can continue pushing packages.
 
 Best regards,
-
-{0}</value>
+{1}</value>
   </data>
   <data name="ExpiringEmailBody" xml:space="preserve">
-    <value>Hi,
+    <value>Hi {0},
 
-We wanted to inform you that your API key on {0} will expire in {2} days.
+We wanted to inform you that your following API key(s) on {1} will expire soon: 
 
-Visit {1} to generate a new API key so that you can continue pushing packages.
+{2}
+
+Visit {3} to generate a new API key(s) so that you can continue pushing packages using them.
 
 Best regards,
-
-{0}</value>
+{1}</value>
   </data>
   <data name="GetExpiredCredentialsQuery" xml:space="preserve">
     <value>SELECT cr.[Type], cr.[Created], cr.[Expires], cr.[Description], u.[EmailAddress], u.[Username]
