@@ -61,15 +61,16 @@ namespace Gallery.CredentialExpiration {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hi,
+        ///   Looks up a localized string similar to Hi {0},
         ///
-        ///We wanted to inform you that your API key on {0} has expired.
+        ///We wanted to inform you that your following API key(s) on {1} have expired.
         ///
-        ///Visit {1} to generate a new API key so that you can continue pushing packages.
+        ///{2}
+        ///
+        ///Visit {3} to generate a new API key(s) so that you can continue pushing packages.
         ///
         ///Best regards,
-        ///
-        ///{0}.
+        ///{1}.
         /// </summary>
         public static string ExpiredEmailBody {
             get {
@@ -87,15 +88,16 @@ namespace Gallery.CredentialExpiration {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hi,
+        ///   Looks up a localized string similar to Hi {0},
         ///
-        ///We wanted to inform you that your API key on {0} will expire in {2} days.
+        ///We wanted to inform you that your following API key(s) on {1} will expire soon: 
         ///
-        ///Visit {1} to generate a new API key so that you can continue pushing packages.
+        ///{2}
+        ///
+        ///Visit {3} to generate a new API key(s) so that you can continue pushing packages using them.
         ///
         ///Best regards,
-        ///
-        ///{0}.
+        ///{1}.
         /// </summary>
         public static string ExpiringEmailBody {
             get {
