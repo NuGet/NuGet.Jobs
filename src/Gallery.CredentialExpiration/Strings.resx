@@ -158,4 +158,10 @@ ORDER BY u.[Username]</value>
   <data name="ExpiringEmailSubject" xml:space="preserve">
     <value>[{0}] Your API key is about to expire</value>
   </data>
+  <data name="ApiKeyExpiring" xml:space="preserve">
+    <value>{0} - expires in {1} day(s).</value>
+  </data>
+  <data name="ApiKeyExpired" xml:space="preserve">
+    <value>{0} - has expired.</value>
+  </data>
 </root>
