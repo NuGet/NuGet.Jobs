@@ -195,11 +195,11 @@ namespace Gallery.CredentialExpiration
             var userEmail = credentialList.FirstOrDefault().EmailAddress;
             var mailMessage = new MailMessage(_mailFrom, userEmail);
 
-            var apiKeyDescriptionExpiryList = credentialList
+            var apiKeyExpiryMessageList = credentialList
                 .Select(x => BuildApiKeyExpiryMessage(x.Description, x.Expires, jobRunTime))
                 .ToList();
 
-            var apiKeyExpiryMessage = string.Join(Environment.NewLine, apiKeyDescriptionExpiryList);
+            var apiKeyExpiryMessage = string.Join(Environment.NewLine, apiKeyExpiryMessageList);
             // Build email body
             if (expired)
             {
@@ -235,7 +235,7 @@ namespace Gallery.CredentialExpiration
         private static string BuildApiKeyExpiryMessage(string description, DateTimeOffset expiry, DateTimeOffset currentTime)
         {
             var expiryInDays = (expiry - currentTime).TotalDays;
-            var message =  expiryInDays < 0
+            var message = expiryInDays < 0
                 ? string.Format(Strings.ApiKeyExpired, description)
                 : string.Format(Strings.ApiKeyExpiring, description, (int)expiryInDays);
 
