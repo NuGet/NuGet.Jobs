@@ -61,6 +61,24 @@ namespace Gallery.CredentialExpiration {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} - has expired..
+        /// </summary>
+        public static string ApiKeyExpired {
+            get {
+                return ResourceManager.GetString("ApiKeyExpired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} - expires in {1} day(s)..
+        /// </summary>
+        public static string ApiKeyExpiring {
+            get {
+                return ResourceManager.GetString("ApiKeyExpiring", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Hi {0},
         ///
         ///We wanted to inform you that your following API key(s) on {1} have expired.

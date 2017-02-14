@@ -188,11 +188,11 @@ namespace Gallery.CredentialExpiration
             var expiryInDays = (expiry - currentTime).TotalDays;
             if (expiryInDays < 0)
             {
-                return "<li>" + description + " - has expired. </li>";
+                return "\u2022 " + string.Format(Strings.ApiKeyExpired, description);
             }
             else
             {
-                return "<li>" + description + " - expires in " + (int)expiryInDays + " days. </li>";
+                return "\u2022 " + string.Format(Strings.ApiKeyExpiring, description, (int)expiryInDays);
             }
         }
 
@@ -211,13 +211,12 @@ namespace Gallery.CredentialExpiration
             // Build message
             var userEmail = credentialList.FirstOrDefault().EmailAddress;
             var mailMessage = new MailMessage(_mailFrom, userEmail);
-            mailMessage.IsBodyHtml = true;
 
             var apiKeyDescriptionExpiryList = credentialList
                 .Select(x => BuildApiKeyExpiryMessage(x.Description, x.Expires, jobRunTime))
                 .ToList();
 
-            var apiKeyExpiryMessage = "<ul>" + apiKeyDescriptionExpiryList + "</ul>";
+            var apiKeyExpiryMessage = string.Join(Environment.NewLine + Environment.NewLine, apiKeyDescriptionExpiryList);
             // Build email body
             if (expired)
             {
