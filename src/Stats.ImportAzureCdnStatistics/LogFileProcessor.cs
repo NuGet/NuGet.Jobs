@@ -74,59 +74,78 @@ namespace Stats.ImportAzureCdnStatistics
                 // replicate data to the statistics database
                 if (hasPackageStatistics)
                 {
-                    _logger.LogInformation("Creating facts for package download statistics in {LogFileName}", logFileName);
-
-                    var downloadFacts = await _warehouse.CreateAsync(cdnStatistics.PackageStatistics, logFileName);
-
-                    if (downloadFacts != null)
+                    // check if we already successfully imported package statistics for this file
+                    var alreadyImportedPackageStatistics = await _warehouse.HasImportedPackageStatisticsAsync(logFileName);
+                    if (alreadyImportedPackageStatistics)
                     {
-                        // store facts recorded in this logfile
-                        if (!aggregatesOnly)
-                        {
-                            await _warehouse.InsertDownloadFactsAsync(downloadFacts, logFileName);
-                        }
+                        _logger.LogInformation("Already imported package download statistics for {LogFileName}: skipping.", logFileName);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Creating facts for package download statistics in {LogFileName}", logFileName);
 
-                        // create aggregates for the logfile
-                        var logFileAggregates = new LogFileAggregates(logFileName);
-                        foreach (var table in downloadFacts)
+                        var downloadFacts = await _warehouse.CreateAsync(cdnStatistics.PackageStatistics, logFileName);
+
+                        if (downloadFacts != null)
                         {
-                            if (string.Equals(table.TableName, "dbo.Fact_Download", StringComparison.InvariantCultureIgnoreCase))
+                            // store facts recorded in this logfile
+                            if (!aggregatesOnly)
                             {
-                                // aggregate download counts by date
-                                var downloadsByDate =
-                                    table.AsEnumerable()
-                                        .GroupBy(e => e.Field<int>("Dimension_Date_Id"))
-                                        .Select(e => new KeyValuePair<int, int>(e.Key, e.Count()));
+                                await _warehouse.InsertDownloadFactsAsync(downloadFacts, logFileName);
+                            }
 
-                                foreach (var keyValuePair in downloadsByDate)
+                            // create aggregates for the logfile
+                            var logFileAggregates = new LogFileAggregates(logFileName);
+                            foreach (var table in downloadFacts)
+                            {
+                                if (string.Equals(table.TableName, "dbo.Fact_Download", StringComparison.InvariantCultureIgnoreCase))
                                 {
-                                    logFileAggregates.PackageDownloadsByDateDimensionId.Add(keyValuePair.Key, keyValuePair.Value);
+                                    // aggregate download counts by date
+                                    var downloadsByDate =
+                                        table.AsEnumerable()
+                                            .GroupBy(e => e.Field<int>("Dimension_Date_Id"))
+                                            .Select(e => new KeyValuePair<int, int>(e.Key, e.Count()));
 
-                                    _logger.LogInformation(
-                                        "{LogFile} contains {PackageDownloadCount} package downloads for date id {DimensionDateId}",
-                                        logFileName, keyValuePair.Value, keyValuePair.Key);
+                                    foreach (var keyValuePair in downloadsByDate)
+                                    {
+                                        logFileAggregates.PackageDownloadsByDateDimensionId.Add(keyValuePair.Key, keyValuePair.Value);
+
+                                        _logger.LogInformation(
+                                            "{LogFile} contains {PackageDownloadCount} package downloads for date id {DimensionDateId}",
+                                            logFileName, keyValuePair.Value, keyValuePair.Key);
+                                    }
                                 }
                             }
-                        }
 
-                        // store aggregates for this logfile
-                        _logger.LogInformation("Storing aggregate facts for package download statistics in {LogFileName}", logFileName);
-                        await _warehouse.StoreLogFileAggregatesAsync(logFileAggregates);
+                            // store aggregates for this logfile
+                            _logger.LogInformation("Storing aggregate facts for package download statistics in {LogFileName}", logFileName);
+                            await _warehouse.StoreLogFileAggregatesAsync(logFileAggregates);
+                        }
                     }
                 }
 
                 if (hasToolStatistics)
                 {
-                    _logger.LogInformation("Creating facts for tool download statistics in {LogFileName}", logFileName);
-
-                    var downloadFacts = await _warehouse.CreateAsync(cdnStatistics.ToolStatistics, logFileName);
-
-                    if (downloadFacts != null)
+                    // check if we already successfully imported tool statistics for this file
+                    var alreadyImportedToolStatistics = await _warehouse.HasImportedToolStatisticsAsync(logFileName);
+                    if (alreadyImportedToolStatistics)
                     {
-                        // store facts recorded in this logfile
-                        if (!aggregatesOnly)
+                        _logger.LogInformation(
+                            "Already imported tool download statistics for {LogFileName}: skipping.", logFileName);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Creating facts for tool download statistics in {LogFileName}", logFileName);
+
+                        var downloadFacts = await _warehouse.CreateAsync(cdnStatistics.ToolStatistics, logFileName);
+
+                        if (downloadFacts != null)
                         {
-                            await _warehouse.InsertDownloadFactsAsync(downloadFacts, logFileName);
+                            // store facts recorded in this logfile
+                            if (!aggregatesOnly)
+                            {
+                                await _warehouse.InsertDownloadFactsAsync(downloadFacts, logFileName);
+                            }
                         }
                     }
                 }
