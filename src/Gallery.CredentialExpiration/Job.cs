@@ -73,7 +73,7 @@ namespace Gallery.CredentialExpiration
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("Failed to initialize job! {Exception}", exception);
+                _logger.LogCritical(LogEvents.JobInitFailed, exception, "Failed to initialize job!");
 
                 return false;
             }
@@ -163,7 +163,7 @@ namespace Gallery.CredentialExpiration
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Job run failed! {Exception}", ex);
+                _logger.LogCritical(LogEvents.JobRunFailed, ex, "Job run failed!");
 
                 return false;
             }
@@ -226,17 +226,13 @@ namespace Gallery.CredentialExpiration
             }
             catch (SmtpFailedRecipientException ex)
             {
-                _logger.LogWarning("Failed to handle {Expired} credential for user {Username} - recipient failed! {Exception}",
-                    expired ? "expired" : "expiring",
-                    username,
-                    ex);
+                var logMessage = $"Failed to handle credential for user {username} - recipient failed!";
+                _logger.LogWarning(LogEvents.FailedToSendMail, ex, logMessage);
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Failed to handle {Expired} credential for user {Username}! {Exception}",
-                    expired ? "expired" : "expiring",
-                    username,
-                    ex);
+                var logMessage = $"Failed to handle credential for user {username}.";
+                _logger.LogCritical(LogEvents.FailedToHandleExpiredCredential, ex, logMessage);
 
                 throw;
             }
