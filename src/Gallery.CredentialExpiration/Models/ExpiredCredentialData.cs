@@ -7,8 +7,6 @@ namespace Gallery.CredentialExpiration.Models
 {
     public static class Constants
     {
-        public const string ApiKeyV1 = "apikey.v1";
-        public const string ApiKeyV2 = "apikey.v2";
         public const string NonScopedApiKeyDescription = "Full access API key";
     }
 
@@ -20,10 +18,5 @@ namespace Gallery.CredentialExpiration.Models
         public string Description { get; set; }
         public DateTimeOffset Created { get; set; }
         public DateTimeOffset Expires { get; set; }
-
-        public bool IsNonScopedApiKey()
-        {
-            return string.Equals(Type, Constants.ApiKeyV1, StringComparison.OrdinalIgnoreCase);
-        }
     }
 }

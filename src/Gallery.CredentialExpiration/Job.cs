@@ -65,11 +65,11 @@ namespace Gallery.CredentialExpiration
                 var smtpUri = new SmtpUri(new Uri(smtpConnectionString));
                 _smtpClient = CreateSmtpClient(smtpUri);
 
-                var warnDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.WarnDaysBeforeExpiration);
-                _warnDaysBeforeExpiration = warnDays.HasValue ? warnDays.Value : _warnDaysBeforeExpiration;
+                _warnDaysBeforeExpiration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.WarnDaysBeforeExpiration) 
+                    ?? _warnDaysBeforeExpiration;
 
-                var resendDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.AllowEmailResendAfterDays);
-                _allowEmailResendAfterDays = resendDays.HasValue ? resendDays.Value : _allowEmailResendAfterDays;
+                _allowEmailResendAfterDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.AllowEmailResendAfterDays)
+                    ?? _allowEmailResendAfterDays;
             }
             catch (Exception exception)
             {
@@ -94,7 +94,7 @@ namespace Gallery.CredentialExpiration
                     var contactedUsers = JsonConvert.DeserializeObject<Dictionary<string, DateTimeOffset>>(
                         File.ReadAllText(_cursorFile));
 
-                    // Clean older entries (contacted in last _resendEmailAfterDays)
+                    // Clean older entries (contacted in last _allowEmailResendAfterDays)
                     var referenceDate = DateTimeOffset.UtcNow.AddDays(-1 * _allowEmailResendAfterDays);
                     foreach (var kvp in contactedUsers.Where(kvp => kvp.Value >= referenceDate))
                     {
@@ -121,7 +121,7 @@ namespace Gallery.CredentialExpiration
 
                 // Add default description for non-scoped API keys
                 expiredCredentials
-                    .Where(cred => (string.IsNullOrEmpty(cred.Description) || cred.IsNonScopedApiKey()))
+                    .Where(cred => string.IsNullOrEmpty(cred.Description))
                     .ToList()
                     .ForEach(ecd => ecd.Description = Constants.NonScopedApiKeyDescription);
 
@@ -138,28 +138,26 @@ namespace Gallery.CredentialExpiration
                     var credentialList = userCredMapping.Value;
 
                     // Split credentials into two lists: Expired and Expiring to aggregate messages
-                    var expiringCredendtialList = credentialList
+                    var expiringCredentialList = credentialList
                         .Where(x => (x.Expires - jobRunTime).TotalDays > 0)
                         .ToList();
                     var expiredCredentialList = credentialList
                         .Where(x => (x.Expires - jobRunTime).TotalDays <= 0)
                         .ToList();
 
-                    if (!_contactedUsers.ContainsKey(username))
+                    DateTimeOffset userContactTime;
+                    if (!_contactedUsers.TryGetValue(username, out userContactTime))
                     {
                         // send expiring API keys email notification
-                        await HandleExpiredCredentialEmail(username, expiringCredendtialList, jobRunTime, expired: false);
+                        await HandleExpiredCredentialEmail(username, expiringCredentialList, jobRunTime, expired: false);
 
                         // send expired API keys email notification
                         await HandleExpiredCredentialEmail(username, expiredCredentialList, jobRunTime, expired: true);
-
-                        _logger.LogInformation("Handled expired/expiring credential for user {Username}.", username);
-                        _contactedUsers.AddOrUpdate(username, jobRunTime, (s, offset) => jobRunTime);
                     }
                     else
                     {
-                        _logger.LogDebug("Skipping expired credential for user {Username} - already handled in last {days}.",
-                            username, _allowEmailResendAfterDays);
+                        _logger.LogDebug("Skipping expired credential for user {Username} - already handled at {JobRuntime}.",
+                            username, userContactTime);
                     }
                 }
             }
@@ -219,14 +217,26 @@ namespace Gallery.CredentialExpiration
                 {
                     await _smtpClient.SendMailAsync(mailMessage);
                 }
+
+                _logger.LogInformation("Handled {Expired} credential for user {Username}.",
+                    expired ? "expired" : "expiring",
+                    username);
+
+                _contactedUsers.AddOrUpdate(username, jobRunTime, (s, offset) => jobRunTime);
             }
             catch (SmtpFailedRecipientException ex)
             {
-                _logger.LogWarning("Failed to handle expired credential for user {Username} - recipient failed! {Exception}", username, ex);
+                _logger.LogWarning("Failed to handle {Expired} credential for user {Username} - recipient failed! {Exception}",
+                    expired ? "expired" : "expiring",
+                    username,
+                    ex);
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Failed to handle expired credential for user {Username}! {Exception}", username, ex);
+                _logger.LogCritical("Failed to handle {Expired} credential for user {Username}! {Exception}",
+                    expired ? "expired" : "expiring",
+                    username,
+                    ex);
 
                 throw;
             }
