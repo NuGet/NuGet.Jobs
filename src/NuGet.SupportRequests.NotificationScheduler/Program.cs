@@ -18,6 +18,11 @@ namespace NuGet.SupportRequests.NotificationScheduler
 {
     public class Program
     {
+        private const string _argumentNameScheduledTask = "Task";
+        private const string _argumentNamePagerDutyAccountName = "PagerDutyAccountName";
+        private const string _argumentNamePagerDutyApiKey = "PagerDutyApiKey";
+        private const string _argumentNameTargetEmailAddress = "TargetEmailAddress";
+
         public static void Main(string[] args)
         {
             // Set the default trace listener, so if we get args parsing issues they will be printed. This will be overriden by the configured trace listener
@@ -32,7 +37,7 @@ namespace NuGet.SupportRequests.NotificationScheduler
                 var stopWatch = new Stopwatch();
                 var argsDictionary = ParseArgsDictionary(args);
 
-                if (!argsDictionary.ContainsKey(JobArgumentNames.ScheduledTask))
+                if (!argsDictionary.ContainsKey(_argumentNameScheduledTask))
                 {
                     throw new NotSupportedException("Unknown scheduled task. The argument -Task appears to be missing.");
                 }
@@ -48,7 +53,7 @@ namespace NuGet.SupportRequests.NotificationScheduler
                 ApplicationInsights.Initialize(instrumentationKey);
 
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
-                var scheduledTaskName = argsDictionary[JobArgumentNames.ScheduledTask];
+                var scheduledTaskName = argsDictionary[_argumentNameScheduledTask];
 
                 IScheduledTask scheduledTask = null;
                 if (IsTaskOfType<OnCallDailyNotificationTask>(scheduledTaskName))
@@ -105,8 +110,8 @@ namespace NuGet.SupportRequests.NotificationScheduler
             var supportRequestRepository = new SupportRequestRepository(loggerFactory, sourceDatabase);
 
             var pagerDutyConfiguration = new PagerDutyConfiguration(
-              argsDictionary[JobArgumentNames.PagerDutyAccountName],
-              argsDictionary[JobArgumentNames.PagerDutyApiKey]
+              argsDictionary[_argumentNamePagerDutyAccountName],
+              argsDictionary[_argumentNamePagerDutyApiKey]
               );
 
             return new SupportRequestService(supportRequestRepository, pagerDutyConfiguration);
@@ -116,7 +121,7 @@ namespace NuGet.SupportRequests.NotificationScheduler
           IDictionary<string, string> argsDictionary,
           ILoggerFactory loggerFactory)
         {
-            var targetEmailAddress = argsDictionary[JobArgumentNames.TargetEmailAddress];
+            var targetEmailAddress = argsDictionary[_argumentNameTargetEmailAddress];
             var smtpUri = argsDictionary[JobArgumentNames.SmtpUri];
 
             return new MessagingService(loggerFactory, smtpUri, targetEmailAddress);

@@ -116,11 +116,5 @@ namespace NuGet.Jobs
 
         // Arguments for Azure logs
         public const string LogsAzureStorageConnectionString = "LogsAzureStorageConnectionString";
-
-        // Arguments specific to SupportRequests Report scheduler job
-        public const string ScheduledTask = "Task";
-        public const string PagerDutyAccountName = "PagerDutyAccountName";
-        public const string PagerDutyApiKey = "PagerDutyApiKey";
-        public const string TargetEmailAddress = "TargetEmailAddress";
     }
 }

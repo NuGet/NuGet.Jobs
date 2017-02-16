@@ -25,7 +25,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Models
 
             if (string.IsNullOrEmpty(onCallEmailAddress))
             {
-                throw new ArgumentNullException(nameof(onCallEmailAddress));
+                throw new ArgumentException(nameof(onCallEmailAddress));
             }
 
             ReferenceTime = referenceTime;
