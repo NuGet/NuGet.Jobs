@@ -95,8 +95,7 @@ namespace Stats.ImportAzureCdnStatistics
         private async Task ProcessToolStatisticsInLogFile(CdnStatistics cdnStatistics, string logFileName, bool aggregatesOnly)
         {
             // check if we already successfully imported tool statistics for this file
-            var alreadyImportedToolStatistics = await _warehouse.HasImportedToolStatisticsAsync(logFileName);
-            if (alreadyImportedToolStatistics)
+            if (await _warehouse.HasImportedToolStatisticsAsync(logFileName))
             {
                 _logger.LogWarning(
                     "Already imported tool download statistics for {LogFileName}: skipping.", logFileName);

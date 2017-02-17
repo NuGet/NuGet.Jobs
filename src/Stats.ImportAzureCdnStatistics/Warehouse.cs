@@ -435,68 +435,53 @@ namespace Stats.ImportAzureCdnStatistics
         {
             _logger.LogDebug("Checking if we already processed tool statistics in {LogFileName}...", logFileName);
 
-            bool hasToolStatistics;
-            using (var connection = await _targetDatabase.ConnectTo())
-            {
-                try
-                {
-                    var command = connection.CreateCommand();
-                    command.CommandText = "[dbo].[CheckLogFileHasToolStatistics]";
-                    command.CommandTimeout = _defaultCommandTimeout;
-                    command.CommandType = CommandType.StoredProcedure;
-                    command.Parameters.AddWithValue("logFileName", logFileName);
-
-                    hasToolStatistics = (bool) await command.ExecuteScalarAsync();
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogError(
-                        LogEvents.FailedToCheckAlreadyProcessedLogFileToolStatistics,
-                        exception,
-                        "Failed to check if we already processed tool statistics in {LogFileName}...",
-                        logFileName);
-
-                    ApplicationInsightsHelper.TrackException(exception);
-
-                    throw;
-                }
-            }
-
-            return hasToolStatistics;
+            return await HasImportedStatisticsAsync(
+                logFileName,
+                "[dbo].[CheckLogFileHasToolStatistics]",
+                LogEvents.FailedToCheckAlreadyProcessedLogFileToolStatistics);
         }
 
         public async Task<bool> HasImportedPackageStatisticsAsync(string logFileName)
         {
             _logger.LogDebug("Checking if we already processed package statistics in {LogFileName}...", logFileName);
 
-            bool hasPackageStatistics;
-            using (var connection = await _targetDatabase.ConnectTo())
+            return await HasImportedStatisticsAsync(
+                logFileName,
+                "[dbo].[CheckLogFileHasPackageStatistics]",
+                LogEvents.FailedToCheckAlreadyProcessedLogFilePackageStatistics);
+        }
+
+        private async Task<bool> HasImportedStatisticsAsync(string logFileName, string commandText, EventId errorEventId)
+        {
+            bool hasStatistics;
+
+            try
             {
-                try
+                using (var connection = await _targetDatabase.ConnectTo())
                 {
                     var command = connection.CreateCommand();
-                    command.CommandText = "[dbo].[CheckLogFileHasPackageStatistics]";
+                    command.CommandText = commandText;
                     command.CommandTimeout = _defaultCommandTimeout;
                     command.CommandType = CommandType.StoredProcedure;
                     command.Parameters.AddWithValue("logFileName", logFileName);
 
-                    hasPackageStatistics = (bool)await command.ExecuteScalarAsync();
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogError(
-                        LogEvents.FailedToCheckAlreadyProcessedLogFilePackageStatistics,
-                        exception,
-                        "Failed to check if we already processed package statistics in {LogFileName}...",
-                        logFileName);
-
-                    ApplicationInsightsHelper.TrackException(exception);
-
-                    throw;
+                    hasStatistics = (bool)await command.ExecuteScalarAsync();
                 }
             }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    errorEventId,
+                    exception,
+                    errorEventId.Name + " {LogFileName}...",
+                    logFileName);
 
-            return hasPackageStatistics;
+                ApplicationInsightsHelper.TrackException(exception);
+
+                throw;
+            }
+
+            return hasStatistics;
         }
 
         private async Task<IDictionary<string, int>> GetDimension(string dimension, string logFileName, Func<SqlConnection, Task<IDictionary<string, int>>> retrieve)
