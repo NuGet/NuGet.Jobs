@@ -115,16 +115,15 @@ namespace Stats.ImportAzureCdnStatistics
 
         private async Task ProcessPackageStatisticsInLogFile(CdnStatistics cdnStatistics, string logFileName, bool aggregatesOnly)
         {
-            // check if we already successfully imported package statistics for this file
-            var alreadyImportedPackageStatistics = await _warehouse.HasImportedPackageStatisticsAsync(logFileName);
             _logger.LogInformation("Creating facts for package download statistics in {LogFileName}", logFileName);
 
             var downloadFacts = await _warehouse.CreateAsync(cdnStatistics.PackageStatistics, logFileName);
             if (downloadFacts != null)
             {
-                // store facts recorded in this logfile
-                if (!alreadyImportedPackageStatistics && !aggregatesOnly)
+                // check if we already successfully imported package statistics for this file
+                if (!await _warehouse.HasImportedPackageStatisticsAsync(logFileName) && !aggregatesOnly)
                 {
+                    // store facts recorded in this logfile
                     await _warehouse.InsertDownloadFactsAsync(downloadFacts, logFileName);
                 }
                 else
