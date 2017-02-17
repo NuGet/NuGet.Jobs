@@ -55,17 +55,16 @@ namespace NuGet.SupportRequests.NotificationScheduler
                 var loggerFactory = LoggingSetup.CreateLoggerFactory();
                 var scheduledTaskName = argsDictionary[_argumentNameScheduledTask];
 
+                var supportRequestService = CreateSupportRequestsService(argsDictionary, loggerFactory);
+                var messagingService = CreateMessagingService(argsDictionary, loggerFactory);
+
                 IScheduledTask scheduledTask = null;
                 if (IsTaskOfType<OnCallDailyNotificationTask>(scheduledTaskName))
                 {
-                    var supportRequestService = CreateSupportRequestsService(argsDictionary, loggerFactory);
-                    var messagingService = CreateMessagingService(argsDictionary, loggerFactory);
                     scheduledTask = new OnCallDailyNotificationTask(loggerFactory, supportRequestService, messagingService);
                 }
                 else if (IsTaskOfType<WeeklySummaryNotificationTask>(scheduledTaskName))
                 {
-                    var supportRequestService = CreateSupportRequestsService(argsDictionary, loggerFactory);
-                    var messagingService = CreateMessagingService(argsDictionary, loggerFactory);
                     scheduledTask = new WeeklySummaryNotificationTask(loggerFactory, supportRequestService, messagingService);
                 }
 
@@ -84,7 +83,7 @@ namespace NuGet.SupportRequests.NotificationScheduler
             }
             catch (Exception exception)
             {
-                HandleException(exception);
+                exception.TraceException();
             }
 
             // Flush here. This is VERY IMPORTANT!
@@ -125,27 +124,6 @@ namespace NuGet.SupportRequests.NotificationScheduler
             var smtpUri = argsDictionary[JobArgumentNames.SmtpUri];
 
             return new MessagingService(loggerFactory, smtpUri, targetEmailAddress);
-        }
-
-        private static void HandleException(Exception exception)
-        {
-            var aggregateException = exception as AggregateException;
-            if (aggregateException != null)
-            {
-                var innerEx = aggregateException.InnerExceptions.Count > 0 ? aggregateException.InnerExceptions[0] : null;
-                if (innerEx != null)
-                {
-                    Trace.TraceError("[FAILED]: " + innerEx);
-                }
-                else
-                {
-                    Trace.TraceError("[FAILED]: " + aggregateException);
-                }
-            }
-            else
-            {
-                Trace.TraceError("[FAILED]: " + exception);
-            }
         }
 
         private static IDictionary<string, string> ParseArgsDictionary(string[] commandLineArgs)

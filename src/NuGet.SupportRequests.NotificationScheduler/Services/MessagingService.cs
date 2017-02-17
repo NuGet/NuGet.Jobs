@@ -184,18 +184,18 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
                 .Replace("$$INFO_1W-AGO_CLOSEDREQUESTS_PCT$$", GetTrendPercentageString(closedIssuesTrendPct))
                 .Replace("$$INFO_1W-AGO_CLOSEDREQUESTS_TREND$$", closedIssuesTrendImg)
                 // unresolved support requests
-                .Replace("$$INFO_2W-AGO_UNRESOLVEDREQUESTS$$", dataModel.IssuesUnresolvedPriorWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS$$", dataModel.IssuesUnresolvedLastWeek.ToString("N0"))
+                .Replace("$$INFO_2W-AGO_UNRESOLVEDREQUESTS$$", dataModel.PriorWeek.UnresolvedCount.ToString("N0"))
+                .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS$$", dataModel.LastWeek.UnresolvedCount.ToString("N0"))
                 .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS_PCT$$", GetTrendPercentageString(unresolvedIssuesTrendPct))
                 .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS_TREND$$", unresolvedIssuesTrendImg)
                 // waiting on customer
-                .Replace("$$INFO_2W-AGO_WAITINGREQUESTS$$", dataModel.IssuesWaitingForCustomerPriorWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_WAITINGREQUESTS$$", dataModel.IssuesWaitingForCustomerLastWeek.ToString("N0"))
+                .Replace("$$INFO_2W-AGO_WAITINGREQUESTS$$", dataModel.PriorWeek.WaitingForCustomerCount.ToString("N0"))
+                .Replace("$$INFO_1W-AGO_WAITINGREQUESTS$$", dataModel.LastWeek.WaitingForCustomerCount.ToString("N0"))
                 .Replace("$$INFO_1W-AGO_WAITINGREQUESTS_PCT$$", GetTrendPercentageString(waitingIssuesTrendPct))
                 .Replace("$$INFO_1W-AGO_WAITINGREQUESTS_TREND$$", waitingIssuesTrendImg)
                 // in progress
-                .Replace("$$INFO_2W-AGO_WORKINGREQUESTS$$", dataModel.IssuesInProgressPriorWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_WORKINGREQUESTS$$", dataModel.IssuesInProgressLastWeek.ToString("N0"))
+                .Replace("$$INFO_2W-AGO_WORKINGREQUESTS$$", dataModel.PriorWeek.InProgressCount.ToString("N0"))
+                .Replace("$$INFO_1W-AGO_WORKINGREQUESTS$$", dataModel.LastWeek.InProgressCount.ToString("N0"))
                 .Replace("$$INFO_1W-AGO_WORKINGREQUESTS_PCT$$", GetTrendPercentageString(workingIssuesTrendPct))
                 .Replace("$$INFO_1W-AGO_WORKINGREQUESTS_TREND$$", workingIssuesTrendImg)
                 // SLA - unresolved pct

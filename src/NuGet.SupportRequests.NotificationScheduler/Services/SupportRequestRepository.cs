@@ -14,6 +14,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
     internal class SupportRequestRepository
     {
         private const string _parameterNameReferenceTime = "referenceTime";
+        private const string _parameterNamePagerDutyUsername = "pagerDutyUserName";
         private readonly DateTime _defaultSqlDateTime = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         private readonly ILogger _logger;
         private readonly SqlConnectionStringBuilder _sourceDatabase;
@@ -39,8 +40,6 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
         internal async Task<SqlConnection> OpenConnectionAsync()
         {
             var connection = await _sourceDatabase.ConnectTo();
-
-            connection.InfoMessage -= OnSqlConnectionInfoMessage;
             connection.InfoMessage += OnSqlConnectionInfoMessage;
 
             return connection;
@@ -60,7 +59,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
 
             if (!string.IsNullOrEmpty(onCallPagerDutyUserName))
             {
-                sqlCommand.Parameters.AddWithValue("pagerDutyUserName", onCallPagerDutyUserName);
+                sqlCommand.Parameters.AddWithValue(_parameterNamePagerDutyUsername, onCallPagerDutyUserName);
             }
 
             using (var sqlDataReader = await sqlCommand.ExecuteReaderAsync())

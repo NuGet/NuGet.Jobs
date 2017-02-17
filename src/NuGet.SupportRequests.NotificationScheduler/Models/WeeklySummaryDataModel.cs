@@ -29,43 +29,23 @@ namespace NuGet.SupportRequests.NotificationScheduler.Models
             var startDateUtcLastWeek = referenceTime.AddDays(-7);
             var startDateUtcPriorWeek = referenceTime.AddDays(-14);
 
-            // Get number of issues created last week
-            IssuesUnresolvedLastWeek = unresolvedIssues.Count(i =>
-                    i.CreatedDate >= startDateUtcLastWeek
-                    && i.CreatedDate < referenceTime);
+            var unresolvedIssuesLastWeek = unresolvedIssues
+                .Where(i => i.CreatedDate >= startDateUtcLastWeek && i.CreatedDate < referenceTime)
+                .ToList();
 
-            // Get number of issues created in prior week
-            IssuesUnresolvedPriorWeek = unresolvedIssues.Count(i =>
-                    i.CreatedDate >= startDateUtcPriorWeek
-                    && i.CreatedDate < startDateUtcLastWeek);
+            var unresolvedIssuesPriorWeek = unresolvedIssues
+                .Where(i => i.CreatedDate >= startDateUtcPriorWeek && i.CreatedDate < startDateUtcLastWeek)
+                .ToList();
 
-            // Get number of issues that are still waiting for customer and created in the last 7 days
-            IssuesWaitingForCustomerLastWeek = unresolvedIssues.Count(i =>
-                    i.IssueStatus == (int)IssueStatusKeys.WaitingForCustomer
-                    && i.CreatedDate >= startDateUtcLastWeek
-                    && i.CreatedDate < referenceTime);
-
-            // Get number of issues that are still waiting for customer and created in prior week
-            IssuesWaitingForCustomerPriorWeek = unresolvedIssues.Count(i =>
-                    i.IssueStatus == (int)IssueStatusKeys.WaitingForCustomer
-                    && i.CreatedDate >= startDateUtcPriorWeek
-                    && i.CreatedDate < startDateUtcLastWeek);
-
-            // Get number of issues that are still being handled by support agent and created in the last 7 days
-            IssuesInProgressLastWeek = unresolvedIssues.Count(i =>
-                    i.IssueStatus == (int)IssueStatusKeys.Working
-                    && i.CreatedDate >= startDateUtcLastWeek
-                    && i.CreatedDate < referenceTime);
-
-            // Get number of issues that are still being handled by support agent and created in prior week
-            IssuesInProgressPriorWeek = unresolvedIssues.Count(i =>
-                    i.IssueStatus == (int)IssueStatusKeys.Working
-                    && i.CreatedDate >= startDateUtcPriorWeek
-                    && i.CreatedDate < startDateUtcLastWeek);
+            LastWeek = new SingleWeekSummary(unresolvedIssuesLastWeek);
+            PriorWeek = new SingleWeekSummary(unresolvedIssuesPriorWeek);
 
             UnresolvedPercentageDelta = GetUnresolvedPercentageLastWeek() -
                                         GetUnresolvedPercentagePriorWeek();
         }
+
+        public SingleWeekSummary LastWeek { get; }
+        public SingleWeekSummary PriorWeek { get; }
 
         public DateTime ReferenceTime { get; }
 
@@ -88,45 +68,39 @@ namespace NuGet.SupportRequests.NotificationScheduler.Models
             return GetDeltaPercentageSafe(IssuesCreatedLastWeek, IssuesCreatedPriorWeek);
         }
 
-        public int IssuesUnresolvedLastWeek { get; }
-        public int IssuesUnresolvedPriorWeek { get; }
         public double GetIssuesUnresolvedTrendPct()
         {
-            return GetDeltaPercentageSafe(IssuesUnresolvedLastWeek, IssuesUnresolvedPriorWeek);
+            return GetDeltaPercentageSafe(LastWeek.UnresolvedCount, PriorWeek.UnresolvedCount);
         }
         public double UnresolvedPercentageDelta { get; }
 
-        public int IssuesWaitingForCustomerLastWeek { get; }
-        public int IssuesWaitingForCustomerPriorWeek { get; }
         public double GetIssuesWaitingForCustomerTrendPct()
         {
-            return GetDeltaPercentageSafe(IssuesWaitingForCustomerLastWeek, IssuesWaitingForCustomerPriorWeek);
+            return GetDeltaPercentageSafe(LastWeek.WaitingForCustomerCount, PriorWeek.WaitingForCustomerCount);
         }
 
-        public int IssuesInProgressLastWeek { get; }
-        public int IssuesInProgressPriorWeek { get; }
         public double GetIssuesInProgressTrendPct()
         {
-            return GetDeltaPercentageSafe(IssuesInProgressLastWeek, IssuesInProgressPriorWeek);
+            return GetDeltaPercentageSafe(LastWeek.InProgressCount, PriorWeek.InProgressCount);
         }
 
         public double GetUnresolvedPercentageLastWeek()
         {
             if (IssuesCreatedLastWeek == 0)
             {
-                return IssuesUnresolvedLastWeek;
+                return LastWeek.UnresolvedCount;
             }
 
-            return (double)IssuesUnresolvedLastWeek / IssuesCreatedLastWeek;
+            return (double)LastWeek.UnresolvedCount / IssuesCreatedLastWeek;
         }
         public double GetUnresolvedPercentagePriorWeek()
         {
             if (IssuesCreatedPriorWeek == 0)
             {
-                return IssuesUnresolvedPriorWeek;
+                return PriorWeek.UnresolvedCount;
             }
 
-            return (double)IssuesUnresolvedPriorWeek / IssuesCreatedPriorWeek;
+            return (double)PriorWeek.UnresolvedCount / IssuesCreatedPriorWeek;
         }
 
         public IDictionary<string, int> TopSupportRequestReasonsLastWeek { get; set; }
@@ -151,5 +125,25 @@ namespace NuGet.SupportRequests.NotificationScheduler.Models
                 return (double)(numerator - denominator) / denominator;
             }
         }
+    }
+
+    internal class SingleWeekSummary
+    {
+        public SingleWeekSummary(IReadOnlyCollection<SupportRequest> unresolvedIssues)
+        {
+            UnresolvedCount = unresolvedIssues.Count;
+            WaitingForCustomerCount = unresolvedIssues.Count(i =>
+                i.IssueStatus == (int) IssueStatusKeys.WaitingForCustomer);
+            InProgressCount = unresolvedIssues.Count(i =>
+                i.IssueStatus == (int) IssueStatusKeys.Working);
+        }
+
+        public TimeSpan AverageTimeToResolution { get; set; }
+        public int IssuesClosed { get; set; }
+        public int IssuesCreated { get; set; }
+
+        public int InProgressCount { get; }
+        public int UnresolvedCount { get; }
+        public int WaitingForCustomerCount { get; }
     }
 }
