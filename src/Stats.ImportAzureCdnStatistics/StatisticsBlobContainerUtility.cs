@@ -61,7 +61,11 @@ namespace Stats.ImportAzureCdnStatistics
                     _logger.LogInformation("Beginning to delete blob {FtpBlobUri}.", logFile.Uri);
 
                     var accessCondition = AccessCondition.GenerateLeaseCondition(logFile.LeaseId);
-                    await logFile.Blob.DeleteAsync(DeleteSnapshotsOption.IncludeSnapshots, accessCondition, null, null);
+                    await logFile.Blob.DeleteAsync(
+                        DeleteSnapshotsOption.IncludeSnapshots,
+                        accessCondition,
+                        options: null,
+                        operationContext: null);
 
                     _logger.LogInformation("Finished to delete blob {FtpBlobUri}.", logFile.Uri);
                 }
@@ -76,9 +80,10 @@ namespace Stats.ImportAzureCdnStatistics
 
         public async Task ArchiveBlobAsync(ILeasedLogFile logFile)
         {
-            var stopwatch = Stopwatch.StartNew();
             try
             {
+                var stopwatch = Stopwatch.StartNew();
+
                 await CopyToTargetContainerAsync(logFile);
 
                 _logger.LogInformation("Finished archive upload for blob {FtpBlobUri}.", logFile.Uri);
@@ -88,11 +93,6 @@ namespace Stats.ImportAzureCdnStatistics
             }
             catch (Exception exception)
             {
-                if (stopwatch.IsRunning)
-                {
-                    stopwatch.Stop();
-                }
-
                 _logger.LogError(LogEvents.FailedBlobUpload, exception, "Failed archive upload for blob {FtpBlobUri}", logFile.Uri);
                 ApplicationInsightsHelper.TrackException(exception, logFile.Blob.Name);
                 throw;
@@ -101,10 +101,10 @@ namespace Stats.ImportAzureCdnStatistics
 
         public async Task<Stream> OpenCompressedBlobAsync(ILeasedLogFile logFile)
         {
-            var stopwatch = Stopwatch.StartNew();
-
             try
             {
+                var stopwatch = Stopwatch.StartNew();
+
                 _logger.LogInformation("Beginning opening of compressed blob {FtpBlobUri}.", logFile.Uri);
 
                 var memoryStream = new MemoryStream();
@@ -123,7 +123,7 @@ namespace Stats.ImportAzureCdnStatistics
                 ApplicationInsightsHelper.TrackMetric("Open compressed blob duration (ms)", stopwatch.ElapsedMilliseconds, logFile.Blob.Name);
 
                 // verify if the stream is gzipped or not
-                if (await IsGzipCompressed(memoryStream))
+                if (await IsGzipCompressedAsync(memoryStream))
                 {
                     return new GZipInputStream(memoryStream);
                 }
@@ -134,11 +134,6 @@ namespace Stats.ImportAzureCdnStatistics
             }
             catch (Exception exception)
             {
-                if (stopwatch.IsRunning)
-                {
-                    stopwatch.Stop();
-                }
-
                 _logger.LogError(LogEvents.FailedToDecompressBlob, exception, "Failed to open compressed blob {FtpBlobUri}", logFile.Uri);
                 ApplicationInsightsHelper.TrackException(exception, logFile.Blob.Name);
 
@@ -146,7 +141,7 @@ namespace Stats.ImportAzureCdnStatistics
             }
         }
 
-        private static async Task<bool> IsGzipCompressed(Stream stream)
+        private static async Task<bool> IsGzipCompressedAsync(Stream stream)
         {
             stream.Position = 0;
 
@@ -191,14 +186,8 @@ namespace Stats.ImportAzureCdnStatistics
                 if (e != null)
                 {
                     // add the job error to the blob's metadata
-                    if (archivedBlob.Metadata.ContainsKey(_jobErrorMetadataKey))
-                    {
-                        archivedBlob.Metadata[_jobErrorMetadataKey] = e.ToString().Replace("\r\n", string.Empty);
-                    }
-                    else
-                    {
-                        archivedBlob.Metadata.Add(_jobErrorMetadataKey, e.ToString().Replace("\r\n", string.Empty));
-                    }
+                    archivedBlob.Metadata[_jobErrorMetadataKey] = e.ToString().Replace("\r\n", string.Empty);
+
                     await archivedBlob.SetMetadataAsync();
                 }
                 else if (archivedBlob.Metadata.ContainsKey(_jobErrorMetadataKey))

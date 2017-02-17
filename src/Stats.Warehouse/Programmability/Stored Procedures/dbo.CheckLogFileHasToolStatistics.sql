@@ -14,7 +14,7 @@ BEGIN
 				ON D.[Fact_LogFileName_Id] = L.[Id]
 				WHERE L.[LogFileName] IS NOT NULL AND L.[LogFileName] = @logFileName
 				)
-			THEN CAST(1 AS BIT)
-			ELSE CAST(0 AS BIT)
+			THEN 1
+			ELSE 0
 		END AS 'exists'
 END

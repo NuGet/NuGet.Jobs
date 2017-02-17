@@ -453,7 +453,7 @@ namespace Stats.ImportAzureCdnStatistics
 
         private async Task<bool> HasImportedStatisticsAsync(string logFileName, string commandText, EventId errorEventId)
         {
-            bool hasStatistics;
+            int hasStatistics;
 
             try
             {
@@ -465,7 +465,7 @@ namespace Stats.ImportAzureCdnStatistics
                     command.CommandType = CommandType.StoredProcedure;
                     command.Parameters.AddWithValue("logFileName", logFileName);
 
-                    hasStatistics = (bool)await command.ExecuteScalarAsync();
+                    hasStatistics = (int)await command.ExecuteScalarAsync();
                 }
             }
             catch (Exception exception)
@@ -481,7 +481,7 @@ namespace Stats.ImportAzureCdnStatistics
                 throw;
             }
 
-            return hasStatistics;
+            return hasStatistics == 1;
         }
 
         private async Task<IDictionary<string, int>> GetDimension(string dimension, string logFileName, Func<SqlConnection, Task<IDictionary<string, int>>> retrieve)

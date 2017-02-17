@@ -61,12 +61,12 @@ namespace Stats.ImportAzureCdnStatistics
                 // replicate data to the statistics database
                 if (hasPackageStatistics)
                 {
-                    await ProcessPackageStatisticsInLogFile(cdnStatistics, logFileName, aggregatesOnly);
+                    await ProcessPackageStatisticsInLogFileAsync(cdnStatistics, logFileName, aggregatesOnly);
                 }
 
                 if (hasToolStatistics)
                 {
-                    await ProcessToolStatisticsInLogFile(cdnStatistics, logFileName, aggregatesOnly);
+                    await ProcessToolStatisticsInLogFileAsync(cdnStatistics, logFileName, aggregatesOnly);
                 }
 
                 if (!aggregatesOnly)
@@ -92,7 +92,7 @@ namespace Stats.ImportAzureCdnStatistics
             }
         }
 
-        private async Task ProcessToolStatisticsInLogFile(CdnStatistics cdnStatistics, string logFileName, bool aggregatesOnly)
+        private async Task ProcessToolStatisticsInLogFileAsync(CdnStatistics cdnStatistics, string logFileName, bool aggregatesOnly)
         {
             // check if we already successfully imported tool statistics for this file
             if (await _warehouse.HasImportedToolStatisticsAsync(logFileName))
@@ -113,7 +113,7 @@ namespace Stats.ImportAzureCdnStatistics
             }
         }
 
-        private async Task ProcessPackageStatisticsInLogFile(CdnStatistics cdnStatistics, string logFileName, bool aggregatesOnly)
+        private async Task ProcessPackageStatisticsInLogFileAsync(CdnStatistics cdnStatistics, string logFileName, bool aggregatesOnly)
         {
             _logger.LogInformation("Creating facts for package download statistics in {LogFileName}", logFileName);
 
