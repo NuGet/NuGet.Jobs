@@ -14,6 +14,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 namespace Stats.ImportAzureCdnStatistics
 {
     internal class Warehouse
+        : IStatisticsWarehouse
     {
         private const int _defaultCommandTimeout = 1800; // 30 minutes max
         private const int _maxRetryCount = 3;
@@ -46,7 +47,7 @@ namespace Stats.ImportAzureCdnStatistics
             _targetDatabase = targetDatabase;
         }
 
-        internal async Task InsertDownloadFactsAsync(List<DataTable> downloadFactsDataTables, string logFileName)
+        public async Task InsertDownloadFactsAsync(List<DataTable> downloadFactsDataTables, string logFileName)
         {
             _logger.LogDebug("Inserting into facts table...");
             var stopwatch = Stopwatch.StartNew();
