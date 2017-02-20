@@ -6,6 +6,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Templates
     internal static class HtmlPlaceholders
     {
         // common
+        internal const string CssStyles = "/*$$STYLE$$*/";
         internal const string ReportDate = "$$REPORT_DATE$$";
         internal const string TrendImage = "$$IMG_PLACEHOLDER$$";
 

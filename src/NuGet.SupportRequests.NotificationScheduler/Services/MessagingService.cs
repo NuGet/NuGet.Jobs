@@ -25,6 +25,9 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
         private readonly IDictionary<string, string> _templateCache;
         private SmtpClient _smtpClient;
 
+        private const string _templatesNamespace = "NuGet.SupportRequests.NotificationScheduler.Templates";
+        private static readonly string _cssStylesResourceName = $"{_templatesNamespace}.EmailStyles.css";
+
         private const string _noreplyAddress = "NuGet Gallery <noreply@nuget.org>";
         private const string _positiveInfinityLabel = "+ ∞";
         private const string _negativeInfinityLabel = "- ∞";
@@ -72,8 +75,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             SendNotification(
                 "NuGet Support - On-Call Daily Summary",
                 body,
-                dataModel.ReferenceTime,
-                dataModel.OnCallEmailAddress);
+                dataModel.ReferenceTime);//,dataModel.OnCallEmailAddress);
         }
 
         private void SendNotification(
@@ -486,14 +488,27 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             else
             {
                 var assembly = Assembly.GetExecutingAssembly();
-                var resourceName = $"NuGet.SupportRequests.NotificationScheduler.Templates.{name}";
+                var resourceName = $"{_templatesNamespace}.{name}";
 
+                string htmlTemplate;
                 using (var stream = assembly.GetManifestResourceStream(resourceName))
                 using (var reader = new StreamReader(stream))
                 {
-                    template = reader.ReadToEnd();
-                    _templateCache[name] = template;
+                    htmlTemplate = reader.ReadToEnd();
                 }
+
+                // apply CSS styles
+                string cssStyles;
+                using (var stream = assembly.GetManifestResourceStream(_cssStylesResourceName))
+                using (var reader = new StreamReader(stream))
+                {
+                    cssStyles = reader.ReadToEnd();
+                }
+
+                template = htmlTemplate
+                    .Replace(HtmlPlaceholders.CssStyles, cssStyles);
+
+                _templateCache[name] = template;
             }
 
             return template;
