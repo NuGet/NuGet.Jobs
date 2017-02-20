@@ -109,11 +109,11 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
         {
             if (double.IsPositiveInfinity(percentage))
             {
-                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImgPlaceholder, upTrendImage);
+                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImage, upTrendImage);
             }
             else if (double.IsNegativeInfinity(percentage))
             {
-                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImgPlaceholder, downTrendImage);
+                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImage, downTrendImage);
             }
             else if (double.IsNaN(percentage))
             {
@@ -121,11 +121,11 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             }
             else if (percentage > 0)
             {
-                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImgPlaceholder, upTrendImage);
+                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImage, upTrendImage);
             }
             else if (percentage < 0)
             {
-                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImgPlaceholder, downTrendImage);
+                return HtmlTemplates.TrendImgTemplate.Replace(HtmlPlaceholders.TrendImage, downTrendImage);
             }
 
             return string.Empty;
@@ -172,42 +172,49 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             var slaAverageTimeToResolutionImg = GetTrendImage(slaAverageTimeToResolutionDelta.Ticks, Images.UpArrowRed, Images.DownArrowGreen);
 
             var result = template
-                .Replace(HtmlPlaceholders.ReportDatePlaceholder, dataModel.ReferenceTime.ToString("dd/MM/yy"))
+                .Replace(HtmlPlaceholders.ReportDate, dataModel.ReferenceTime.ToString("dd/MM/yy"))
+
                 // new support requests
-                .Replace("$$INFO_2W-AGO_NEWREQUESTS$$", dataModel.IssuesCreatedPriorWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_NEWREQUESTS$$", dataModel.IssuesCreatedLastWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_NEWREQUESTS_PCT$$", GetTrendPercentageString(newIssuesTrendPct))
-                .Replace("$$INFO_1W-AGO_NEWREQUESTS_TREND$$", newIssuesTrendImg)
+                .Replace(HtmlPlaceholders.NewIssueCountPriorWeek, dataModel.IssuesCreatedPriorWeek.ToString("N0"))
+                .Replace(HtmlPlaceholders.NewIssueCountLastWeek, dataModel.IssuesCreatedLastWeek.ToString("N0"))
+                .Replace(HtmlPlaceholders.NewIssueCountDeltaValue, GetTrendPercentageString(newIssuesTrendPct))
+                .Replace(HtmlPlaceholders.NewIssueCountDeltaImage, newIssuesTrendImg)
+
                 // closed support requests
-                .Replace("$$INFO_2W-AGO_CLOSEDREQUESTS$$", dataModel.IssuesClosedPriorWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_CLOSEDREQUESTS$$", dataModel.IssuesClosedLastWeek.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_CLOSEDREQUESTS_PCT$$", GetTrendPercentageString(closedIssuesTrendPct))
-                .Replace("$$INFO_1W-AGO_CLOSEDREQUESTS_TREND$$", closedIssuesTrendImg)
+                .Replace(HtmlPlaceholders.ClosedIssueCountPriorWeek, dataModel.IssuesClosedPriorWeek.ToString("N0"))
+                .Replace(HtmlPlaceholders.ClosedIssueCountLastWeek, dataModel.IssuesClosedLastWeek.ToString("N0"))
+                .Replace(HtmlPlaceholders.ClosedIssueCountDeltaValue, GetTrendPercentageString(closedIssuesTrendPct))
+                .Replace(HtmlPlaceholders.ClosedIssueCountDeltaImage, closedIssuesTrendImg)
+
                 // unresolved support requests
-                .Replace("$$INFO_2W-AGO_UNRESOLVEDREQUESTS$$", dataModel.PriorWeek.UnresolvedCount.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS$$", dataModel.LastWeek.UnresolvedCount.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS_PCT$$", GetTrendPercentageString(unresolvedIssuesTrendPct))
-                .Replace("$$INFO_1W-AGO_UNRESOLVEDREQUESTS_TREND$$", unresolvedIssuesTrendImg)
+                .Replace(HtmlPlaceholders.UnresolvedIssueCountPriorWeek, dataModel.PriorWeek.UnresolvedCount.ToString("N0"))
+                .Replace(HtmlPlaceholders.UnresolvedIssueCountLastWeek, dataModel.LastWeek.UnresolvedCount.ToString("N0"))
+                .Replace(HtmlPlaceholders.UnresolvedIssueCountDeltaValue, GetTrendPercentageString(unresolvedIssuesTrendPct))
+                .Replace(HtmlPlaceholders.UnresolvedIssueCountDeltaImage, unresolvedIssuesTrendImg)
+
                 // waiting on customer
-                .Replace("$$INFO_2W-AGO_WAITINGREQUESTS$$", dataModel.PriorWeek.WaitingForCustomerCount.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_WAITINGREQUESTS$$", dataModel.LastWeek.WaitingForCustomerCount.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_WAITINGREQUESTS_PCT$$", GetTrendPercentageString(waitingIssuesTrendPct))
-                .Replace("$$INFO_1W-AGO_WAITINGREQUESTS_TREND$$", waitingIssuesTrendImg)
+                .Replace(HtmlPlaceholders.WaitingForCustomerIssueCountPriorWeek, dataModel.PriorWeek.WaitingForCustomerCount.ToString("N0"))
+                .Replace(HtmlPlaceholders.WaitingForCustomerIssueCountLastWeek, dataModel.LastWeek.WaitingForCustomerCount.ToString("N0"))
+                .Replace(HtmlPlaceholders.WaitingForCustomerIssueCountDeltaValue, GetTrendPercentageString(waitingIssuesTrendPct))
+                .Replace(HtmlPlaceholders.WaitingForCustomerIssueCountDeltaImage, waitingIssuesTrendImg)
+
                 // in progress
-                .Replace("$$INFO_2W-AGO_WORKINGREQUESTS$$", dataModel.PriorWeek.InProgressCount.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_WORKINGREQUESTS$$", dataModel.LastWeek.InProgressCount.ToString("N0"))
-                .Replace("$$INFO_1W-AGO_WORKINGREQUESTS_PCT$$", GetTrendPercentageString(workingIssuesTrendPct))
-                .Replace("$$INFO_1W-AGO_WORKINGREQUESTS_TREND$$", workingIssuesTrendImg)
+                .Replace(HtmlPlaceholders.InProgressIssueCountPriorWeek, dataModel.PriorWeek.InProgressCount.ToString("N0"))
+                .Replace(HtmlPlaceholders.InProgressIssueCountLastWeek, dataModel.LastWeek.InProgressCount.ToString("N0"))
+                .Replace(HtmlPlaceholders.InProgressIssueCountDeltaValue, GetTrendPercentageString(workingIssuesTrendPct))
+                .Replace(HtmlPlaceholders.InProgressIssueCountDeltaImage, workingIssuesTrendImg)
+
                 // SLA - unresolved pct
-                .Replace("$$INFO_2W-AGO_SLA_UNRESOLVEDPCT$$", dataModel.GetUnresolvedPercentagePriorWeek().ToString("P0"))
-                .Replace("$$INFO_1W-AGO_SLA_UNRESOLVEDPCT$$", dataModel.GetUnresolvedPercentageLastWeek().ToString("P0"))
-                .Replace("$$INFO_SLA_UNRESOLVEDPCT_DELTA_IMG$$", slaUnresolvedPctDeltaImg)
-                .Replace("$$INFO_SLA_UNRESOLVEDPCT_DELTA_PCT$$", dataModel.UnresolvedPercentageDelta.ToString("P0"))
+                .Replace(HtmlPlaceholders.UnresolvedPercentagePriorWeek, dataModel.GetUnresolvedPercentagePriorWeek().ToString("P0"))
+                .Replace(HtmlPlaceholders.UnresolvedPercentageLastWeek, dataModel.GetUnresolvedPercentageLastWeek().ToString("P0"))
+                .Replace(HtmlPlaceholders.UnresolvedPercentageDeltaValue, dataModel.UnresolvedPercentageDelta.ToString("P0"))
+                .Replace(HtmlPlaceholders.UnresolvedPercentageDeltaImage, slaUnresolvedPctDeltaImg)
+
                 // SLA - average time to resolution
-                .Replace("$$INFO_2W-AGO_SLA_AVG_TTR$$", dataModel.AverageTimeToResolutionPriorWeek.ToString(@"d\d' 'hh\:mm"))
-                .Replace("$$INFO_1W-AGO_SLA_AVG_TTR$$", dataModel.AverageTimeToResolutionLastWeek.ToString(@"d\d' 'hh\:mm"))
-                .Replace("$$INFO_SLA_AVG_TTR_DELTA_IMG$$", slaAverageTimeToResolutionImg)
-                .Replace("$$INFO_SLA_AVG_TTR_DELTA$$", slaAverageTimeToResolutionDelta.ToString(@"d\d' 'hh\:mm"));
+                .Replace(HtmlPlaceholders.AvgTimeToResolutionPriorWeek, dataModel.AverageTimeToResolutionPriorWeek.ToString(@"d\d' 'hh\:mm"))
+                .Replace(HtmlPlaceholders.AvgTimeToResolutionLastWeek, dataModel.AverageTimeToResolutionLastWeek.ToString(@"d\d' 'hh\:mm"))
+                .Replace(HtmlPlaceholders.AvgTimeToResolutionDeltaValue, slaAverageTimeToResolutionDelta.ToString(@"d\d' 'hh\:mm"))
+                .Replace(HtmlPlaceholders.AvgTimeToResolutionDeltaImage, slaAverageTimeToResolutionImg);
 
             // Top 3 support request reasons last week
             result = FillInTopSupportRequestReasons(dataModel.TopSupportRequestReasonsLastWeek, result);
@@ -227,28 +234,28 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             {
                 result = InjectIssueStatus(
                     dataModel.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.New),
-                    result, HtmlPlaceholders.NewIssuesPlaceholder);
+                    result, HtmlPlaceholders.NewIssues);
 
                 result = InjectIssueStatus(
                     dataModel.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.Working),
-                    result, HtmlPlaceholders.WorkingIssuesPlaceholder);
+                    result, HtmlPlaceholders.WorkingIssues);
 
                 result = InjectIssueStatus(
                     dataModel.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.WaitingForCustomer),
-                    result, HtmlPlaceholders.WaitingForCustomerIssuesPlaceholder);
+                    result, HtmlPlaceholders.WaitingForCustomerIssues);
             }
             else
             {
                 result = result
-                    .Replace(HtmlPlaceholders.NewIssuesPlaceholder,
+                    .Replace(HtmlPlaceholders.NewIssues,
                         $"<tr class=\"border-trim\"><td colspan=\"4\">No new issues reported on {referenceTimeDisplay}</td></tr>")
-                    .Replace(HtmlPlaceholders.WorkingIssuesPlaceholder,
+                    .Replace(HtmlPlaceholders.WorkingIssues,
                         $"<tr class=\"border-trim\"><td colspan=\"4\">No issues in progress on {referenceTimeDisplay}</td></tr>")
-                    .Replace(HtmlPlaceholders.WaitingForCustomerIssuesPlaceholder,
+                    .Replace(HtmlPlaceholders.WaitingForCustomerIssues,
                         $"<tr class=\"border-trim\"><td colspan=\"4\">No issues waiting for customer on {referenceTimeDisplay}</td></tr>");
             }
 
-            result = result.Replace(HtmlPlaceholders.ReportDatePlaceholder, referenceTimeDisplay);
+            result = result.Replace(HtmlPlaceholders.ReportDate, referenceTimeDisplay);
 
             return result;
         }
@@ -285,35 +292,35 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             var issueCreatorProfileLink = CreateUserProfileLink(createdByUserName);
 
             var issueHtmlTemplate = HtmlTemplates.IssueTemplate
-                .Replace(HtmlPlaceholders.FromPlaceholder,
+                .Replace(HtmlPlaceholders.From,
                     $"[{supportRequest.CreatedDate:MM/dd hh:mm tt} UTC] - {issueCreatorProfileLink}");
 
-            var issueHtml = issueHtmlTemplate.Replace(HtmlPlaceholders.ReasonPlaceholder, supportRequest.Reason);
+            var issueHtml = issueHtmlTemplate.Replace(HtmlPlaceholders.Reason, supportRequest.Reason);
 
             if (!string.IsNullOrEmpty(supportRequest.PackageId))
             {
                 var packageLinkHtml = HtmlTemplates.PackageLinkTemplate
-                    .Replace(HtmlPlaceholders.PackageIdPlaceholder, supportRequest.PackageId);
+                    .Replace(HtmlPlaceholders.PackageId, supportRequest.PackageId);
 
                 if (!string.IsNullOrEmpty(supportRequest.PackageVersion))
                 {
                     packageLinkHtml = packageLinkHtml
-                        .Replace(HtmlPlaceholders.PackageVersionPlaceholder, supportRequest.PackageVersion)
-                        .Replace(HtmlPlaceholders.PackageVersionDisplayPlaceholder, $" v{supportRequest.PackageVersion}");
+                        .Replace(HtmlPlaceholders.PackageVersion, supportRequest.PackageVersion)
+                        .Replace(HtmlPlaceholders.PackageVersionLabel, $" v{supportRequest.PackageVersion}");
                 }
                 else
                 {
                     packageLinkHtml = packageLinkHtml
-                        .Replace(HtmlPlaceholders.PackageVersionPlaceholder, string.Empty)
-                        .Replace(HtmlPlaceholders.PackageVersionDisplayPlaceholder, string.Empty);
+                        .Replace(HtmlPlaceholders.PackageVersion, string.Empty)
+                        .Replace(HtmlPlaceholders.PackageVersionLabel, string.Empty);
                 }
 
                 issueHtml = issueHtml
-                    .Replace(HtmlPlaceholders.PackageLinkPlaceholder, packageLinkHtml);
+                    .Replace(HtmlPlaceholders.PackageLink, packageLinkHtml);
             }
             else
             {
-                issueHtml = issueHtml.Replace(HtmlPlaceholders.PackageLinkPlaceholder, HtmlTemplates.EmptyResultSpan);
+                issueHtml = issueHtml.Replace(HtmlPlaceholders.PackageLink, HtmlTemplates.EmptyResultSpan);
             }
             return issueHtml;
         }
@@ -365,7 +372,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
                 oncallStatusReportBuilder.AppendFormat(HtmlTemplates.OnCallStatusTemplate, unresolvedIssueGroup.Key, status.TrimStart(','));
             }
 
-            result = result.Replace(HtmlPlaceholders.OnCallStatusReportPlaceholder, oncallStatusReportBuilder.ToString());
+            result = result.Replace(HtmlPlaceholders.OnCallStatusReport, oncallStatusReportBuilder.ToString());
 
             return result;
         }

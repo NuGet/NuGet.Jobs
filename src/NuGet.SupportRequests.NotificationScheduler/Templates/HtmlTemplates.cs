@@ -10,13 +10,13 @@ namespace NuGet.SupportRequests.NotificationScheduler.Templates
         internal static readonly string NoChangesSpan = $"{EmptyResultSpan} &nbsp; <a href=\"\">no changes</a>";
 
         internal static readonly string TrendImgTemplate =
-            $"<span class=\"arr\"><img alt=\"\" src=\"{HtmlPlaceholders.TrendImgPlaceholder}\" width=\"16\"></span> &nbsp; ";
+            $"<span class=\"arr\"><img alt=\"\" src=\"{HtmlPlaceholders.TrendImage}\" width=\"16\"></span> &nbsp; ";
 
         internal static readonly string PackageLinkTemplate =
-            $"<a href=\"https://www.nuget.org/packages/{HtmlPlaceholders.PackageIdPlaceholder}/{HtmlPlaceholders.PackageVersionPlaceholder}\">{HtmlPlaceholders.PackageIdPlaceholder}{HtmlPlaceholders.PackageVersionDisplayPlaceholder}</a>";
+            $"<a href=\"https://www.nuget.org/packages/{HtmlPlaceholders.PackageId}/{HtmlPlaceholders.PackageVersion}\">{HtmlPlaceholders.PackageId}{HtmlPlaceholders.PackageVersionLabel}</a>";
 
         internal static readonly string IssueTemplate =
-            $"<tr class=\"border-trim\"><th class=\"left\" align=\"left\">{HtmlPlaceholders.FromPlaceholder}</th><td style=\"text-align:left;\">{HtmlPlaceholders.ReasonPlaceholder}</td><td colspan=\"2\" style=\"text-align:left;\">{HtmlPlaceholders.PackageLinkPlaceholder}</td></tr>";
+            $"<tr class=\"border-trim\"><th class=\"left\" align=\"left\">{HtmlPlaceholders.From}</th><td style=\"text-align:left;\">{HtmlPlaceholders.Reason}</td><td colspan=\"2\" style=\"text-align:left;\">{HtmlPlaceholders.PackageLink}</td></tr>";
 
         internal const string OnCallStatusTemplate =
                 "<tr class=\"border-trim\"><th class=\"left\" align=\"left\" valign=\"top\" style=\"text-align: right;\">{0}</th><td valign=\"top\" style=\"text-align: left;\" colspan=\"3\">{1}</td></tr>";
