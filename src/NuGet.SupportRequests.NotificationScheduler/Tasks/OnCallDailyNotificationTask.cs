@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NuGet.SupportRequests.NotificationScheduler.Services;
 
 namespace NuGet.SupportRequests.NotificationScheduler.Tasks
 {
@@ -12,14 +12,13 @@ namespace NuGet.SupportRequests.NotificationScheduler.Tasks
       : SupportRequestsNotificationScheduledTask
     {
         public OnCallDailyNotificationTask(
-          ILoggerFactory loggerFactory,
-          SupportRequestService supportRequestService,
-          MessagingService messagingService)
-          : base(loggerFactory, supportRequestService, messagingService)
+            IDictionary<string, string> jobArgsDictionary,
+            ILoggerFactory loggerFactory)
+          : base(jobArgsDictionary, loggerFactory)
         {
         }
 
-        public override async Task Run()
+        public override async Task RunAsync()
         {
             var referenceTime = DateTime.UtcNow.Date;
             var dataModel = await SupportRequestService.GetDailySummaryDataAsync(referenceTime);

@@ -75,7 +75,8 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             SendNotification(
                 "NuGet Support - On-Call Daily Summary",
                 body,
-                dataModel.ReferenceTime);//,dataModel.OnCallEmailAddress);
+                dataModel.ReferenceTime,
+                dataModel.OnCallEmailAddress);
         }
 
         private void SendNotification(

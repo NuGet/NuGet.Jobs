@@ -48,12 +48,16 @@
       <DependentUpon>Images.resx</DependentUpon>
     </Compile>
     <Compile Include="IScheduledTask.cs" />
+    <Compile Include="Job.cs" />
+    <Compile Include="JobArgumentNames.cs" />
+    <Compile Include="LogEvents.cs" />
     <Compile Include="Models\DailySummaryDataModel.cs" />
     <Compile Include="Models\IssueStatusKeys.cs" />
     <Compile Include="Models\PagerDutyConfiguration.cs" />
     <Compile Include="Models\SupportRequest.cs" />
     <Compile Include="Models\WeeklySummaryDataModel.cs" />
     <Compile Include="PagerDutyClient.cs" />
+    <Compile Include="ScheduledTaskFactory.cs" />
     <Compile Include="Services\SqlQuery.cs" />
     <Compile Include="Templates\HtmlTemplates.cs" />
     <Compile Include="Templates\HtmlPlaceholders.cs" />

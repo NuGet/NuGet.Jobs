@@ -7,6 +7,6 @@ namespace NuGet.SupportRequests.NotificationScheduler
 {
     internal interface IScheduledTask
     {
-        Task Run();
+        Task RunAsync();
     }
 }
