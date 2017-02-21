@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using NuGet.SupportRequests.NotificationScheduler.Models;
 
-namespace NuGet.SupportRequests.NotificationScheduler.Models
+namespace NuGet.SupportRequests.NotificationScheduler.Notifications
 {
-    internal class DailySummaryDataModel
+    internal class OnCallDailyNotification
+        : INotification
     {
-        public DailySummaryDataModel(
+        public OnCallDailyNotification(
             DateTime referenceTime,
             List<SupportRequest> unresolvedIssues,
             string onCallEmailAddress)
@@ -30,13 +32,17 @@ namespace NuGet.SupportRequests.NotificationScheduler.Models
 
             ReferenceTime = referenceTime;
             UnresolvedIssues = unresolvedIssues;
-            OnCallEmailAddress = onCallEmailAddress;
+            TargetEmailAddress = onCallEmailAddress;
         }
+
+        public string TemplateName => "OnCallSummary.html";
+
+        public string Subject => "NuGet Support - On-Call Daily Summary";
+
+        public string TargetEmailAddress { get; }
 
         public DateTime ReferenceTime { get; }
 
-        public List<SupportRequest> UnresolvedIssues { get; }
-
-        public string OnCallEmailAddress { get; }
+        public IReadOnlyCollection<SupportRequest> UnresolvedIssues { get; }
     }
 }

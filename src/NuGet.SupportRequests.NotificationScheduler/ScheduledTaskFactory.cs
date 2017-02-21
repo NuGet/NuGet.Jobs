@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
-using NuGet.SupportRequests.NotificationScheduler.Tasks;
 
 namespace NuGet.SupportRequests.NotificationScheduler
 {
@@ -48,7 +47,7 @@ namespace NuGet.SupportRequests.NotificationScheduler
             var scheduledTaskType = Type.GetType($"{_tasksNamespace}.{taskName}");
 
             IScheduledTask scheduledTask;
-            if (scheduledTaskType != null && scheduledTaskType.IsSubclassOf(typeof(SupportRequestsNotificationScheduledTask)))
+            if (scheduledTaskType != null && typeof(IScheduledTask).IsAssignableFrom(scheduledTaskType))
             {
                 var args = new object[] { jobArgsDictionary, loggerFactory };
                 scheduledTask = (IScheduledTask)Activator.CreateInstance(scheduledTaskType, args);

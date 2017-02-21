@@ -3,7 +3,7 @@
 
 using System;
 
-namespace NuGet.SupportRequests.NotificationScheduler.Models
+namespace NuGet.SupportRequests.NotificationScheduler
 {
     internal class PagerDutyConfiguration
     {

@@ -6,17 +6,18 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NuGet.SupportRequests.NotificationScheduler.Models;
+using NuGet.SupportRequests.NotificationScheduler.Notifications;
 using NuGet.SupportRequests.NotificationScheduler.Services;
+using NuGet.SupportRequests.NotificationScheduler.Templates;
 
 namespace NuGet.SupportRequests.NotificationScheduler.Tasks
 {
-    internal abstract class SupportRequestsNotificationScheduledTask
+    internal abstract class SupportRequestsNotificationScheduledTask<TNotification>
       : IScheduledTask
+        where TNotification : INotification
     {
-        private const string _argumentNamePagerDutyAccountName = "PagerDutyAccountName";
-        private const string _argumentNamePagerDutyApiKey = "PagerDutyApiKey";
-        private const string _argumentNameTargetEmailAddress = "TargetEmailAddress";
+        private readonly SupportRequestRepository _supportRequestRepository;
+        private readonly MessagingService _messagingService;
 
         protected SupportRequestsNotificationScheduledTask(
           IDictionary<string, string> jobArgsDictionary,
@@ -32,37 +33,29 @@ namespace NuGet.SupportRequests.NotificationScheduler.Tasks
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            LoggerFactory = loggerFactory;
-            MessagingService = CreateMessagingService(jobArgsDictionary);
-            SupportRequestService = CreateSupportRequestsService(jobArgsDictionary);
-        }
+            var smtpUri = jobArgsDictionary[JobArgumentNames.SmtpUri];
+            _messagingService = new MessagingService(loggerFactory, smtpUri);
 
-        protected ILoggerFactory LoggerFactory { get; }
-        protected MessagingService MessagingService { get; }
-        protected SupportRequestService SupportRequestService { get; }
-
-        public abstract Task RunAsync();
-
-        private SupportRequestService CreateSupportRequestsService(IDictionary<string, string> argsDictionary)
-        {
-            var databaseConnectionString = argsDictionary[JobArgumentNames.SourceDatabase];
+            var databaseConnectionString = jobArgsDictionary[JobArgumentNames.SourceDatabase];
             var sourceDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
-            var supportRequestRepository = new SupportRequestRepository(LoggerFactory, sourceDatabase);
-
-            var pagerDutyConfiguration = new PagerDutyConfiguration(
-                argsDictionary[_argumentNamePagerDutyAccountName],
-                argsDictionary[_argumentNamePagerDutyApiKey]
-            );
-
-            return new SupportRequestService(supportRequestRepository, pagerDutyConfiguration);
+            _supportRequestRepository = new SupportRequestRepository(loggerFactory, sourceDatabase);
         }
 
-        private MessagingService CreateMessagingService(IDictionary<string, string> argsDictionary)
-        {
-            var targetEmailAddress = argsDictionary[_argumentNameTargetEmailAddress];
-            var smtpUri = argsDictionary[JobArgumentNames.SmtpUri];
+        protected abstract Task<TNotification> BuildNotification(SupportRequestRepository supportRequestRepository, DateTime referenceTime);
+        protected abstract string BuildNotificationBody(string template, TNotification notification);
 
-            return new MessagingService(LoggerFactory, smtpUri, targetEmailAddress);
+        public async Task RunAsync()
+        {
+            var referenceTime = DateTime.UtcNow.Date;
+            var notification = await BuildNotification(_supportRequestRepository, referenceTime);
+            var template = NotificationTemplateProvider.Get(notification.TemplateName);
+            var body = BuildNotificationBody(template, notification);
+
+            _messagingService.SendNotification(
+                notification.Subject,
+                body,
+                referenceTime,
+                notification.TargetEmailAddress);
         }
     }
 }

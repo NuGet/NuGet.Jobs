@@ -5,15 +5,18 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.SupportRequests.NotificationScheduler.Models;
+using NuGet.SupportRequests.NotificationScheduler.Services;
 
-namespace NuGet.SupportRequests.NotificationScheduler.Services
+namespace NuGet.SupportRequests.NotificationScheduler
 {
     internal class SupportRequestRepository
     {
-        private const string _parameterNameReferenceTime = "referenceTime";
+        private const string _parameterNameStartDate = "startDate";
+        private const string _parameterNameEndDate = "endDate";
         private const string _parameterNamePagerDutyUsername = "pagerDutyUserName";
         private readonly DateTime _defaultSqlDateTime = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         private readonly ILogger _logger;
@@ -33,7 +36,7 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
                 throw new ArgumentNullException(nameof(sourceDatabase));
             }
 
-            _logger = loggerFactory.CreateLogger<SupportRequestService>();
+            _logger = loggerFactory.CreateLogger<SupportRequestRepository>();
             _sourceDatabase = sourceDatabase;
         }
 
@@ -85,69 +88,61 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             return unresolvedIssues;
         }
 
-        internal async Task<int> GetIssueCountCreatedLastWeek(SqlConnection connection, DateTime referenceTime)
+        internal async Task<SingleWeekSummary> GetSingleWeekSummary(
+            SqlConnection connection,
+            DateTime startDate,
+            DateTime endDate,
+            IReadOnlyCollection<SupportRequest> unresolvedIssues)
         {
-            return await ExecuteScalarQueryForReferenceTimeAsync<int>(
+            if (unresolvedIssues == null)
+            {
+                throw new ArgumentNullException(nameof(unresolvedIssues));
+            }
+
+            connection = await EnsureConnectionOpenAsync(connection);
+
+            var resolvedIssuesInWeek = unresolvedIssues
+                .Where(i => i.CreatedDate >= startDate && i.CreatedDate < endDate)
+                .ToList();
+
+            var issuesClosedCount = await ExecuteScalarQueryForReferenceTimeAsync<int>(
                 connection,
-                SqlQuery.GetIssueCountCreatedLastWeek,
-                referenceTime);
-        }
+                SqlQuery.GetIssueCountClosedInPeriod,
+                startDate,
+                endDate);
 
-        internal async Task<int> GetIssueCountCreatedPriorWeek(SqlConnection connection, DateTime referenceTime)
-        {
-            return await ExecuteScalarQueryForReferenceTimeAsync<int>(
+            var issuesCreatedCount = await ExecuteScalarQueryForReferenceTimeAsync<int>(
                 connection,
-                SqlQuery.GetIssueCountCreatedPriorWeek,
-                referenceTime);
-        }
+                SqlQuery.GetIssueCountCreatedInPeriod,
+                startDate,
+                endDate);
 
-        internal async Task<int> GetIssueCountClosedLastWeek(SqlConnection connection, DateTime referenceTime)
-        {
-            return await ExecuteScalarQueryForReferenceTimeAsync<int>(
+            var avgTimeToResolution = await ExecuteScalarQueryForReferenceTimeAsync<DateTime>(
                 connection,
-                SqlQuery.GetIssueCountClosedLastWeek,
-                referenceTime);
-        }
+                SqlQuery.GetAverageTimeToResolutionInPeriod,
+                startDate,
+                endDate) - _defaultSqlDateTime;
 
-        internal async Task<int> GetIssueCountClosedPriorWeek(SqlConnection connection, DateTime referenceTime)
-        {
-            return await ExecuteScalarQueryForReferenceTimeAsync<int>(
-                connection,
-                SqlQuery.GetIssueCountClosedPriorWeek,
-                referenceTime);
-        }
-
-        internal async Task<TimeSpan> GetAverageTimeToResolutionLastWeek(SqlConnection connection, DateTime referenceTime)
-        {
-            var result = await ExecuteScalarQueryForReferenceTimeAsync<DateTime>(
-                connection,
-                SqlQuery.GetAverageTimeToResolutionLastWeek,
-                referenceTime);
-
-            return result - _defaultSqlDateTime;
-        }
-
-        internal async Task<TimeSpan> GetAverageTimeToResolutionPriorWeek(SqlConnection connection, DateTime referenceTime)
-        {
-            var result = await ExecuteScalarQueryForReferenceTimeAsync<DateTime>(
-                connection,
-                SqlQuery.GetAverageTimeToResolutionPriorWeek,
-                referenceTime);
-
-            return result - _defaultSqlDateTime;
+            return new SingleWeekSummary(
+                resolvedIssuesInWeek,
+                issuesClosedCount,
+                issuesCreatedCount,
+                avgTimeToResolution);
         }
 
         internal async Task<IDictionary<string, int>> GetTopSupportRequestReasonsLastWeek(
             SqlConnection connection,
-            DateTime referenceTime)
+            DateTime startDate,
+            DateTime endDate)
         {
             connection = await EnsureConnectionOpenAsync(connection);
 
             var results = new Dictionary<string, int>();
 
             // Get top support requests last week
-            var sqlCommand = new SqlCommand(SqlQuery.GetTopSupportRequestReasonsLastWeek, connection);
-            sqlCommand.Parameters.AddWithValue("referenceTime", referenceTime);
+            var sqlCommand = new SqlCommand(SqlQuery.GetTopSupportRequestReasonsInPeriod, connection);
+            sqlCommand.Parameters.AddWithValue(_parameterNameStartDate, startDate);
+            sqlCommand.Parameters.AddWithValue(_parameterNameEndDate, endDate);
 
             using (var sqlDataReader = await sqlCommand.ExecuteReaderAsync())
             {
@@ -162,7 +157,11 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
             return results;
         }
 
-        private async Task<T> ExecuteScalarQueryForReferenceTimeAsync<T>(SqlConnection connection, string query, DateTime referenceTime)
+        private async Task<T> ExecuteScalarQueryForReferenceTimeAsync<T>(
+            SqlConnection connection,
+            string query,
+            DateTime startDate,
+            DateTime endDate)
         {
             if (query == null)
             {
@@ -171,9 +170,9 @@ namespace NuGet.SupportRequests.NotificationScheduler.Services
 
             connection = await EnsureConnectionOpenAsync(connection);
 
-            // Get number of issues created in prior week
             var sqlCommand = new SqlCommand(query, connection);
-            sqlCommand.Parameters.AddWithValue(_parameterNameReferenceTime, referenceTime);
+            sqlCommand.Parameters.AddWithValue(_parameterNameStartDate, startDate);
+            sqlCommand.Parameters.AddWithValue(_parameterNameEndDate, endDate);
 
             return (T)await sqlCommand.ExecuteScalarAsync();
         }
