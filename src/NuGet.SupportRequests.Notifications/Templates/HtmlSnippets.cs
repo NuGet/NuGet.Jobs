@@ -71,5 +71,20 @@ namespace NuGet.SupportRequests.Notifications.Templates
 
             return _noChangesSpan;
         }
+
+        public static string NoNewIssuesReportedOn(string referenceTimeLabel)
+        {
+            return $"<tr class=\"border-trim\"><td colspan=\"4\">No new issues reported on {referenceTimeLabel}</td></tr>";
+        }
+
+        public static string NoWorkingIssuesOn(string referenceTimeLabel)
+        {
+            return $"<tr class=\"border-trim\"><td colspan=\"4\">No issues in progress on {referenceTimeLabel}</td></tr>";
+        }
+
+        public static string NoIssuesWaitingForCustomerOn(string referenceTimeLabel)
+        {
+            return $"<tr class=\"border-trim\"><td colspan=\"4\">No issues waiting for customer on {referenceTimeLabel}</td></tr>";
+        }
     }
 }

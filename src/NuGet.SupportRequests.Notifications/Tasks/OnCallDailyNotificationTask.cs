@@ -53,43 +53,55 @@ namespace NuGet.SupportRequests.Notifications.Tasks
         protected override string BuildNotificationBody(string template, OnCallDailyNotification notification)
         {
             var result = template;
-            var referenceTimeDisplay = notification.ReferenceTime.ToString("dd/MM/yy");
+            var referenceTimeLabel = notification.ReferenceTime.ToString("dd/MM/yy");
 
             if (notification.UnresolvedIssues.Any())
             {
                 result = InjectIssueStatus(
-                    notification.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.New),
-                    result, HtmlPlaceholders.NewIssues);
+                    notification.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.New).ToList(),
+                    result,
+                    HtmlPlaceholders.NewIssues,
+                    HtmlSnippets.NoNewIssuesReportedOn(referenceTimeLabel));
 
                 result = InjectIssueStatus(
-                    notification.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.Working),
-                    result, HtmlPlaceholders.WorkingIssues);
+                    notification.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.Working).ToList(),
+                    result,
+                    HtmlPlaceholders.WorkingIssues,
+                    HtmlSnippets.NoWorkingIssuesOn(referenceTimeLabel));
 
                 result = InjectIssueStatus(
-                    notification.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.WaitingForCustomer),
-                    result, HtmlPlaceholders.WaitingForCustomerIssues);
+                    notification.UnresolvedIssues.Where(i => i.IssueStatus == (int)IssueStatusKeys.WaitingForCustomer).ToList(),
+                    result,
+                    HtmlPlaceholders.WaitingForCustomerIssues,
+                    HtmlSnippets.NoIssuesWaitingForCustomerOn(referenceTimeLabel));
             }
             else
             {
                 result = result
-                    .Replace(HtmlPlaceholders.NewIssues,
-                        $"<tr class=\"border-trim\"><td colspan=\"4\">No new issues reported on {referenceTimeDisplay}</td></tr>")
-                    .Replace(HtmlPlaceholders.WorkingIssues,
-                        $"<tr class=\"border-trim\"><td colspan=\"4\">No issues in progress on {referenceTimeDisplay}</td></tr>")
-                    .Replace(HtmlPlaceholders.WaitingForCustomerIssues,
-                        $"<tr class=\"border-trim\"><td colspan=\"4\">No issues waiting for customer on {referenceTimeDisplay}</td></tr>");
+                    .Replace(HtmlPlaceholders.NewIssues, HtmlSnippets.NoNewIssuesReportedOn(referenceTimeLabel))
+                    .Replace(HtmlPlaceholders.WorkingIssues, HtmlSnippets.NoWorkingIssuesOn(referenceTimeLabel))
+                    .Replace(HtmlPlaceholders.WaitingForCustomerIssues, HtmlSnippets.NoIssuesWaitingForCustomerOn(referenceTimeLabel));
             }
 
-            result = result.Replace(HtmlPlaceholders.ReportDate, referenceTimeDisplay);
+            result = result.Replace(HtmlPlaceholders.ReportDate, referenceTimeLabel);
 
             return result;
         }
 
-        private static string InjectIssueStatus(IEnumerable<SupportRequest> issues, string result, string issuePlaceholder)
+        private static string InjectIssueStatus(
+            IReadOnlyCollection<SupportRequest> issues,
+            string result,
+            string issuePlaceholder,
+            string noIssuesHtmlSnippet)
         {
             if (issuePlaceholder == null)
             {
                 throw new ArgumentNullException(nameof(issuePlaceholder));
+            }
+
+            if (!issues.Any())
+            {
+                result = result.Replace(issuePlaceholder, noIssuesHtmlSnippet);
             }
 
             var newIssuesStringBuilder = new StringBuilder();
