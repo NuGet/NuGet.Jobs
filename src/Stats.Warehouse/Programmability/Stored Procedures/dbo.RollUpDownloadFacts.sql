@@ -144,6 +144,9 @@ BEGIN
                         f.[Dimension_Operation_Id],
                         f.[Dimension_Client_Id],
                         f.[Dimension_Platform_Id]
+              -- Optimization: no need to roll-up if only a single record matches these linked dimensions
+              -- for a given package id download in this T-1 roll-up window
+              HAVING  COUNT(f.[Id]) > 1
 
               -- This cursor will run over the package ID's with linked dimensions, sorted by number of records to remove.
               -- This is a good indicator of package ID popularity at a given point in time (since the previous roll-up).
@@ -164,9 +167,6 @@ BEGIN
                         [DownloadCount],
                         [RecordCountToRemove]
                 FROM    [dbo].[Temp_RollUp_T1RollUpTable] (NOLOCK)
-                -- Optimization: no need to roll-up if only a single record matches these linked dimensions
-                -- for a given package id download in this T-1 roll-up window
-                WHERE  [RecordCountToRemove] > 1
                 ORDER BY [RecordCountToRemove] DESC;
 
               OPEN LinkedPackageCursor
