@@ -24,9 +24,6 @@ bld/
 build/ 
 tools/
 .nuget/CredentialProviderBundle.zip
-.nuget/CredentialProvider.VSS.exe
-.nuget/EULA_Microsoft Visual Studio Team Services Credential Provider.docx
-.nuget/ThirdPartyNotices.txt
 
 # Roslyn cache directories
 *.ide/
@@ -200,6 +197,5 @@ FakesAssemblies/
 *.webtestresult
 
 # Vs2015
-.vs/
+.vs/config/applicationhost.config
 project.lock.json
-Results.*.xml

@@ -4,7 +4,7 @@
 // ReSharper disable once CheckNamespace
 namespace System
 {
-    public static class UriExtensions
+    internal static class UriExtensions
     {
         private const string _slashCharacter = "/";
 

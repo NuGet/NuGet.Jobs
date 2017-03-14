@@ -7,7 +7,7 @@ using System.Globalization;
 namespace Stats.CollectAzureCdnLogs
 {
     [Serializable]
-    public sealed class InvalidRawLogFileNameException
+    internal sealed class InvalidRawLogFileNameException
         : Exception
     {
         public InvalidRawLogFileNameException(string fileName)
