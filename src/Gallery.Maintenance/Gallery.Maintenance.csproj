@@ -103,7 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
+    <None Include="project.json" />
     <None Include="Scripts\Functions.ps1" />
     <None Include="Scripts\Gallery.Maintenance.cmd" />
     <None Include="Scripts\PostDeploy.ps1" />

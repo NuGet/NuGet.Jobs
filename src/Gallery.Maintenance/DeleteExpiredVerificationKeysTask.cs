@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Gallery.Maintenance.Models;
 using Microsoft.Extensions.Logging;
@@ -16,9 +15,12 @@ namespace Gallery.Maintenance
         private const int DefaultCommandTimeoutInSeconds = 300;
         
         private const string SelectQuery = @"
-SELECT s.[CredentialKey], c.[UserKey], c.[Expires], s.[Subject] as ScopeSubject
-FROM [dbo].[Credentials] c, [dbo].[Scopes] s
-WHERE s.[CredentialKey] = c.[Key] AND c.[Type] LIKE 'apikey.verify%' AND c.[Expires] < GETUTCDATE()";
+SELECT s.[CredentialKey], c.[UserKey], u.[Username], c.[Expires], s.[Subject] as ScopeSubject
+FROM [dbo].[Credentials] c
+INNER JOIN [dbo].[Scopes] s ON s.[CredentialKey] = c.[Key]
+INNER JOIN [dbo].[Users] u ON u.[Key] = c.[UserKey]
+WHERE c.[Type] LIKE 'apikey.verify%' AND c.[Expires] < GETUTCDATE()
+";
 
         private const string DeleteQuery = @"
 DELETE FROM [dbo].[Scopes] WHERE [CredentialKey] IN ({0})
@@ -38,16 +40,17 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
 
             var credentialKeys = expiredKeys.Select(expiredKey =>
             {
-                job.Logger.LogInformation("Deleting expired verification key: Credential='{0}' User='{1}', Subject='{2}', Expired={3}",
-                    expiredKey.CredentialKey, expiredKey.UserKey, expiredKey.ScopeSubject, expiredKey.Expires);
+                job.Logger.LogInformation(
+                    "Deleting expired verification key: Credential='{credentialKey}' UserKey='{userKey}', User='{userName}', Subject='{scopeSubject}', Expired={expires}",
+                    expiredKey.CredentialKey, expiredKey.UserKey, expiredKey.Username, expiredKey.ScopeSubject, expiredKey.Expires);
 
                 return expiredKey.CredentialKey;
             });
 
             var rowCount = 0;
-            var expectedDeleteCount = expiredKeys.Count();
+            var expectedRowCount = expiredKeys.Count() * 2; // credential and scope.
 
-            if (expectedDeleteCount > 0)
+            if (expectedRowCount > 0)
             {
                 using (var connection = await job.GalleryDatabase.ConnectTo())
                 {
@@ -61,11 +64,10 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
                     }
                 }
             }
+            
+            job.Logger.LogInformation("Deleted {0} expired verification keys and scopes. Expected={1}.", rowCount, expectedRowCount);
 
-            var actualDeleteCount = rowCount / 2;
-            job.Logger.LogInformation("Deleted {0} expired verification keys. Expected={1}.", actualDeleteCount, expectedDeleteCount);
-
-            return actualDeleteCount == expectedDeleteCount;
+            return rowCount == expectedRowCount;
         }
     }
 }

@@ -11,6 +11,8 @@ namespace Gallery.Maintenance.Models
 
         public int UserKey { get; set; }
 
+        public string Username { get; set; }
+
         public DateTime Expires { get; set; }
 
         public string ScopeSubject { get; set; }
