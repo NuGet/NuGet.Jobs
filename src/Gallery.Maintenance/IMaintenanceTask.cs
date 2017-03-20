@@ -10,6 +10,11 @@ namespace Gallery.Maintenance
     /// </summary>
     public interface IMaintenanceTask
     {
+        /// <summary>
+        /// Run the maintenance task for the Gallery.
+        /// </summary>
+        /// <param name="job">Gallery maintenance job, for SQL connection and logging.</param>
+        /// <returns>True for success, false for exception or other failure.</returns>
         Task<bool> RunAsync(Job job);
     }
 }
