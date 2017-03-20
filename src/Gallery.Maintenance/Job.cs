@@ -13,7 +13,7 @@ using NuGet.Services.Logging;
 
 namespace Gallery.Maintenance
 {
-    internal class Job : JobBase
+    public class Job : JobBase
     {
         private static readonly Lazy<IEnumerable<IMaintenanceTask>> _tasks = new Lazy<IEnumerable<IMaintenanceTask>>(GetMaintenanceTasks);
 
@@ -53,12 +53,15 @@ namespace Gallery.Maintenance
             {
                 try
                 {
-                    result &= await task.RunAsync(this);
+                    if (!await task.RunAsync(this))
+                    {
+                        Logger.LogWarning("Task '{taskName}' returned failure status.", task.GetType().Name);
+                        result = false;
+                    }
                 }
                 catch (Exception exception)
                 {
-                    var taskName = task.GetType().Name;
-                    Logger.LogCritical(LogEvents.JobRunFailed, exception, $"Job run failed for task '{taskName}'.");
+                    Logger.LogCritical(LogEvents.JobRunFailed, exception, "Job run failed for task '{taskName}'.", task.GetType().Name);
                 }
             }
 

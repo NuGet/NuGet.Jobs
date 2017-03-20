@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Gallery.Maintenance
 {
-    interface IMaintenanceTask
+    public interface IMaintenanceTask
     {
         Task<bool> RunAsync(Job job);
     }
