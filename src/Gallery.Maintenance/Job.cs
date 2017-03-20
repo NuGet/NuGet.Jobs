@@ -13,6 +13,9 @@ using NuGet.Services.Logging;
 
 namespace Gallery.Maintenance
 {
+    /// <summary>
+    /// Runs all <see cref="IMaintenanceTask"/>s against the Gallery database.
+    /// </summary>
     public class Job : JobBase
     {
         private static readonly Lazy<IEnumerable<IMaintenanceTask>> _tasks = new Lazy<IEnumerable<IMaintenanceTask>>(GetMaintenanceTasks);

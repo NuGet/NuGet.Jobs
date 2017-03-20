@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace Gallery.Maintenance
 {
+    /// <summary>
+    /// A task to be run as a part of Gallery maintenance. Makes SQL queries against the Gallery database.
+    /// </summary>
     public interface IMaintenanceTask
     {
         Task<bool> RunAsync(Job job);

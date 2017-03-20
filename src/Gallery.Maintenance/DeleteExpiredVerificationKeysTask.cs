@@ -41,7 +41,7 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
             var credentialKeys = expiredKeys.Select(expiredKey =>
             {
                 job.Logger.LogInformation(
-                    "Deleting expired verification key: Credential='{credentialKey}' UserKey='{userKey}', User='{userName}', Subject='{scopeSubject}', Expired={expires}",
+                    "Found expired verification key: Credential='{credentialKey}' UserKey='{userKey}', User='{userName}', Subject='{scopeSubject}', Expires={expires}",
                     expiredKey.CredentialKey, expiredKey.UserKey, expiredKey.Username, expiredKey.ScopeSubject, expiredKey.Expires);
 
                 return expiredKey.CredentialKey;
