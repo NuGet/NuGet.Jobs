@@ -51,17 +51,26 @@ namespace Gallery.Maintenance
 
             foreach (var task in _tasks.Value)
             {
+                var taskName = task.GetType().Name;
+
                 try
                 {
-                    if (!await task.RunAsync(this))
+                    Logger.LogInformation("Running task '{taskName}'...", taskName);
+
+                    if (await task.RunAsync(this))
                     {
-                        Logger.LogWarning("Task '{taskName}' returned failure status.", task.GetType().Name);
+                        Logger.LogInformation("Finished task '{taskName}'.", taskName);
+                    }
+                    else
+                    {
+                        Logger.LogWarning("Task '{taskName}' returned failure status.", taskName);
                         result = false;
                     }
                 }
                 catch (Exception exception)
                 {
-                    Logger.LogCritical(LogEvents.JobRunFailed, exception, "Job run failed for task '{taskName}'.", task.GetType().Name);
+                    Logger.LogCritical(LogEvents.JobRunFailed, exception, "Job run failed for task '{taskName}'.", taskName);
+                    result = false;
                 }
             }
 
