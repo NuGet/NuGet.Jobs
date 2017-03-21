@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Gallery.Maintenance.$branch$</id>
+    <id>Gallery.Maintenance</id>
     <version>$version$</version>
     <title>Gallery.Maintenance</title>
     <authors>.NET Foundation</authors>
