@@ -47,6 +47,8 @@ namespace NuGet.Jobs.Validation.Common
             var queue = await GetQueueAsync(validatorName);
             await queue.AddMessageAsync(new CloudQueueMessage(JsonConvert.SerializeObject(message)));
 
+            ApplicationInsightsHelper.TrackValidatorQueued(validatorName, message.PackageId, message.PackageVersion);
+
             Trace.TraceInformation("Finished enqueue validation {0} {1} - package {2} {3}.", validatorName, message.ValidationId, message.PackageId, message.PackageVersion);
         }
 

@@ -86,6 +86,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
+                                ApplicationInsightsHelper.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
                                 var auditEntries = new List<PackageValidationAuditEntry>();
                                 auditEntries.Add(new PackageValidationAuditEntry
                                 {
@@ -136,6 +137,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
+                                ApplicationInsightsHelper.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Succeeded.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
                                 await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
                                     new PackageValidationAuditEntry
                                     {
@@ -150,6 +152,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
+                                ApplicationInsightsHelper.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
                                 var auditEntries = new List<PackageValidationAuditEntry>();
                                 auditEntries.Add(new PackageValidationAuditEntry
                                 {

@@ -57,6 +57,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             catch (Exception ex)
             {
                 errorMessage = ex.Message;
+                ApplicationInsightsHelper.TrackValidatorException(ValidatorName, ex);
             }
 
             WriteAuditEntry(auditEntries, $"Submission failed. Error message: {errorMessage}");

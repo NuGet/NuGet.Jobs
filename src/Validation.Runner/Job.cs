@@ -13,6 +13,7 @@ using NuGet.Jobs.Validation.Common.OData;
 using NuGet.Jobs.Validation.Common.Validators;
 using NuGet.Jobs.Validation.Common.Validators.Unzip;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
+using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Runner
 {
@@ -31,6 +32,9 @@ namespace NuGet.Jobs.Validation.Runner
         {
             try
             {
+                string instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                ApplicationInsights.Initialize(instrumentationKey);
+
                 // Configure job
                 _galleryBaseAddress = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryBaseAddress);
 
@@ -118,6 +122,7 @@ namespace NuGet.Jobs.Validation.Runner
 
         private async Task RunValidationsAsync(IValidator validator)
         {
+            ApplicationInsightsHelper.TrackValidatorRun(validator.Name);
             Trace.TraceInformation("Start running RunValidationsAsync for validator {0}...", validator.Name);
 
             // Services
@@ -184,6 +189,8 @@ namespace NuGet.Jobs.Validation.Runner
 
                     // Remove the message
                     await packageValidationQueue.DeleteAsync(validator.Name, message);
+
+                    ApplicationInsightsHelper.TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
                 }
 
                 // Write audit entries
@@ -206,6 +213,8 @@ namespace NuGet.Jobs.Validation.Runner
 
         private async Task RunOrchestrateAsync()
         {
+            ApplicationInsightsHelper.TrackOrchestration();
+
             // Retrieve cursor (last created / last edited)
             var cursor = new PackageValidationOrchestrationCursor(_cloudStorageAccount, _containerName + "-audit", "cursor.json");
             await cursor.LoadAsync();
