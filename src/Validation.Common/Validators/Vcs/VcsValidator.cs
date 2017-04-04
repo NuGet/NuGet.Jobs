@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using NuGet.Services.VirusScanning.Vcs;
 
 namespace NuGet.Jobs.Validation.Common.Validators.Vcs
@@ -16,6 +17,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         private readonly string _packageUrlTemplate;
         private readonly Uri _callbackUrl;
         private readonly VcsVirusScanningService _scanningService;
+
+        private readonly ILogger<VcsValidator> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<VcsValidator>();
 
         public VcsValidator(string serviceUrl, string callbackUrl, string submitterAlias, string packageUrlTemplate)
         {
@@ -57,7 +60,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             catch (Exception ex)
             {
                 errorMessage = ex.Message;
-                ApplicationInsightsHelper.TrackValidatorException(ValidatorName, ex);
+                _logger.TrackValidatorException(ValidatorName, ex);
             }
 
             WriteAuditEntry(auditEntries, $"Submission failed. Error message: {errorMessage}");

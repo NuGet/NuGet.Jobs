@@ -11,6 +11,7 @@ namespace NuGet.Jobs.Validation.Common
 {
     public static class ApplicationInsightsConstants
     {
+        public const string EventName = "EventName";
         public const string ValidatorName = "ValidatorName";
         public const string PackageId = "PackageId";
         public const string PackageVersion = "PackageVersion";

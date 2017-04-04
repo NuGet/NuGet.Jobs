@@ -25,7 +25,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         private readonly PackageValidationTable _packageValidationTable;
         private readonly PackageValidationAuditor _packageValidationAuditor;
         private readonly INotificationService _notificationService;
-        private readonly ILogger _logger;
+        private readonly ILogger<VcsCallbackServerStartup> _logger;
 
         public VcsCallbackServerStartup()
         {
@@ -92,7 +92,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
-                                ApplicationInsightsHelper.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
+                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
                                 var auditEntries = new List<PackageValidationAuditEntry>();
                                 auditEntries.Add(new PackageValidationAuditEntry
                                 {
@@ -143,7 +143,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
-                                ApplicationInsightsHelper.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Succeeded.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
+                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Succeeded.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
                                 await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
                                     new PackageValidationAuditEntry
                                     {
@@ -158,7 +158,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
-                                ApplicationInsightsHelper.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
+                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
                                 var auditEntries = new List<PackageValidationAuditEntry>();
                                 auditEntries.Add(new PackageValidationAuditEntry
                                 {

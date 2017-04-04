@@ -17,17 +17,17 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="validatorName">The name of the validator queued.</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package version</param>
-        public static void TrackValidatorQueued(ILogger logger, string validatorName, string packageId, string packageVersion)
+        public static void TrackValidatorQueued(this ILogger logger, string validatorName, string packageId, string packageVersion)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
 
-            logger.LogInformation($"{{EventName}}: " +
-                $"{{{ApplicationInsightsConstants.ValidatorName}}} for " +
-                $"package {{{ApplicationInsightsConstants.PackageId}}} " +
-                $"v.{{{ApplicationInsightsConstants.PackageVersion}}}", 
+            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
+                    $"{{{ApplicationInsightsConstants.ValidatorName}}} " +
+                    $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
+                    $"v.{{{ApplicationInsightsConstants.PackageVersion}}}",
                 "ValidatorQueued", 
                 validatorName, 
                 packageId, 
@@ -41,22 +41,23 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="result">Validation result</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package name</param>
-        public static void TrackValidatorResult(string validatorName, string result, string packageId, string packageVersion)
+        public static void TrackValidatorResult(this ILogger logger, string validatorName, string result, string packageId, string packageVersion)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
 
-            var telemetryClient = new TelemetryClient();
-            var eventTelemetry = new EventTelemetry("ValidatorResult");
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.ValidatorName, validatorName);
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageId, packageId);
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageVersion, packageVersion);
-            eventTelemetry.Properties.Add("Result", result);
-
-            telemetryClient.TrackEvent(eventTelemetry);
-            telemetryClient.Flush();
+            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
+                    $"{{{ApplicationInsightsConstants.ValidatorName}}} " +
+                    $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
+                    $"v.{{{ApplicationInsightsConstants.PackageVersion}}} " +
+                    $"resulted in {{Result}}",
+                "ValidatorResult",
+                validatorName,
+                packageId,
+                packageVersion,
+                result);
         }
 
         /// <summary>
@@ -64,19 +65,17 @@ namespace NuGet.Jobs.Validation.Common
         /// </summary>
         /// <param name="validatorName">The name of the validator that was running when exception happened</param>
         /// <param name="ex">The exception to track</param>
-        public static void TrackValidatorException(string validatorName, Exception ex)
+        public static void TrackValidatorException(this ILogger logger, string validatorName, Exception ex)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
 
-            var telemetryClient = new TelemetryClient();
-            var exceptionTelemetry = new ExceptionTelemetry(ex);
-            exceptionTelemetry.Properties.Add(ApplicationInsightsConstants.ValidatorName, validatorName);
-
-            telemetryClient.TrackException(exceptionTelemetry);
-            telemetryClient.Flush();
+            logger.LogError(new EventId(logger.GetHashCode()), ex, $"{{{ApplicationInsightsConstants.EventName}}} " +
+                    $"occurred while running {{{ApplicationInsightsConstants.ValidatorName}}}", 
+                "ValidatorException",
+                validatorName);
         }
     }
 }

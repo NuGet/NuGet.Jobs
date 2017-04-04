@@ -28,7 +28,7 @@ namespace NuGet.Jobs.Validation.Runner
         private string _containerName;
         private string[] _runValidationTasks;
         private string[] _requestValidationTasks;
-        private readonly ILogger _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<Job>();
+        private readonly ILogger<Job> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<Job>();
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
@@ -124,7 +124,7 @@ namespace NuGet.Jobs.Validation.Runner
 
         private async Task RunValidationsAsync(IValidator validator)
         {
-            ApplicationInsightsHelper.TrackValidatorRun(validator.Name);
+            _logger.TrackValidatorRun(validator.Name);
             Trace.TraceInformation("Start running RunValidationsAsync for validator {0}...", validator.Name);
 
             // Services
@@ -192,7 +192,7 @@ namespace NuGet.Jobs.Validation.Runner
                     // Remove the message
                     await packageValidationQueue.DeleteAsync(validator.Name, message);
 
-                    ApplicationInsightsHelper.TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
+                    _logger.TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
                 }
 
                 // Write audit entries
@@ -215,7 +215,7 @@ namespace NuGet.Jobs.Validation.Runner
 
         private async Task RunOrchestrateAsync()
         {
-            ApplicationInsightsHelper.TrackOrchestration();
+            _logger.TrackOrchestration();
 
             // Retrieve cursor (last created / last edited)
             var cursor = new PackageValidationOrchestrationCursor(_cloudStorageAccount, _containerName + "-audit", "cursor.json");

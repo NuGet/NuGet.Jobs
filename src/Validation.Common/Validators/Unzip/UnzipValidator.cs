@@ -8,6 +8,7 @@ using System.IO.Packaging;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace NuGet.Jobs.Validation.Common.Validators.Unzip
 {
@@ -15,6 +16,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Unzip
         : ValidatorBase, IValidator
     {
         public const string ValidatorName = "validator-unzip";
+
+        private readonly ILogger<UnzipValidator> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<UnzipValidator>();
 
         public override string Name
         {
@@ -54,7 +57,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Unzip
                 }
                 catch (Exception ex)
                 {
-                    ApplicationInsightsHelper.TrackValidatorException(ValidatorName, ex);
+                    _logger.TrackValidatorException(ValidatorName, ex);
                     WriteAuditEntry(auditEntries, $"Exception thrown during validation - {ex.Message}\r\n{ex.StackTrace}");
                     return ValidationResult.Failed;
                 }

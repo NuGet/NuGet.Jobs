@@ -3,6 +3,7 @@
 
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.Common.Validators;
 using NuGet.Services.Logging;
@@ -14,12 +15,15 @@ namespace NuGet.Jobs.Validation.Runner
         /// <summary>
         /// Tracks orchestration attempts
         /// </summary>
-        public static void TrackOrchestration()
+        public static void TrackOrchestration(this ILogger logger)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
+
+            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
+                "Another iteration of validator orchestration loop has started");
 
             var telemetryClient = new TelemetryClient();
             var eventTelemetry = new EventTelemetry("OrchestrationAttempted");
@@ -32,39 +36,38 @@ namespace NuGet.Jobs.Validation.Runner
         /// Tracks validator run attempts
         /// </summary>
         /// <param name="validatorName">The name of the validator attempted.</param>
-        public static void TrackValidatorRun(string validatorName)
+        public static void TrackValidatorRun(this ILogger logger, string validatorName)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
 
-            var telemetryClient = new TelemetryClient();
-            var eventTelemetry = new EventTelemetry("ValidatorAttempted");
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.ValidatorName, validatorName);
-
-            telemetryClient.TrackEvent(eventTelemetry);
-            telemetryClient.Flush();
+            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
+                    $"Another iteration of validation loop for {{{ApplicationInsightsConstants.ValidatorName}}}" +
+                     "has started",
+                "ValidatorAttempted",
+                validatorName);
         }
 
         /// <summary>
         /// Tracks the result of validation. If result is <see cref="ValidationResult.Asynchronous"/> then tracks it in 
-        /// a separate event (callback will register another success or failure, so this way it would be easier to match
-        /// amounts of attempts and outcomes).
+        /// a separate event (task finish processor will register another success or failure, so this way it would be 
+        /// easier to match amounts of attempts and outcomes).
         /// </summary>
         /// <param name="validatorName">The name of the validator</param>
         /// <param name="result">String representation of the outcome</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package version</param>
-        public static void TrackValidatorResult(string validatorName, string result, string packageId, string packageVersion)
+        public static void TrackValidatorResult(this ILogger logger, string validatorName, string result, string packageId, string packageVersion)
         {
             if (result == ValidationResult.Asynchronous.ToString())
             {
-                TrackValidatorAsync(validatorName, packageId, packageVersion);
+                TrackValidatorAsync(logger, validatorName, packageId, packageVersion);
             }
             else
             {
-                Common.ApplicationInsightsHelper.TrackValidatorResult(validatorName, result, packageId, packageVersion);
+                Common.ApplicationInsightsHelper.TrackValidatorResult(logger, validatorName, result, packageId, packageVersion);
             }
         }
 
@@ -75,21 +78,21 @@ namespace NuGet.Jobs.Validation.Runner
         /// <param name="validatorName">The name of the validator attempted</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package version</param>
-        public static void TrackValidatorAsync(string validatorName, string packageId, string packageVersion)
+        public static void TrackValidatorAsync(this ILogger logger, string validatorName, string packageId, string packageVersion)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
 
-            var telemetryClient = new TelemetryClient();
-            var eventTelemetry = new EventTelemetry("ValidatorAsync");
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.ValidatorName, validatorName);
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageId, packageId);
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageVersion, packageVersion);
-
-            telemetryClient.TrackEvent(eventTelemetry);
-            telemetryClient.Flush();
+            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
+                    $"running a {{{ApplicationInsightsConstants.ValidatorName}}} validator " +
+                    $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
+                    $"v.{{{ApplicationInsightsConstants.PackageVersion}}} resulted in starting async task",
+                "ValidatorAsync",
+                validatorName,
+                packageId,
+                packageVersion);
         }
     }
 }
