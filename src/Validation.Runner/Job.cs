@@ -165,6 +165,7 @@ namespace NuGet.Jobs.Validation.Runner
                     }
                     catch (Exception ex)
                     {
+                        _logger.TrackUncaughtValidatorExceptions(validator.Name, ex, message.PackageId, message.PackageVersion);
                         // Audit the exception, but do not remove the message yet.
                         // We want to retry validation on next run.
                         auditEntries.Add(new PackageValidationAuditEntry

@@ -2,10 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.Extensions.Logging;
-using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Common
 {
@@ -19,11 +16,6 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="packageVersion">Package version</param>
         public static void TrackValidatorQueued(this ILogger logger, string validatorName, string packageId, string packageVersion)
         {
-            if (!ApplicationInsights.Initialized)
-            {
-                return;
-            }
-
             logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
                     $"{{{ApplicationInsightsConstants.ValidatorName}}} " +
                     $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
@@ -43,11 +35,6 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="packageVersion">Package name</param>
         public static void TrackValidatorResult(this ILogger logger, string validatorName, string result, string packageId, string packageVersion)
         {
-            if (!ApplicationInsights.Initialized)
-            {
-                return;
-            }
-
             logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
                     $"{{{ApplicationInsightsConstants.ValidatorName}}} " +
                     $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
@@ -67,12 +54,8 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="ex">The exception to track</param>
         public static void TrackValidatorException(this ILogger logger, string validatorName, Exception ex)
         {
-            if (!ApplicationInsights.Initialized)
-            {
-                return;
-            }
-
-            logger.LogError(new EventId(logger.GetHashCode()), ex, $"{{{ApplicationInsightsConstants.EventName}}} " +
+            logger.LogError(new EventId(logger.GetHashCode()), ex, 
+                    $"{{{ApplicationInsightsConstants.EventName}}} " +
                     $"occurred while running {{{ApplicationInsightsConstants.ValidatorName}}}", 
                 "ValidatorException",
                 validatorName);
