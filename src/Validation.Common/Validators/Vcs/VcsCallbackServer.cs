@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
@@ -24,6 +25,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         private readonly PackageValidationTable _packageValidationTable;
         private readonly PackageValidationAuditor _packageValidationAuditor;
         private readonly INotificationService _notificationService;
+        private readonly ILogger _logger;
 
         public VcsCallbackServerStartup()
         {
@@ -33,11 +35,15 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             // Get configuration
             var cloudStorageAccount = CloudStorageAccount.Parse(configurationService.Get("DataStorageAccount").Result);
             var containerName = configurationService.Get("ContainerName").Result;
+            string instrumentationKey = configurationService.Get("AppInsightsInstrumentationKey").Result;
 
             // Services
             _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerName);
             _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerName);
             _notificationService = new NotificationService(cloudStorageAccount, containerName);
+
+            Services.Logging.ApplicationInsights.Initialize(instrumentationKey);
+            _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<VcsCallbackServerStartup>();
         }
 
         public void Configuration(IAppBuilder app)

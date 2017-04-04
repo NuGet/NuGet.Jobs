@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.Common.OData;
@@ -27,6 +28,7 @@ namespace NuGet.Jobs.Validation.Runner
         private string _containerName;
         private string[] _runValidationTasks;
         private string[] _requestValidationTasks;
+        private readonly ILogger _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<Job>();
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {

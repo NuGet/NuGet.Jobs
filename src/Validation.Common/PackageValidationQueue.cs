@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Newtonsoft.Json;
@@ -17,11 +18,13 @@ namespace NuGet.Jobs.Validation.Common
         private readonly ConcurrentDictionary<string, CloudQueue> _queues = new ConcurrentDictionary<string, CloudQueue>(); 
         private readonly string _containerNamePrefix;
         private readonly CloudQueueClient _cloudQueueClient;
+        private readonly ILogger _logger;
 
         public PackageValidationQueue(CloudStorageAccount cloudStorageAccount, string containerNamePrefix)
         {
             _containerNamePrefix = containerNamePrefix;
             _cloudQueueClient = cloudStorageAccount.CreateCloudQueueClient();
+            _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<PackageValidationQueue>();
         }
 
         private async Task<CloudQueue> GetQueueAsync(string validatorName)
@@ -47,7 +50,7 @@ namespace NuGet.Jobs.Validation.Common
             var queue = await GetQueueAsync(validatorName);
             await queue.AddMessageAsync(new CloudQueueMessage(JsonConvert.SerializeObject(message)));
 
-            ApplicationInsightsHelper.TrackValidatorQueued(validatorName, message.PackageId, message.PackageVersion);
+            ApplicationInsightsHelper.TrackValidatorQueued(_logger, validatorName, message.PackageId, message.PackageVersion);
 
             Trace.TraceInformation("Finished enqueue validation {0} {1} - package {2} {3}.", validatorName, message.ValidationId, message.PackageId, message.PackageVersion);
         }

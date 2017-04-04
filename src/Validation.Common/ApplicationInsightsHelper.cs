@@ -1,10 +1,11 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.Extensions.Logging;
 using NuGet.Services.Logging;
-using System;
 
 namespace NuGet.Jobs.Validation.Common
 {
@@ -16,21 +17,21 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="validatorName">The name of the validator queued.</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package version</param>
-        public static void TrackValidatorQueued(string validatorName, string packageId, string packageVersion)
+        public static void TrackValidatorQueued(ILogger logger, string validatorName, string packageId, string packageVersion)
         {
             if (!ApplicationInsights.Initialized)
             {
                 return;
             }
 
-            var telemetryClient = new TelemetryClient();
-            var eventTelemetry = new EventTelemetry("ValidatorQueued");
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.ValidatorName, validatorName);
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageId, packageId);
-            eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageVersion, packageVersion);
-
-            telemetryClient.TrackEvent(eventTelemetry);
-            telemetryClient.Flush();
+            logger.LogInformation($"{{EventName}}: " +
+                $"{{{ApplicationInsightsConstants.ValidatorName}}} for " +
+                $"package {{{ApplicationInsightsConstants.PackageId}}} " +
+                $"v.{{{ApplicationInsightsConstants.PackageVersion}}}", 
+                "ValidatorQueued", 
+                validatorName, 
+                packageId, 
+                packageVersion);
         }
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace NuGet.Jobs.Validation.Common
             }
 
             var telemetryClient = new TelemetryClient();
-            var eventTelemetry = new EventTelemetry("ValidatorResolution");
+            var eventTelemetry = new EventTelemetry("ValidatorResult");
             eventTelemetry.Properties.Add(ApplicationInsightsConstants.ValidatorName, validatorName);
             eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageId, packageId);
             eventTelemetry.Properties.Add(ApplicationInsightsConstants.PackageVersion, packageVersion);
