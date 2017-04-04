@@ -16,10 +16,10 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="packageVersion">Package version</param>
         public static void TrackValidatorQueued(this ILogger logger, string validatorName, string packageId, string packageVersion)
         {
-            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
-                    $"{{{ApplicationInsightsConstants.ValidatorName}}} " +
-                    $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
-                    $"v.{{{ApplicationInsightsConstants.PackageVersion}}}",
+            logger.LogInformation($"{{{TraceConstants.EventName}}}: " +
+                    $"{{{TraceConstants.ValidatorName}}} " +
+                    $"for package {{{TraceConstants.PackageId}}} " +
+                    $"v.{{{TraceConstants.PackageVersion}}}",
                 "ValidatorQueued", 
                 validatorName, 
                 packageId, 
@@ -35,10 +35,10 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="packageVersion">Package name</param>
         public static void TrackValidatorResult(this ILogger logger, string validatorName, string result, string packageId, string packageVersion)
         {
-            logger.LogInformation($"{{{ApplicationInsightsConstants.EventName}}}: " +
-                    $"{{{ApplicationInsightsConstants.ValidatorName}}} " +
-                    $"for package {{{ApplicationInsightsConstants.PackageId}}} " +
-                    $"v.{{{ApplicationInsightsConstants.PackageVersion}}} " +
+            logger.LogInformation($"{{{TraceConstants.EventName}}}: " +
+                    $"{{{TraceConstants.ValidatorName}}} " +
+                    $"for package {{{TraceConstants.PackageId}}} " +
+                    $"v.{{{TraceConstants.PackageVersion}}} " +
                     $"resulted in {{Result}}",
                 "ValidatorResult",
                 validatorName,
@@ -55,8 +55,8 @@ namespace NuGet.Jobs.Validation.Common
         public static void TrackValidatorException(this ILogger logger, string validatorName, Exception ex)
         {
             logger.LogError(new EventId(logger.GetHashCode()), ex, 
-                    $"{{{ApplicationInsightsConstants.EventName}}} " +
-                    $"occurred while running {{{ApplicationInsightsConstants.ValidatorName}}}", 
+                    $"{{{TraceConstants.EventName}}} " +
+                    $"occurred while running {{{TraceConstants.ValidatorName}}}", 
                 "ValidatorException",
                 validatorName);
         }

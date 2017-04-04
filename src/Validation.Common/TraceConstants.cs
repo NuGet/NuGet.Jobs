@@ -9,11 +9,15 @@ using System.Threading.Tasks;
 
 namespace NuGet.Jobs.Validation.Common
 {
-    public static class ApplicationInsightsConstants
+    public static class TraceConstants
     {
         public const string EventName = "EventName";
         public const string ValidatorName = "ValidatorName";
         public const string PackageId = "PackageId";
         public const string PackageVersion = "PackageVersion";
+
+        public const string PackageUnclean = "PackageUnclean";
+        public const string RequestNotFound = "RequestNotFound";
+        public const string InvestigationNeeded = "InvestigationNeeded";
     }
 }

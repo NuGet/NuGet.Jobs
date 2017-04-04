@@ -69,6 +69,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
                         if (validationEntity == null)
                         {
+                            _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstants.RequestNotFound, validationEntity.PackageId, validationEntity.PackageVersion);
+
                             // Notify us about the fact that no valiation was found
                             await _notificationService.SendNotificationAsync(
                                 "vcscallback-notfound",
@@ -92,7 +94,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
-                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
+                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstants.PackageUnclean, validationEntity.PackageId, validationEntity.PackageVersion);
                                 var auditEntries = new List<PackageValidationAuditEntry>();
                                 auditEntries.Add(new PackageValidationAuditEntry
                                 {
@@ -125,6 +127,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                             }
                             else
                             {
+                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstants.InvestigationNeeded, validationEntity.PackageId, validationEntity.PackageVersion);
                                 // To investigate
                                 await _notificationService.SendNotificationAsync(
                                     $"vcscallback-investigate/{validationEntity.Created.ToString("yyyy-MM-dd")}",
