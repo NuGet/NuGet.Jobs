@@ -28,7 +28,7 @@ namespace NuGet.Jobs.Validation.Runner
         public static void TrackValidatorRun(this ILogger logger, string validatorName)
         {
             logger.LogInformation($"{{{TraceConstants.EventName}}}: " +
-                    $"Another iteration of validation loop for {{{TraceConstants.ValidatorName}}}" +
+                    $"Another iteration of validation loop for {{{TraceConstants.ValidatorName}}} " +
                      "has started",
                 "ValidatorAttempted",
                 validatorName);
