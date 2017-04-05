@@ -20,7 +20,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
         private readonly ILogger<VcsValidator> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<VcsValidator>();
 
-        public VcsValidator(string serviceUrl, string callbackUrl, string submitterAlias, string packageUrlTemplate)
+        public VcsValidator(string serviceUrl, string callbackUrl, string contactAlias, string submitterAlias, string packageUrlTemplate)
         {
             _packageUrlTemplate = packageUrlTemplate;
             _scanningService = new VcsVirusScanningService(new Uri(serviceUrl), "DIRECT", submitterAlias, submitterAlias);

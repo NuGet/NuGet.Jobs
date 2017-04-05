@@ -28,7 +28,7 @@ namespace NuGet.Jobs.Validation.Runner
         private string _containerName;
         private string[] _runValidationTasks;
         private string[] _requestValidationTasks;
-        private readonly ILogger<Job> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<Job>();
+        private ILogger<Job> _logger;
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
@@ -36,6 +36,8 @@ namespace NuGet.Jobs.Validation.Runner
             {
                 string instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
+
+                _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<Job>();
 
                 // Configure job
                 _galleryBaseAddress = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryBaseAddress);
@@ -55,9 +57,14 @@ namespace NuGet.Jobs.Validation.Runner
                 }
                 if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
                 {
+                    // if contact alias set, use it, if not, use submitter alias.
+                    string contactAlias = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.VcsContactAlias) 
+                        ?? JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorAlias);
+
                     _validators.Add(new VcsValidator(
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorServiceUrl),
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorCallbackUrl),
+                        contactAlias,
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorAlias),
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsPackageUrlTemplate)));
                 }
@@ -134,7 +141,7 @@ namespace NuGet.Jobs.Validation.Runner
             var notificationService = new NotificationService(_cloudStorageAccount, _containerName);
 
             // Get messages to process
-            var messages = await packageValidationQueue.DequeueAsync(validator.Name, 16, validator.VisibilityTimeout);
+            var messages = await packageValidationQueue.DequeueAsync(validator.Name, 1, validator.VisibilityTimeout);
             foreach (var message in messages)
             {
                 // Audit entry collection to which our validator can write
