@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Owin;
 using Microsoft.WindowsAzure.Storage;
+using NuGet.ApplicationInsights.Owin;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
 using NuGet.Services.VirusScanning.Vcs.Callback;
 using Owin;
@@ -48,6 +49,11 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
         public void Configuration(IAppBuilder app)
         {
+            if (Services.Logging.ApplicationInsights.Initialized)
+            {
+                app.Use<RequestTrackingMiddleware>();
+            }
+
             app.Run(Invoke);
         }
 
