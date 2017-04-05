@@ -141,7 +141,7 @@ namespace NuGet.Jobs.Validation.Runner
             var notificationService = new NotificationService(_cloudStorageAccount, _containerName);
 
             // Get messages to process
-            var messages = await packageValidationQueue.DequeueAsync(validator.Name, 1, validator.VisibilityTimeout);
+            var messages = await packageValidationQueue.DequeueAsync(validator.Name, 16, validator.VisibilityTimeout);
             foreach (var message in messages)
             {
                 // Audit entry collection to which our validator can write
