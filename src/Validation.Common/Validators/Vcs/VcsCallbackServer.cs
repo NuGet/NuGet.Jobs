@@ -144,7 +144,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
                         // "The Request is completed, with either of these four states: Results, Pass, PassWithInfo, PassManual"
                         // This denotes scan has completed and we have a pass (or results)
-                        if (result.State == "Complete")
+                        if (result.State == "Complete" || result.State == "Released")
                         {
                             if (result.Result == "Pass" || result.Result == "PassWithInfo" || result.Result == "PassManual")
                             {
