@@ -23,7 +23,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         public VcsValidator(string serviceUrl, string callbackUrl, string contactAlias, string submitterAlias, string packageUrlTemplate)
         {
             _packageUrlTemplate = packageUrlTemplate;
-            _scanningService = new VcsVirusScanningService(new Uri(serviceUrl), "DIRECT", submitterAlias, submitterAlias);
+            _scanningService = new VcsVirusScanningService(new Uri(serviceUrl), "DIRECT", contactAlias, submitterAlias);
             _callbackUrl = new Uri(callbackUrl);
         }
 
