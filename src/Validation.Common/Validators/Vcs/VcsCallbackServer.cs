@@ -61,6 +61,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         {
             if (context.Request.Method == "POST" && context.Request.ContentType.Contains("text/xml"))
             {
+                bool processedRequest = false;
+
                 // VCS callback request
                 using (var bodyStreamReader = new StreamReader(context.Request.Body))
                 {
@@ -75,6 +77,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
                         if (validationEntity == null)
                         {
+                            processedRequest = true;
                             _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstants.RequestNotFound, validationEntity.PackageId, validationEntity.PackageVersion);
 
                             // Notify us about the fact that no valiation was found
@@ -93,6 +96,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                         if (result.State == "Complete"
                             && (result.Result == "Canceled" || result.Result == "Cancelled"))
                         {
+                            processedRequest = true;
                             var services = result.Services?.Service;
                             if (services != null && services.Any(s => s.Name == "Scan" && s.State == "Complete" && s.Result == "Canceled"))
                             {
@@ -149,6 +153,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                             if (result.Result == "Pass" || result.Result == "PassWithInfo" || result.Result == "PassManual")
                             {
                                 // The result is clean.
+                                processedRequest = true;
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
@@ -164,6 +169,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                             else if (result.Result == "Results" || result.Result == "Fail")
                             {
                                 // Potential issue, report back
+                                processedRequest = true;
                                 validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
                                 await _packageValidationTable.StoreAsync(validationEntity);
 
@@ -199,6 +205,14 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     body);
                             }
                         }
+                    }
+
+                    if (!processedRequest)
+                    {
+                        _logger.LogWarning(
+                            "No code was run for processing request with State={State}, Result={Result}. " +
+                            "Request body: {RequestBody}", 
+                            result?.State, result?.Result, body.Substring(0, 1024));
                     }
                 }
 
