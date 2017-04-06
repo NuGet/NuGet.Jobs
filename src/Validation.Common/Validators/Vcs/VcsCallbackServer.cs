@@ -36,7 +36,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             // Get configuration
             var cloudStorageAccount = CloudStorageAccount.Parse(configurationService.Get("DataStorageAccount").Result);
             var containerName = configurationService.Get("ContainerName").Result;
-            string instrumentationKey = configurationService.Get("AppInsightsInstrumentationKey").Result;
+            string instrumentationKey = configurationService.Get("ApplicationInsightsInstrumentationKey").Result;
 
             // Services
             _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerName);
