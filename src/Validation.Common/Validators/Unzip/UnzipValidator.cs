@@ -57,7 +57,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Unzip
                 }
                 catch (Exception ex)
                 {
-                    _logger.TrackValidatorException(ValidatorName, ex);
+                    _logger.TrackValidatorException(ValidatorName, ex, message.PackageId, message.PackageVersion, message.ValidationId);
                     WriteAuditEntry(auditEntries, $"Exception thrown during validation - {ex.Message}\r\n{ex.StackTrace}");
                     return ValidationResult.Failed;
                 }
