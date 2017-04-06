@@ -58,14 +58,15 @@ namespace NuGet.Jobs.Validation.Runner
                 if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
                 {
                     // if contact alias set, use it, if not, use submitter alias.
+                    string submitterAlias = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorAlias);
                     string contactAlias = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.VcsContactAlias) 
-                        ?? JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorAlias);
+                        ?? submitterAlias;
 
                     _validators.Add(new VcsValidator(
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorServiceUrl),
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorCallbackUrl),
                         contactAlias,
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorAlias),
+                        submitterAlias,
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsPackageUrlTemplate)));
                 }
 
