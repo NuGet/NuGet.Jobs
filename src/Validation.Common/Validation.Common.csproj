@@ -189,7 +189,8 @@
     <Compile Include="PackageValidationTable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Configuration\SecretReaderFactory.cs" />
-    <Compile Include="TraceConstants.cs" />
+    <Compile Include="TraceConstant.cs" />
+    <Compile Include="TraceEvent.cs" />
     <Compile Include="Validators\IValidator.cs" />
     <Compile Include="Validators\Unzip\UnzipValidator.cs" />
     <Compile Include="Validators\ValidationResult.cs" />

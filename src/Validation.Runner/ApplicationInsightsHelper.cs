@@ -11,29 +11,6 @@ namespace NuGet.Jobs.Validation.Runner
     internal static class ApplicationInsightsHelper
     {
         /// <summary>
-        /// Tracks orchestration attempts
-        /// </summary>
-        /// <param name="logger">Logger to log to</param>
-        public static void TrackOrchestration(this ILogger logger)
-        {
-            logger.LogInformation($"{{{TraceConstants.EventName}}}: " +
-                "Another iteration of validator orchestration loop has started");
-        }
-
-        /// <summary>
-        /// Tracks validator run attempts
-        /// </summary>
-        /// <param name="logger">Logger to log to</param>
-        /// <param name="validatorName">The name of the validator attempted.</param>
-        public static void TrackValidatorRun(this ILogger logger, string validatorName)
-        {
-            logger.LogInformation($"{{{TraceConstants.EventName}}}: " +
-                    $"Another iteration of validation loop for {{{TraceConstants.ValidatorName}}} has started",
-                "ValidatorAttempted",
-                validatorName);
-        }
-
-        /// <summary>
         /// Tracks the result of validation. If result is <see cref="ValidationResult.Asynchronous"/> then tracks it in 
         /// a separate event (task finish processor will register another success or failure, so this way it would be 
         /// easier to match amounts of attempts and outcomes).
@@ -65,32 +42,11 @@ namespace NuGet.Jobs.Validation.Runner
         /// <param name="packageVersion">Package version</param>
         public static void TrackValidatorAsyncJob(this ILogger logger, string validatorName, string packageId, string packageVersion)
         {
-            logger.LogInformation($"{{{TraceConstants.EventName}}}: " +
-                    $"running a {{{TraceConstants.ValidatorName}}} validator " +
-                    $"for package {{{TraceConstants.PackageId}}} " +
-                    $"v.{{{TraceConstants.PackageVersion}}} resulted in starting async task",
+            logger.LogInformation($"{{{TraceConstant.EventName}}}: " +
+                    $"running a {{{TraceConstant.ValidatorName}}} validator " +
+                    $"for package {{{TraceConstant.PackageId}}} " +
+                    $"v.{{{TraceConstant.PackageVersion}}} resulted in starting async task",
                 "ValidatorAsync",
-                validatorName,
-                packageId,
-                packageVersion);
-        }
-
-        /// <summary>
-        /// Tracks any exception that leaves the validator uncaught
-        /// </summary>
-        /// <param name="logger">Logger to log to</param>
-        /// <param name="ex">Exception produced</param>
-        /// <param name="validatorName">The name of the validator attempted</param>
-        /// <param name="packageId">Package ID</param>
-        /// <param name="packageVersion">Package version</param>
-        public static void TrackUncaughtValidatorExceptions(this ILogger logger, string validatorName, Exception ex, string packageId, string packageVersion)
-        {
-            logger.LogError(new EventId(logger.GetHashCode()), ex,
-                    $"{{{TraceConstants.EventName}}}: " +
-                    $"A {{{TraceConstants.ValidatorName}}} validator " +
-                    $"checking the {{{TraceConstants.PackageId}}} " +
-                    $"v.{{{TraceConstants.PackageVersion}}} produced exception",
-                "UncaughtValidatorException",
                 validatorName,
                 packageId,
                 packageVersion);
