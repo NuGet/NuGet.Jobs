@@ -21,5 +21,7 @@ namespace NuGet.Jobs.Validation.Common
         public const string PackageUnclean = "PackageUnclean";
         public const string RequestNotFound = "RequestNotFound";
         public const string InvestigationNeeded = "InvestigationNeeded";
+        public const string Url = "Url";
+        public const string CursorValue = "CursorValue";
     }
 }

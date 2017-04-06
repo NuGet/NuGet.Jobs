@@ -4,15 +4,18 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
+using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Common
 {
     public class PackageValidationOrchestrationCursor
     {
         private readonly CloudBlockBlob _cursorBlob;
+        private readonly ILogger<PackageValidationOrchestrationCursor> _logger;
 
         public PackageValidationOrchestrationCursor(CloudStorageAccount cloudStorageAccount, string containerName, string cursorName)
         {
@@ -21,6 +24,7 @@ namespace NuGet.Jobs.Validation.Common
             container.CreateIfNotExists();
 
             _cursorBlob = container.GetBlockBlobReference(cursorName);
+            _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<PackageValidationOrchestrationCursor>();
         }
 
         public DateTimeOffset? LastCreated { get; set; }
@@ -28,7 +32,7 @@ namespace NuGet.Jobs.Validation.Common
 
         public async Task LoadAsync()
         {
-            Trace.TraceInformation("Start loading cursor from {0}...", _cursorBlob.Uri);
+            _logger.LogInformation($"Start loading cursor from {{{TraceConstant.Url}}}...", _cursorBlob.Uri);
 
             if (await _cursorBlob.ExistsAsync())
             {
@@ -41,12 +45,12 @@ namespace NuGet.Jobs.Validation.Common
                 Trace.TraceInformation("Cursor value: {0}", json);
             }
 
-            Trace.TraceInformation("Finished loading cursor from {0}.", _cursorBlob.Uri);
+            _logger.LogInformation($"Finished loading cursor from {{{TraceConstant.Url}}}.", _cursorBlob.Uri);
         }
 
         public async Task SaveAsync()
         {
-            Trace.TraceInformation("Start saving cursor to {0}...", _cursorBlob.Uri);
+            _logger.LogInformation($"Start saving cursor to {{{TraceConstant.Url}}}...", _cursorBlob.Uri);
 
             var cursorObject = new JObject
             {
@@ -61,8 +65,8 @@ namespace NuGet.Jobs.Validation.Common
             _cursorBlob.Properties.ContentType = "application/json";
             await _cursorBlob.SetPropertiesAsync();
 
-            Trace.TraceInformation("Cursor value: {0}", json);
-            Trace.TraceInformation("Finished saving cursor to {0}.", _cursorBlob.Uri);
+            _logger.LogInformation($"Cursor value: {{{TraceConstant.CursorValue}}}", json);
+            _logger.LogInformation($"Finished saving cursor to {{{TraceConstant.Url}}}.", _cursorBlob.Uri);
         }
     }
 }
