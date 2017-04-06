@@ -76,7 +76,7 @@ namespace NuGet.Jobs.Validation.Runner
         }
 
         /// <summary>
-        /// Tracks any exeption that leaves the validator uncaught
+        /// Tracks any exception that leaves the validator uncaught
         /// </summary>
         /// <param name="logger">Logger to log to</param>
         /// <param name="ex">Exception produced</param>
