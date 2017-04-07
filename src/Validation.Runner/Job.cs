@@ -223,6 +223,8 @@ namespace NuGet.Jobs.Validation.Runner
                 // Process message
                 if (validationResult != ValidationResult.Unknown)
                 {
+                    TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
+
                     // Update our tracking entity
                     var packageValidationEntity = await packageValidationTable.GetValidationAsync(message.ValidationId);
                     if (packageValidationEntity != null)
@@ -233,8 +235,6 @@ namespace NuGet.Jobs.Validation.Runner
 
                     // Remove the message
                     await packageValidationQueue.DeleteAsync(validator.Name, message);
-
-                    TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
                 }
 
                 // Write audit entries
