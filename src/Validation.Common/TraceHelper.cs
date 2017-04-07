@@ -43,7 +43,7 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="validationId">Validation ID that was being processed when exception happened</param>
         public static void TrackValidatorException(this ILogger logger, string validatorName, Exception ex, string packageId, string packageVersion, Guid validationId)
         {
-            logger.LogError(new EventId(logger.GetHashCode()), ex, 
+            logger.LogError(TraceEvent.ValidatorException, ex, 
                     $"{{{TraceConstant.EventName}}} " +
                     $"occurred while running {{{TraceConstant.ValidatorName}}} {{{TraceConstant.ValidationId}}}" +
                     $"on package {{{TraceConstant.PackageId}}}" +
