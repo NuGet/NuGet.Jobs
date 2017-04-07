@@ -18,13 +18,13 @@ namespace NuGet.Jobs.Validation.Common
         private readonly INotificationService _notificationService;
         private readonly ILogger<PackageValidationService> _logger;
 
-        public PackageValidationService(CloudStorageAccount cloudStorageAccount, string containerNamePrefix)
+        public PackageValidationService(CloudStorageAccount cloudStorageAccount, string containerNamePrefix, ILoggerFactory loggerFactory)
         {
             _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerNamePrefix);
-            _packageValidationQueue = new PackageValidationQueue(cloudStorageAccount, containerNamePrefix);
-            _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerNamePrefix);
+            _packageValidationQueue = new PackageValidationQueue(cloudStorageAccount, containerNamePrefix, loggerFactory);
+            _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerNamePrefix, loggerFactory);
             _notificationService = new NotificationService(cloudStorageAccount, containerNamePrefix);
-            _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<PackageValidationService>();
+            _logger = loggerFactory.CreateLogger<PackageValidationService>();
         }
 
         public async Task StartValidationProcessAsync(NuGetPackage package, string[] validators)

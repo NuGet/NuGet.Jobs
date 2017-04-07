@@ -17,7 +17,12 @@ namespace NuGet.Jobs.Validation.Common.Validators.Unzip
     {
         public const string ValidatorName = "validator-unzip";
 
-        private readonly ILogger<UnzipValidator> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<UnzipValidator>();
+        private readonly ILogger<UnzipValidator> _logger;
+
+        public UnzipValidator(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.CreateLogger<UnzipValidator>();
+        }
 
         public override string Name
         {

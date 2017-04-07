@@ -18,10 +18,11 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         private readonly Uri _callbackUrl;
         private readonly VcsVirusScanningService _scanningService;
 
-        private readonly ILogger<VcsValidator> _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<VcsValidator>();
+        private readonly ILogger<VcsValidator> _logger;
 
-        public VcsValidator(string serviceUrl, string callbackUrl, string contactAlias, string submitterAlias, string packageUrlTemplate)
+        public VcsValidator(string serviceUrl, string callbackUrl, string contactAlias, string submitterAlias, string packageUrlTemplate, ILoggerFactory loggerFactory)
         {
+            _logger = loggerFactory.CreateLogger<VcsValidator>();
             _packageUrlTemplate = packageUrlTemplate;
             _scanningService = new VcsVirusScanningService(new Uri(serviceUrl), "DIRECT", contactAlias, submitterAlias);
             _callbackUrl = new Uri(callbackUrl);

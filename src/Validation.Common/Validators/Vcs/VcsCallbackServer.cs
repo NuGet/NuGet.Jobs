@@ -37,14 +37,15 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             var cloudStorageAccount = CloudStorageAccount.Parse(configurationService.Get("DataStorageAccount").Result);
             var containerName = configurationService.Get("ContainerName").Result;
 
-            // Services
-            _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerName);
-            _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerName);
-            _notificationService = new NotificationService(cloudStorageAccount, containerName);
-
             string instrumentationKey = configurationService.Get("ApplicationInsightsInstrumentationKey").Result;
             Services.Logging.ApplicationInsights.Initialize(instrumentationKey);
-            _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<VcsCallbackServerStartup>();
+            ILoggerFactory loggerFactory = Services.Logging.LoggingSetup.CreateLoggerFactory();
+            _logger = loggerFactory.CreateLogger<VcsCallbackServerStartup>();
+
+            // Services
+            _packageValidationTable = new PackageValidationTable(cloudStorageAccount, containerName);
+            _packageValidationAuditor = new PackageValidationAuditor(cloudStorageAccount, containerName, loggerFactory);
+            _notificationService = new NotificationService(cloudStorageAccount, containerName);
         }
 
         public void Configuration(IAppBuilder app)

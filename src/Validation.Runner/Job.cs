@@ -28,16 +28,21 @@ namespace NuGet.Jobs.Validation.Runner
         private string _containerName;
         private string[] _runValidationTasks;
         private string[] _requestValidationTasks;
+        private ILoggerFactory _loggerFactory;
         private ILogger<Job> _logger;
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
         {
             try
             {
-                string instrumentationKey = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
-                ApplicationInsights.Initialize(instrumentationKey);
+                if (!ApplicationInsights.Initialized)
+                {
+                    string instrumentationKey = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                    ApplicationInsights.Initialize(instrumentationKey);
 
-                _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<Job>();
+                    _loggerFactory = LoggingSetup.CreateLoggerFactory();
+                    _logger = _loggerFactory.CreateLogger<Job>();
+                }
 
                 // Configure job
                 _galleryBaseAddress = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryBaseAddress);
@@ -53,7 +58,7 @@ namespace NuGet.Jobs.Validation.Runner
                 // Add validators
                 if (_runValidationTasks.Contains(UnzipValidator.ValidatorName))
                 {
-                    _validators.Add(new UnzipValidator());
+                    _validators.Add(new UnzipValidator(_loggerFactory));
                 }
                 if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
                 {
@@ -67,7 +72,8 @@ namespace NuGet.Jobs.Validation.Runner
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsValidatorCallbackUrl),
                         contactAlias,
                         submitterAlias,
-                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsPackageUrlTemplate)));
+                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.VcsPackageUrlTemplate),
+                        _loggerFactory));
                 }
 
                 return true;
@@ -139,8 +145,8 @@ namespace NuGet.Jobs.Validation.Runner
 
             // Services
             var packageValidationTable = new PackageValidationTable(_cloudStorageAccount, _containerName);
-            var packageValidationAuditor = new PackageValidationAuditor(_cloudStorageAccount, _containerName);
-            var packageValidationQueue = new PackageValidationQueue(_cloudStorageAccount, _containerName);
+            var packageValidationAuditor = new PackageValidationAuditor(_cloudStorageAccount, _containerName, _loggerFactory);
+            var packageValidationQueue = new PackageValidationQueue(_cloudStorageAccount, _containerName, _loggerFactory);
             var notificationService = new NotificationService(_cloudStorageAccount, _containerName);
 
             // Get messages to process
@@ -255,11 +261,11 @@ namespace NuGet.Jobs.Validation.Runner
                 "OrchestrationAttempt");
 
             // Retrieve cursor (last created / last edited)
-            var cursor = new PackageValidationOrchestrationCursor(_cloudStorageAccount, _containerName + "-audit", "cursor.json");
+            var cursor = new PackageValidationOrchestrationCursor(_cloudStorageAccount, _containerName + "-audit", "cursor.json", _loggerFactory);
             await cursor.LoadAsync();
             
             // Setup package validation service
-            var packageValidationService = new PackageValidationService(_cloudStorageAccount, _containerName);
+            var packageValidationService = new PackageValidationService(_cloudStorageAccount, _containerName, _loggerFactory);
 
             // Get reference timestamps
             var referenceLastCreated = cursor.LastCreated ?? DateTimeOffset.UtcNow.AddMinutes(-15);

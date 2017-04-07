@@ -2,13 +2,11 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Common
 {
@@ -17,14 +15,14 @@ namespace NuGet.Jobs.Validation.Common
         private readonly CloudBlockBlob _cursorBlob;
         private readonly ILogger<PackageValidationOrchestrationCursor> _logger;
 
-        public PackageValidationOrchestrationCursor(CloudStorageAccount cloudStorageAccount, string containerName, string cursorName)
+        public PackageValidationOrchestrationCursor(CloudStorageAccount cloudStorageAccount, string containerName, string cursorName, ILoggerFactory loggerFactory)
         {
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             var container = cloudBlobClient.GetContainerReference(containerName);
             container.CreateIfNotExists();
 
             _cursorBlob = container.GetBlockBlobReference(cursorName);
-            _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<PackageValidationOrchestrationCursor>();
+            _logger = loggerFactory.CreateLogger<PackageValidationOrchestrationCursor>();
         }
 
         public DateTimeOffset? LastCreated { get; set; }

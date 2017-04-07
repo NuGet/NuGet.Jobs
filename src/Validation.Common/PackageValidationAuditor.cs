@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +11,6 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using NuGet.Jobs.Validation.Common.Extensions;
-using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Common
 {
@@ -21,12 +19,12 @@ namespace NuGet.Jobs.Validation.Common
         private readonly CloudBlobContainer _auditsContainer;
         private readonly ILogger<PackageValidationAuditor> _logger;
 
-        public PackageValidationAuditor(CloudStorageAccount cloudStorageAccount, string containerNamePrefix)
+        public PackageValidationAuditor(CloudStorageAccount cloudStorageAccount, string containerNamePrefix, ILoggerFactory loggerFactory)
         {
             var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             _auditsContainer = cloudBlobClient.GetContainerReference(containerNamePrefix + "-audit");
             _auditsContainer.CreateIfNotExists(BlobContainerPublicAccessType.Blob);
-            _logger = LoggingSetup.CreateLoggerFactory().CreateLogger<PackageValidationAuditor>();
+            _logger = loggerFactory.CreateLogger<PackageValidationAuditor>();
         }
 
         public async Task StartAuditAsync(Guid validationId, string[] validators, DateTimeOffset started, string packageId, string packageVersion, NuGetPackage package)

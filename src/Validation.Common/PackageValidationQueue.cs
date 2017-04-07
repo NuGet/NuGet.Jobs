@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
@@ -20,11 +19,11 @@ namespace NuGet.Jobs.Validation.Common
         private readonly CloudQueueClient _cloudQueueClient;
         private readonly ILogger<PackageValidationQueue> _logger;
 
-        public PackageValidationQueue(CloudStorageAccount cloudStorageAccount, string containerNamePrefix)
+        public PackageValidationQueue(CloudStorageAccount cloudStorageAccount, string containerNamePrefix, ILoggerFactory loggerFactory)
         {
             _containerNamePrefix = containerNamePrefix;
             _cloudQueueClient = cloudStorageAccount.CreateCloudQueueClient();
-            _logger = Services.Logging.LoggingSetup.CreateLoggerFactory().CreateLogger<PackageValidationQueue>();
+            _logger = loggerFactory.CreateLogger<PackageValidationQueue>();
         }
 
         private async Task<CloudQueue> GetQueueAsync(string validatorName)
