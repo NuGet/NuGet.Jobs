@@ -223,7 +223,7 @@ namespace NuGet.Jobs.Validation.Runner
                 // Process message
                 if (validationResult != ValidationResult.Unknown)
                 {
-                    TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
+                    TrackValidatorResult(validator.Name, message.ValidationId, validationResult.ToString(), message.PackageId, message.PackageVersion);
 
                     // Update our tracking entity
                     var packageValidationEntity = await packageValidationTable.GetValidationAsync(message.ValidationId);
@@ -335,22 +335,24 @@ namespace NuGet.Jobs.Validation.Runner
         /// <param name="result">String representation of the outcome</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package version</param>
-        private void TrackValidatorResult(string validatorName, string result, string packageId, string packageVersion)
+        private void TrackValidatorResult(string validatorName, Guid validationId, string result, string packageId, string packageVersion)
         {
             if (result == ValidationResult.Asynchronous.ToString())
             {
                 _logger.LogInformation($"{{{TraceConstant.EventName}}}: " +
-                        $"running a {{{TraceConstant.ValidatorName}}} validator " +
+                        $"running a {{{TraceConstant.ValidatorName}}} " +
+                        $"ValidationID: {{{TraceConstant.ValidationId}}} " +
                         $"for package {{{TraceConstant.PackageId}}} " +
                         $"v.{{{TraceConstant.PackageVersion}}} resulted in starting async task",
                     "ValidatorAsync",
                     validatorName,
+                    validationId,
                     packageId,
                     packageVersion);
             }
             else
             {
-                _logger.TrackValidatorResult(validatorName, result, packageId, packageVersion);
+                _logger.TrackValidatorResult(validatorName, validationId, result, packageId, packageVersion);
             }
         }
     }

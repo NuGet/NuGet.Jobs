@@ -28,6 +28,12 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         private readonly INotificationService _notificationService;
         private readonly ILogger<VcsCallbackServerStartup> _logger;
 
+        private static class State
+        {
+            public const string Complete = "Complete";
+            public const string Released = "Released";
+        }
+
         public VcsCallbackServerStartup()
         {
             // Configure to get values from keyvault
@@ -62,163 +68,8 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         {
             if (context.Request.Method == "POST" && context.Request.ContentType.Contains("text/xml"))
             {
-                bool processedRequest = false;
-
                 // VCS callback request
-                using (var bodyStreamReader = new StreamReader(context.Request.Body))
-                {
-                    var body = await bodyStreamReader.ReadToEndAsync();
-                    var result = _callbackParser.ParseSoapMessage(body);
-
-                    // Find our validation
-                    Guid validationId;
-                    PackageValidationEntity validationEntity = null;
-                    if (Guid.TryParse(result.SrcId, out validationId))
-                    {
-                        validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
-                        if (validationEntity == null)
-                        {
-                            processedRequest = true;
-                            _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstant.RequestNotFound, validationEntity.PackageId, validationEntity.PackageVersion);
-
-                            // Notify us about the fact that no valiation was found
-                            await _notificationService.SendNotificationAsync(
-                                "vcscallback-notfound",
-                                "Validation " + validationId + " was not found.",
-                                body);
-                        }
-                    }
-
-                    // Determine state of the VCS callback
-                    if (validationEntity != null)
-                    {
-                        // "The Request is in Manual State and the Request is cancelled."
-                        // This denotes a manual verification is being carried out or has been carried out.
-                        if (result.State == "Complete"
-                            && (result.Result == "Canceled" || result.Result == "Cancelled"))
-                        {
-                            processedRequest = true;
-                            var services = result.Services?.Service;
-                            if (services != null && services.Any(s => s.Name == "Scan" && s.State == "Complete" && s.Result == "Canceled"))
-                            {
-                                // Package scanned unclean
-                                validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
-                                await _packageValidationTable.StoreAsync(validationEntity);
-
-                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstant.PackageUnclean, validationEntity.PackageId, validationEntity.PackageVersion);
-                                var auditEntries = new List<PackageValidationAuditEntry>();
-                                auditEntries.Add(new PackageValidationAuditEntry
-                                {
-                                    Timestamp = DateTimeOffset.UtcNow,
-                                    ValidatorName = VcsValidator.ValidatorName,
-                                    Message = "Package did not scan clean."
-                                });
-
-                                if (result.ResultReasons?.ResultReason != null)
-                                {
-                                    foreach (var resultReason in result.ResultReasons.ResultReason)
-                                    {
-                                        auditEntries.Add(new PackageValidationAuditEntry
-                                        {
-                                            Timestamp = DateTimeOffset.UtcNow,
-                                            ValidatorName = VcsValidator.ValidatorName,
-                                            Message = resultReason.RefId + " " + resultReason.Result + " " + resultReason.Determination
-                                        });
-                                    }
-                                }
-
-                                await _packageValidationAuditor.WriteAuditEntriesAsync(
-                                    validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
-
-                                // Notify
-                                await _notificationService.SendNotificationAsync(
-                                    $"vcscallback-notclean/{validationEntity.Created.ToString("yyyy-MM-dd")}",
-                                    $"Validation {validationId} ({validationEntity.PackageId} {validationEntity.PackageVersion}) returned {result.State} {result.Result}.",
-                                    body);
-                            }
-                            else
-                            {
-                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, TraceConstant.InvestigationNeeded, validationEntity.PackageId, validationEntity.PackageVersion);
-                                // To investigate
-                                await _notificationService.SendNotificationAsync(
-                                    $"vcscallback-investigate/{validationEntity.Created.ToString("yyyy-MM-dd")}",
-                                    $"Validation {validationId} ({validationEntity.PackageId} {validationEntity.PackageVersion}) returned {result.State} {result.Result}.",
-                                    body);
-                            }
-                        }
-
-                        // "The Request is completed, with either of these four states: Results, Pass, PassWithInfo, PassManual"
-                        // This denotes scan has completed and we have a pass (or results)
-                        if (result.State == "Complete" || result.State == "Released")
-                        {
-                            if (result.Result == "Pass" || result.Result == "PassWithInfo" || result.Result == "PassManual")
-                            {
-                                // The result is clean.
-                                processedRequest = true;
-                                validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
-                                await _packageValidationTable.StoreAsync(validationEntity);
-
-                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Succeeded.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
-                                await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
-                                    new PackageValidationAuditEntry
-                                    {
-                                        Timestamp = DateTimeOffset.UtcNow,
-                                        ValidatorName = VcsValidator.ValidatorName,
-                                        Message = "Package scanned clean."
-                                    });
-                            }
-                            else if (result.Result == "Results" || result.Result == "Fail")
-                            {
-                                // Potential issue, report back
-                                processedRequest = true;
-                                validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
-                                await _packageValidationTable.StoreAsync(validationEntity);
-
-                                _logger.TrackValidatorResult(VcsValidator.ValidatorName, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
-                                var auditEntries = new List<PackageValidationAuditEntry>();
-                                auditEntries.Add(new PackageValidationAuditEntry
-                                {
-                                    Timestamp = DateTimeOffset.UtcNow,
-                                    ValidatorName = VcsValidator.ValidatorName,
-                                    Message = "Package scan failed."
-                                });
-
-                                if (result.ResultReasons?.ResultReason != null)
-                                {
-                                    foreach (var resultReason in result.ResultReasons.ResultReason)
-                                    {
-                                        auditEntries.Add(new PackageValidationAuditEntry
-                                        {
-                                            Timestamp = DateTimeOffset.UtcNow,
-                                            ValidatorName = VcsValidator.ValidatorName,
-                                            Message = resultReason.RefId + " " + resultReason.Result + " " + resultReason.Determination
-                                        });
-                                    }
-                                }
-
-                                await _packageValidationAuditor.WriteAuditEntriesAsync(
-                                    validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
-
-                                // Notify
-                                await _notificationService.SendNotificationAsync(
-                                    $"vcscallback-failed/{validationEntity.Created.ToString("yyyy-MM-dd")}",
-                                    $"Validation {validationId} ({validationEntity.PackageId} {validationEntity.PackageVersion}) did not scan clean.",
-                                    body);
-                            }
-                        }
-                    }
-
-                    if (!processedRequest)
-                    {
-                        // first 1024 bytes of the body are taken in order not to send potentially multi-MB long requests.
-                        // "Normal" callback calls are less than 1024 bytes, but since this service blindly accepts any
-                        // request, we may get some potentially long garbage and don't want it all logged.
-                        _logger.LogWarning(
-                            "Callback was not handled for State={State}, Result={Result}. " +
-                            "Request body: {RequestBody}", 
-                            result?.State, result?.Result, body.Substring(0, 1024));
-                    }
-                }
+                await ProcessRequest(context.Request.Body);
 
                 // The VCS caller requires a SOAP response.
                 context.Response.ContentType = "text/xml";
@@ -237,6 +88,192 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             else
             {
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            }
+        }
+
+        private async Task ProcessRequest(Stream requestBody)
+        {
+            using (var bodyStreamReader = new StreamReader(requestBody))
+            {
+                bool processedRequest = false;
+
+                var body = await bodyStreamReader.ReadToEndAsync();
+                var result = _callbackParser.ParseSoapMessage(body);
+
+                // Find our validation
+                Guid validationId;
+                PackageValidationEntity validationEntity = null;
+                if (Guid.TryParse(result.SrcId, out validationId))
+                {
+                    validationEntity = await _packageValidationTable.GetValidationAsync(validationId);
+                    if (validationEntity == null)
+                    {
+                        processedRequest = true;
+                        _logger.TrackValidatorResult(VcsValidator.ValidatorName, validationId, TraceConstant.RequestNotFound, validationEntity.PackageId, validationEntity.PackageVersion);
+
+                        // Notify us about the fact that no valiation was found
+                        await _notificationService.SendNotificationAsync(
+                            "vcscallback-notfound",
+                            "Validation " + validationId + " was not found.",
+                            body);
+                    }
+                    else
+                    {
+                        if (validationEntity.GetCompletedValidatorsList().Contains(VcsValidator.ValidatorName))
+                        {
+                            _logger.LogInformation($"Package already processed for validation {{{TraceConstant.ValidationId}}} " +
+                                    "with state={State}, result={Result} " +
+                                    $"for package {{{TraceConstant.PackageId}}} " +
+                                    $"v. {{{TraceConstant.PackageVersion}}}",
+                                validationId,
+                                result.State,
+                                result.Result,
+                                validationEntity.PackageId,
+                                validationEntity.PackageVersion);
+                            return;
+                        }
+                    }
+                }
+
+                // Determine state of the VCS callback
+                if (validationEntity != null)
+                {
+                    _logger.LogInformation($"Got VCS callback for validation {{{TraceConstant.ValidationId}}} " +
+                            "with state={State}, result={Result} " +
+                            $"for package {{{TraceConstant.PackageId}}} " +
+                            $"v. {{{TraceConstant.PackageVersion}}}", 
+                        validationId,
+                        result.State,
+                        result.Result,
+                        validationEntity.PackageId,
+                        validationEntity.PackageVersion);
+
+                    // "The Request is in Manual State and the Request is cancelled."
+                    // This denotes a manual verification is being carried out or has been carried out.
+                    if ((result.State == State.Complete || result.State == State.Released)
+                        && (result.Result == "Canceled" || result.Result == "Cancelled"))
+                    {
+                        processedRequest = true;
+                        var services = result.Services?.Service;
+                        if (services != null && services.Any(s => s.Name == "Scan" && s.State == "Complete" && s.Result == "Canceled"))
+                        {
+                            // Package scanned unclean
+                            validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
+                            await _packageValidationTable.StoreAsync(validationEntity);
+
+                            _logger.TrackValidatorResult(VcsValidator.ValidatorName, validationId, TraceConstant.PackageUnclean, validationEntity.PackageId, validationEntity.PackageVersion);
+                            var auditEntries = new List<PackageValidationAuditEntry>();
+                            auditEntries.Add(new PackageValidationAuditEntry
+                            {
+                                Timestamp = DateTimeOffset.UtcNow,
+                                ValidatorName = VcsValidator.ValidatorName,
+                                Message = "Package did not scan clean."
+                            });
+
+                            if (result.ResultReasons?.ResultReason != null)
+                            {
+                                foreach (var resultReason in result.ResultReasons.ResultReason)
+                                {
+                                    auditEntries.Add(new PackageValidationAuditEntry
+                                    {
+                                        Timestamp = DateTimeOffset.UtcNow,
+                                        ValidatorName = VcsValidator.ValidatorName,
+                                        Message = resultReason.RefId + " " + resultReason.Result + " " + resultReason.Determination
+                                    });
+                                }
+                            }
+
+                            await _packageValidationAuditor.WriteAuditEntriesAsync(
+                                validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
+
+                            // Notify
+                            await _notificationService.SendNotificationAsync(
+                                $"vcscallback-notclean/{validationEntity.Created.ToString("yyyy-MM-dd")}",
+                                $"Validation {validationId} ({validationEntity.PackageId} {validationEntity.PackageVersion}) returned {result.State} {result.Result}.",
+                                body);
+                        }
+                        else
+                        {
+                            _logger.TrackValidatorResult(VcsValidator.ValidatorName, validationId, TraceConstant.InvestigationNeeded, validationEntity.PackageId, validationEntity.PackageVersion);
+                            // To investigate
+                            await _notificationService.SendNotificationAsync(
+                                $"vcscallback-investigate/{validationEntity.Created.ToString("yyyy-MM-dd")}",
+                                $"Validation {validationId} ({validationEntity.PackageId} {validationEntity.PackageVersion}) returned {result.State} {result.Result}.",
+                                body);
+                        }
+                    }
+
+                    // "The Request is completed, with either of these four states: Results, Pass, PassWithInfo, PassManual"
+                    // This denotes scan has completed and we have a pass (or results)
+                    if (result.State == State.Complete || result.State == State.Released)
+                    {
+                        if (result.Result == "Pass" || result.Result == "PassWithInfo" || result.Result == "PassManual")
+                        {
+                            // The result is clean.
+                            processedRequest = true;
+                            validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Succeeded);
+                            await _packageValidationTable.StoreAsync(validationEntity);
+
+                            _logger.TrackValidatorResult(VcsValidator.ValidatorName, validationId, ValidationResult.Succeeded.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
+                            await _packageValidationAuditor.WriteAuditEntryAsync(validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion,
+                                new PackageValidationAuditEntry
+                                {
+                                    Timestamp = DateTimeOffset.UtcNow,
+                                    ValidatorName = VcsValidator.ValidatorName,
+                                    Message = "Package scanned clean."
+                                });
+                        }
+                        else if (result.Result == "Results" || result.Result == "Fail")
+                        {
+                            // Potential issue, report back
+                            processedRequest = true;
+                            validationEntity.ValidatorCompleted(VcsValidator.ValidatorName, ValidationResult.Failed);
+                            await _packageValidationTable.StoreAsync(validationEntity);
+
+                            _logger.TrackValidatorResult(VcsValidator.ValidatorName, validationId, ValidationResult.Failed.ToString(), validationEntity.PackageId, validationEntity.PackageVersion);
+                            var auditEntries = new List<PackageValidationAuditEntry>();
+                            auditEntries.Add(new PackageValidationAuditEntry
+                            {
+                                Timestamp = DateTimeOffset.UtcNow,
+                                ValidatorName = VcsValidator.ValidatorName,
+                                Message = "Package scan failed."
+                            });
+
+                            if (result.ResultReasons?.ResultReason != null)
+                            {
+                                foreach (var resultReason in result.ResultReasons.ResultReason)
+                                {
+                                    auditEntries.Add(new PackageValidationAuditEntry
+                                    {
+                                        Timestamp = DateTimeOffset.UtcNow,
+                                        ValidatorName = VcsValidator.ValidatorName,
+                                        Message = resultReason.RefId + " " + resultReason.Result + " " + resultReason.Determination
+                                    });
+                                }
+                            }
+
+                            await _packageValidationAuditor.WriteAuditEntriesAsync(
+                                validationEntity.ValidationId, validationEntity.PackageId, validationEntity.PackageVersion, auditEntries);
+
+                            // Notify
+                            await _notificationService.SendNotificationAsync(
+                                $"vcscallback-failed/{validationEntity.Created.ToString("yyyy-MM-dd")}",
+                                $"Validation {validationId} ({validationEntity.PackageId} {validationEntity.PackageVersion}) did not scan clean.",
+                                body);
+                        }
+                    }
+                }
+
+                if (!processedRequest)
+                {
+                    // first 1024 bytes of the body are taken in order not to send potentially multi-MB long requests.
+                    // "Normal" callback calls are less than 1024 bytes, but since this service blindly accepts any
+                    // request, we may get some potentially long garbage and don't want it all logged.
+                    _logger.LogWarning(
+                        "Callback was not handled for State={State}, Result={Result}. " +
+                        "Request body: {RequestBody}",
+                        result?.State, result?.Result, body.Substring(0, 1024));
+                }
             }
         }
     }

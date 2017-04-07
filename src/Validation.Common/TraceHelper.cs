@@ -16,15 +16,17 @@ namespace NuGet.Jobs.Validation.Common
         /// <param name="result">Validation result</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package name</param>
-        public static void TrackValidatorResult(this ILogger logger, string validatorName, string result, string packageId, string packageVersion)
+        public static void TrackValidatorResult(this ILogger logger, string validatorName, Guid validationId, string result, string packageId, string packageVersion)
         {
             logger.LogInformation($"{{{TraceConstant.EventName}}}: " +
                     $"{{{TraceConstant.ValidatorName}}} " +
+                    $"ValidationId: {{{TraceConstant.ValidationId}}} " +
                     $"for package {{{TraceConstant.PackageId}}} " +
                     $"v.{{{TraceConstant.PackageVersion}}} " +
                     $"resulted in {{Result}}",
                 "ValidatorResult",
                 validatorName,
+                validationId,
                 packageId,
                 packageVersion,
                 result);
