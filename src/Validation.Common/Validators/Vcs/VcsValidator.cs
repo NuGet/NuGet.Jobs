@@ -40,10 +40,11 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         {
             var description = $"NuGet - {message.ValidationId} - {message.PackageId} {message.PackageVersion}";
             _logger.LogInformation("Submitting virus scan job with description {description}, " +
-                    $" validation: {{{TraceConstant.ValidationId}}} " +
+                    $" {{{TraceConstant.ValidatorName}}} {{{TraceConstant.ValidationId}}} " +
                     $" for package {{{TraceConstant.PackageId}}} " +
                     $"v. {{{TraceConstant.PackageVersion}}}", 
                 description,
+                Name,
                 message.ValidationId,
                 message.PackageId,
                 message.PackageVersion);
@@ -57,7 +58,17 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
                 if (string.IsNullOrEmpty(result.ErrorMessage))
                 {
-                    _logger.LogInformation("Submission completed. Request id: {RequestId} - job id: {JobId}", result.RequestId, result.JobId);
+                    _logger.LogInformation("Submission completed for " +
+                        $"{{{TraceConstant.ValidatorName}}} {{{TraceConstant.ValidationId}}}. " +
+                        $"package {{{TraceConstant.PackageId}}} " +
+                        $"v. {{{TraceConstant.PackageVersion}}}" +
+                        "Request id: {RequestId} - job id: {JobId}", 
+                        Name,
+                        message.ValidationId,
+                        message.PackageId,
+                        message.PackageVersion,
+                        result.RequestId, 
+                        result.JobId);
                     WriteAuditEntry(auditEntries, $"Submission completed. Request id: {result.RequestId} - job id: {result.JobId}");
                     return ValidationResult.Asynchronous;
                 }
