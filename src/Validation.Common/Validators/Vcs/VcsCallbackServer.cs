@@ -209,8 +209,11 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
                     if (!processedRequest)
                     {
+                        // first 1024 bytes of the body are taken in order not to send potentially multi-MB long requests.
+                        // "Normal" callback calls are less than 1024 bytes, but since this service blindly accepts any
+                        // request, we may get some potentially long garbage and don't want it all logged.
                         _logger.LogWarning(
-                            "No code was run for processing request with State={State}, Result={Result}. " +
+                            "Callback was not handled for State={State}, Result={Result}. " +
                             "Request body: {RequestBody}", 
                             result?.State, result?.Result, body.Substring(0, 1024));
                     }
