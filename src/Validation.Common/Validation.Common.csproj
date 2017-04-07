@@ -166,7 +166,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ApplicationInsightsHelper.cs" />
     <Compile Include="Configuration\ConfigurationService.cs" />
     <Compile Include="Configuration\EmptySecretReaderFactory.cs" />
     <Compile Include="Extensions\CloudBlobExtensions.cs" />
@@ -191,6 +190,7 @@
     <Compile Include="Configuration\SecretReaderFactory.cs" />
     <Compile Include="TraceConstant.cs" />
     <Compile Include="TraceEvent.cs" />
+    <Compile Include="TraceHelper.cs" />
     <Compile Include="Validators\IValidator.cs" />
     <Compile Include="Validators\Unzip\UnzipValidator.cs" />
     <Compile Include="Validators\ValidationResult.cs" />

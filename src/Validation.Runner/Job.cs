@@ -234,7 +234,7 @@ namespace NuGet.Jobs.Validation.Runner
                     // Remove the message
                     await packageValidationQueue.DeleteAsync(validator.Name, message);
 
-                    _logger.TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
+                    TrackValidatorResult(validator.Name, validationResult.ToString(), message.PackageId, message.PackageVersion);
                 }
 
                 // Write audit entries
@@ -325,6 +325,33 @@ namespace NuGet.Jobs.Validation.Runner
                 since.UtcDateTime.ToString("O"));
 
             return new Uri(address);
+        }
+
+        /// <summary>
+        /// Tracks the result of validation. If result is <see cref="ValidationResult.Asynchronous"/> then tracks it in 
+        /// a separate event (since it is non-terminal result, want to make it trivially distinguishable from terminal).
+        /// </summary>
+        /// <param name="validatorName">The name of the validator</param>
+        /// <param name="result">String representation of the outcome</param>
+        /// <param name="packageId">Package ID</param>
+        /// <param name="packageVersion">Package version</param>
+        private void TrackValidatorResult(string validatorName, string result, string packageId, string packageVersion)
+        {
+            if (result == ValidationResult.Asynchronous.ToString())
+            {
+                _logger.LogInformation($"{{{TraceConstant.EventName}}}: " +
+                        $"running a {{{TraceConstant.ValidatorName}}} validator " +
+                        $"for package {{{TraceConstant.PackageId}}} " +
+                        $"v.{{{TraceConstant.PackageVersion}}} resulted in starting async task",
+                    "ValidatorAsync",
+                    validatorName,
+                    packageId,
+                    packageVersion);
+            }
+            else
+            {
+                _logger.TrackValidatorResult(validatorName, result, packageId, packageVersion);
+            }
         }
     }
 }

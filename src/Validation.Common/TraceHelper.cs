@@ -6,27 +6,8 @@ using Microsoft.Extensions.Logging;
 
 namespace NuGet.Jobs.Validation.Common
 {
-    public static class ApplicationInsightsHelper
+    public static class TraceHelper
     {
-        /// <summary>
-        /// Tracks validation requests.
-        /// </summary>
-        /// <param name="logger">Logger object to use</param>
-        /// <param name="validatorName">The name of the validator queued.</param>
-        /// <param name="packageId">Package ID</param>
-        /// <param name="packageVersion">Package version</param>
-        public static void TrackValidatorQueued(this ILogger logger, string validatorName, string packageId, string packageVersion)
-        {
-            logger.LogInformation($"{{{TraceConstant.EventName}}}: " +
-                    $"{{{TraceConstant.ValidatorName}}} " +
-                    $"for package {{{TraceConstant.PackageId}}} " +
-                    $"v.{{{TraceConstant.PackageVersion}}}",
-                "ValidatorQueued", 
-                validatorName, 
-                packageId, 
-                packageVersion);
-        }
-
         /// <summary>
         /// Tracks the result of the validation.
         /// </summary>
