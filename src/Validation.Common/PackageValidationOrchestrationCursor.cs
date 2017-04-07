@@ -42,7 +42,7 @@ namespace NuGet.Jobs.Validation.Common
                 LastCreated = cursorObject["lastCreated"].ToObject<DateTimeOffset?>();
                 LastEdited = cursorObject["lastEdited"].ToObject<DateTimeOffset?>();
 
-                Trace.TraceInformation("Cursor value: {0}", json);
+                _logger.LogInformation($"Cursor value: {{{TraceConstant.CursorValue}}}", json);
             }
 
             _logger.LogInformation($"Finished loading cursor from {{{TraceConstant.Url}}}.", _cursorBlob.Uri);

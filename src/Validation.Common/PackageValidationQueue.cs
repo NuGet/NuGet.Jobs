@@ -18,7 +18,7 @@ namespace NuGet.Jobs.Validation.Common
         private readonly ConcurrentDictionary<string, CloudQueue> _queues = new ConcurrentDictionary<string, CloudQueue>(); 
         private readonly string _containerNamePrefix;
         private readonly CloudQueueClient _cloudQueueClient;
-        private readonly ILogger _logger;
+        private readonly ILogger<PackageValidationQueue> _logger;
 
         public PackageValidationQueue(CloudStorageAccount cloudStorageAccount, string containerNamePrefix)
         {
@@ -45,19 +45,36 @@ namespace NuGet.Jobs.Validation.Common
         {
             message.Package = message.Package.TruncateForAzureQueue();
 
-            Trace.TraceInformation("Start enqueue validation {0} {1} - package {2} {3}...", validatorName, message.ValidationId, message.PackageId, message.PackageVersion);
+            _logger.LogInformation($"Start enqueue validation {{{TraceConstant.ValidatorName}}} " +
+                    $"{{{TraceConstant.ValidationId}}} " +
+                    $"- package {{{TraceConstant.PackageId}}} " +
+                    $"v. {{{TraceConstant.PackageVersion}}}...", 
+                validatorName, 
+                message.ValidationId, 
+                message.PackageId, 
+                message.PackageVersion);
 
             var queue = await GetQueueAsync(validatorName);
             await queue.AddMessageAsync(new CloudQueueMessage(JsonConvert.SerializeObject(message)));
 
             ApplicationInsightsHelper.TrackValidatorQueued(_logger, validatorName, message.PackageId, message.PackageVersion);
 
-            Trace.TraceInformation("Finished enqueue validation {0} {1} - package {2} {3}.", validatorName, message.ValidationId, message.PackageId, message.PackageVersion);
+            _logger.LogInformation($"Finished enqueue validation {{{TraceConstant.ValidatorName}}} " +
+                    $"{{{TraceConstant.ValidationId}}} " +
+                    $"- package {{{TraceConstant.PackageId}}} " +
+                    $"v. {{{TraceConstant.PackageVersion}}}.", 
+                validatorName, 
+                message.ValidationId, 
+                message.PackageId, 
+                message.PackageVersion);
         }
 
         public async Task<IReadOnlyCollection<PackageValidationMessage>> DequeueAsync(string validatorName, int messageCount, TimeSpan visibilityTimeout)
         {
-            Trace.TraceInformation("Start dequeue validation {0} (maximum {1} items)...", validatorName, messageCount);
+            _logger.LogInformation($"Start dequeue validation {{{TraceConstant.ValidatorName}}} " +
+                    $"(maximum {{{TraceConstant.MessageCount}}} items)...", 
+                validatorName, 
+                messageCount);
 
             var results = new List<PackageValidationMessage>();
             var queue = await GetQueueAsync(validatorName);
@@ -73,19 +90,20 @@ namespace NuGet.Jobs.Validation.Common
                 results.Add(deserializedMessage);
             }
 
-            Trace.TraceInformation("Finished dequeue validation {0} ({1} items).", validatorName, results.Count);
+            _logger.LogInformation($"Finished dequeue validation {{{TraceConstant.ValidatorName}}} " +
+                $"({{{TraceConstant.ResultCount}}} items).", validatorName, results.Count);
 
             return results;
         }
 
         public async Task DeleteAsync(string validatorName, PackageValidationMessage message)
         {
-            Trace.TraceInformation("Start complete validation {0}...", validatorName);
+            _logger.LogInformation($"Start complete validation {{{TraceConstant.ValidatorName}}}...", validatorName);
             
             var queue = await GetQueueAsync(validatorName);
             await queue.DeleteMessageAsync(message.MessageId, message.PopReceipt);
 
-            Trace.TraceInformation("Finished complete validation {0}.", validatorName);
+            _logger.LogInformation($"Finished complete validation {{{TraceConstant.ValidatorName}}}.", validatorName);
         }
     }
 }
