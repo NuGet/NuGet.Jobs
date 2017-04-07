@@ -39,7 +39,14 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         public override async Task<ValidationResult> ValidateAsync(PackageValidationMessage message, List<PackageValidationAuditEntry> auditEntries)
         {
             var description = $"NuGet - {message.ValidationId} - {message.PackageId} {message.PackageVersion}";
-
+            _logger.LogInformation("Submitting virus scan job with description {description}, " +
+                    $" validation: {{{TraceConstant.ValidationId}}} " +
+                    $" for package {{{TraceConstant.PackageId}}} " +
+                    $"v. {{{TraceConstant.PackageVersion}}}", 
+                description,
+                message.ValidationId,
+                message.PackageId,
+                message.PackageVersion);
             WriteAuditEntry(auditEntries, $"Submitting virus scan job with description \"{description}\"...");
 
             string errorMessage;
@@ -50,6 +57,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
 
                 if (string.IsNullOrEmpty(result.ErrorMessage))
                 {
+                    _logger.LogInformation("Submission completed. Request id: {RequestId} - job id: {JobId}", result.RequestId, result.JobId);
                     WriteAuditEntry(auditEntries, $"Submission completed. Request id: {result.RequestId} - job id: {result.JobId}");
                     return ValidationResult.Asynchronous;
                 }

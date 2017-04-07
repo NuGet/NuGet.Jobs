@@ -46,6 +46,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Unzip
                         {
                             await packageStream.CopyToAsync(packageFileStream);
 
+                            _logger.LogInformation($"Downloaded package from {{{TraceConstant.Url}}}", message.Package.DownloadUrl);
                             WriteAuditEntry(auditEntries, $"Downloaded package from {message.Package.DownloadUrl}");
 
                             packageFileStream.Position = 0;
@@ -53,6 +54,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Unzip
                             using (var packageZipStream = Package.Open(packageFileStream))
                             {
                                 var parts = packageZipStream.GetParts();
+                                _logger.LogInformation("Found {PartsCount} parts in package.", parts.Count());
                                 WriteAuditEntry(auditEntries, $"Found {parts.Count()} parts in package.");
 
                                 return ValidationResult.Succeeded;
