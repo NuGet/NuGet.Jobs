@@ -227,7 +227,7 @@ namespace NuGet.Jobs.Validation.Runner
 
                     // Update our tracking entity
                     var packageValidationEntity = await packageValidationTable.GetValidationAsync(message.ValidationId);
-                    if (packageValidationEntity != null)
+                    if (packageValidationEntity != null && validationResult != ValidationResult.Asynchronous)
                     {
                         packageValidationEntity.ValidatorCompleted(validator.Name, validationResult);
                         await packageValidationTable.StoreAsync(packageValidationEntity);
