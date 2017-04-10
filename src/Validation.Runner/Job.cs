@@ -332,6 +332,7 @@ namespace NuGet.Jobs.Validation.Runner
         /// a separate event (since it is non-terminal result, want to make it trivially distinguishable from terminal).
         /// </summary>
         /// <param name="validatorName">The name of the validator</param>
+        /// <param name="validationId">Validation ID of the finished validator</param>
         /// <param name="result">String representation of the outcome</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package version</param>
