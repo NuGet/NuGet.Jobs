@@ -13,6 +13,7 @@ namespace NuGet.Jobs.Validation.Common
         /// </summary>
         /// <param name="logger">Logger object to use</param>
         /// <param name="validatorName">The name of validator attempted</param>
+        /// <param name="validationId">Validation ID of the finished validator</param>
         /// <param name="result">Validation result</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package name</param>
@@ -37,11 +38,11 @@ namespace NuGet.Jobs.Validation.Common
         /// </summary>
         /// <param name="logger">Logger object to use</param>
         /// <param name="validatorName">The name of the validator that was running when exception happened</param>
+        /// <param name="validationId">Validation ID that was being processed when exception happened</param>
         /// <param name="ex">The exception to track</param>
         /// <param name="packageId">Package ID</param>
         /// <param name="packageVersion">Package name</param>
-        /// <param name="validationId">Validation ID that was being processed when exception happened</param>
-        public static void TrackValidatorException(this ILogger logger, string validatorName, Exception ex, string packageId, string packageVersion, Guid validationId)
+        public static void TrackValidatorException(this ILogger logger, string validatorName, Guid validationId, Exception ex, string packageId, string packageVersion)
         {
             logger.LogError(TraceEvent.ValidatorException, ex, 
                     $"{{{TraceConstant.EventName}}} " +
