@@ -80,7 +80,14 @@ namespace NuGet.Jobs.Validation.Runner
             }
             catch (Exception ex)
             {
-                _logger.LogError(TraceEvent.CommandLineProcessingFailed, ex, "Exception occurred while processing command line arguments");
+                if (_logger != null)
+                {
+                    _logger.LogError(TraceEvent.CommandLineProcessingFailed, ex, "Exception occurred while processing command line arguments");
+                }
+                else
+                {
+                    Trace.TraceError("Exception occurred while processing command line arguments: {0}", ex);
+                }
             }
 
             return false;
