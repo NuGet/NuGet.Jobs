@@ -37,8 +37,11 @@ namespace NuGet.Jobs.Validation.Runner
             {
                 if (!ApplicationInsights.Initialized)
                 {
-                    string instrumentationKey = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
-                    ApplicationInsights.Initialize(instrumentationKey);
+                    string instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                    if (!string.IsNullOrWhiteSpace(instrumentationKey))
+                    {
+                        ApplicationInsights.Initialize(instrumentationKey);
+                    }
 
                     _loggerFactory = LoggingSetup.CreateLoggerFactory();
                     _logger = _loggerFactory.CreateLogger<Job>();
