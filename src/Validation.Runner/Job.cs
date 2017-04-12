@@ -42,10 +42,10 @@ namespace NuGet.Jobs.Validation.Runner
                     {
                         ApplicationInsights.Initialize(instrumentationKey);
                     }
-
-                    _loggerFactory = LoggingSetup.CreateLoggerFactory();
-                    _logger = _loggerFactory.CreateLogger<Job>();
                 }
+
+                _loggerFactory = LoggingSetup.CreateLoggerFactory();
+                _logger = _loggerFactory.CreateLogger<Job>();
 
                 // Configure job
                 _galleryBaseAddress = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryBaseAddress);
