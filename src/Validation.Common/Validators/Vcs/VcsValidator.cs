@@ -75,6 +75,16 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                 else
                 {
                     errorMessage = result.ErrorMessage;
+
+                    _logger.LogError($"Submission failed for {{{TraceConstant.ValidatorName}}} {{{TraceConstant.ValidationId}}} " +
+                            $"package {{{TraceConstant.PackageId}}} " +
+                            $"v. {{{TraceConstant.PackageVersion}}} " +
+                            "with: {ErrorMessage}",
+                        Name,
+                        message.ValidationId,
+                        message.PackageId,
+                        message.PackageVersion,
+                        errorMessage);
                 }
             }
             catch (Exception ex)
