@@ -23,7 +23,7 @@ namespace NuGet.Jobs.Validation.Common
                     $"{{{TraceConstant.ValidatorName}}} " +
                     $"ValidationId: {{{TraceConstant.ValidationId}}} " +
                     $"for package {{{TraceConstant.PackageId}}} " +
-                    $"v.{{{TraceConstant.PackageVersion}}} " +
+                    $"{{{TraceConstant.PackageVersion}}} " +
                     $"resulted in {{Result}}",
                 "ValidatorResult",
                 validatorName,
@@ -49,7 +49,7 @@ namespace NuGet.Jobs.Validation.Common
                     $"{{{TraceConstant.ValidatorName}}} " +
                     $"ValidationId: {{{TraceConstant.ValidationId}}} " +
                     $"for package {{{TraceConstant.PackageId}}} " +
-                    $"v.{{{TraceConstant.PackageVersion}}} " +
+                    $"{{{TraceConstant.PackageVersion}}} " +
                     $"resulted in {{Result}}, " +
                     $"additional info: {{AdditionalInformation}}",
                 "ValidatorResult",
@@ -76,7 +76,7 @@ namespace NuGet.Jobs.Validation.Common
                     $"{{{TraceConstant.EventName}}} " +
                     $"occurred while running {{{TraceConstant.ValidatorName}}} {{{TraceConstant.ValidationId}}}" +
                     $"on package {{{TraceConstant.PackageId}}}" +
-                    $"v. {{{TraceConstant.PackageVersion}}}", 
+                    $"{{{TraceConstant.PackageVersion}}}", 
                 "ValidatorException",
                 validationId,
                 validatorName,
