@@ -8,6 +8,7 @@ namespace NuGet.Jobs.Validation.Common
     public class PackageValidationAuditEntry
     {
         public string ValidatorName { get; set; }
+        public string EventName { get; set; }
         public string Message { get; set; }
         public DateTimeOffset Timestamp { get; set; }
     }
