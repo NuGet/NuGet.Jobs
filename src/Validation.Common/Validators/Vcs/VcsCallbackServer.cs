@@ -179,7 +179,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 Timestamp = DateTimeOffset.UtcNow,
                                 ValidatorName = VcsValidator.ValidatorName,
                                 Message = "Package did not scan clean.",
-                                EventName = ValidationEvent.PackageNotClean
+                                EventId = ValidationEvent.PackageNotClean,
                             });
 
                             if (result.ResultReasons?.ResultReason != null)
@@ -191,7 +191,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                         Timestamp = DateTimeOffset.UtcNow,
                                         ValidatorName = VcsValidator.ValidatorName,
                                         Message = resultReason.RefId + " " + resultReason.Result + " " + resultReason.Determination,
-                                        EventName = ValidationEvent.NotCleanReason
+                                        EventId = ValidationEvent.NotCleanReason,
                                     });
                                 }
                             }
@@ -234,7 +234,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                     Timestamp = DateTimeOffset.UtcNow,
                                     ValidatorName = VcsValidator.ValidatorName,
                                     Message = "Package scanned clean.",
-                                    EventName = ValidationEvent.PackageClean
+                                    EventId = ValidationEvent.PackageClean,
                                 });
                         }
                         else if (result.Result == "Results" || result.Result == "Fail")
@@ -256,7 +256,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                 Timestamp = DateTimeOffset.UtcNow,
                                 ValidatorName = VcsValidator.ValidatorName,
                                 Message = $"Package scan failed. Response: {body}",
-                                EventName = ValidationEvent.ScanFailed
+                                EventId = ValidationEvent.ScanFailed,
                             });
 
                             if (result.ResultReasons?.ResultReason != null)
@@ -268,7 +268,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                                         Timestamp = DateTimeOffset.UtcNow,
                                         ValidatorName = VcsValidator.ValidatorName,
                                         Message = resultReason.RefId + " " + resultReason.Result + " " + resultReason.Determination,
-                                        EventName = ValidationEvent.ScanFailureReason
+                                        EventId = ValidationEvent.ScanFailureReason,
                                     });
                                 }
                             }

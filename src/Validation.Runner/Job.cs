@@ -177,7 +177,7 @@ namespace NuGet.Jobs.Validation.Runner
                         Timestamp = DateTimeOffset.UtcNow,
                         ValidatorName = validator.Name,
                         Message = $"Message has been attempted too many times and is being deadlettered. Aborting validator.",
-                        EventName = ValidationEvent.Deadlettered
+                        EventId = ValidationEvent.Deadlettered,
                     });
                 }
 
@@ -217,7 +217,7 @@ namespace NuGet.Jobs.Validation.Runner
                             Timestamp = DateTimeOffset.UtcNow,
                             ValidatorName = validator.Name,
                             Message = $"Exception thrown during validation - {ex.Message}\r\n{ex.StackTrace}",
-                            EventName = ValidationEvent.ValidatorException
+                            EventId = ValidationEvent.ValidatorException,
                         });
 
                         _logger.LogError(TraceEvent.ValidatorException, ex, 
