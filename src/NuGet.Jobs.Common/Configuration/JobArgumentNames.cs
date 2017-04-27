@@ -102,6 +102,13 @@ namespace NuGet.Jobs
         public const string VcsValidatorSubmitterAlias = "VcsValidatorAlias";
         public const string VcsPackageUrlTemplate = "VcsPackageUrlTemplate";
 
+        // Validatation helper specific argument names
+        public const string Action = "Action";
+        public const string PackageId = "PackageId";
+        public const string PackageVersion = "PackageVersion";
+        public const string Comment = "Comment";
+        public const string ValidationId = "ValidationId";
+
         // Key Vault
         public const string VaultName = "VaultName";
         public const string ClientId = "ClientId";
