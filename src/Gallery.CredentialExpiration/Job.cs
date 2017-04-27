@@ -75,11 +75,11 @@ namespace Gallery.CredentialExpiration
                 _allowEmailResendAfterDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.AllowEmailResendAfterDays)
                     ?? _allowEmailResendAfterDays;
 
-                string storageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
-                string storageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
+                var storageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
+                var storageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
 
-                CloudStorageAccount csa = CloudStorageAccount.Parse(storageConnectionString);
-                StorageFactory storageFactory = new AzureStorageFactory(csa, storageContainerName, loggerFactory);
+                var csa = CloudStorageAccount.Parse(storageConnectionString);
+                var storageFactory = new AzureStorageFactory(csa, storageContainerName, loggerFactory);
                 _storage = storageFactory.Create();
             }
             catch (Exception exception)
