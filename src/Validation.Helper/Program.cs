@@ -92,12 +92,12 @@ namespace NuGet.Jobs.Validation.Helper
 
             Console.WriteLine();
             Console.WriteLine($"'-{JobArgumentNames.Action} {Action.Rescan.ToString()}' specific arguments: ");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id> - case sensitive");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version> - case sensitive");
+            Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id>");
+            Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version>");
             Console.WriteLine();
             Console.WriteLine($"'-{JobArgumentNames.Action} {Action.MarkClean.ToString()}' specific arguments: ");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id> - case sensitive");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version> - case sensitive");
+            Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id>");
+            Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version>");
             Console.WriteLine($"\t-{JobArgumentNames.ValidationId} <validation Id (GUID)>");
             Console.WriteLine($"\t-{JobArgumentNames.Comment} <comment> - please include your alias");
         }
