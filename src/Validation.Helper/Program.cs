@@ -50,15 +50,22 @@ namespace NuGet.Jobs.Validation.Helper
 
             using (logger.BeginScope("Processing action {Action} scope id: {GUID}", action, Guid.NewGuid()))
             {
-                switch (action)
+                try
                 {
-                case Action.Rescan:
-                    Rescan(arguments, azureAccount, containerName);
-                    break;
+                    switch (action)
+                    {
+                    case Action.Rescan:
+                        Rescan(arguments, azureAccount, containerName);
+                        break;
 
-                case Action.MarkSuccess:
-                    MarkSuccessful(arguments, azureAccount, containerName);
-                    break;
+                    case Action.MarkClean:
+                        MarkClean(arguments, azureAccount, containerName);
+                        break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(TraceEvent.HelperFailed, e, "Failed to run action");
                 }
             }
         }
@@ -76,7 +83,7 @@ namespace NuGet.Jobs.Validation.Helper
                     $"-{JobArgumentNames.CertificateThumbprint} <KeyVault certificate thumbprint> " +
                     $"-{JobArgumentNames.DataStorageAccount} <Azure Blob Storage connection string> " +
                     $"-{JobArgumentNames.ContainerName} <validation job container name> " +
-                    $"-{JobArgumentNames.Action} ({Action.Rescan.ToString()}|{Action.MarkSuccess.ToString()}) " +
+                    $"-{JobArgumentNames.Action} ({Action.Rescan.ToString()}|{Action.MarkClean.ToString()}) " +
                     $"[-{JobArgumentNames.StoreName} (My|Root|TrustedPeople|TrustedPublisher|AddressBook|AuthRoot|CertificateAuthority|Disallowed)] " +
                     $"[-{JobArgumentNames.StoreLocation} (LocalMachine|CurrentUser)] " +
                     $"[-{JobArgumentNames.ValidateCertificate} (true|false)] " +
@@ -88,48 +95,128 @@ namespace NuGet.Jobs.Validation.Helper
             Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id> - case sensitive");
             Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version> - case sensitive");
             Console.WriteLine();
-            Console.WriteLine($"'-{JobArgumentNames.Action} {Action.MarkSuccess.ToString()}' specific arguments: ");
+            Console.WriteLine($"'-{JobArgumentNames.Action} {Action.MarkClean.ToString()}' specific arguments: ");
             Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id> - case sensitive");
             Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version> - case sensitive");
             Console.WriteLine($"\t-{JobArgumentNames.ValidationId} <validation Id (GUID)>");
             Console.WriteLine($"\t-{JobArgumentNames.Comment} <comment> - please include your alias");
         }
 
-        private static void Rescan(IDictionary<string, string> arguments, CloudStorageAccount azureAcc, string container)
+        private static void Rescan(IDictionary<string, string> arguments, CloudStorageAccount azureAccount, string container)
         {
-            string packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
-            string packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
+            string packageId;
+            string packageVersion;
+            try
+            {
+                packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
+                packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(TraceEvent.FailedToProcessArguments, e, "Exception while processing {Action} arguments", Action.Rescan);
+                return;
+            }
 
-            logger.LogInformation($"Creating rescan request for {{{TraceConstant.PackageId}}} {{{TraceConstant.PackageVersion}}}", packageId, packageVersion);
+            logger.LogInformation($"Creating rescan request for {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}}",
+                packageId,
+                packageVersion);
 
+            NuGetPackage package = GetPackage(packageId, packageVersion);
+            if (package == null)
+            {
+                logger.LogError($"Unable to find {{{TraceConstant.PackageId}}} " +
+                        $"{{{TraceConstant.PackageVersion}}}. Terminating.",
+                    packageId, 
+                    packageVersion);
+                return;
+            }
+            logger.LogInformation($"Found package {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}}",
+                package.Id,
+                package.Version);
+
+            var packageValidationService = new PackageValidationService(azureAccount, container, loggerFactory);
+            logger.LogInformation($"Submitting rescan request for {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}}",
+                package.Id,
+                package.Version);
+            packageValidationService.StartValidationProcessAsync(package, new[] { VcsValidator.ValidatorName }).Wait();
+            logger.LogInformation($"Done submitting rescan request for {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}}",
+                package.Id,
+                package.Version);
+        }
+
+        private static void MarkClean(IDictionary<string, string> arguments, CloudStorageAccount azureAccount, string container)
+        {
+            string packageId;
+            string packageVersion;
+            string validationIdStr;
+            string comment;
+            Guid validationId;
+            try
+            {
+                packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
+                packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
+                validationIdStr = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.ValidationId);
+                validationId = Guid.Parse(validationIdStr);
+                comment = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.Comment);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(TraceEvent.FailedToProcessArguments, e, "Exception while processing {Action} arguments", Action.MarkClean);
+                return;
+            }
+
+            logger.LogInformation($"Starting creating successful scan entry for the {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}}",
+                packageId,
+                packageVersion);
+
+            NuGetPackage package = GetPackage(packageId, packageVersion);
+            if (package == null)
+            {
+                logger.LogError($"Unable to find {{{TraceConstant.PackageId}}} " +
+                        $"{{{TraceConstant.PackageVersion}}}. Terminating.",
+                    packageId,
+                    packageVersion);
+                return;
+            }
+            logger.LogInformation($"Found package {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}}",
+                package.Id,
+                package.Version);
+
+            /// <see cref="PackageValidationService.StartValidationProcessAsync(NuGetPackage, string[])"/>
+            packageVersion = package.NormalizedVersion ?? package.Version;
+
+            var packageValidationAuditor = new PackageValidationAuditor(azureAccount, container, loggerFactory);
+            PackageValidationAuditEntry[] entries = new[] {new PackageValidationAuditEntry {
+                Timestamp = DateTimeOffset.UtcNow,
+                ValidatorName = VcsValidator.ValidatorName,
+                Message = $"Manually marking the package as scanned clean, comment: {comment}",
+                EventId = ValidationEvent.PackageClean,
+            }};
+
+            logger.LogInformation($"Marking the {{{TraceConstant.PackageId}}} " +
+                    $"{{{TraceConstant.PackageVersion}}} " +
+                    $"as clean with comment: {{{TraceConstant.Comment}}}",
+                package.Id,
+                packageVersion,
+                comment);
+            packageValidationAuditor.WriteAuditEntriesAsync(validationId, package.Id, packageVersion, entries).Wait();
+        }
+
+        private static NuGetPackage GetPackage(string packageId, string packageVersion)
+        {
             using (var httpClient = new HttpClient())
             {
                 var feed = new NuGetV2Feed(httpClient, loggerFactory);
 
                 var url = GetPackageUrl(packageId, packageVersion);
-                NuGetPackage package = feed.GetPackagesAsync(url).Result.FirstOrDefault();
-
-                if (package == null)
-                {
-                    logger.LogError($"Unable to find {{{TraceConstant.PackageId}}} {{{TraceConstant.PackageVersion}}}. Terminating.");
-                    return;
-                }
-
-                logger.LogInformation($"Found package {{{TraceConstant.PackageId}}} {{{TraceConstant.PackageVersion}}}", package.Id, package.Version);
-
-                var packageValidationService = new PackageValidationService(azureAcc, container, loggerFactory);
-                logger.LogInformation($"Submitting rescan request for {{{TraceConstant.PackageId}}} {{{TraceConstant.PackageVersion}}}", package.Id, package.Version);
-                packageValidationService.StartValidationProcessAsync(package, new[] { VcsValidator.ValidatorName }).Wait();
-                logger.LogInformation($"Done submitting rescan request for {{{TraceConstant.PackageId}}} {{{TraceConstant.PackageVersion}}}", package.Id, package.Version);
+                return feed.GetPackagesAsync(url).Result.FirstOrDefault();
             }
-        }
-
-        private static void MarkSuccessful(IDictionary<string, string> arguments, CloudStorageAccount azureAcc, string container)
-        {
-            string packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
-            string packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
-            string validationId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.ValidationId);
-            string comment = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.Comment);
         }
 
         private static Uri GetPackageUrl(string packageId, string packageVersion)

@@ -11,7 +11,14 @@ namespace NuGet.Jobs.Validation.Helper
 {
     internal enum Action
     {
+        /// <summary>
+        /// Request to rescan the package
+        /// </summary>
         Rescan,
-        MarkSuccess
+
+        /// <summary>
+        /// Mark package as clean manually
+        /// </summary>
+        MarkClean
     }
 }
