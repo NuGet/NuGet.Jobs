@@ -49,6 +49,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">
+      <Project>{4b4b1efb-8f33-42e6-b79f-54e7f3293d31}</Project>
+      <Name>NuGet.Jobs.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Validation.Common\Validation.Common.csproj">
       <Project>{2539ddf3-0cc5-4a03-b5f9-39b47744a7bd}</Project>
       <Name>Validation.Common</Name>
