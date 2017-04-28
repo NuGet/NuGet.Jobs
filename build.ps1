@@ -108,7 +108,8 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj", `
             "src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj", `
             "src/Validation.Runner/Validation.Runner.csproj",
-            "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj"
+            "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj",
+			"src/Validation.Helper/Validation.Helper.csproj"
         
         Foreach ($Project in $Projects) {
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch
