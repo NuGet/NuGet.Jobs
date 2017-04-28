@@ -48,7 +48,7 @@ namespace NuGet.Jobs.Validation.Helper
 
             Action action = ParseEnum<Action>(JobConfigurationManager.GetArgument(arguments, JobArgumentNames.Action));
 
-            using (logger.BeginScope("Processing action {Action} scope id: {GUID}", action, Guid.NewGuid()))
+            using (logger.BeginScope("Processing action {Action} scope id: {RunTraceId}", action, Guid.NewGuid()))
             {
                 try
                 {
@@ -113,7 +113,10 @@ namespace NuGet.Jobs.Validation.Helper
             }
             catch (Exception e)
             {
-                logger.LogError(TraceEvent.FailedToProcessArguments, e, "Exception while processing {Action} arguments", Action.Rescan);
+                logger.LogError(TraceEvent.FailedToProcessArguments, 
+                    e, 
+                    "Exception while processing {Action} arguments", 
+                    Action.Rescan);
                 return;
             }
 
@@ -165,7 +168,10 @@ namespace NuGet.Jobs.Validation.Helper
             }
             catch (Exception e)
             {
-                logger.LogError(TraceEvent.FailedToProcessArguments, e, "Exception while processing {Action} arguments", Action.MarkClean);
+                logger.LogError(TraceEvent.FailedToProcessArguments, 
+                    e, 
+                    "Exception while processing {Action} arguments", 
+                    Action.MarkClean);
                 return;
             }
 
@@ -221,7 +227,8 @@ namespace NuGet.Jobs.Validation.Helper
 
         private static Uri GetPackageUrl(string packageId, string packageVersion)
         {
-            return new Uri($"https://www.nuget.org/api/v2/Packages?$filter=Id%20eq%20'{packageId}'%20and%20Version%20eq%20'{packageVersion}'%20and%20true");
+            return new Uri("https://www.nuget.org/api/v2/Packages?" +
+                $"$filter=Id eq '{packageId}' and Version eq '{packageVersion}' and true");
         }
     }
 }
