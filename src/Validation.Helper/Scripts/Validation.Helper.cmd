@@ -13,10 +13,11 @@ cd bin
 SET vn=#{KeyVault:VaultName}
 SET clientid=#{KeyVault:ClientId}
 SET tp=#{KeyVault:CertificateThumbprint}
+SET la=#{Jobs.validation.DataStorageAccount}
 SET dsa=#{Jobs.validation.DataStorageAccount}
 SET cn=#{Jobs.validation.ContainerName}
 SET ik=#{Jobs.validation.VcsValidatorInstrumentationKey}
 
-NuGet.Jobs.Validation.Helper.exe -VaultName "%vn%" -ClientId "%clientid%" -CertificateThumbprint "%tp%" -DataStorageAccount "%dsa%" -ContainerName "%cn%" -InstrumentationKey "%ik%" %*
+NuGet.Jobs.Validation.Helper.exe -VaultName "%vn%" -ClientId "%clientid%" -CertificateThumbprint "%tp%" -LogsAzureStorageConnectionString "%la%" -DataStorageAccount "%dsa%" -ContainerName "%cn%" -InstrumentationKey "%ik%" %*
 
 cd ..
