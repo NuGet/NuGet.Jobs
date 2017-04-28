@@ -78,6 +78,16 @@ Invoke-BuildStep 'Clearing package cache' { Clear-PackageCache } `
 Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     -ev +BuildErrors
     
+Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
+        $versionMetadata =
+            "$PSScriptRoot\src\Validation.Helper\Properties\AssemblyInfo.g.cs"
+            
+        $versionMetadata | ForEach-Object {
+            Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
+        }
+    } `
+    -ev +BuildErrors
+
 Invoke-BuildStep 'Restoring solution packages' { `
     Install-SolutionPackages -path (Join-Path $PSScriptRoot ".nuget\packages.config") -output (Join-Path $PSScriptRoot "packages") -ExcludeVersion } `
     -skip:$SkipRestore `
