@@ -8,6 +8,8 @@ if "%1"=="" (
 	exit 1
 )
 
+cd bin
+
 SET vn=#{KeyVault:VaultName}
 SET clientid=#{KeyVault:ClientId}
 SET tp=#{KeyVault:CertificateThumbprint}
@@ -16,3 +18,5 @@ SET cn=#{Jobs.validation.ContainerName}
 SET ik=#{Jobs.validation.VcsValidatorInstrumentationKey}
 
 NuGet.Jobs.Validation.Helper.exe -VaultName "%vn%" -ClientId "%clientid%" -CertificateThumbprint "%tp%" -DataStorageAccount "%dsa%" -ContainerName "%cn%" -InstrumentationKey "%ik%" %*
+
+cd ..
