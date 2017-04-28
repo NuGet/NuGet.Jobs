@@ -220,7 +220,7 @@ namespace NuGet.Jobs.Validation.Helper
         {
             using (var httpClient = new HttpClient())
             {
-                var feed = new NuGetV2Feed(httpClient, loggerFactory);
+                var feed = new NuGetV2Feed(httpClient, loggerFactory.CreateLogger<NuGetV2Feed>());
 
                 var url = GetPackageUrl(packageId, packageVersion);
                 return feed.GetPackagesAsync(url).Result.FirstOrDefault();

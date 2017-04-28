@@ -17,10 +17,10 @@ namespace NuGet.Jobs.Validation.Common.OData
         private readonly HttpClient _httpClient;
         private readonly ILogger<NuGetV2Feed> _logger;
 
-        public NuGetV2Feed(HttpClient httpClient, ILoggerFactory loggerFactory)
+        public NuGetV2Feed(HttpClient httpClient, ILogger<NuGetV2Feed> logger)
         {
             _httpClient = httpClient;
-            _logger = loggerFactory.CreateLogger<NuGetV2Feed>();
+            _logger = logger;
         }
 
         public async Task<List<NuGetPackage>> GetPackagesAsync(Uri uri, int continuationsToFollow = 0)
