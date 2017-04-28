@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Validation.Helper.$branch$</id>
+    <id>Validation.Helper</id>
     <version>$version$</version>
     <title>Validation.Helper</title>
     <authors>.NET Foundation</authors>
@@ -10,7 +10,7 @@
     <copyright>Copyright .NET Foundation</copyright>
   </metadata>
   <files>
-    <file src="bin\$configuration$\*.*" target="bin"/>
+    <file src="bin\$configuration$\*.*" target="tools"/>
 	
     <file src="Scripts\Validation.Helper.cmd" />
   </files>
