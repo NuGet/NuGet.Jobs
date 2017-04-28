@@ -197,8 +197,7 @@ namespace NuGet.Jobs.Validation.Helper
                 package.Id,
                 package.Version);
 
-            /// <see cref="PackageValidationService.StartValidationProcessAsync(NuGetPackage, string[])"/>
-            packageVersion = package.NormalizedVersion ?? package.Version;
+            packageVersion = package.GetVersion();
 
             var packageValidationAuditor = new PackageValidationAuditor(azureAccount, container, loggerFactory);
             PackageValidationAuditEntry[] entries = new[] {new PackageValidationAuditEntry {
