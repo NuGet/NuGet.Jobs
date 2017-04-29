@@ -50,6 +50,7 @@ namespace NuGet.Jobs.Validation.Helper
                 var azureStorageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
                 var containerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
                 var cloudStorageAccount = CloudStorageAccount.Parse(azureStorageConnectionString);
+                var galleryBaseAddress = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryBaseAddress);
 
                 switch (action)
                 {
@@ -60,7 +61,9 @@ namespace NuGet.Jobs.Validation.Helper
                         cloudStorageAccount,
                         containerName,
                         new NuGetV2Feed(new HttpClient(), _loggerFactory.CreateLogger<NuGetV2Feed>()),
-                        new PackageValidationService(cloudStorageAccount, containerName, _loggerFactory));
+                        new PackageValidationService(cloudStorageAccount, containerName, _loggerFactory),
+                        galleryBaseAddress
+                        );
                     break;
 
                 case Action.MarkClean:
@@ -70,7 +73,8 @@ namespace NuGet.Jobs.Validation.Helper
                         cloudStorageAccount,
                         containerName,
                         new NuGetV2Feed(new HttpClient(), _loggerFactory.CreateLogger<NuGetV2Feed>()),
-                        new PackageValidationAuditor(cloudStorageAccount, containerName, _loggerFactory)
+                        new PackageValidationAuditor(cloudStorageAccount, containerName, _loggerFactory),
+                        galleryBaseAddress
                         );
                     break;
                 }
@@ -136,6 +140,7 @@ namespace NuGet.Jobs.Validation.Helper
                     $"-{JobArgumentNames.LogsAzureStorageConnectionString} <azure logs blob storage connection string> " +
                     $"-{JobArgumentNames.DataStorageAccount} <Azure Blob Storage connection string> " +
                     $"-{JobArgumentNames.ContainerName} <validation job container name> " +
+                    $"-{JobArgumentNames.GalleryBaseAddress} <gallery base address> " +
                     $"-{JobArgumentNames.Action} ({Action.Rescan.ToString()}|{Action.MarkClean.ToString()}) " +
                     $"[-{JobArgumentNames.StoreName} (My|Root|TrustedPeople|TrustedPublisher|AddressBook|AuthRoot|CertificateAuthority|Disallowed)] " +
                     $"[-{JobArgumentNames.StoreLocation} (LocalMachine|CurrentUser)] " +

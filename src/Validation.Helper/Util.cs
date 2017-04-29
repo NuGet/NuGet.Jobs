@@ -12,18 +12,19 @@ namespace NuGet.Jobs.Validation.Helper
 {
     internal static class Util
     {
-        public static async Task<NuGetPackage> GetPackage(NuGetV2Feed feed, string packageId, string packageVersion)
+        public static async Task<NuGetPackage> GetPackage(
+            string galleryBaseAddress, 
+            NuGetV2Feed feed, 
+            string packageId, 
+            string packageVersion)
         {
-            using (var httpClient = new HttpClient())
-            {
-                var url = GetPackageUrl(packageId, packageVersion);
-                return (await feed.GetPackagesAsync(url)).FirstOrDefault();
-            }
+            var url = GetPackageUrl(galleryBaseAddress, packageId, packageVersion);
+            return (await feed.GetPackagesAsync(url)).FirstOrDefault();
         }
 
-        public static Uri GetPackageUrl(string packageId, string packageVersion)
+        public static Uri GetPackageUrl(string galleryBaseAddress, string packageId, string packageVersion)
         {
-            return new Uri("https://www.nuget.org/api/v2/Packages?" +
+            return new Uri($"{galleryBaseAddress}/Packages?" +
                 $"$filter=Id eq '{packageId}' and Version eq '{packageVersion}' and true");
         }
     }

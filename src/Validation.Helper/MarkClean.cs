@@ -24,6 +24,7 @@ namespace NuGet.Jobs.Validation.Helper
         private readonly string _alias;
         private readonly NuGetV2Feed _feed;
         private readonly PackageValidationAuditor _packageValidationAuditor;
+        private readonly string _galleryBaseAddress;
 
         public Action Action => Helper.Action.MarkClean;
 
@@ -33,7 +34,8 @@ namespace NuGet.Jobs.Validation.Helper
             CloudStorageAccount cloudStorageAccount,
             string containerName,
             NuGetV2Feed feed,
-            PackageValidationAuditor packageValidationAuditor
+            PackageValidationAuditor packageValidationAuditor,
+            string galleryBaseAddress
             )
         {
             _logger = logger;
@@ -48,6 +50,7 @@ namespace NuGet.Jobs.Validation.Helper
             _alias = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Alias);
             _feed = feed;
             _packageValidationAuditor = packageValidationAuditor;
+            _galleryBaseAddress = galleryBaseAddress;
         }
 
         public async Task<bool> Run()
@@ -58,7 +61,7 @@ namespace NuGet.Jobs.Validation.Helper
                 _packageId,
                 _packageVersion);
 
-            NuGetPackage package = await Util.GetPackage(_feed, _packageId, _packageVersion);
+            NuGetPackage package = await Util.GetPackage(_galleryBaseAddress, _feed, _packageId, _packageVersion);
             if (package == null)
             {
                 _logger.LogError($"Unable to find {{{TraceConstant.PackageId}}} " +

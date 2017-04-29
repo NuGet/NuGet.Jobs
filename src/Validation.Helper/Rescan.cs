@@ -23,6 +23,7 @@ namespace NuGet.Jobs.Validation.Helper
         private readonly string _packageId;
         private readonly string _packageVersion;
         private readonly PackageValidationService _packageValidationService;
+        private readonly string _galleryBaseAddress;
 
         public Action Action => Helper.Action.Rescan;
 
@@ -32,7 +33,8 @@ namespace NuGet.Jobs.Validation.Helper
             CloudStorageAccount cloudStorageAccount,
             string containerName,
             NuGetV2Feed feed, 
-            PackageValidationService packageValidationService
+            PackageValidationService packageValidationService,
+            string galleryBaseAddress
             )
         {
             _logger = logger;
@@ -44,6 +46,7 @@ namespace NuGet.Jobs.Validation.Helper
             _packageId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageId);
             _packageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageVersion);
             _packageValidationService = packageValidationService;
+            _galleryBaseAddress = galleryBaseAddress;
         }
 
         public async Task<bool> Run()
@@ -53,7 +56,7 @@ namespace NuGet.Jobs.Validation.Helper
                 _packageId,
                 _packageVersion);
 
-            NuGetPackage package = await Util.GetPackage(_feed, _packageId, _packageVersion);
+            NuGetPackage package = await Util.GetPackage(_galleryBaseAddress, _feed, _packageId, _packageVersion);
             if (package == null)
             {
                 _logger.LogError($"Unable to find {{{TraceConstant.PackageId}}} " +
