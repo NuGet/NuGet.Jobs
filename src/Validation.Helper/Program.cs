@@ -21,6 +21,11 @@ namespace NuGet.Jobs.Validation.Helper
             {
                 args = args.Concat(new[] { "-Once" }).ToArray();
             }
+            // Disable logging to azure
+            if (!args.Contains("-ConsoleLogOnly"))
+            {
+                args = new[] { "-ConsoleLogOnly" }.Concat(args).ToArray();
+            }
 
             var job = new Job();
             JobRunner.Run(job, args).Wait();

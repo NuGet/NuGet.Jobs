@@ -40,7 +40,13 @@ namespace NuGet.Jobs.Validation.Helper
                     }
                 }
 
-                _loggerFactory = LoggingSetup.CreateLoggerFactory();
+                // A hack to prevent Trace.<something> from printing to console. This code uses ILogger,
+                // JobRunner unfortunately uses Trace and prints stuff that is not related to this tool. 
+                // When (and if) JobRunner and all other jobs are updatedto use ILogger, this call should 
+                // be removed.
+                DisableTrace();
+
+                _loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
                 _logger = _loggerFactory.CreateLogger<Job>();
 
                 string azureStorageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
@@ -65,6 +71,22 @@ namespace NuGet.Jobs.Validation.Helper
             }
 
             return false;
+        }
+
+        private static void DisableTrace()
+        {
+            int i = 0;
+            while (i < Trace.Listeners.Count)
+            {
+                if (Trace.Listeners[i] is JobTraceListener)
+                {
+                    Trace.Listeners.RemoveAt(i);
+                }
+                else
+                {
+                    ++i;
+                }
+            }
         }
 
         public async override Task<bool> Run()
@@ -120,7 +142,8 @@ namespace NuGet.Jobs.Validation.Helper
             Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id>");
             Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version>");
             Console.WriteLine($"\t-{JobArgumentNames.ValidationId} <validation Id (GUID)>");
-            Console.WriteLine($"\t-{JobArgumentNames.Comment} <comment> - please include your alias");
+            Console.WriteLine($"\t-{JobArgumentNames.Alias} <alias>");
+            Console.WriteLine($"\t-{JobArgumentNames.Comment} <comment>");
         }
 
         private static T ParseEnum<T>(string value)
@@ -130,21 +153,8 @@ namespace NuGet.Jobs.Validation.Helper
 
         private async Task Rescan(IDictionary<string, string> arguments, CloudStorageAccount azureAccount, string container)
         {
-            string packageId;
-            string packageVersion;
-            try
-            {
-                packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
-                packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(TraceEvent.FailedToProcessArguments,
-                    e,
-                    "Exception while processing {Action} arguments",
-                    Action.Rescan);
-                return;
-            }
+            string packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
+            string packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
 
             _logger.LogInformation($"Creating rescan request for {{{TraceConstant.PackageId}}} " +
                     $"{{{TraceConstant.PackageVersion}}}",
@@ -179,27 +189,12 @@ namespace NuGet.Jobs.Validation.Helper
 
         private async Task MarkClean(IDictionary<string, string> arguments, CloudStorageAccount azureAccount, string container)
         {
-            string packageId;
-            string packageVersion;
-            string validationIdStr;
-            string comment;
-            Guid validationId;
-            try
-            {
-                packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
-                packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
-                validationIdStr = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.ValidationId);
-                validationId = Guid.Parse(validationIdStr);
-                comment = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.Comment);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(TraceEvent.FailedToProcessArguments,
-                    e,
-                    "Exception while processing {Action} arguments",
-                    Action.MarkClean);
-                return;
-            }
+            string packageId = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageId);
+            string packageVersion = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.PackageVersion);
+            string validationIdStr = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.ValidationId);
+            Guid validationId = Guid.Parse(validationIdStr);
+            string comment = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.Comment);
+            string alias = JobConfigurationManager.GetArgument(arguments, JobArgumentNames.Alias);
 
             _logger.LogInformation($"Starting creating successful scan entry for the {{{TraceConstant.PackageId}}} " +
                     $"{{{TraceConstant.PackageVersion}}}",
@@ -226,16 +221,18 @@ namespace NuGet.Jobs.Validation.Helper
             PackageValidationAuditEntry[] entries = new[] {new PackageValidationAuditEntry {
                 Timestamp = DateTimeOffset.UtcNow,
                 ValidatorName = VcsValidator.ValidatorName,
-                Message = $"Manually marking the package as scanned clean, comment: {comment}",
+                Message = $"{alias} marked the package as scanned clean, comment: {comment}",
                 EventId = ValidationEvent.PackageClean,
             }};
 
             _logger.LogInformation($"Marking the {{{TraceConstant.PackageId}}} " +
                     $"{{{TraceConstant.PackageVersion}}} " +
-                    $"as clean with comment: {{{TraceConstant.Comment}}}",
+                    $"as clean with comment: {{{TraceConstant.Comment}}}. " +
+                    $"Requested by {{{TraceConstant.Alias}}}",
                 package.Id,
                 packageVersion,
-                comment);
+                comment,
+                alias);
             await packageValidationAuditor.WriteAuditEntriesAsync(validationId, package.Id, packageVersion, entries);
         }
 

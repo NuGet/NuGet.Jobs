@@ -108,6 +108,7 @@ namespace NuGet.Jobs
         public const string PackageVersion = "PackageVersion";
         public const string Comment = "Comment";
         public const string ValidationId = "ValidationId";
+        public const string Alias = "Alias";
 
         // Key Vault
         public const string VaultName = "VaultName";
