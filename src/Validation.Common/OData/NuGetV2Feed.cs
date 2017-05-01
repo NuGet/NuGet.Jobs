@@ -19,8 +19,8 @@ namespace NuGet.Jobs.Validation.Common.OData
 
         public NuGetV2Feed(HttpClient httpClient, ILogger<NuGetV2Feed> logger)
         {
-            _httpClient = httpClient;
-            _logger = logger;
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<List<NuGetPackage>> GetPackagesAsync(Uri uri, int continuationsToFollow = 0)
