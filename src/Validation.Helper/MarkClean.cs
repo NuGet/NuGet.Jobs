@@ -42,12 +42,12 @@ namespace NuGet.Jobs.Validation.Helper
             _cloudStorageAccount = cloudStorageAccount;
             _containerName = containerName;
 
-            _packageId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageId);
-            _packageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageVersion);
-            var validationIdStr = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ValidationId);
+            _packageId = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageId);
+            _packageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageVersion);
+            var validationIdStr = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.ValidationId);
             _validationId = Guid.Parse(validationIdStr);
-            _comment = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Comment);
-            _alias = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Alias);
+            _comment = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.Comment);
+            _alias = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.Alias);
             _feed = feed;
             _packageValidationAuditor = packageValidationAuditor;
             _galleryBaseAddress = galleryBaseAddress;

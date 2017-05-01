@@ -45,7 +45,7 @@ namespace NuGet.Jobs.Validation.Helper
                 // be removed.
                 DisableTrace();
 
-                var action = ParseEnum<Action>(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Action));
+                var action = ParseEnum<Action>(JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.Action));
 
                 var azureStorageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
                 var containerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
@@ -141,7 +141,7 @@ namespace NuGet.Jobs.Validation.Helper
                     $"-{JobArgumentNames.DataStorageAccount} <Azure Blob Storage connection string> " +
                     $"-{JobArgumentNames.ContainerName} <validation job container name> " +
                     $"-{JobArgumentNames.GalleryBaseAddress} <gallery base address> " +
-                    $"-{JobArgumentNames.Action} ({Action.Rescan.ToString()}|{Action.MarkClean.ToString()}) " +
+                    $"-{CommandLineArguments.Action} ({Action.Rescan.ToString()}|{Action.MarkClean.ToString()}) " +
                     $"[-{JobArgumentNames.StoreName} (My|Root|TrustedPeople|TrustedPublisher|AddressBook|AuthRoot|CertificateAuthority|Disallowed)] " +
                     $"[-{JobArgumentNames.StoreLocation} (LocalMachine|CurrentUser)] " +
                     $"[-{JobArgumentNames.ValidateCertificate} (true|false)] " +
@@ -149,16 +149,16 @@ namespace NuGet.Jobs.Validation.Helper
                 Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName));
 
             Console.WriteLine();
-            Console.WriteLine($"'-{JobArgumentNames.Action} {Action.Rescan.ToString()}' specific arguments: ");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id>");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version>");
+            Console.WriteLine($"'-{CommandLineArguments.Action} {Action.Rescan.ToString()}' specific arguments: ");
+            Console.WriteLine($"\t-{CommandLineArguments.PackageId} <package id>");
+            Console.WriteLine($"\t-{CommandLineArguments.PackageVersion} <package version>");
             Console.WriteLine();
-            Console.WriteLine($"'-{JobArgumentNames.Action} {Action.MarkClean.ToString()}' specific arguments: ");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageId} <package id>");
-            Console.WriteLine($"\t-{JobArgumentNames.PackageVersion} <package version>");
-            Console.WriteLine($"\t-{JobArgumentNames.ValidationId} <validation Id (GUID)>");
-            Console.WriteLine($"\t-{JobArgumentNames.Alias} <alias>");
-            Console.WriteLine($"\t-{JobArgumentNames.Comment} <comment>");
+            Console.WriteLine($"'-{CommandLineArguments.Action} {Action.MarkClean.ToString()}' specific arguments: ");
+            Console.WriteLine($"\t-{CommandLineArguments.PackageId} <package id>");
+            Console.WriteLine($"\t-{CommandLineArguments.PackageVersion} <package version>");
+            Console.WriteLine($"\t-{CommandLineArguments.ValidationId} <validation Id (GUID)>");
+            Console.WriteLine($"\t-{CommandLineArguments.Alias} <alias>");
+            Console.WriteLine($"\t-{CommandLineArguments.Comment} <comment>");
         }
 
         private static T ParseEnum<T>(string value)

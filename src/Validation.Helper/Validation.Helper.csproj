@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="Action.cs" />
     <Compile Include="Command.cs" />
+    <Compile Include="CommandLineArguments.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="MarkClean.cs" />
     <Compile Include="Program.cs" />
