@@ -9,7 +9,7 @@ param (
     [string]$SemanticVersion = '1.0.0-zlocal',
     [string]$Branch = 'zlocal',
     [string]$CommitSHA,
-    [string]$BuildBranch = '1c479a7381ebbc0fe1fded765de70d513b8bd68e'
+    [string]$BuildBranch = '37ff6e758c38b3f513af39f881399ce85f4ff20b'
 )
 
 # For TeamCity - If any issue occurs, this script fails the build. - By default, TeamCity returns an exit code of 0 for all powershell scripts, even if they fail
@@ -95,7 +95,7 @@ Invoke-BuildStep 'Restoring solution packages' { `
 
 Invoke-BuildStep 'Building solution' { 
     param($Configuration, $BuildNumber, $SolutionPath, $SkipRestore)
-    Build-Solution $Configuration $BuildNumber -MSBuildVersion "14" $SolutionPath -SkipRestore:$SkipRestore `
+    Build-Solution $Configuration $BuildNumber -MSBuildVersion "15" $SolutionPath -SkipRestore:$SkipRestore `
     } `
     -args $Configuration, $BuildNumber, (Join-Path $PSScriptRoot "NuGet.Jobs.sln"), $SkipRestore `
     -ev +BuildErrors
@@ -122,7 +122,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Validation.Helper/Validation.Helper.csproj"
         
         Foreach ($Project in $Projects) {
-            New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch
+            New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "15"
         }
     } `
     -ev +BuildErrors
