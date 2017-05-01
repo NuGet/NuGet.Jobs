@@ -62,8 +62,7 @@ namespace NuGet.Jobs.Validation.Helper
                         containerName,
                         new NuGetV2Feed(new HttpClient(), _loggerFactory.CreateLogger<NuGetV2Feed>()),
                         new PackageValidationService(cloudStorageAccount, containerName, _loggerFactory),
-                        galleryBaseAddress
-                        );
+                        galleryBaseAddress);
                     break;
 
                 case Action.MarkClean:
@@ -74,8 +73,7 @@ namespace NuGet.Jobs.Validation.Helper
                         containerName,
                         new NuGetV2Feed(new HttpClient(), _loggerFactory.CreateLogger<NuGetV2Feed>()),
                         new PackageValidationAuditor(cloudStorageAccount, containerName, _loggerFactory),
-                        galleryBaseAddress
-                        );
+                        galleryBaseAddress);
                     break;
                 }
 
