@@ -36,14 +36,14 @@ namespace NuGet.Jobs.Validation.Helper
                     }
                 }
 
+                _loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
+                _logger = _loggerFactory.CreateLogger<Job>();
+
                 // A hack to prevent Trace.<something> from printing to console. This code uses ILogger,
                 // JobRunner unfortunately uses Trace and prints stuff that is not related to this tool. 
                 // When (and if) JobRunner and all other jobs are updatedto use ILogger, this call should 
                 // be removed.
                 DisableTrace();
-
-                _loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
-                _logger = _loggerFactory.CreateLogger<Job>();
 
                 var action = ParseEnum<Action>(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Action));
 
