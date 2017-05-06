@@ -51,9 +51,9 @@ namespace Stats.ImportAzureCdnStatistics
         private static string NormalizeSemanticVersion(string packageVersion)
         {
             // Normalize package version
-            SemanticVersion semanticVersion;
+            NuGetVersion semanticVersion;
             if (!string.IsNullOrEmpty(packageVersion)
-                && SemanticVersion.TryParse(packageVersion, out semanticVersion))
+                && NuGetVersion.TryParse(packageVersion, out semanticVersion))
             {
                 packageVersion = semanticVersion.ToNormalizedString();
             }
