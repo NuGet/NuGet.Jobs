@@ -26,7 +26,10 @@ namespace Stats.ImportAzureCdnStatistics
                 return null;
             }
 
-            packageDefinition = _packageTranslator.TranslatePackageDefinition(packageDefinition);
+            if (_packageTranslator != null)
+            {
+                packageDefinition = _packageTranslator.TranslatePackageDefinition(packageDefinition);
+            }
 
             var statistic = new PackageStatistics();
             statistic.EdgeServerTimeDelivered = cdnLogEntry.EdgeServerTimeDelivered;
