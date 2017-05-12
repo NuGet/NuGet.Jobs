@@ -141,6 +141,15 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 ApplicationInsightsHelper.TrackReportProcessed(DownloadCountReport.ReportName);
                 stopwatch.Restart();
 
+                // build rankings.v1.json
+                var rankingsReport = new RankingsReport(_cloudStorageAccount, _statisticsContainerName, _statisticsDatabase, _galleryDatabase);
+                await rankingsReport.Run();
+
+                stopwatch.Stop();
+                ApplicationInsightsHelper.TrackMetric(RankingsReport.ReportName + " Generation Time (ms)", stopwatch.ElapsedMilliseconds);
+                ApplicationInsightsHelper.TrackReportProcessed(RankingsReport.ReportName);
+                stopwatch.Restart();
+
                 // build stats-totals.json
                 var galleryTotalsReport = new GalleryTotalsReport(_cloudStorageAccount, _statisticsContainerName, _statisticsDatabase, _galleryDatabase);
                 await galleryTotalsReport.Run();
@@ -148,7 +157,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 stopwatch.Stop();
                 ApplicationInsightsHelper.TrackMetric(GalleryTotalsReport.ReportName + " Generation Time (ms)", stopwatch.ElapsedMilliseconds);
                 ApplicationInsightsHelper.TrackReportProcessed(GalleryTotalsReport.ReportName);
-
+                stopwatch.Restart();
 
                 // build tools.v1.json
                 var toolsReport = new DownloadsPerToolVersionReport(_cloudStorageAccount, _statisticsContainerName, _statisticsDatabase, _galleryDatabase);
