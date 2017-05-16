@@ -28,7 +28,7 @@ BEGIN
         OR	CHARINDEX('Package-Installer', @ClientName) > 0
 
 			-- dotnet restore / msbuild /t:Restore
-		OR CHARINDEX('NuGet MSBuild Task', @ClientName) > 0
+        OR	CHARINDEX('NuGet MSBuild Task', @ClientName) > 0
 		)
 		RETURN 1
 
