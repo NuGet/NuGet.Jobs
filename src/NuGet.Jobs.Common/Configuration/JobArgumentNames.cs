@@ -57,6 +57,8 @@ namespace NuGet.Jobs
         public const string MaxManifestSize = "MaxManifestSize";
         public const string OutputDirectory = "OutputDirectory";
 
+        public const string StorageType = "StorageType";
+
         //Arguments specific to HandlePackageEdits
         public const string SourceStorage = "SourceStorage";
         public const string BackupStorage = "BackupStorage";

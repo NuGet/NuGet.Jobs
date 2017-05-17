@@ -17,6 +17,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
 using NuGet.Services.Logging;
 using NuGetGallery.Packaging;
+using HandlePackageEdits.Storage;
 
 namespace HandlePackageEdits
 {
@@ -31,26 +32,15 @@ namespace HandlePackageEdits
             INNER JOIN Packages p ON p.[Key] = e.PackageKey
             INNER JOIN PackageRegistrations pr ON pr.[Key] = p.PackageRegistrationKey";
 
-        public const string DefaultSourceContainerName = "packages";
-        public const string DefaultBackupContainerName = "package-backups";
+
         public const int DefaultMaxRetryCount = 10;
 
-        /// <summary>
-        /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
-        /// </summary>
-        public CloudStorageAccount Source { get; set; }
-        public string SourceContainerName { get; set; }
+        public IFileStorage FileStorage;
 
         /// <summary>
         /// Gets or sets a connection string to the database containing package data.
         /// </summary>
         public SqlConnectionStringBuilder PackageDatabase { get; set; }
-
-        /// <summary>
-        /// Gets or sets an Azure Storage Uri referring to a container to use as the backup storage for package blobs
-        /// </summary>
-        public CloudStorageAccount Backups { get; set; }
-        public string BackupsContainerName { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of tries that are allowed before considering an edit failed.
@@ -59,8 +49,6 @@ namespace HandlePackageEdits
 
         public long? MaxAllowedManifestBytes { get; set; }
 
-        protected CloudBlobContainer SourceContainer { get; set; }
-        protected CloudBlobContainer BackupsContainer { get; set; }
         protected long MaxManifestSize { get; set; }
         private ILogger _logger;
 
@@ -82,16 +70,16 @@ namespace HandlePackageEdits
                 PackageDatabase = new SqlConnectionStringBuilder(
                             JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase));
 
-                Source = CloudStorageAccount.Parse(
-                                           JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SourceStorage));
-                Backups = CloudStorageAccount.Parse(
-                                           JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.BackupStorage));
-
-                SourceContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
-                BackupsContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;
-
-                SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
-                BackupsContainer = Backups.CreateCloudBlobClient().GetContainerReference(BackupsContainerName);
+                Enum.TryParse(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StorageType), out StorageType storageType);
+                switch (storageType)
+                {
+                    case StorageType.FileSystem:
+                        FileStorage = new FileSystemStorage(jobArgsDictionary);
+                        break;
+                    default:
+                        FileStorage = new AzureStorage(jobArgsDictionary);
+                        break;
+                }
 
                 MaxTryCount = DefaultMaxRetryCount;
             }
@@ -172,24 +160,19 @@ namespace HandlePackageEdits
                 }
 
                 originalPath = Path.Combine(directory, "original.nupkg");
-                var sourceBlob = SourceContainer.GetBlockBlobReference(
-                    StorageHelpers.GetPackageBlobName(edit.Id, edit.Version));
-                Trace.TraceInformation($"Name is {sourceBlob.Name}, storage uri is {sourceBlob.StorageUri}");
+                
+                var sourceItem = FileStorage.GetFile(edit.Id, edit.Version);
+                Trace.TraceInformation($"Name is {sourceItem.Name}, storage uri is {sourceItem.Uri}");
 
                 // Download the original file
                 Trace.TraceInformation($"Downloading original copy of {edit.Id} {edit.Version}");
-                await sourceBlob.DownloadToFileAsync(originalPath, FileMode.Create);
+                await FileStorage.DownloadAsync(sourceItem, originalPath);
                 Trace.TraceInformation($"Downloaded original copy of {edit.Id} {edit.Version}");
 
                 // Check that a backup exists
-                var backupBlob = BackupsContainer.GetBlockBlobReference(
-                    StorageHelpers.GetPackageBackupBlobName(edit.Id, edit.Version, edit.Hash));
-                if (!await backupBlob.ExistsAsync())
-                {
-                    Trace.TraceInformation($"Backing up original copy of {edit.Id} {edit.Version}");
-                    await backupBlob.UploadFromFileAsync(originalPath);
-                    Trace.TraceInformation($"Backed up original copy of {edit.Id} {edit.Version}");
-                }
+                Trace.TraceInformation($"Backing up original copy of {edit.Id} {edit.Version}");
+                await FileStorage.BackupAsync(originalPath, edit.Id, edit.Version, edit.Hash);
+                Trace.TraceInformation($"Backed up original copy of {edit.Id} {edit.Version}");
 
                 // Update the nupkg manifest with the new metadata
                 using (var originalStream = File.Open(originalPath, FileMode.Open, FileAccess.ReadWrite))
@@ -203,14 +186,15 @@ namespace HandlePackageEdits
                 }
 
                 // Snapshot the original blob
-                Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({sourceBlob.Uri.AbsoluteUri}).");
-                var sourceSnapshot = await sourceBlob.CreateSnapshotAsync();
-                Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({sourceBlob.Uri.AbsoluteUri}).");
+                Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({sourceItem.Uri.AbsoluteUri}).");
+                var snapshot = await FileStorage.SnapshotService.CreateSnapshot(sourceItem);
+                Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({sourceItem.Uri.AbsoluteUri}).");
 
                 // Upload the updated file
-                Trace.TraceInformation($"Uploading modified package file for {edit.Id} {edit.Version} to {sourceBlob.Uri.AbsoluteUri}");
-                await sourceBlob.UploadFromFileAsync(originalPath);
-                Trace.TraceInformation($"Uploaded modified package file for {edit.Id} {edit.Version} to {sourceBlob.Uri.AbsoluteUri}");
+                Trace.TraceInformation($"Uploading modified package file for {edit.Id} {edit.Version} to {sourceItem.Uri.AbsoluteUri}");
+                await FileStorage.UploadAsync(sourceItem, originalPath);
+                
+                Trace.TraceInformation($"Uploaded modified package file for {edit.Id} {edit.Version} to {sourceItem.Uri.AbsoluteUri}");
 
                 // Calculate new size and hash
                 string hash;
@@ -237,17 +221,17 @@ namespace HandlePackageEdits
                     // Can't do "await" in a catch block, but this should be pretty quick since it just starts the copy
                     Trace.TraceError($"Failed to update database! {exception}");
                     Trace.TraceWarning(
-                        $"Rolling back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
-                    sourceBlob.StartCopy(sourceSnapshot);
+                        $"Rolling back updated blob for {edit.Id} {edit.Version}. Copying snapshot {snapshot.Uri.AbsoluteUri} to {sourceItem.Uri.AbsoluteUri}");
+                    FileStorage.SnapshotService.RestoreSnapshot(sourceItem, snapshot);
                     Trace.TraceWarning(
-                        $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
+                        $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {snapshot.Uri.AbsoluteUri} to {sourceItem.Uri.AbsoluteUri}");
 
                     throw;
                 }
 
-                Trace.TraceInformation("Deleting snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
-                await sourceSnapshot.DeleteAsync();
-                Trace.TraceInformation("Deleted snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
+                Trace.TraceInformation("Deleting snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, snapshot.Uri.AbsoluteUri);
+                await FileStorage.SnapshotService.DeleteSnapshotAsync(snapshot);
+                Trace.TraceInformation("Deleted snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, snapshot.Uri.AbsoluteUri);
             }
             finally
             {

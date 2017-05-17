@@ -165,6 +165,15 @@
     <Compile Include="HandlePackageEdits.Program.cs" />
     <Compile Include="PackageEdit.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Storage\AzureSnapshotService.cs" />
+    <Compile Include="Storage\AzureStorage.cs" />
+    <Compile Include="Storage\FileSystemSnapshotService.cs" />
+    <Compile Include="Storage\FileSystemStorage.cs" />
+    <Compile Include="Storage\ISnapshotService.cs" />
+    <Compile Include="Storage\IFileStorage.cs" />
+    <Compile Include="Storage\SnapshotHandler.cs" />
+    <Compile Include="Storage\PackageHandler.cs" />
+    <Compile Include="Storage\StorageType.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
