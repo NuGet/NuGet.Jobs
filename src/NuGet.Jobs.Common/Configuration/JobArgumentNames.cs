@@ -117,5 +117,16 @@ namespace NuGet.Jobs
 
         // Arguments for Azure logs
         public const string LogsAzureStorageConnectionString = "LogsAzureStorageConnectionString";
+
+        // Arguments for CopyAzureContainer 
+        public const string CopyAzureContainer_DestStorageAccountName = "DestStorageAccountName";
+        public const string CopyAzureContainer_DestStorageKeyValue = "DestStorageKeyValue";
+        public const string CopyAzureContainer_SourceContainerPrefix = "SourceContainerInfo";
+        public const string CopyAzureContainer_BackupDays = "BackupDays";
+
+        //Arguments for SnapshotAzureBlobJob
+        public const string SnapshotAzureBlobJob_Container = "Container";
+        public const string SnapshotAzureBlobJob_ConnectionString = "ConnectionString";
+
     }
 }
