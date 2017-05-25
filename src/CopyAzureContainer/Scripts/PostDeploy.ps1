@@ -16,3 +16,7 @@ $jobsToInstall.Split("{;}") | %{
 }
 
 Write-Host Installed services.
+
+Write-Host Installing AzCopy...
+Install-AzCopy 
+Write-Host Installed AzCopy

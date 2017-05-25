@@ -7,11 +7,11 @@ cd Ng
 
     title #{Jobs.backupv3storage.Title}
 
-start /w CopyAzureContainer.exe ^
+start /w CopyAzureContainer.exe -ConsoleLogOnly ^
+    -SourceContainerInfo_lucene #{Jobs.common.v3.Storage.Primary.Name}:#{Jobs.common.v3.Storage.Primary.Key}:#{Jobs.catalog2lucenev3reg2.LuceneContainer} ^
     -SourceContainerInfo_registration #{Jobs.common.v3.c2r.StorageAccountName}:#{Jobs.common.v3.c2r.StorageAccountKey}:#{Jobs.catalog2registrationv3reg1.StorageContainer} ^
     -SourceContainerInfo_registrationgz #{Jobs.common.v3.c2r.StorageAccountName}:#{Jobs.common.v3.c2r.StorageAccountKey}:#{Jobs.catalog2registrationv3reg1.StorageContainerCompressed} ^
     -SourceContainerInfo_catalog #{Jobs.common.v3.c2r.StorageAccountName}:#{Jobs.common.v3.c2r.StorageAccountKey}:#{Jobs.feed2catalogv3.StorageContainer} ^
-    -SourceContainerInfo_lucene #{Jobs.common.v3.Storage.Primary.Name}:#{Jobs.common.v3.Storage.Primary.Key}:#{Jobs.catalog2lucenev3reg2.LuceneContainer} ^
     -DestStorageAccountName #{Jobs.backupv3storage.destStorageAccountName} ^
     -DestStorageKeyValue #{Jobs.backupv3storage.destStorageKeyValue} ^
     -BackupDays #{Jobs.backupv3storage.backupDays} ^

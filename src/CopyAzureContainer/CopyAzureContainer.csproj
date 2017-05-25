@@ -111,6 +111,7 @@
     <None Include="packages.config" />
     <None Include="Scripts\CopyAzureContainer.cmd" />
     <None Include="Scripts\Functions.ps1" />
+    <None Include="Scripts\InstallAzCopy.ps1" />
     <None Include="Scripts\PostDeploy.ps1" />
     <None Include="Scripts\PreDeploy.ps1" />
   </ItemGroup>
@@ -122,35 +123,10 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="binaries\azcopy\AzCopy.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Microsoft.Data.Edm.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Microsoft.Data.OData.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Microsoft.Data.Services.Client.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Microsoft.WindowsAzure.Storage.DataMovement.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Microsoft.WindowsAzure.Storage.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Microsoft.WindowsAzure.Storage.TableDataMovement.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\Newtonsoft.Json.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="binaries\azcopy\ReadMe.txt" />
-    <Content Include="binaries\azcopy\System.Spatial.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Scripts\nssm.exe" />
+    <Content Include="tools\azcopy\ReadMe.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -114,8 +114,8 @@ namespace CopyAzureContainer
                 try
                 {
                     ProcessStartInfo copyToAzureProc = new ProcessStartInfo();
-                    copyToAzureProc.FileName = @"cmd.exe";
-                    copyToAzureProc.Arguments = $"/c {AzCopyPath} {arguments}";
+                    copyToAzureProc.FileName = $"{AzCopyPath}";
+                    copyToAzureProc.Arguments = $"{arguments}"; 
                     copyToAzureProc.CreateNoWindow = false;
                     copyToAzureProc.UseShellExecute = false;
 #if Debug
@@ -145,8 +145,8 @@ namespace CopyAzureContainer
                 try
                 {
                     ProcessStartInfo copyToAzureProcLog = new ProcessStartInfo();
-                    copyToAzureProcLog.FileName = @"cmd.exe";
-                    copyToAzureProcLog.Arguments = $"/c {AzCopyPath} {argumentsLog}";
+                    copyToAzureProcLog.FileName = $"{AzCopyPath}";
+                    copyToAzureProcLog.Arguments = $"{argumentsLog}";
                     copyToAzureProcLog.CreateNoWindow = false;
                     copyToAzureProcLog.UseShellExecute = false;
                     using (var pLog = Process.Start(copyToAzureProcLog))
