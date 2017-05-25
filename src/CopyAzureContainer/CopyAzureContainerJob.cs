@@ -63,15 +63,15 @@ namespace CopyAzureContainer
         public string GetUsage()
         {
             return "Usage: CopyAzureContainerJob "
-                   + $"[-{JobArgumentNames.CopyAzureContainer_SourceContainerPrefix}_lucene <storageAccountName:storageAccountKey:ContainerName> More containers with the same prefix can be used"
+                   + $"-{JobArgumentNames.CopyAzureContainer_SourceContainerPrefix}_lucene <storageAccountName:storageAccountKey:ContainerName> More containers with the same prefix can be used"
                    + $"-{JobArgumentNames.CopyAzureContainer_DestStorageAccountName} <destinationStorageAccountName> "
-                   + $"-{JobArgumentNames.CopyAzureContainer_DestStorageKeyValue} <destinationStorageAccountKey>] "
-                   + $"[-{JobArgumentNames.CopyAzureContainer_BackupDays} <backupDaysToKeepAsIntValue> "
-                   + $"[-{JobArgumentNames.InstrumentationKey} <intrumentationKey> "
-                   + $"[-{JobArgumentNames.VaultName} <keyvault name> "
+                   + $"-{JobArgumentNames.CopyAzureContainer_DestStorageKeyValue} <destinationStorageAccountKey> "
+                   + $"-{JobArgumentNames.CopyAzureContainer_BackupDays} <backupDaysToKeepAsIntValue> "
+                   + $"-{JobArgumentNames.InstrumentationKey} <intrumentationKey> "
+                   + $"-{JobArgumentNames.VaultName} <keyvault name> "
                    + $"-{JobArgumentNames.ClientId} <keyvault-client-id> "
                    + $"-{JobArgumentNames.CertificateThumbprint} <keyvault-certificate-thumbprint> "
-                   + $"[-{JobArgumentNames.ValidateCertificate} true|false]]";
+                   + $"-{JobArgumentNames.ValidateCertificate} true|false";
         }
 
         public override async Task<bool> Run()

@@ -4,9 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,7 +44,8 @@ namespace SnapshotAzureBlob
         {
             return "Usage: SnapshotAzureBlobJob "
                    + $"-{JobArgumentNames.SnapshotAzureBlobJob_ConnectionString} <connectionString> "
-                   + $"-{JobArgumentNames.SnapshotAzureBlobJob_Container} <container> ";
+                   + $"-{JobArgumentNames.SnapshotAzureBlobJob_Container} <container> "
+                   + $"-{JobArgumentNames.InstrumentationKey} <intrumentationKey> ";
         }
 
         public override Task<bool> Run()
