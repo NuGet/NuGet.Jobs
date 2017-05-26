@@ -17,7 +17,7 @@ namespace CopyAzureContainer
 {
     class CopyAzureContainerJob : JobBase
     {
-        private readonly string AzCopyPath = @"binaries\azcopy\azCopy.exe";
+        private readonly string AzCopyPath = @"tools\azcopy\azCopy.exe";
         private readonly int DefaultBackupDays = -1;
         private string _destStorageAccountName;
         private string _destStorageKeyValue;
