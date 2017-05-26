@@ -109,7 +109,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="Scripts\CopyAzureContainer.cmd" />
+    <None Include="Scripts\backupv3storage.cmd" />
     <None Include="Scripts\Functions.ps1" />
     <None Include="Scripts\InstallAzCopy.ps1" />
     <None Include="Scripts\PostDeploy.ps1" />
