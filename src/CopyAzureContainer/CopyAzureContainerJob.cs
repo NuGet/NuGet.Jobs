@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
@@ -59,7 +60,7 @@ namespace CopyAzureContainer
         public string GetUsage()
         {
             return "Usage: CopyAzureContainerJob "
-                   + $"-{ArgumentNames.CopyAzureContainer_SourceContainerPrefix}_lucene <storageAccountName:storageAccountKey:ContainerName> More containers with the same prefix can be used"
+                   + $"-{ArgumentNames.CopyAzureContainer_SourceContainerPrefix} <storageAccountName:storageAccountKey:ContainerName> More containers with the same prefix can be used"
                    + $"-{ArgumentNames.CopyAzureContainer_DestStorageAccountName} <destinationStorageAccountName> "
                    + $"-{ArgumentNames.CopyAzureContainer_DestStorageKeyValue} <destinationStorageAccountKey> "
                    + $"-{ArgumentNames.CopyAzureContainer_BackupDays} <backupDaysToKeepAsIntValue> "
@@ -75,7 +76,7 @@ namespace CopyAzureContainer
             var currentDate = DateTimeOffset.UtcNow;
             var deleteTasks = (_backupDays > 0) ? _sourceContainers.
                 SelectMany((c) => { return GetContainersToBeDeleted(_destStorageAccountName, _destStorageKeyValue, c.ContainerName, _backupDays); }).
-                Select((c) => { return TryDeleteContainerAsync(c); }) : null;
+                Select((c) => { return TryDeleteContainerAsync(c); }).ToArray() : null;
 
             foreach(var c in _sourceContainers)
             {
@@ -83,7 +84,7 @@ namespace CopyAzureContainer
             }
             if (deleteTasks != null)
             {
-                Task.WaitAll(deleteTasks.ToArray());
+                Task.WaitAll(deleteTasks);
             }
             return true;
         }
@@ -209,8 +210,7 @@ namespace CopyAzureContainer
 
         private CloudBlobClient GetCloudBlobClient(string storageAccountName, string storageAccountKey)
         {
-            var storageConnectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey}";
-            var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
+            var storageAccount = new CloudStorageAccount(new StorageCredentials(storageAccountName, storageAccountKey), useHttps: true);
             var blobClient = storageAccount.CreateCloudBlobClient();
             return blobClient;
         }
@@ -239,14 +239,14 @@ namespace CopyAzureContainer
             var blobClient = GetCloudBlobClient(storageAccountName, storageAccountKey);
             //it is used backupDays - 1 because a new container will be created
             var containersToDelete = blobClient.ListContainers(prefix: $"{GetContainerPrefix(containerName)}").
-                OrderByDescending((blobContainer) => { return blobContainer.Name; }).
+                OrderByDescending((blobContainer) => { return blobContainer.Properties.LastModified; }).
                 Skip(backupDays - 1); 
             return containersToDelete;
         }
 
         private string FormatDestinationContainerName(DateTimeOffset date, string containerName)
         {
-            return $"{GetContainerPrefix(containerName)}{date.ToString("yyyyMMdd")}";
+            return $"{GetContainerPrefix(containerName)}{date.ToString("yyyyMMddHH")}";
         }
 
         private string GetContainerPrefix(string containerName)
