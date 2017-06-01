@@ -29,8 +29,8 @@ namespace SnapshotAzureBlob
                 var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 Logger = loggerFactory.CreateLogger<SnapshotAzureBlobJob>();
-                _connectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SnapshotAzureBlobJob_ConnectionString);
-                _container = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SnapshotAzureBlobJob_Container);
+                _connectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.SnapshotAzureBlobJob_ConnectionString);
+                _container = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.SnapshotAzureBlobJob_Container);
             }
             catch (Exception exception)
             {
@@ -43,31 +43,31 @@ namespace SnapshotAzureBlob
         public string GetUsage()
         {
             return "Usage: SnapshotAzureBlobJob "
-                   + $"-{JobArgumentNames.SnapshotAzureBlobJob_ConnectionString} <connectionString> "
-                   + $"-{JobArgumentNames.SnapshotAzureBlobJob_Container} <container> "
+                   + $"-{ArgumentNames.SnapshotAzureBlobJob_ConnectionString} <connectionString> "
+                   + $"-{ArgumentNames.SnapshotAzureBlobJob_Container} <container> "
                    + $"-{JobArgumentNames.InstrumentationKey} <intrumentationKey> ";
         }
 
         public override Task<bool> Run()
         {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(_connectionString);
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
+            var storageAccount = CloudStorageAccount.Parse(_connectionString);
+            var blobClient = storageAccount.CreateCloudBlobClient();
             EnsureOneSnapshot(_container, blobClient);
             return Task.FromResult(true);
         }
 
         private void EnsureOneSnapshot(string containerName, CloudBlobClient client)
         {
-            CloudBlobContainer container = client.GetContainerReference(containerName);
+            var container = client.GetContainerReference(containerName);
             var blobList = container.ListBlobs(prefix: null, useFlatBlobListing: true, blobListingDetails: BlobListingDetails.None);
-            int snapshotCount = 0;
-            Stopwatch sw = new Stopwatch();
+            var snapshotCount = 0;
+            var sw = new Stopwatch();
             sw.Start();
             Parallel.ForEach(blobList, (item) =>
             {
                 try
                 {
-                    CloudBlockBlob blob = item as CloudBlockBlob;
+                    var blob = item as CloudBlockBlob;
                     if (blob != null)
                     {
                         //because the query is filtered by the blob prefix

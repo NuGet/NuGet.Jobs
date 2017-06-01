@@ -23,6 +23,12 @@ namespace CopyAzureContainer
             get;
         }
 
+        /// <summary>
+        /// The argument needs to be in the 
+        ///     StorageAccountName:StorageAccountKey:ContainerName
+        /// format
+        /// </summary>
+        /// <param name="argument"></param>
         public AzureContainerInfo(string argument)
         {
             string[] info = argument.Split(':');

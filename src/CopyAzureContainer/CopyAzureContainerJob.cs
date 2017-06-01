@@ -25,10 +25,6 @@ namespace CopyAzureContainer
 
         private IEnumerable<AzureContainerInfo> _sourceContainers;
 
-        public CopyAzureContainerJob() : base()
-        {
-        }
-
         public ILogger Logger { get; private set; }
 
         public override bool Init(IDictionary<string, string> jobArgsDictionary)
@@ -42,12 +38,12 @@ namespace CopyAzureContainer
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 Logger = loggerFactory.CreateLogger<CopyAzureContainerJob>();
 
-                _backupDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.CopyAzureContainer_BackupDays)??
+                _backupDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_BackupDays)??
                               DefaultBackupDays;
-                _destStorageAccountName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.CopyAzureContainer_DestStorageAccountName);
-                _destStorageKeyValue = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.CopyAzureContainer_DestStorageKeyValue);
+                _destStorageAccountName = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageAccountName);
+                _destStorageKeyValue = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageKeyValue);
                 _sourceContainers = jobArgsDictionary.
-                                        Where((kvp) => { return kvp.Key.StartsWith(JobArgumentNames.CopyAzureContainer_SourceContainerPrefix); }).
+                                        Where((kvp) => { return kvp.Key.StartsWith(ArgumentNames.CopyAzureContainer_SourceContainerPrefix); }).
                                         Select((kvp) => { return new AzureContainerInfo(kvp.Value);});
 
             }
@@ -63,10 +59,10 @@ namespace CopyAzureContainer
         public string GetUsage()
         {
             return "Usage: CopyAzureContainerJob "
-                   + $"-{JobArgumentNames.CopyAzureContainer_SourceContainerPrefix}_lucene <storageAccountName:storageAccountKey:ContainerName> More containers with the same prefix can be used"
-                   + $"-{JobArgumentNames.CopyAzureContainer_DestStorageAccountName} <destinationStorageAccountName> "
-                   + $"-{JobArgumentNames.CopyAzureContainer_DestStorageKeyValue} <destinationStorageAccountKey> "
-                   + $"-{JobArgumentNames.CopyAzureContainer_BackupDays} <backupDaysToKeepAsIntValue> "
+                   + $"-{ArgumentNames.CopyAzureContainer_SourceContainerPrefix}_lucene <storageAccountName:storageAccountKey:ContainerName> More containers with the same prefix can be used"
+                   + $"-{ArgumentNames.CopyAzureContainer_DestStorageAccountName} <destinationStorageAccountName> "
+                   + $"-{ArgumentNames.CopyAzureContainer_DestStorageKeyValue} <destinationStorageAccountKey> "
+                   + $"-{ArgumentNames.CopyAzureContainer_BackupDays} <backupDaysToKeepAsIntValue> "
                    + $"-{JobArgumentNames.InstrumentationKey} <intrumentationKey> "
                    + $"-{JobArgumentNames.VaultName} <keyvault name> "
                    + $"-{JobArgumentNames.ClientId} <keyvault-client-id> "
@@ -76,40 +72,40 @@ namespace CopyAzureContainer
 
         public override async Task<bool> Run()
         {
-            DateTimeOffset currentDate = DateTimeOffset.UtcNow;
-            var deleteTasks = (_backupDays > 0 ) ? _sourceContainers.Select((c) =>
-               { return TryDeleteContainerAsync(c.ContainerName, currentDate, _destStorageAccountName, _destStorageKeyValue); }).ToArray() :
-               null;
+            var currentDate = DateTimeOffset.UtcNow;
+            var deleteTasks = (_backupDays > 0) ? _sourceContainers.
+                SelectMany((c) => { return GetContainersToBeDeleted(_destStorageAccountName, _destStorageKeyValue, c.ContainerName, _backupDays); }).
+                Select((c) => { return TryDeleteContainerAsync(c); }) : null;
 
             foreach(var c in _sourceContainers)
             {
-                await TryCopyContainerAsync(c.ContainerName, currentDate, c.StorageAccountName, c.StorageAccountKey);
+                await TryCopyContainerAsync(c.ContainerName, c.StorageAccountName, c.StorageAccountKey, currentDate);
             }
             if (deleteTasks != null)
             {
-                Task.WaitAll(deleteTasks);
+                Task.WaitAll(deleteTasks.ToArray());
             }
             return true;
         }
 
-        private async Task<bool> TryCopyContainerAsync(string container, DateTimeOffset date, string sourceAccountName, string sourceAccountKey)
+        private async Task<bool> TryCopyContainerAsync(string containerName, string sourceAccountName, string sourceAccountKey , DateTimeOffset date)
         {
-            Stopwatch sw = new Stopwatch();
-            string azCopyTempFolder = $@"{Directory.GetCurrentDirectory()}\azCopy_{container}";
-            string destContainer = $"{Format(date)}-{container}";
-            string logFile = $"{destContainer}.log";
-            string azCopyLogPath = Path.Combine(azCopyTempFolder, logFile);
+            var sw = new Stopwatch();
+            var azCopyTempFolder = $@"{Directory.GetCurrentDirectory()}\azCopy_{containerName}";
+            var destContainer = FormatDestinationContainerName(date, containerName); 
+            var logFile = $"{destContainer}.log";
+            var azCopyLogPath = Path.Combine(azCopyTempFolder, logFile);
             RefreshLogData(azCopyTempFolder, azCopyLogPath);
 
             if (await TryCreateDestinationContainerAsync(destContainer, _destStorageAccountName, _destStorageKeyValue))
             {
-                string arguments = $"/Source:https://{sourceAccountName}.blob.core.windows.net/{container}/ " +
+                var arguments = $"/Source:https://{sourceAccountName}.blob.core.windows.net/{containerName}/ " +
                                    $"/Dest:https://{_destStorageAccountName}.blob.core.windows.net/{destContainer}/ " +
                                    $"/SourceKey:{sourceAccountKey} /DestKey:{_destStorageKeyValue} " +
-                                   $"/S /Z:{azCopyTempFolder} /V:{azCopyLogPath}";
+                                   $"/Y /S /Z:{azCopyTempFolder} /V:{azCopyLogPath}";
 
-                string argumentsLog = $"/Source:{azCopyTempFolder} /Dest:https://{_destStorageAccountName}.blob.core.windows.net/logs" +
-                                      $" /DestKey:{_destStorageKeyValue} /destType:blob /Pattern:{logFile}";
+                var argumentsLog = $"/Source:{azCopyTempFolder} /Dest:https://{_destStorageAccountName}.blob.core.windows.net/logs" +
+                                      $" /DestKey:{_destStorageKeyValue} /destType:blob /Pattern:{logFile} /Y";
 
                 try
                 {
@@ -118,22 +114,24 @@ namespace CopyAzureContainer
                     copyToAzureProc.Arguments = $"{arguments}"; 
                     copyToAzureProc.CreateNoWindow = false;
                     copyToAzureProc.UseShellExecute = false;
-#if Debug
-                copyToAzureProc.RedirectStandardOutput = true;
+#if DEBUG
+                    copyToAzureProc.RedirectStandardOutput = true;
+                    copyToAzureProc.RedirectStandardError = true;
 #endif
 
-                    Logger.LogInformation($"StartContainerCopy:{container}");
+                    Logger.LogInformation($"StartContainerCopy:{containerName}");
                     sw.Start();
                     using (var p = Process.Start(copyToAzureProc))
                     {
                         p.WaitForExit();
-#if Debug
-                string result = p.StandardOutput.ReadToEnd();
-                Console.Write(result);
+#if DEBUG
+                        var result = p.StandardOutput.ReadToEnd();
+                        var error = p.StandardError.ReadToEnd();
+                        Console.Write(result);
 #endif
                         sw.Stop();
-                        int exitCode = p.ExitCode;
-                        Logger.LogInformation("EndContainerCopy:{container}:{exitCode}:{elapsedMilliseconds}", container, exitCode, sw.ElapsedMilliseconds);
+                        var exitCode = p.ExitCode;
+                        Logger.LogInformation("EndContainerCopy:{container}:{exitCode}:{elapsedMilliseconds}", containerName, exitCode, sw.ElapsedMilliseconds);
                         p.Close();
                     }
                 }
@@ -182,11 +180,9 @@ namespace CopyAzureContainer
 
         private async Task<bool> TryCreateDestinationContainerAsync(string containerName, string storageAccountName, string storageAccountKey)
         {
-            CloudBlobClient blobClient = GetCloudBlobClient(storageAccountName, storageAccountKey);
-
             try
             {
-                CloudBlobContainer container = blobClient.GetContainerReference(containerName);
+                var container = GetCloudBlobContainer(storageAccountName, storageAccountKey, containerName);
                 await container.CreateIfNotExistsAsync();
                 return true;
             }
@@ -197,36 +193,65 @@ namespace CopyAzureContainer
             }
         }
 
-        private async Task<bool> TryDeleteContainerAsync(string containerName, DateTimeOffset date, string storageAccountName, string storageAccountKey)
+        private async Task<bool> TryDeleteContainerAsync(CloudBlobContainer container)
         {
-            string destContainer = $"{Format(date.AddDays(-1 * _backupDays))}-{containerName}";
-            CloudBlobClient blobClient = GetCloudBlobClient(storageAccountName, storageAccountKey);
-
             try
             {
-                CloudBlobContainer container = blobClient.GetContainerReference(destContainer);
                 await container.DeleteIfExistsAsync();
                 return true;
             }
             catch (Exception ex)
             {
-                Logger.LogError(LogEvents.DeleteContainerFailed, ex, "Exception on delete container {containerName}.", containerName);
+                Logger.LogError(LogEvents.DeleteContainerFailed, ex, "Exception on delete container {containerName}.", container.Name);
                 return false;
             }
         }
 
         private CloudBlobClient GetCloudBlobClient(string storageAccountName, string storageAccountKey)
         {
-            string storageConnectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey}";
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(storageConnectionString);
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-
+            var storageConnectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey}";
+            var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
+            var blobClient = storageAccount.CreateCloudBlobClient();
             return blobClient;
         }
 
-        private string Format(DateTimeOffset date)
+        private CloudBlobContainer GetCloudBlobContainer(string storageAccountName, string storageAccountKey, string containerName)
         {
-            return date.ToString("yyyyMMdd");
+            var blobClient = GetCloudBlobClient(storageAccountName, storageAccountKey);
+            var container = blobClient.GetContainerReference(containerName);
+            return container;
+        }
+
+        /// <summary>
+        /// For a specific base container 
+        /// returns the backup containers that need to be deleted 
+        /// </summary>
+        /// <param name="storageAccountName">The storage account name</param>
+        /// <param name="storageAccountKey">The storage account key</param>
+        /// <param name="containerName">The base container name</param>
+        /// <param name="backupDays">The number of days to keep</param>
+        /// <returns></returns>
+        private IEnumerable<CloudBlobContainer> GetContainersToBeDeleted(string storageAccountName, 
+                                                              string storageAccountKey, 
+                                                              string containerName,
+                                                              int backupDays)
+        {
+            var blobClient = GetCloudBlobClient(storageAccountName, storageAccountKey);
+            //it is used backupDays - 1 because a new container will be created
+            var containersToDelete = blobClient.ListContainers(prefix: $"{GetContainerPrefix(containerName)}").
+                OrderByDescending((blobContainer) => { return blobContainer.Name; }).
+                Skip(backupDays - 1); 
+            return containersToDelete;
+        }
+
+        private string FormatDestinationContainerName(DateTimeOffset date, string containerName)
+        {
+            return $"{GetContainerPrefix(containerName)}{date.ToString("yyyyMMdd")}";
+        }
+
+        private string GetContainerPrefix(string containerName)
+        {
+            return $"{containerName}-";
         }
     }
 }

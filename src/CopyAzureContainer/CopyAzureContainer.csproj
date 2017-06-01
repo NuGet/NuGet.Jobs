@@ -102,6 +102,7 @@
   <ItemGroup>
     <Compile Include="AzureContainerInfo.cs" />
     <Compile Include="CopyAzureContainerJob.cs" />
+    <Compile Include="ArgumentNames.cs" />
     <Compile Include="LogEvents.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -113,7 +114,6 @@
     <None Include="Scripts\Functions.ps1" />
     <None Include="Scripts\InstallAzCopy.ps1" />
     <None Include="Scripts\PostDeploy.ps1" />
-    <None Include="Scripts\PreDeploy.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">
@@ -123,7 +123,6 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="Scripts\nssm.exe" />
     <Content Include="tools\azcopy\ReadMe.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

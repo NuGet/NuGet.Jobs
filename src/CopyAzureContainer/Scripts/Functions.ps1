@@ -1,3 +1,25 @@
+Function Install-BackupV3Task
+{
+    Param ( [string]$triggersAt="12am")
+
+    $STTrigger = New-ScheduledTaskTrigger -DaysInterval 1 -At $triggersAt -Daily 
+
+    #Name and path for the scheduled task
+    $STName = "Nuget\BackupV3Job"
+
+    #Action to run as
+    $STAction = New-ScheduledTaskAction -Execute "$PSScriptRoot\backupv3storage.cmd"
+
+    #Configure when to stop the task and how long it can run for. In this example it does not stop on idle and uses the maximum possible duration by setting a timelimit of 0
+    $STSettings = New-ScheduledTaskSettingsSet -DontStopOnIdleEnd -ExecutionTimeLimit ([TimeSpan]::Zero) 
+
+    #Configure the principal to use for the scheduled task and the level to run as
+    $STPrincipal = New-ScheduledTaskPrincipal -UserID "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel "Highest"
+
+    #Register the new scheduled task
+    Register-ScheduledTask -TaskName $STName -Action $STAction -Trigger $STTrigger -Principal $STPrincipal -Settings $STSettings -Force
+}
+
 Function Install-AzCopy
 {
     Param ( [string]$toolsPath="$PSScriptRoot\bin\tools\azcopy")
