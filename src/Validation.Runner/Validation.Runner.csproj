@@ -144,6 +144,10 @@
       <Project>{4B4B1EFB-8F33-42E6-B79F-54E7F3293D31}</Project>
       <Name>NuGet.Jobs.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Validation.Helper\Validation.Helper.csproj">
+      <Project>{305fb2c1-01fd-413d-b788-7b85bad85a41}</Project>
+      <Name>Validation.Helper</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Scripts\nssm.exe" />

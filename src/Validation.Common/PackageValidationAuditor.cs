@@ -116,6 +116,13 @@ namespace NuGet.Jobs.Validation.Common
 
         public async Task StoreAuditAsync(Guid validationId, string packageId, string packageVersion, Func<PackageValidationAudit, PackageValidationAudit> updateAudit)
         {
+            _logger.LogInformation($"Updating audit blob for validation {{{TraceConstant.ValidationId}}} " +
+                $"- package {{{TraceConstant.PackageId}}} " +
+                $"{{{TraceConstant.PackageVersion}}}",
+                validationId,
+                packageId, 
+                packageVersion);
+
             var blob = _auditsContainer.GetBlockBlobReference(
                          GenerateAuditFileName(
                              validationId,
@@ -123,6 +130,10 @@ namespace NuGet.Jobs.Validation.Common
                              packageVersion));
 
             var leaseId = await blob.TryAcquireLeaseAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
+            _logger.LogInformation($"Got blob lease: {{LeaseId}} for validation {{{TraceConstant.ValidationId}}}", 
+                leaseId,
+                validationId);
+
             var accessCondition = !string.IsNullOrEmpty(leaseId)
                 ? AccessCondition.GenerateLeaseCondition(leaseId)
                 : null;
@@ -131,31 +142,45 @@ namespace NuGet.Jobs.Validation.Common
 
             if (await blob.ExistsAsync())
             {
+                _logger.LogInformation($"Updating existing blob for validation {{{TraceConstant.ValidationId}}}",
+                    validationId);
                 var json = await blob.DownloadTextAsync(Encoding.UTF8, accessCondition, null, null);
                 packageValidationAudit = JsonConvert.DeserializeObject<PackageValidationAudit>(json);
                 packageValidationAudit = updateAudit(packageValidationAudit);
             }
             else
             {
+                _logger.LogInformation($"Updating new blob for validation {{{TraceConstant.ValidationId}}}",
+                    validationId);
                 packageValidationAudit = updateAudit(null);
             }
 
+            _logger.LogInformation($"Uploading blob for validation {{{TraceConstant.ValidationId}}}",
+                validationId);
             await blob.UploadTextAsync(JsonConvert.SerializeObject(packageValidationAudit), Encoding.UTF8, accessCondition, null, null);
 
             blob.Properties.ContentType = "application/json";
+            _logger.LogInformation($"Setting blob properties for validation {{{TraceConstant.ValidationId}}}",
+                validationId);
             await blob.SetPropertiesAsync(accessCondition, null, null);
 
             if (accessCondition != null)
             {
                 try
                 {
+                    _logger.LogInformation($"Releasing lease for validation {{{TraceConstant.ValidationId}}}",
+                        validationId);
                     await blob.ReleaseLeaseAsync(AccessCondition.GenerateLeaseCondition(leaseId));
                 }
                 catch
                 {
                     // intentional, lease may already have been expired
+                    _logger.LogInformation($"Exception occurred while releasing the lease for validation {{{TraceConstant.ValidationId}}}",
+                        validationId);
                 }
             }
+            _logger.LogInformation($"Done blob operations for validation {{{TraceConstant.ValidationId}}}",
+                validationId);
         }
 
         public async Task<PackageValidationAudit> ReadAuditAsync(Guid validationId, string packageId, string packageVersion)

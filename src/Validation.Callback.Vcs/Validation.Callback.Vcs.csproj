@@ -25,6 +25,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
+    <Use64BitIISExpress />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -131,7 +132,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Web.config" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -140,6 +143,10 @@
     <ProjectReference Include="..\Validation.Common\Validation.Common.csproj">
       <Project>{2539ddf3-0cc5-4a03-b5f9-39b47744a7bd}</Project>
       <Name>Validation.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Validation.Helper\Validation.Helper.csproj">
+      <Project>{305fb2c1-01fd-413d-b788-7b85bad85a41}</Project>
+      <Name>Validation.Helper</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
