@@ -5,6 +5,10 @@
     "Newtonsoft.Json": {
       "version": "9.0.1",
       "comment": "Not a direct dependency, workaround to have correct version of json.dll to be put in the output directory. Probably could be removed once all dependent projects are upgraded to use project.json"
+    },
+    "Microsoft.ApplicationInsights": {
+      "version": "2.2.0",
+      "comment": "Again, not a direct dependency"
     }
   },
   "frameworks": {
