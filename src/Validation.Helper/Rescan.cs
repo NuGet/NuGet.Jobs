@@ -44,7 +44,9 @@ namespace NuGet.Jobs.Validation.Helper
             _cloudStorageAccount = cloudStorageAccount;
 
             _packageId = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageId);
+            _packageId = System.Web.HttpUtility.UrlDecode(_packageId);
             _packageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageVersion);
+            _packageVersion = System.Web.HttpUtility.UrlDecode(_packageVersion);
             _packageValidationService = packageValidationService;
             _galleryBaseAddress = galleryBaseAddress;
         }

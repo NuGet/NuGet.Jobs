@@ -43,7 +43,9 @@ namespace NuGet.Jobs.Validation.Helper
             _containerName = containerName;
 
             _packageId = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageId);
+            _packageId = System.Web.HttpUtility.UrlDecode(_packageId);
             _packageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageVersion);
+            _packageVersion = System.Web.HttpUtility.UrlDecode(_packageVersion);
             var validationIdStr = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.ValidationId);
             _validationId = Guid.Parse(validationIdStr);
             _comment = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.Comment);
