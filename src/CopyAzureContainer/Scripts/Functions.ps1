@@ -47,9 +47,16 @@ Function Install-AzCopy
         Unblock-File $msi
 
         Write-Host "Extracting AzCopy"
-        Start-Process msiexec -Argument "/a $msi /qb TARGETDIR=$output /quiet" -Wait
+        $proc = Start-Process msiexec -Argument "/a $msi /qb TARGETDIR=$output /quiet" -Wait -PassThru
 
-        Copy-Item "$output\Microsoft SDKs\Azure\AzCopy\*" $toolsPath -Force
+        if ($proc.ExitCode -eq 0)
+        {
+            Copy-Item "$output\Microsoft SDKs\Azure\AzCopy\*" $toolsPath -Force
+        }
+        else
+        {
+            Write-Host "Install AzCopy failed!"
+        }
         Remove-Item $bootstrap -Recurse -Force
     }
 }

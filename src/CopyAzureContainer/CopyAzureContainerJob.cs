@@ -44,8 +44,8 @@ namespace CopyAzureContainer
                 _destStorageAccountName = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageAccountName);
                 _destStorageKeyValue = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageKeyValue);
                 _sourceContainers = jobArgsDictionary.
-                                        Where((kvp) => { return kvp.Key.StartsWith(ArgumentNames.CopyAzureContainer_SourceContainerPrefix); }).
-                                        Select((kvp) => { return new AzureContainerInfo(kvp.Value);});
+                                        Where( kvp =>  kvp.Key.StartsWith(ArgumentNames.CopyAzureContainer_SourceContainerPrefix) ).
+                                        Select( kvp => new AzureContainerInfo(kvp.Value) );
 
             }
             catch (Exception exception)
@@ -75,8 +75,8 @@ namespace CopyAzureContainer
         {
             var currentDate = DateTimeOffset.UtcNow;
             var deleteTasks = (_backupDays > 0) ? _sourceContainers.
-                SelectMany((c) => { return GetContainersToBeDeleted(_destStorageAccountName, _destStorageKeyValue, c.ContainerName, _backupDays); }).
-                Select((c) => { return TryDeleteContainerAsync(c); }).ToArray() : null;
+                SelectMany( c => GetContainersToBeDeleted(_destStorageAccountName, _destStorageKeyValue, c.ContainerName, _backupDays) ).
+                Select( c => TryDeleteContainerAsync(c)).ToArray() : null;
 
             foreach(var c in _sourceContainers)
             {
@@ -113,7 +113,6 @@ namespace CopyAzureContainer
                     ProcessStartInfo copyToAzureProc = new ProcessStartInfo();
                     copyToAzureProc.FileName = $"{AzCopyPath}";
                     copyToAzureProc.Arguments = $"{arguments}"; 
-                    copyToAzureProc.CreateNoWindow = false;
                     copyToAzureProc.UseShellExecute = false;
 #if DEBUG
                     copyToAzureProc.RedirectStandardOutput = true;
@@ -146,7 +145,6 @@ namespace CopyAzureContainer
                     ProcessStartInfo copyToAzureProcLog = new ProcessStartInfo();
                     copyToAzureProcLog.FileName = $"{AzCopyPath}";
                     copyToAzureProcLog.Arguments = $"{argumentsLog}";
-                    copyToAzureProcLog.CreateNoWindow = false;
                     copyToAzureProcLog.UseShellExecute = false;
                     using (var pLog = Process.Start(copyToAzureProcLog))
                     {
@@ -239,7 +237,7 @@ namespace CopyAzureContainer
             var blobClient = GetCloudBlobClient(storageAccountName, storageAccountKey);
             //it is used backupDays - 1 because a new container will be created
             var containersToDelete = blobClient.ListContainers(prefix: $"{GetContainerPrefix(containerName)}").
-                OrderByDescending((blobContainer) => { return blobContainer.Properties.LastModified; }).
+                OrderByDescending( blobContainer => blobContainer.Properties.LastModified ).
                 Skip(backupDays - 1); 
             return containersToDelete;
         }
