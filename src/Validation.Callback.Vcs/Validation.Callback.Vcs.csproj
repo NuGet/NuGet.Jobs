@@ -144,10 +144,6 @@
       <Project>{2539ddf3-0cc5-4a03-b5f9-39b47744a7bd}</Project>
       <Name>Validation.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Validation.Helper\Validation.Helper.csproj">
-      <Project>{305fb2c1-01fd-413d-b788-7b85bad85a41}</Project>
-      <Name>Validation.Helper</Name>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
