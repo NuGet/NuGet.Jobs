@@ -107,8 +107,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
         {
             // The VCS service needs a blob storage URL, which the NuGet API does not expose.
             // Build one from a template here.
-            // Constructing an Uri object to make sure all URL 
-            // transformations (like urlencoding) are happening
+            // Guarantee all URL transformations (such as URL encoding) are performed.
             return new Uri(_packageUrlTemplate
                 .Replace("{id}", packageId)
                 .Replace("{version}", packageVersion)
