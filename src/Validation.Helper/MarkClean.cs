@@ -9,6 +9,7 @@ using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.Common.OData;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
+using System.Web;
 
 namespace NuGet.Jobs.Validation.Helper
 {
@@ -44,9 +45,9 @@ namespace NuGet.Jobs.Validation.Helper
             _containerName = containerName;
 
             PackageId = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageId);
-            PackageId = System.Web.HttpUtility.UrlDecode(PackageId);
+            PackageId = HttpUtility.UrlDecode(PackageId);
             PackageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageVersion);
-            PackageVersion = System.Web.HttpUtility.UrlDecode(PackageVersion);
+            PackageVersion = HttpUtility.UrlDecode(PackageVersion);
             var validationIdStr = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.ValidationId);
             _validationId = Guid.Parse(validationIdStr);
             _comment = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.Comment);
