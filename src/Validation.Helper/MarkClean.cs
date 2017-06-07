@@ -12,13 +12,11 @@ using NuGet.Jobs.Validation.Common.Validators.Vcs;
 
 namespace NuGet.Jobs.Validation.Helper
 {
-    internal class MarkClean : ICommand
+    public class MarkClean : ICommand
     {
         private readonly ILogger<MarkClean> _logger;
         private readonly CloudStorageAccount _cloudStorageAccount;
         private readonly string _containerName;
-        private readonly string _packageId;
-        private readonly string _packageVersion;
         private readonly Guid _validationId;
         private readonly string _comment;
         private readonly string _alias;
@@ -27,6 +25,9 @@ namespace NuGet.Jobs.Validation.Helper
         private readonly string _galleryBaseAddress;
 
         public Action Action => Helper.Action.MarkClean;
+
+        public string PackageId { get; private set; }
+        public string PackageVersion { get; private set; }
 
         public MarkClean(
             IDictionary<string, string> jobArgsDictionary,
@@ -42,10 +43,10 @@ namespace NuGet.Jobs.Validation.Helper
             _cloudStorageAccount = cloudStorageAccount;
             _containerName = containerName;
 
-            _packageId = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageId);
-            _packageId = System.Web.HttpUtility.UrlDecode(_packageId);
-            _packageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageVersion);
-            _packageVersion = System.Web.HttpUtility.UrlDecode(_packageVersion);
+            PackageId = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageId);
+            PackageId = System.Web.HttpUtility.UrlDecode(PackageId);
+            PackageVersion = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.PackageVersion);
+            PackageVersion = System.Web.HttpUtility.UrlDecode(PackageVersion);
             var validationIdStr = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.ValidationId);
             _validationId = Guid.Parse(validationIdStr);
             _comment = JobConfigurationManager.GetArgument(jobArgsDictionary, CommandLineArguments.Comment);
@@ -60,16 +61,16 @@ namespace NuGet.Jobs.Validation.Helper
 
             _logger.LogInformation($"Starting creating successful scan entry for the {{{TraceConstant.PackageId}}} " +
                     $"{{{TraceConstant.PackageVersion}}}",
-                _packageId,
-                _packageVersion);
+                PackageId,
+                PackageVersion);
 
-            NuGetPackage package = await Util.GetPackage(_galleryBaseAddress, _feed, _packageId, _packageVersion);
+            NuGetPackage package = await Util.GetPackage(_galleryBaseAddress, _feed, PackageId, PackageVersion);
             if (package == null)
             {
                 _logger.LogError($"Unable to find {{{TraceConstant.PackageId}}} " +
                         $"{{{TraceConstant.PackageVersion}}}. Terminating.",
-                    _packageId,
-                    _packageVersion);
+                    PackageId,
+                    PackageVersion);
                 return false;
             }
             _logger.LogInformation($"Found package {{{TraceConstant.PackageId}}} " +

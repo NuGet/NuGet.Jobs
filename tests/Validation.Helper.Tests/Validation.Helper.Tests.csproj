@@ -42,9 +42,23 @@
   <ItemGroup>
     <Compile Include="MarkCleanFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RescanFacts.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Validation.Common\Validation.Common.csproj">
+      <Project>{2539DDF3-0CC5-4A03-B5F9-39B47744A7BD}</Project>
+      <Name>Validation.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Validation.Helper\Validation.Helper.csproj">
+      <Project>{305fb2c1-01fd-413d-b788-7b85bad85a41}</Project>
+      <Name>Validation.Helper</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
