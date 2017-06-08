@@ -1,11 +1,10 @@
 @echo OFF
 
-cd Ng
+cd bin
 
-:Top
-    echo "Starting job - #{Jobs.backupv3storage.Title}"
+echo "Starting job - #{Jobs.backupv3storage.Title}"
 
-    title #{Jobs.backupv3storage.Title}
+title #{Jobs.backupv3storage.Title}
 
 start /w CopyAzureContainer.exe -ConsoleLogOnly ^
     -SourceContainerInfo_lucene #{Jobs.common.v3.Storage.Primary.Name}:#{Jobs.common.v3.Storage.Primary.Key}:#{Jobs.catalog2lucenev3reg2.LuceneContainer} ^
@@ -23,5 +22,3 @@ start /w CopyAzureContainer.exe -ConsoleLogOnly ^
     -Once
 
     echo "Finished #{Jobs.backupv3storage.Title}"
-
-    goto Top
