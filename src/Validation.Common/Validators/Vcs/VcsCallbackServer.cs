@@ -220,7 +220,7 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
                     // This denotes scan has completed and we have a pass (or results)
                     if (result.State == State.Complete || result.State == State.Released)
                     {
-                        if (result.Result == "Pass" || result.Result == "PassWithInfo" || result.Result == "PassManual")
+                        if (result.Result == "Pass" || result.Result == "PassWithInfo" || result.Result == "PassManual" || result.Result == "PassWithWarn")
                         {
                             // The result is clean.
                             processedRequest = true;
