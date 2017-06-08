@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using Moq;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace NuGet.Jobs.Validation.Helper.Tests
