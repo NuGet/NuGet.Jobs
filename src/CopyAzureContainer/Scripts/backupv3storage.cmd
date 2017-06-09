@@ -1,5 +1,6 @@
 @echo OFF
 
+<<<<<<< HEAD
 cd bin
 
 echo "Starting job - #{Jobs.backupv3storage.Title}"
@@ -22,3 +23,4 @@ start /w CopyAzureContainer.exe -ConsoleLogOnly ^
     -Once
 
     echo "Finished #{Jobs.backupv3storage.Title}"
+
