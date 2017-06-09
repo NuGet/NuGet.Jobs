@@ -1,6 +1,5 @@
 @echo OFF
 
-<<<<<<< HEAD
 cd bin
 
 echo "Starting job - #{Jobs.backupv3storage.Title}"
