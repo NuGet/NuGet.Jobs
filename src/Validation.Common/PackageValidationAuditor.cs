@@ -116,7 +116,7 @@ namespace NuGet.Jobs.Validation.Common
 
         public async Task StoreAuditAsync(Guid validationId, string packageId, string packageVersion, Func<PackageValidationAudit, PackageValidationAudit> updateAudit)
         {
-            _logger.LogInformation($"Updating audit blob for validation {{{TraceConstant.ValidationId}}} " +
+            _logger.LogInformation($"Started updating audit blob for validation {{{TraceConstant.ValidationId}}} " +
                 $"- package {{{TraceConstant.PackageId}}} " +
                 $"{{{TraceConstant.PackageVersion}}}",
                 validationId,
@@ -150,7 +150,7 @@ namespace NuGet.Jobs.Validation.Common
             }
             else
             {
-                _logger.LogInformation($"Updating new auditing blob for validation {{{TraceConstant.ValidationId}}}",
+                _logger.LogInformation($"Creating new auditing blob for validation {{{TraceConstant.ValidationId}}}",
                     validationId);
                 packageValidationAudit = updateAudit(null);
             }
@@ -182,7 +182,7 @@ namespace NuGet.Jobs.Validation.Common
                         validationId);
                 }
             }
-            _logger.LogInformation($"Completed blob operations for validation {{{TraceConstant.ValidationId}}}",
+            _logger.LogInformation($"Completed updating audit blob for validation {{{TraceConstant.ValidationId}}}",
                 validationId);
         }
 
