@@ -18,6 +18,8 @@ namespace NuGet.Jobs.Validation.Helper
             string packageId, 
             string packageVersion)
         {
+            // We'll try the normalized version first, then fall back to non-normalized
+            // one if it fails.
             var url = GetNormalizedPackageUrl(galleryBaseAddress, packageId, packageVersion);
             var package = await GetPackage(feed, url);
             if (package != null)
