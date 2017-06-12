@@ -142,7 +142,7 @@ namespace NuGet.Jobs.Validation.Common
 
             if (await blob.ExistsAsync())
             {
-                _logger.LogInformation($"Updating existing blob for validation {{{TraceConstant.ValidationId}}}",
+                _logger.LogInformation($"Updating existing auditing blob for validation {{{TraceConstant.ValidationId}}}",
                     validationId);
                 var json = await blob.DownloadTextAsync(Encoding.UTF8, accessCondition, null, null);
                 packageValidationAudit = JsonConvert.DeserializeObject<PackageValidationAudit>(json);
@@ -150,12 +150,12 @@ namespace NuGet.Jobs.Validation.Common
             }
             else
             {
-                _logger.LogInformation($"Updating new blob for validation {{{TraceConstant.ValidationId}}}",
+                _logger.LogInformation($"Updating new auditing blob for validation {{{TraceConstant.ValidationId}}}",
                     validationId);
                 packageValidationAudit = updateAudit(null);
             }
 
-            _logger.LogInformation($"Uploading blob for validation {{{TraceConstant.ValidationId}}}",
+            _logger.LogInformation($"Saving updated audit blob for validation {{{TraceConstant.ValidationId}}}",
                 validationId);
             await blob.UploadTextAsync(JsonConvert.SerializeObject(packageValidationAudit), Encoding.UTF8, accessCondition, null, null);
 
@@ -172,14 +172,17 @@ namespace NuGet.Jobs.Validation.Common
                         validationId);
                     await blob.ReleaseLeaseAsync(AccessCondition.GenerateLeaseCondition(leaseId));
                 }
-                catch
+                catch (Exception e)
                 {
                     // intentional, lease may already have been expired
-                    _logger.LogInformation($"Exception occurred while releasing the lease for validation {{{TraceConstant.ValidationId}}}",
+                    _logger.LogInformation(
+                        TraceEvent.AuditBlobLeaseReleaseFailed,
+                        e,
+                        $"Exception occurred while releasing the lease for validation {{{TraceConstant.ValidationId}}}",
                         validationId);
                 }
             }
-            _logger.LogInformation($"Done blob operations for validation {{{TraceConstant.ValidationId}}}",
+            _logger.LogInformation($"Completed blob operations for validation {{{TraceConstant.ValidationId}}}",
                 validationId);
         }
 
