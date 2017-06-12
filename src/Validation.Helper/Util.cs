@@ -18,13 +18,13 @@ namespace NuGet.Jobs.Validation.Helper
             string packageId, 
             string packageVersion)
         {
-            var url = GetPackageUrl(galleryBaseAddress, packageId, packageVersion);
+            var url = GetNormalizedPackageUrl(galleryBaseAddress, packageId, packageVersion);
             var package = await GetPackage(feed, url);
             if (package != null)
             {
                 return package;
             }
-            url = GetPackageFallbackUrl(galleryBaseAddress, packageId, packageVersion);
+            url = GetPackageUrl(galleryBaseAddress, packageId, packageVersion);
             return await GetPackage(feed, url);
         }
 
@@ -33,16 +33,38 @@ namespace NuGet.Jobs.Validation.Helper
             return (await feed.GetPackagesAsync(url)).FirstOrDefault();
         }
 
-        public static Uri GetPackageFallbackUrl(string galleryBaseAddress, string packageId, string packageVersion)
+        /// <summary>
+        /// Returns the URL of the OData request to the NuGet service that
+        /// would provide the package information for the specified package
+        /// by its ID and (non-normalized) version.
+        /// </summary>
+        /// <param name="galleryBaseAddress">
+        /// Base address of the NuGet Gallery V2 API (https://www.nuget.org/api/v2).
+        /// </param>
+        /// <param name="packageId">Package ID.</param>
+        /// <param name="packageVersion">Non-normalized package version.</param>
+        /// <returns>URL of the OData request providing package information for the requested package.</returns>
+        public static Uri GetPackageUrl(string galleryBaseAddress, string packageId, string packageVersion)
         {
             return new Uri($"{galleryBaseAddress}/Packages?" +
                 $"$filter=Id eq '{packageId}' and Version eq '{packageVersion}' and true");
         }
 
-        public static Uri GetPackageUrl(string galleryBaseAddress, string packageId, string packageVersion)
+        /// <summary>
+        /// Returns the URL of the OData request to the NuGet service that
+        /// would provide the package information for the specified package
+        /// by its ID and normalized version
+        /// </summary>
+        /// <param name="galleryBaseAddress">
+        /// Base address of the NuGet Gallery V2 API (https://www.nuget.org/api/v2).
+        /// </param>
+        /// <param name="packageId">Package ID.</param>
+        /// <param name="normalizedPackageVersion">Normalized package version.</param>
+        /// <returns>URL of the OData request providing package information for the requested package.</returns>
+        public static Uri GetNormalizedPackageUrl(string galleryBaseAddress, string packageId, string normalizedPackageVersion)
         {
             return new Uri($"{galleryBaseAddress}/Packages?" +
-                $"$filter=Id eq '{packageId}' and NormalizedVersion eq '{packageVersion}' and true");
+                $"$filter=Id eq '{packageId}' and NormalizedVersion eq '{normalizedPackageVersion}' and true");
         }
     }
 }
