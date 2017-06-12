@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.Common.OData;
