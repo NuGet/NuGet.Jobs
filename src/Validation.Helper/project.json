@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.ApplicationInsights": {
       "version": "2.2.0",
-      "comment": "Again, not a direct dependency"
+      "comment": "Not a direct dependency, workaround to bring get proper version int the output directory"
     },
     "Newtonsoft.Json": {
       "version": "9.0.1",
