@@ -35,6 +35,9 @@ namespace HandlePackageEdits
         public const string DefaultBackupContainerName = "package-backups";
         public const int DefaultMaxRetryCount = 10;
 
+        public const string ReadMeChanged = "changed";
+        public const string ReadMeDeleted = "deleted";
+
         /// <summary>
         /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
         /// </summary>
@@ -277,6 +280,8 @@ namespace HandlePackageEdits
                     edit.IconUrl,
                     edit.LicenseUrl,
                     edit.ProjectUrl,
+                    edit.RepositoryUrl,
+                    edit.ReadMeState,
                     edit.ReleaseNotes,
                     edit.RequiresLicenseAcceptance,
                     edit.Summary,
@@ -298,6 +303,35 @@ namespace HandlePackageEdits
                     loadAuthorsSql.Append("INSERT INTO [PackageAuthors]([PackageKey],[Name]) VALUES(@PackageKey, @Author" + i + ")");
                     parameters.Add("Author" + i, authors[i]);
                 }
+
+                // Update ReadMe
+                if (edit.ReadMeState == ReadMeChanged)
+                {
+                    // Update packages DB
+                    await connection.QueryAsync<int>(@"
+                            BEGIN TRANSACTION
+                                -- Update the packages table
+                                UPDATE  [Packages]
+                                SET     HasReadMe = 1
+                                WHERE   [Key] = @PackageKey
+                            " + "COMMIT TRANSACTION",
+                    parameters);
+                }
+                // Remove ReadMe
+                else if (edit.ReadMeState == ReadMeDeleted)
+                {
+                    // Update packages DB
+                    await connection.QueryAsync<int>(@"
+                            BEGIN TRANSACTION
+                                -- Update the packages table
+                                UPDATE  [Packages]
+                                SET     HasReadMe = 0
+                                WHERE   [Key] = @PackageKey
+                            " + "COMMIT TRANSACTION",
+                    parameters);
+                }
+                // If ReadMeState == "unchanged", do nothing
+                // If ReadMeState == null, do nothing (default is null)
 
                 await connection.QueryAsync<int>(@"
                             BEGIN TRANSACTION
@@ -327,7 +361,8 @@ namespace HandlePackageEdits
                                             HashAlgorithm,
                                             PackageFileSize,
                                             LastUpdated,
-                                            Published
+                                            Published,
+                                            RepositoryUrl
                                 FROM        [Packages]
                                 WHERE       [Key] = @PackageKey
 
@@ -349,7 +384,8 @@ namespace HandlePackageEdits
                                         Hash = @Hash,
                                         HashAlgorithm = @HashAlgorithm,
                                         PackageFileSize = @PackageFileSize,
-                                        FlattenedAuthors = @Authors
+                                        FlattenedAuthors = @Authors,
+                                        RepositoryUrl = @RepositoryUrl
                                 WHERE   [Key] = @PackageKey
 
                                 -- Update Authors
@@ -365,6 +401,7 @@ namespace HandlePackageEdits
                             " + "COMMIT TRANSACTION",
                     parameters);
             }
+
         }
 
         private async Task UpdatePackageEditDbWithError(Exception exception, int editKey)
