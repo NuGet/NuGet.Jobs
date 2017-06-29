@@ -40,10 +40,6 @@ namespace HandlePackageEdits
         public const string ReadMeChanged = "changed";
         public const string ReadMeDeleted = "deleted";
 
-        public const string PendingReadMe = "pending";
-        public const string VerifiedReadMe = "verified";
-        public const string ReadMeFileSavePathTemplate = "{0}/{1}{2}";
-
         /// <summary>
         /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
         /// </summary>
@@ -171,7 +167,6 @@ namespace HandlePackageEdits
                     await UpdatePackageEditDbWithError(exception, edit.Key);
                 }
             }
-
             return true;
         }
 
@@ -466,7 +461,6 @@ namespace HandlePackageEdits
                             " + "COMMIT TRANSACTION",
                     parameters);
             }
-
         }
 
         private async Task UpdatePackageEditDbWithError(Exception exception, int editKey)
@@ -491,7 +485,6 @@ namespace HandlePackageEdits
             {
                 Trace.TraceError($"Error updating the package edit database with error! {ex}");
             }
-
         }
     }
 }
