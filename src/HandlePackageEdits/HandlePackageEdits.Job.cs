@@ -493,23 +493,5 @@ namespace HandlePackageEdits
             }
 
         }
-
-        //private static string buildreadmefilename(string id, string version)
-        //{
-        //    if (id == null)
-        //    {
-        //        throw new argumentnullexception(nameof(id));
-        //    }
-        //    if (version == null)
-        //    {
-        //        throw new argumentnullexception(nameof(version));
-        //    }
-        //    return string.format(
-        //        cultureinfo.invariantculture,
-        //        readmefilesavepathtemplate,
-        //        id.tolowerinvariant(),
-        //        version.tolowerinvariant(),
-        //        readmefileextension);
-        //}
     }
 }
