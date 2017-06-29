@@ -10,6 +10,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Globalization;
 using Dapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
@@ -33,10 +34,15 @@ namespace HandlePackageEdits
 
         public const string DefaultSourceContainerName = "packages";
         public const string DefaultBackupContainerName = "package-backups";
+        public const string DefaultReadMeContainerName = "readmes";
         public const int DefaultMaxRetryCount = 10;
 
         public const string ReadMeChanged = "changed";
         public const string ReadMeDeleted = "deleted";
+
+        public const string PendingReadMe = "pending";
+        public const string VerifiedReadMe = "verified";
+        public const string ReadMeFileSavePathTemplate = "{0}/{1}{2}";
 
         /// <summary>
         /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
@@ -56,6 +62,12 @@ namespace HandlePackageEdits
         public string BackupsContainerName { get; set; }
 
         /// <summary>
+        /// Gets or sets an Azure Storage Uri referring to a container to use as the storage for ReadMes
+        /// </summary>
+        public CloudStorageAccount ReadMe { get; set; }
+        public string ReadMeContainerName { get; set; }
+
+        /// <summary>
         /// Gets or sets the maximum number of tries that are allowed before considering an edit failed.
         /// </summary>
         public int? MaxTryCount { get; set; }
@@ -64,6 +76,7 @@ namespace HandlePackageEdits
 
         protected CloudBlobContainer SourceContainer { get; set; }
         protected CloudBlobContainer BackupsContainer { get; set; }
+        protected CloudBlobContainer ReadMeContainer { get; set; }
         protected long MaxManifestSize { get; set; }
         private ILogger _logger;
 
@@ -89,12 +102,13 @@ namespace HandlePackageEdits
                                            JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SourceStorage));
                 Backups = CloudStorageAccount.Parse(
                                            JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.BackupStorage));
-
                 SourceContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
                 BackupsContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;
+                ReadMeContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultReadMeContainerName;
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 BackupsContainer = Backups.CreateCloudBlobClient().GetContainerReference(BackupsContainerName);
+                ReadMeContainer = Source.CreateCloudBlobClient().GetContainerReference(ReadMeContainerName);
 
                 MaxTryCount = DefaultMaxRetryCount;
             }
@@ -164,6 +178,7 @@ namespace HandlePackageEdits
         private async Task ApplyEdit(PackageEdit edit)
         {
             string originalPath = null;
+            string originalReadMePath = null;
 
             try
             {
@@ -175,6 +190,7 @@ namespace HandlePackageEdits
                 }
 
                 originalPath = Path.Combine(directory, "original.nupkg");
+                Trace.TraceInformation($"{originalPath}");
                 var sourceBlob = SourceContainer.GetBlockBlobReference(
                     StorageHelpers.GetPackageBlobName(edit.Id, edit.Version));
                 Trace.TraceInformation($"Name is {sourceBlob.Name}, storage uri is {sourceBlob.StorageUri}");
@@ -227,7 +243,57 @@ namespace HandlePackageEdits
                         hashAlgorithm.ComputeHash(originalStream));
                 }
 
-                // Update the database
+                // Update ReadMe in blob storage
+                if (edit.ReadMeState == ReadMeChanged)
+                {
+                    try
+                    {
+                        originalReadMePath = Path.Combine(directory, StorageHelpers.GetReadMeBlobName(edit.Version));
+                        Trace.TraceInformation($"{originalReadMePath}");
+
+                        var pendingReadMeBlob = ReadMeContainer.GetBlockBlobReference(
+                            StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version));
+                        var verifiedReadMeBlob = ReadMeContainer.GetBlockBlobReference(
+                            StorageHelpers.GetVerifiedReadMeBlobNamePath(edit.Id, edit.Version));
+                        Trace.TraceInformation($"Pending name is {pendingReadMeBlob.Name}, storage uri is {pendingReadMeBlob.StorageUri}");
+                        Trace.TraceInformation($"Verified name is {verifiedReadMeBlob.Name}, storage uri is {verifiedReadMeBlob.StorageUri}");
+
+                        // Download pending ReadMe
+                        Trace.TraceInformation($"Downloading new ReadMe of {edit.Id} {edit.Version}");
+                        await pendingReadMeBlob.DownloadToFileAsync(originalReadMePath, FileMode.Create);
+                        Trace.TraceInformation($"Downloaded new ReadMe of {edit.Id} {edit.Version}");
+
+                        // Upload pending ReadMe to verified
+                        Trace.TraceInformation($"Uploading new ReadMe for {edit.Id} {edit.Version} to {verifiedReadMeBlob.Uri.AbsoluteUri}");
+                        await verifiedReadMeBlob.UploadFromFileAsync(originalReadMePath);
+                        Trace.TraceInformation($"Uploaded new ReadMe for {edit.Id} {edit.Version} to {verifiedReadMeBlob.Uri.AbsoluteUri}");
+
+                        // Delete pending ReadMe
+                        Trace.TraceInformation($"Deleting pending ReadMe of {edit.Id} {edit.Version} from {pendingReadMeBlob.Uri.AbsoluteUri}");
+                        await pendingReadMeBlob.DeleteIfExistsAsync();
+                        Trace.TraceInformation($"Deleted pending ReadMe of {edit.Id} {edit.Version} from {pendingReadMeBlob.Uri.AbsoluteUri}");
+                    }
+                    finally
+                    {
+                        if (!string.IsNullOrEmpty(originalReadMePath) && File.Exists(originalReadMePath))
+                        {
+                            File.Delete(originalReadMePath);
+                        }
+                    }
+                }
+                // Delete ReadMe in blob storage
+                else if (edit.ReadMeState == ReadMeDeleted)
+                {
+                    var verifiedReadMeBlob = ReadMeContainer.GetBlockBlobReference(
+                        StorageHelpers.GetVerifiedReadMeBlobNamePath(edit.Id, edit.Version));
+
+                    // Delete verified ReadMe
+                    Trace.TraceInformation($"Deleting ReadMe of {edit.Id} {edit.Version} from {verifiedReadMeBlob.Uri.AbsoluteUri}");
+                    await verifiedReadMeBlob.DeleteIfExistsAsync();
+                    Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {verifiedReadMeBlob.Uri.AbsoluteUri}");
+                }
+                // If ReadMeState == null, do nothing
+
                 try
                 {
                     Trace.TraceInformation($"Updating package record for {edit.Id} {edit.Version}");
@@ -317,7 +383,7 @@ namespace HandlePackageEdits
                             " + "COMMIT TRANSACTION",
                     parameters);
                 }
-                // Remove ReadMe
+                // Delete ReadMe
                 else if (edit.ReadMeState == ReadMeDeleted)
                 {
                     // Update packages DB
@@ -330,8 +396,7 @@ namespace HandlePackageEdits
                             " + "COMMIT TRANSACTION",
                     parameters);
                 }
-                // If ReadMeState == "unchanged", do nothing
-                // If ReadMeState == null, do nothing (default is null)
+                // If ReadMeState == null, do nothing
 
                 await connection.QueryAsync<int>(@"
                             BEGIN TRANSACTION
@@ -428,5 +493,23 @@ namespace HandlePackageEdits
             }
 
         }
+
+        //private static string buildreadmefilename(string id, string version)
+        //{
+        //    if (id == null)
+        //    {
+        //        throw new argumentnullexception(nameof(id));
+        //    }
+        //    if (version == null)
+        //    {
+        //        throw new argumentnullexception(nameof(version));
+        //    }
+        //    return string.format(
+        //        cultureinfo.invariantculture,
+        //        readmefilesavepathtemplate,
+        //        id.tolowerinvariant(),
+        //        version.tolowerinvariant(),
+        //        readmefileextension);
+        //}
     }
 }
