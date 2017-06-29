@@ -40,7 +40,7 @@ namespace NuGet.Jobs
             return string.Format(
                 CultureInfo.InvariantCulture,
                 _PendingReadMePathNameFormat,
-                id,
+                id.ToLowerInvariant(),
                 version.ToLowerInvariant());
         }
 
@@ -49,7 +49,7 @@ namespace NuGet.Jobs
             return string.Format(
                 CultureInfo.InvariantCulture,
                 _VerifiedReadMePathNameFormat,
-                id,
+                id.ToLowerInvariant(),
                 version.ToLowerInvariant());
         }
 
