@@ -99,7 +99,7 @@ namespace HandlePackageEdits
                                            JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.BackupStorage));
                 SourceContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultSourceContainerName;
                 BackupsContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.BackupContainerName) ?? DefaultBackupContainerName;
-                ReadMeContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.SourceContainerName) ?? DefaultReadMeContainerName;
+                ReadMeContainerName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.ReadMeContainerName) ?? DefaultReadMeContainerName;
 
                 SourceContainer = Source.CreateCloudBlobClient().GetContainerReference(SourceContainerName);
                 BackupsContainer = Backups.CreateCloudBlobClient().GetContainerReference(BackupsContainerName);
@@ -184,7 +184,8 @@ namespace HandlePackageEdits
                 }
 
                 originalPath = Path.Combine(directory, "original.nupkg");
-                Trace.TraceInformation($"{originalPath}");
+                Trace.TraceInformation($"Downloading nupkg to {originalPath}");
+
                 var sourceBlob = SourceContainer.GetBlockBlobReference(
                     StorageHelpers.GetPackageBlobName(edit.Id, edit.Version));
                 Trace.TraceInformation($"Name is {sourceBlob.Name}, storage uri is {sourceBlob.StorageUri}");
@@ -312,11 +313,10 @@ namespace HandlePackageEdits
                 {
                     parameters.Add("HasReadMe", 1);
                 }
-                else if (edit.ReadMeState == ReadMeDeleted)
+                else
                 {
                     parameters.Add("HasReadMe", 0);
                 }
-                // If ReadMeState == null, do nothing
 
                 // Prep SQL for merging in authors
                 var loadAuthorsSql = new StringBuilder();

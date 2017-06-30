@@ -35,11 +35,11 @@ namespace NuGet.Jobs
                 WebUtility.UrlEncode(hash));
         }
 
-        public static string GetReadMeBlobPath(string folder, string id, string version)
+        private static string GetReadMeBlobPath(string folderTemplate, string id, string version)
         {
             return string.Format(
                 CultureInfo.InvariantCulture,
-                folder,
+                folderTemplate,
                 id.ToLowerInvariant(),
                 version.ToLowerInvariant());
         }
