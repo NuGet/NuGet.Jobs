@@ -120,7 +120,10 @@ Invoke-BuildStep 'Building solution' {
     
 Invoke-BuildStep 'Prepare Validation.Callback.Vcs Package' { Prepare-Vcs-Callback } `
     -ev +BuildErrors
-    
+
+Invoke-BuildStep 'Prepare Prepare-NuGetCDNRedirect Package' { Prepare-NuGetCDNRedirect } `
+    -ev +BuildErrors
+
 Invoke-BuildStep 'Creating artifacts' {
         $Projects = `
             "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
