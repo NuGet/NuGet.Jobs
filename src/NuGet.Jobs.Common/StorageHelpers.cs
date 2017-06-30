@@ -13,7 +13,7 @@ namespace NuGet.Jobs
         private const string _packageBackupBlobNameFormat = _packageBackupsDirectory + "/{0}/{1}/{2}.nupkg";
 
         private const string _PendingReadMePathNameFormat = "pending/{0}/{1}.md";
-        private const string _VerifiedReadMePathNameFormat = "verified/{0}/{1}.md";
+        private const string _ActiveReadMePathNameFormat = "active/{0}/{1}.md";
         private const string _ReadMeNameFormat = "{0}.md";
 
         public static string GetPackageBlobName(string id, string version)
@@ -35,30 +35,23 @@ namespace NuGet.Jobs
                 WebUtility.UrlEncode(hash));
         }
 
+        public static string GetReadMeBlobPath(string folder, string id, string version)
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                folder,
+                id.ToLowerInvariant(),
+                version.ToLowerInvariant());
+        }
+
         public static string GetPendingReadMeBlobNamePath(string id, string version)
         {
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                _PendingReadMePathNameFormat,
-                id.ToLowerInvariant(),
-                version.ToLowerInvariant());
+            return GetReadMeBlobPath(_PendingReadMePathNameFormat, id, version);
         }
 
-        public static string GetVerifiedReadMeBlobNamePath(string id, string version)
+        public static string GetActiveReadMeBlobNamePath(string id, string version)
         {
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                _VerifiedReadMePathNameFormat,
-                id.ToLowerInvariant(),
-                version.ToLowerInvariant());
-        }
-
-        public static string GetReadMeBlobName(string version)
-        {
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                _ReadMeNameFormat,
-                version.ToLowerInvariant());
+            return GetReadMeBlobPath(_ActiveReadMePathNameFormat, id, version);
         }
     }
 }
