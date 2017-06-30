@@ -304,8 +304,19 @@ namespace HandlePackageEdits
                     edit.UserKey,
                     PackageFileSize = size,
                     Hash = hash,
-                    HashAlgorithm = HashAlgorithmName
+                    HashAlgorithm = HashAlgorithmName,
                 });
+
+                // Update parameters with new HasReadMe value
+                if (edit.ReadMeState == ReadMeChanged)
+                {
+                    parameters.Add("HasReadMe", 1);
+                }
+                else if (edit.ReadMeState == ReadMeDeleted)
+                {
+                    parameters.Add("HasReadMe", 0);
+                }
+                // If ReadMeState == null, do nothing
 
                 // Prep SQL for merging in authors
                 var loadAuthorsSql = new StringBuilder();
@@ -315,34 +326,6 @@ namespace HandlePackageEdits
                     loadAuthorsSql.Append("INSERT INTO [PackageAuthors]([PackageKey],[Name]) VALUES(@PackageKey, @Author" + i + ")");
                     parameters.Add("Author" + i, authors[i]);
                 }
-
-                // Update ReadMe
-                if (edit.ReadMeState == ReadMeChanged)
-                {
-                    // Update packages DB
-                    await connection.QueryAsync<int>(@"
-                            BEGIN TRANSACTION
-                                -- Update the packages table
-                                UPDATE  [Packages]
-                                SET     HasReadMe = 1
-                                WHERE   [Key] = @PackageKey
-                            " + "COMMIT TRANSACTION",
-                    parameters);
-                }
-                // Delete ReadMe
-                else if (edit.ReadMeState == ReadMeDeleted)
-                {
-                    // Update packages DB
-                    await connection.QueryAsync<int>(@"
-                            BEGIN TRANSACTION
-                                -- Update the packages table
-                                UPDATE  [Packages]
-                                SET     HasReadMe = 0
-                                WHERE   [Key] = @PackageKey
-                            " + "COMMIT TRANSACTION",
-                    parameters);
-                }
-                // If ReadMeState == null, do nothing
 
                 await connection.QueryAsync<int>(@"
                             BEGIN TRANSACTION
@@ -396,7 +379,8 @@ namespace HandlePackageEdits
                                         HashAlgorithm = @HashAlgorithm,
                                         PackageFileSize = @PackageFileSize,
                                         FlattenedAuthors = @Authors,
-                                        RepositoryUrl = @RepositoryUrl
+                                        RepositoryUrl = @RepositoryUrl,
+                                        HasReadMe = @HasReadMe
                                 WHERE   [Key] = @PackageKey
 
                                 -- Update Authors

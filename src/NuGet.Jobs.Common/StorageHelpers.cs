@@ -53,6 +53,14 @@ namespace NuGet.Jobs
         {
             return GetReadMeBlobPath(_ActiveReadMePathNameFormat, id, version);
         }
+
+        public static string GetReadMeBlobName(string version)
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                _ReadMeNameFormat,
+                version.ToLowerInvariant());
+        }
     }
 }
 
