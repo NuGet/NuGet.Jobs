@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>NuGetCDNRedirect</id>
+    <version>$version$</version>
+    <title>NuGetCDNRedirect</title>
+    <authors>.NET Foundation</authors>
+    <owners>.NET Foundation</owners>
+    <copyright>Copyright .NET Foundation</copyright>
+    <licenseUrl>https://github.com/NuGet/NuGet.Jobs/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/NuGet/NuGet.Jobs</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>NuGetCDNRedirect</description>
+    <tags>nuget job</tags>
+  </metadata>
+  <files>
+    <file src="Deploy.ps1" />
+    <file src="obj\NuGetCDNRedirect.zip" />
+  </files>
+</package>

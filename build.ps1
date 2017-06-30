@@ -53,6 +53,21 @@ Function Prepare-Vcs-Callback {
     Build-Solution $Configuration $BuildNumber -MSBuildVersion "$msBuildVersion" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=obj\Validation.Callback.Vcs.zip" -SkipRestore
 }
 
+Function Prepare-NuGetCDNRedirect {
+    [CmdletBinding()]
+    param()
+    
+    Trace-Log 'Preparing NuGetCDNRedirect'
+    
+    $ZipPackagePath = "src\NuGetCDNRedirect\obj\NuGetCDNRedirect.zip"
+    
+    if (Test-Path $ZipPackagePath) {
+        Remove-Item $ZipPackagePath
+    }
+    
+    Build-Solution $Configuration $BuildNumber -MSBuildVersion "$msBuildVersion" "src\NuGetCDNRedirect\NuGetCDNRedirect.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=obj\NuGetCDNRedirect.zip" -SkipRestore
+}
+
 Write-Host ("`r`n" * 3)
 Trace-Log ('=' * 60)
 
