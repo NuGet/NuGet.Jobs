@@ -141,7 +141,8 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Validation.Runner/Validation.Runner.csproj", `
             "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj", `
             "src/Validation.Helper/Validation.Helper.csproj", `
-	    "src/CopyAzureContainer/CopyAzureContainer.csproj"
+	    "src/CopyAzureContainer/CopyAzureContainer.csproj", `
+	    "src/NuGetCDNRedirect/NuGetCDNRedirect.csproj"
         
         Foreach ($Project in $Projects) {
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "$msBuildVersion"
