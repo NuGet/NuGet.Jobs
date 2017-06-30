@@ -238,6 +238,9 @@ namespace HandlePackageEdits
                         hashAlgorithm.ComputeHash(originalStream));
                 }
 
+                // Apply ReadMe changes
+                await UpdateReadMe(edit, directory, originalReadMePath);
+
                 try
                 {
                     Trace.TraceInformation($"Updating package record for {edit.Id} {edit.Version}");
@@ -257,9 +260,6 @@ namespace HandlePackageEdits
 
                     throw;
                 }
-
-                // Apply ReadMe changes
-                await UpdateReadMe(edit, directory, originalReadMePath);
 
                 Trace.TraceInformation("Deleting snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
                 await sourceSnapshot.DeleteAsync();
