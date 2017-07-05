@@ -259,34 +259,7 @@ namespace HandlePackageEdits
                     Trace.TraceWarning(
                         $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
 
-                    if (edit.ReadMeState != null)
-                    {
-                        if (edit.ReadMeState == ReadMeChanged)
-                        {
-                            Trace.TraceWarning(
-                            $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                            activeReadMeBlob.StartCopy(activeSnapshot);
-                            Trace.TraceWarning(
-                                $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                        }
-                        else if (edit.ReadMeState == ReadMeDeleted)
-                        {
-                            try
-                            {
-                                // Upload original ReadMe back to active
-                                Trace.TraceInformation($"Uploading new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                                await activeReadMeBlob.UploadFromFileAsync(originalReadMePath);
-                                Trace.TraceInformation($"Uploaded new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                            }
-                            finally
-                            {
-                                if (!string.IsNullOrEmpty(originalReadMePath) && File.Exists(originalReadMePath))
-                                {
-                                    File.Delete(originalReadMePath);
-                                }
-                            }
-                        }
-                    }
+                    await RollBackReadMe(edit, directory, originalReadMePath, activeSnapshot, activeReadMeBlob);
                     
                     throw;
                 }
@@ -531,6 +504,38 @@ namespace HandlePackageEdits
             }
 
             return Tuple.Create(activeReadMeBlob, activeSnapshot);
+        }
+
+        private async Task RollBackReadMe(PackageEdit edit, string directory, string originalReadMePath, CloudBlockBlob activeSnapshot, CloudBlockBlob activeReadMeBlob)
+        {
+            if (edit.ReadMeState != null)
+            {
+                if (edit.ReadMeState == ReadMeChanged)
+                {
+                    Trace.TraceWarning(
+                    $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                    activeReadMeBlob.StartCopy(activeSnapshot);
+                    Trace.TraceWarning(
+                        $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                }
+                else if (edit.ReadMeState == ReadMeDeleted)
+                {
+                    try
+                    {
+                        // Upload original ReadMe back to active
+                        Trace.TraceInformation($"Uploading new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        await activeReadMeBlob.UploadFromFileAsync(originalReadMePath);
+                        Trace.TraceInformation($"Uploaded new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                    }
+                    finally
+                    {
+                        if (!string.IsNullOrEmpty(originalReadMePath) && File.Exists(originalReadMePath))
+                        {
+                            File.Delete(originalReadMePath);
+                        }
+                    }
+                }
+            }
         }
     }
 }
