@@ -50,7 +50,7 @@ $AzureSubscriptionId = $OctopusParameters['Deployment.Azure.SubscriptionId']
 $AzureWebsiteName = $OctopusParameters['Deployment.Azure.WebsiteName']
 $WebPackageName = $OctopusParameters['Deployment.Azure.WebPackageName']
 Write-Host "Web Package Name: " $WebPackageName
-$WebPackagePath = $OctopusParameters['Octopus.Action.Package.CustomInstallationDirectory'] + '\' + $WebPackageName
+$WebPackagePath = $OctopusParameters['Octopus.Action.Package.InstallationDirectoryPath'] + '\' + $WebPackageName
 Write-Host "Web Package Path: " $WebPackagePath
 
 Write-Host "Looking for certificate in CurrentUser"
