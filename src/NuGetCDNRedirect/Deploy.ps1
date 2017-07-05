@@ -1,6 +1,42 @@
+
+function load_module($name)
+{
+    if (-not(Get-Module -Name $name))
+    {
+       $retVal = Get-Module -ListAvailable | where { $_.Name -eq $name }
+
+        if ($retVal)
+        {
+            try
+            {
+                Import-Module $name -ErrorAction SilentlyContinue
+                return $true
+            }
+
+            catch
+            {
+                $ErrorMessage = $_.Exception.Message
+                Write-Host $ErrorMessage
+                $retVal = $false
+            }
+        }
+    }
+    else
+    {
+        return $true
+    }
+}
+
+
 $OctopusAzureModulePath = "C:\Program Files (x86)\Microsoft SDKs\Azure\PowerShell\ServiceManagement\Azure\Azure.psd1"
-Import-Module $OctopusAzureModulePath
-Write-Host "Imported Azure SDK PowerShell Module from $OctopusAzureModulePath" 
+if(load_module $OctopusAzureModulePath)
+{
+    Write-Host "Imported Azure SDK PowerShell Module from $OctopusAzureModulePath" 
+}
+else
+{
+    Write-Host "Azure SDK PowerShell Module from $OctopusAzureModulePath already imported" 
+}
 
 Write-Host "Before getting subscriptions, clear folder %appdata%\Windows Azure Powershell\*"
 $azureps = $env:APPDATA + '\Windows Azure Powershell\*'
