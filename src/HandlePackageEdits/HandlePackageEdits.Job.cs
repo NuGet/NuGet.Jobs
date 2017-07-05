@@ -237,70 +237,10 @@ namespace HandlePackageEdits
                     hash = Convert.ToBase64String(
                         hashAlgorithm.ComputeHash(originalStream));
                 }
-
-                CloudBlockBlob activeSnapshot = null;
-                CloudBlockBlob activeReadMeBlob = null;
-                if (edit.ReadMeState != null)
-                {
-                    originalReadMePath = Path.Combine(directory, StorageHelpers.GetReadMeBlobName(edit.Version));
-                    Trace.TraceInformation($"Attempting to save ReadMe at {originalReadMePath}");
-
-                    activeReadMeBlob = ReadMeContainer.GetBlockBlobReference(
-                        StorageHelpers.GetActiveReadMeBlobNamePath(edit.Id, edit.Version));
-                    Trace.TraceInformation($"Found active ReadMe {activeReadMeBlob.Name} at storage URI {activeReadMeBlob.StorageUri}");
-
-                    // Update ReadMe in blob storage
-                    if (edit.ReadMeState == ReadMeChanged)
-                    {
-                        // Snapshot the original blob
-                        Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
-                        activeSnapshot = await activeReadMeBlob.CreateSnapshotAsync();
-                        Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
-
-                        // Do the blob update
-                        try
-                        {
-                            var pendingReadMeBlob = ReadMeContainer.GetBlockBlobReference(
-                                StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version));
-                            Trace.TraceInformation($"Found pending ReadMe {pendingReadMeBlob.Name} at storage URI {pendingReadMeBlob.StorageUri}");
-
-                            // Download pending ReadMe
-                            Trace.TraceInformation($"Downloading new ReadMe for {edit.Id} {edit.Version}");
-                            await pendingReadMeBlob.DownloadToFileAsync(originalReadMePath, FileMode.Create);
-                            Trace.TraceInformation($"Downloaded new ReadMe for {edit.Id} {edit.Version}");
-
-                            // Upload pending ReadMe to active
-                            Trace.TraceInformation($"Uploading new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                            await activeReadMeBlob.UploadFromFileAsync(originalReadMePath);
-                            Trace.TraceInformation($"Uploaded new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
-
-                            // Delete pending ReadMe
-                            Trace.TraceInformation($"Deleting pending ReadMe for {edit.Id} {edit.Version} from {pendingReadMeBlob.Uri.AbsoluteUri}");
-                            await pendingReadMeBlob.DeleteIfExistsAsync();
-                            Trace.TraceInformation($"Deleted pending ReadMe for {edit.Id} {edit.Version} from {pendingReadMeBlob.Uri.AbsoluteUri}");
-                        }
-                        finally
-                        {
-                            if (!string.IsNullOrEmpty(originalReadMePath) && File.Exists(originalReadMePath))
-                            {
-                                File.Delete(originalReadMePath);
-                            }
-                        }
-                    }
-                    // Delete ReadMe in blob storage
-                    else if (edit.ReadMeState == ReadMeDeleted)
-                    {
-                        // Download active ReadMe
-                        Trace.TraceInformation($"Downloading old ReadMe for {edit.Id} {edit.Version}");
-                        await activeReadMeBlob.DownloadToFileAsync(originalReadMePath, FileMode.Create);
-                        Trace.TraceInformation($"Downloaded old ReadMe for {edit.Id} {edit.Version}");
-
-                        // Delete active ReadMe
-                        Trace.TraceInformation($"Deleting ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
-                        await activeReadMeBlob.DeleteIfExistsAsync();
-                        Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
-                    }
-                }
+                
+                var readMeTuple = await UpdateReadMe(edit, directory, originalReadMePath);
+                var activeReadMeBlob = readMeTuple.Item1;
+                var activeSnapshot = readMeTuple.Item2;
 
                 try
                 {
@@ -521,6 +461,76 @@ namespace HandlePackageEdits
             {
                 Trace.TraceError($"Error updating the package edit database with error! {ex}");
             }
+        }
+
+        private async Task<Tuple<CloudBlockBlob, CloudBlockBlob>> UpdateReadMe(PackageEdit edit, string directory, string originalReadMePath)
+        {
+            CloudBlockBlob activeReadMeBlob = null;
+            CloudBlockBlob activeSnapshot = null;
+
+            if (edit.ReadMeState != null)
+            {
+                originalReadMePath = Path.Combine(directory, StorageHelpers.GetReadMeBlobName(edit.Version));
+                Trace.TraceInformation($"Attempting to save ReadMe at {originalReadMePath}");
+
+                activeReadMeBlob = ReadMeContainer.GetBlockBlobReference(
+                            StorageHelpers.GetActiveReadMeBlobNamePath(edit.Id, edit.Version));
+                Trace.TraceInformation($"Found active ReadMe {activeReadMeBlob.Name} at storage URI {activeReadMeBlob.StorageUri}");
+
+                // Update ReadMe in blob storage
+                if (edit.ReadMeState == ReadMeChanged)
+                {
+                    // Snapshot the original blob
+                    Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
+                    activeSnapshot = await activeReadMeBlob.CreateSnapshotAsync();
+                    Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
+
+                    // Do the blob update
+                    try
+                    {
+                        var pendingReadMeBlob = ReadMeContainer.GetBlockBlobReference(
+                            StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version));
+                        Trace.TraceInformation($"Found pending ReadMe {pendingReadMeBlob.Name} at storage URI {pendingReadMeBlob.StorageUri}");
+
+                        // Download pending ReadMe
+                        Trace.TraceInformation($"Downloading new ReadMe for {edit.Id} {edit.Version}");
+                        await pendingReadMeBlob.DownloadToFileAsync(originalReadMePath, FileMode.Create);
+                        Trace.TraceInformation($"Downloaded new ReadMe for {edit.Id} {edit.Version}");
+
+                        // Upload pending ReadMe to active
+                        Trace.TraceInformation($"Uploading new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        await activeReadMeBlob.UploadFromFileAsync(originalReadMePath);
+                        Trace.TraceInformation($"Uploaded new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
+
+                        // Delete pending ReadMe
+                        Trace.TraceInformation($"Deleting pending ReadMe for {edit.Id} {edit.Version} from {pendingReadMeBlob.Uri.AbsoluteUri}");
+                        await pendingReadMeBlob.DeleteIfExistsAsync();
+                        Trace.TraceInformation($"Deleted pending ReadMe for {edit.Id} {edit.Version} from {pendingReadMeBlob.Uri.AbsoluteUri}");
+                    }
+                    finally
+                    {
+                        if (!string.IsNullOrEmpty(originalReadMePath) && File.Exists(originalReadMePath))
+                        {
+                            File.Delete(originalReadMePath);
+                        }
+                    }
+                }
+                // Delete ReadMe in blob storage
+                else if (edit.ReadMeState == ReadMeDeleted)
+                {
+                    // Download active ReadMe
+                    Trace.TraceInformation($"Downloading old ReadMe for {edit.Id} {edit.Version}");
+                    await activeReadMeBlob.DownloadToFileAsync(originalReadMePath, FileMode.Create);
+                    Trace.TraceInformation($"Downloaded old ReadMe for {edit.Id} {edit.Version}");
+
+                    // Delete active ReadMe
+                    Trace.TraceInformation($"Deleting ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
+                    await activeReadMeBlob.DeleteIfExistsAsync();
+                    Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
+                }
+            }
+
+            return Tuple.Create(activeReadMeBlob, activeSnapshot);
         }
     }
 }
