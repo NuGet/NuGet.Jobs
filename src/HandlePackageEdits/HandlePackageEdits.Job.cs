@@ -526,7 +526,7 @@ namespace HandlePackageEdits
                 if (edit.ReadMeState == ReadMeChanged)
                 {
                     Trace.TraceWarning(
-                    $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
                     activeReadMeBlob.StartCopy(activeReadMeSnapshot);
                     Trace.TraceWarning(
                         $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
