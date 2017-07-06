@@ -35,7 +35,7 @@ namespace NuGet.Jobs
                 WebUtility.UrlEncode(hash));
         }
 
-        public static string GetReadMeBlobPath(string folder, string id, string version, string extension)
+        private static string GetReadMeBlobPath(string folder, string id, string version, string extension)
         {
             return string.Format(
                 CultureInfo.InvariantCulture,
