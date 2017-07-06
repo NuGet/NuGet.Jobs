@@ -38,8 +38,8 @@ namespace HandlePackageEdits
 
         private const string ReadMeChanged = "changed";
         private const string ReadMeDeleted = "deleted";
-        private const string MD = ".md";
-        private const string HTML = ".html";
+        private const string MarkdownExtension = "md";
+        private const string HtmlExtension = "html";
 
         /// <summary>
         /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
@@ -241,11 +241,11 @@ namespace HandlePackageEdits
                 }
                 
                 // ReadMe update
-                var readMeMDTuple = await UpdateReadMeAsync(edit, directory, originalReadMeMDPath, MD);
+                var readMeMDTuple = await UpdateReadMeAsync(edit, directory, originalReadMeMDPath, MarkdownExtension);
                 var activeReadMeMDBlob = readMeMDTuple.Item1;
                 var activeReadMeMDSnapshot = readMeMDTuple.Item2;
 
-                var readMeHTMLTuple = await UpdateReadMeAsync(edit, directory, originalReadMeHTMLPath, HTML);
+                var readMeHTMLTuple = await UpdateReadMeAsync(edit, directory, originalReadMeHTMLPath, HtmlExtension);
                 var activeReadMeHTMLBlob = readMeHTMLTuple.Item1;
                 var activeReadMeHTMLSnapshot = readMeHTMLTuple.Item2;
 
@@ -445,7 +445,7 @@ namespace HandlePackageEdits
         }
 
         private async Task<Tuple<CloudBlockBlob, CloudBlockBlob>> UpdateReadMeAsync(PackageEdit edit, 
-            string directory, string originalReadMePath, string ReadMeExtension)
+            string directory, string originalReadMePath, string readMeExtension)
         {
             CloudBlockBlob activeReadMeBlob = null;
             CloudBlockBlob activeSnapshot = null;
@@ -456,11 +456,11 @@ namespace HandlePackageEdits
                 return Tuple.Create(activeReadMeBlob, activeSnapshot);
             }
 
-            originalReadMePath = Path.Combine(directory, StorageHelpers.GetReadMeBlobName(edit.Version, ReadMeExtension));
+            originalReadMePath = Path.Combine(directory, "readme" + readMeExtension);
             Trace.TraceInformation($"Attempting to save ReadMe at {originalReadMePath}");
 
             activeReadMeBlob = ReadMeContainer.GetBlockBlobReference(
-                        StorageHelpers.GetActiveReadMeBlobNamePath(edit.Id, edit.Version, ReadMeExtension));
+                        StorageHelpers.GetActiveReadMeBlobNamePath(edit.Id, edit.Version, readMeExtension));
             Trace.TraceInformation($"Found active ReadMe {activeReadMeBlob.Name} at storage URI {activeReadMeBlob.StorageUri}");
 
             // Update ReadMe in blob storage
@@ -470,7 +470,7 @@ namespace HandlePackageEdits
                 try
                 {
                     var pendingReadMeBlob = ReadMeContainer.GetBlockBlobReference(
-                        StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version, ReadMeExtension));
+                        StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version, readMeExtension));
                     Trace.TraceInformation($"Found pending ReadMe {pendingReadMeBlob.Name} at storage URI {pendingReadMeBlob.StorageUri}");
 
                     // Snapshot the original blob
