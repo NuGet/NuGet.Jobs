@@ -38,6 +38,8 @@ namespace HandlePackageEdits
 
         private const string ReadMeChanged = "changed";
         private const string ReadMeDeleted = "deleted";
+        private const string MD = ".md";
+        private const string HTML = ".html";
 
         /// <summary>
         /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
@@ -171,7 +173,8 @@ namespace HandlePackageEdits
         private async Task ApplyEdit(PackageEdit edit)
         {
             string originalPath = null;
-            string originalReadMePath = null;
+            string originalReadMeMDPath = null;
+            string originalReadMeHTMLPath = null;
 
             try
             {
@@ -238,9 +241,13 @@ namespace HandlePackageEdits
                 }
                 
                 // ReadMe update
-                var readMeTuple = await UpdateReadMeAsync(edit, directory, originalReadMePath);
-                var activeReadMeBlob = readMeTuple.Item1;
-                var activeReadMeSnapshot = readMeTuple.Item2;
+                var readMeMDTuple = await UpdateReadMeAsync(edit, directory, originalReadMeMDPath, MD);
+                var activeReadMeMDBlob = readMeMDTuple.Item1;
+                var activeReadMeMDSnapshot = readMeMDTuple.Item2;
+
+                var readMeHTMLTuple = await UpdateReadMeAsync(edit, directory, originalReadMeHTMLPath, HTML);
+                var activeReadMeHTMLBlob = readMeHTMLTuple.Item1;
+                var activeReadMeHTMLSnapshot = readMeHTMLTuple.Item2;
 
                 try
                 {
@@ -259,8 +266,9 @@ namespace HandlePackageEdits
                     Trace.TraceWarning(
                         $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
 
-                    await RollBackReadMeAsync(edit, directory, originalReadMePath, activeReadMeSnapshot, activeReadMeBlob);
-                    
+                    await RollBackReadMeAsync(edit, directory, originalReadMeMDPath, activeReadMeMDSnapshot, activeReadMeMDBlob);
+                    await RollBackReadMeAsync(edit, directory, originalReadMeHTMLPath, activeReadMeHTMLSnapshot, activeReadMeHTMLBlob);
+
                     throw;
                 }
 
@@ -268,11 +276,11 @@ namespace HandlePackageEdits
                 await sourceSnapshot.DeleteAsync();
                 Trace.TraceInformation("Deleted snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
 
-                if (activeReadMeSnapshot != null)
+                if (activeReadMeMDSnapshot != null)
                 {
-                    Trace.TraceInformation("Deleting snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, activeReadMeSnapshot.Uri.AbsoluteUri);
-                    await activeReadMeSnapshot.DeleteAsync();
-                    Trace.TraceInformation("Deleted snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, activeReadMeSnapshot.Uri.AbsoluteUri);
+                    Trace.TraceInformation("Deleting snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, activeReadMeMDSnapshot.Uri.AbsoluteUri);
+                    await activeReadMeMDSnapshot.DeleteAsync();
+                    Trace.TraceInformation("Deleted snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, activeReadMeMDSnapshot.Uri.AbsoluteUri);
                 }
             }
             finally
@@ -437,38 +445,38 @@ namespace HandlePackageEdits
         }
 
         private async Task<Tuple<CloudBlockBlob, CloudBlockBlob>> UpdateReadMeAsync(PackageEdit edit, 
-            string directory, string originalReadMePath)
+            string directory, string originalReadMePath, string ReadMeExtension)
         {
             CloudBlockBlob activeReadMeBlob = null;
             CloudBlockBlob activeSnapshot = null;
 
             // ReadMeState of null means unmodified
-            if (edit.ReadMeState != null)
+            if (edit.ReadMeState == null)
             {
                 return Tuple.Create(activeReadMeBlob, activeSnapshot);
             }
 
-            originalReadMePath = Path.Combine(directory, StorageHelpers.GetReadMeBlobName(edit.Version));
+            originalReadMePath = Path.Combine(directory, StorageHelpers.GetReadMeBlobName(edit.Version, ReadMeExtension));
             Trace.TraceInformation($"Attempting to save ReadMe at {originalReadMePath}");
 
             activeReadMeBlob = ReadMeContainer.GetBlockBlobReference(
-                        StorageHelpers.GetActiveReadMeBlobNamePath(edit.Id, edit.Version));
+                        StorageHelpers.GetActiveReadMeBlobNamePath(edit.Id, edit.Version, ReadMeExtension));
             Trace.TraceInformation($"Found active ReadMe {activeReadMeBlob.Name} at storage URI {activeReadMeBlob.StorageUri}");
 
             // Update ReadMe in blob storage
             if (edit.ReadMeState == ReadMeChanged)
             {
-                // Snapshot the original blob
-                Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
-                activeSnapshot = await activeReadMeBlob.CreateSnapshotAsync();
-                Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
-
                 // Do the blob update
                 try
                 {
                     var pendingReadMeBlob = ReadMeContainer.GetBlockBlobReference(
-                        StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version));
+                        StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version, ReadMeExtension));
                     Trace.TraceInformation($"Found pending ReadMe {pendingReadMeBlob.Name} at storage URI {pendingReadMeBlob.StorageUri}");
+
+                    // Snapshot the original blob
+                    Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
+                    activeSnapshot = await activeReadMeBlob.CreateSnapshotAsync();
+                    Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({activeReadMeBlob.Uri.AbsoluteUri}).");
 
                     // Download pending ReadMe
                     Trace.TraceInformation($"Downloading new ReadMe for {edit.Id} {edit.Version}");
@@ -511,17 +519,17 @@ namespace HandlePackageEdits
         }
 
         private async Task RollBackReadMeAsync(PackageEdit edit, string directory, string originalReadMePath, 
-            CloudBlockBlob activeSnapshot, CloudBlockBlob activeReadMeBlob)
+            CloudBlockBlob activeReadMeSnapshot, CloudBlockBlob activeReadMeBlob)
         {
             if (edit.ReadMeState != null)
             {
                 if (edit.ReadMeState == ReadMeChanged)
                 {
                     Trace.TraceWarning(
-                    $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                    activeReadMeBlob.StartCopy(activeSnapshot);
+                    $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                    activeReadMeBlob.StartCopy(activeReadMeSnapshot);
                     Trace.TraceWarning(
-                        $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
                 }
                 else if (edit.ReadMeState == ReadMeDeleted)
                 {

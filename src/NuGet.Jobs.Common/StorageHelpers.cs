@@ -12,9 +12,9 @@ namespace NuGet.Jobs
         private const string _packageBlobNameFormat = "{0}.{1}.nupkg";
         private const string _packageBackupBlobNameFormat = _packageBackupsDirectory + "/{0}/{1}/{2}.nupkg";
 
-        private const string _PendingReadMePathNameFormat = "pending/{0}/{1}.md";
-        private const string _ActiveReadMePathNameFormat = "active/{0}/{1}.md";
-        private const string _ReadMeNameFormat = "{0}.md";
+        private const string _PendingReadMePathNameFormat = "pending/{0}/{1}";
+        private const string _ActiveReadMePathNameFormat = "active/{0}/{1}";
+        private const string ReadMeNameFormat = "{0}";
 
         public static string GetPackageBlobName(string id, string version)
         {
@@ -44,21 +44,21 @@ namespace NuGet.Jobs
                 version.ToLowerInvariant());
         }
 
-        public static string GetPendingReadMeBlobNamePath(string id, string version)
+        public static string GetPendingReadMeBlobNamePath(string id, string version, string extension)
         {
-            return GetReadMeBlobPath(_PendingReadMePathNameFormat, id, version);
+            return GetReadMeBlobPath(_PendingReadMePathNameFormat + extension, id, version);
         }
 
-        public static string GetActiveReadMeBlobNamePath(string id, string version)
+        public static string GetActiveReadMeBlobNamePath(string id, string version, string extension)
         {
-            return GetReadMeBlobPath(_ActiveReadMePathNameFormat, id, version);
+            return GetReadMeBlobPath(_ActiveReadMePathNameFormat + extension, id, version);
         }
 
-        public static string GetReadMeBlobName(string version)
+        public static string GetReadMeBlobName(string version, string extension)
         {
             return string.Format(
                 CultureInfo.InvariantCulture,
-                _ReadMeNameFormat,
+                ReadMeNameFormat + extension,
                 version.ToLowerInvariant());
         }
     }
