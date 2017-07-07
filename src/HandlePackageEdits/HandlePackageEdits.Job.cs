@@ -265,8 +265,10 @@ namespace HandlePackageEdits
                     Trace.TraceWarning(
                         $"Rolling back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
                     await sourceBlob.StartCopyAsync(sourceSnapshot);
-                    //if (source)
-                    //    System.Threading.Thread.Sleep(5000)
+                    while (sourceBlob.CopyState.Status != CopyStatus.Success)
+                    {
+                        await Task.Delay(1000);
+                    }
                     Trace.TraceWarning(
                         $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
 
@@ -545,6 +547,10 @@ namespace HandlePackageEdits
                     Trace.TraceWarning(
                         $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
                     activeReadMeBlob.StartCopy(activeReadMeSnapshot);
+                    while (activeReadMeBlob.CopyState.Status != CopyStatus.Success)
+                    {
+                        await Task.Delay(1000);
+                    }
                     Trace.TraceWarning(
                         $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
                 }
