@@ -39,10 +39,12 @@ namespace HandlePackageEdits
         public string IconUrl { get; set; }
         public string LicenseUrl { get; set; }
         public string ProjectUrl { get; set; }
+        public string RepositoryUrl { get; set; }
         public string ReleaseNotes { get; set; }
         public bool? RequiresLicenseAcceptance { get; set; }
         public string Summary { get; set; }
         public string Tags { get; set; }
+        public string ReadMeState { get; set; }
 
         public virtual List<Action<ManifestEdit>> GetEditsAsActionList()
         {
@@ -54,6 +56,8 @@ namespace HandlePackageEdits
                 (m) => { m.IconUrl = IconUrl; },
                 (m) => { m.LicenseUrl = LicenseUrl; },
                 (m) => { m.ProjectUrl = ProjectUrl; },
+                /// for nuspec, need to edit ManifestEdit in Gallery.Core
+                /// (m) => { m.RepositoryUrl = RepositoryUrl; },
                 (m) => { m.ReleaseNotes = ReleaseNotes; },
                 (m) => { m.RequireLicenseAcceptance = RequiresLicenseAcceptance ?? m.RequireLicenseAcceptance; },
                 (m) => { m.Summary = Summary; },
