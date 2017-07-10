@@ -1,7 +1,7 @@
-﻿using System.Web;
+﻿
 using System.Web.Mvc;
 
-namespace NuGetCDNRedirect
+namespace NuGet.Services.CDNRedirect
 {
     public class FilterConfig
     {
