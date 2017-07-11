@@ -99,7 +99,8 @@ Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
 Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
         $versionMetadata =
             "$PSScriptRoot\src\Validation.Helper\Properties\AssemblyInfo.g.cs",
-	    "$PSScriptRoot\src\CopyAzureContainer\Properties\AssemblyInfo.g.cs"
+	    "$PSScriptRoot\src\CopyAzureContainer\Properties\AssemblyInfo.g.cs",
+	    "$PSScriptRoot\src\NuGetCDNRedirect\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
