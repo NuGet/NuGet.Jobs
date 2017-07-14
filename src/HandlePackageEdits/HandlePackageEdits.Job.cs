@@ -38,6 +38,7 @@ namespace HandlePackageEdits
 
         private const string ReadMeChanged = "changed";
         private const string ReadMeDeleted = "deleted";
+        private const string ReadMeUploaded = "uploaded";
         private const string MarkdownExtension = "md";
         private const string HtmlExtension = "html";
 
@@ -278,7 +279,7 @@ namespace HandlePackageEdits
                     throw;
                 }
 
-                if (edit.ReadMeState == ReadMeChanged)
+                if (edit.ReadMeState == ReadMeChanged || edit.ReadMeState == ReadMeUploaded)
                 {
                     // Delete pending ReadMes
                     Trace.TraceInformation($"Deleting pending ReadMe for {edit.Id} {edit.Version} from {readMeMDBlob.pendingBlob.Uri.AbsoluteUri}");
@@ -488,7 +489,7 @@ namespace HandlePackageEdits
             Trace.TraceInformation($"Found active ReadMe {currentBlob.activeBlob.Name} at storage URI {currentBlob.activeBlob.StorageUri}");
 
             // Update ReadMe in blob storage
-            if (edit.ReadMeState == ReadMeChanged)
+            if (edit.ReadMeState == ReadMeChanged || edit.ReadMeState == ReadMeUploaded)
             {
                 // Do the blob update
                 try
@@ -497,10 +498,13 @@ namespace HandlePackageEdits
                         StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version, readMeExtension));
                     Trace.TraceInformation($"Found pending ReadMe {currentBlob.pendingBlob.Name} at storage URI {currentBlob.pendingBlob.StorageUri}");
 
-                    // Snapshot the original blob
-                    Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({currentBlob.activeBlob.Uri.AbsoluteUri}).");
-                    currentBlob.activeSnapshot = await currentBlob.activeBlob.CreateSnapshotAsync();
-                    Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({currentBlob.activeBlob.Uri.AbsoluteUri}).");
+                    if (edit.ReadMeState == ReadMeChanged)
+                    {
+                        // Snapshot the original blob if it exists (so if it's an edit, not an upload)
+                        Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({currentBlob.activeBlob.Uri.AbsoluteUri}).");
+                        currentBlob.activeSnapshot = await currentBlob.activeBlob.CreateSnapshotAsync();
+                        Trace.TraceInformation($"Snapshotted original blob for {edit.Id} {edit.Version} ({currentBlob.activeBlob.Uri.AbsoluteUri}).");
+                    }
 
                     // Download pending ReadMe
                     Trace.TraceInformation($"Downloading new ReadMe for {edit.Id} {edit.Version}");
@@ -542,7 +546,14 @@ namespace HandlePackageEdits
         {
             if (edit.ReadMeState != null)
             {
-                if (edit.ReadMeState == ReadMeChanged)
+                if (edit.ReadMeState == ReadMeUploaded)
+                {
+                    // Delete ReadMes from active
+                    Trace.TraceInformation($"Deleting ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
+                    await activeReadMeBlob.DeleteIfExistsAsync();
+                    Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
+                }
+                else if (edit.ReadMeState == ReadMeChanged)
                 {
                     Trace.TraceWarning(
                         $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
@@ -559,9 +570,9 @@ namespace HandlePackageEdits
                     try
                     {
                         // Upload original ReadMe back to active
-                        Trace.TraceInformation($"Uploading new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        Trace.TraceInformation($"Uploading old ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
                         await activeReadMeBlob.UploadFromFileAsync(originalReadMePath);
-                        Trace.TraceInformation($"Uploaded new ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        Trace.TraceInformation($"Uploaded old ReadMe for {edit.Id} {edit.Version} to {activeReadMeBlob.Uri.AbsoluteUri}");
                     }
                     finally
                     {
