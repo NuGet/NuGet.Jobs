@@ -39,6 +39,7 @@ namespace HandlePackageEdits
         private const string ReadMeChanged = "changed";
         private const string ReadMeDeleted = "deleted";
         private const string ReadMeUploaded = "uploaded";
+        
         private const string MarkdownExtension = "md";
         private const string HtmlExtension = "html";
 
@@ -537,7 +538,6 @@ namespace HandlePackageEdits
                 await currentBlob.activeBlob.DeleteIfExistsAsync();
                 Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {currentBlob.activeBlob.Uri.AbsoluteUri}");
             }
-
             return currentBlob;
         }
 
