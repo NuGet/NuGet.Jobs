@@ -26,7 +26,7 @@ namespace HandlePackageEdits
         public static readonly long DefaultMaxAllowedManifestBytes = 10 /* Mb */ * 1024 /* Kb */ * 1024; /* b */
 
         public static readonly string GetEditsBaseSql = @"
-            SELECT pr.Id, p.NormalizedVersion AS Version, p.Hash, e.*
+            SELECT pr.Id, p.NormalizedVersion AS Version, p.Hash, p.HasReadMe, e.*
             FROM PackageEdits e
             INNER JOIN Packages p ON p.[Key] = e.PackageKey
             INNER JOIN PackageRegistrations pr ON pr.[Key] = p.PackageRegistrationKey";
@@ -38,8 +38,6 @@ namespace HandlePackageEdits
 
         private const string ReadMeChanged = "changed";
         private const string ReadMeDeleted = "deleted";
-        private const string ReadMeUploaded = "uploaded";
-        
         private const string MarkdownExtension = "md";
         private const string HtmlExtension = "html";
 
@@ -280,7 +278,7 @@ namespace HandlePackageEdits
                     throw;
                 }
 
-                if (edit.ReadMeState == ReadMeChanged || edit.ReadMeState == ReadMeUploaded)
+                if (edit.ReadMeState == ReadMeChanged)
                 {
                     // Delete pending ReadMes
                     Trace.TraceInformation($"Deleting pending ReadMe for {edit.Id} {edit.Version} from {readMeMDBlob.pendingBlob.Uri.AbsoluteUri}");
@@ -490,7 +488,7 @@ namespace HandlePackageEdits
             Trace.TraceInformation($"Found active ReadMe {currentBlob.activeBlob.Name} at storage URI {currentBlob.activeBlob.StorageUri}");
 
             // Update ReadMe in blob storage
-            if (edit.ReadMeState == ReadMeChanged || edit.ReadMeState == ReadMeUploaded)
+            if (edit.ReadMeState == ReadMeChanged)
             {
                 // Do the blob update
                 try
@@ -499,7 +497,7 @@ namespace HandlePackageEdits
                         StorageHelpers.GetPendingReadMeBlobNamePath(edit.Id, edit.Version, readMeExtension));
                     Trace.TraceInformation($"Found pending ReadMe {currentBlob.pendingBlob.Name} at storage URI {currentBlob.pendingBlob.StorageUri}");
 
-                    if (edit.ReadMeState == ReadMeChanged)
+                    if (edit.HasReadMe)
                     {
                         // Snapshot the original blob if it exists (so if it's an edit, not an upload)
                         Trace.TraceInformation($"Snapshotting original blob for {edit.Id} {edit.Version} ({currentBlob.activeBlob.Uri.AbsoluteUri}).");
@@ -546,24 +544,27 @@ namespace HandlePackageEdits
         {
             if (edit.ReadMeState != null)
             {
-                if (edit.ReadMeState == ReadMeUploaded)
+                if (edit.ReadMeState == ReadMeChanged)
                 {
-                    // Delete ReadMes from active
-                    Trace.TraceInformation($"Deleting ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
-                    await activeReadMeBlob.DeleteIfExistsAsync();
-                    Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
-                }
-                else if (edit.ReadMeState == ReadMeChanged)
-                {
-                    Trace.TraceWarning(
-                        $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
-                    activeReadMeBlob.StartCopy(activeReadMeSnapshot);
-                    while (activeReadMeBlob.CopyState.Status != CopyStatus.Success)
+                    if (edit.HasReadMe)
                     {
-                        await Task.Delay(1000);
+                        Trace.TraceWarning(
+                        $"Rolling back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                        activeReadMeBlob.StartCopy(activeReadMeSnapshot);
+                        while (activeReadMeBlob.CopyState.Status != CopyStatus.Success)
+                        {
+                            await Task.Delay(1000);
+                        }
+                        Trace.TraceWarning(
+                            $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
                     }
-                    Trace.TraceWarning(
-                        $"Rolled back ReadMe blob for {edit.Id} {edit.Version}. Copying snapshot {activeReadMeSnapshot.Uri.AbsoluteUri} to {activeReadMeBlob.Uri.AbsoluteUri}");
+                    else
+                    {
+                        // Delete ReadMes from active
+                        Trace.TraceInformation($"Deleting ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
+                        await activeReadMeBlob.DeleteIfExistsAsync();
+                        Trace.TraceInformation($"Deleted ReadMe of {edit.Id} {edit.Version} from {activeReadMeBlob.Uri.AbsoluteUri}");
+                    }
                 }
                 else if (edit.ReadMeState == ReadMeDeleted)
                 {
