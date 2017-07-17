@@ -15,6 +15,7 @@ namespace HandlePackageEdits
         public string Id { get; set; }
         public string Version { get; set; }
         public string Hash { get; set; }
+        public bool HasReadMe { get; set; }
 
         /// <summary>
         /// User who edited the package and thereby caused this edit to be created.
