@@ -39,7 +39,6 @@ namespace HandlePackageEdits
         private const string ReadMeChanged = "changed";
         private const string ReadMeDeleted = "deleted";
         private const string MarkdownExtension = "md";
-        private const string HtmlExtension = "html";
 
         /// <summary>
         /// Gets or sets an Azure Storage Uri referring to a container to use as the source for package blobs
@@ -181,7 +180,6 @@ namespace HandlePackageEdits
         {
             string originalPath = null;
             string originalReadMeMDPath = null;
-            string originalReadMeHTMLPath = null;
 
             try
             {
@@ -250,8 +248,6 @@ namespace HandlePackageEdits
                 // ReadMe update
                 var readMeMDBlob = await UpdateReadMeAsync(edit, directory, originalReadMeMDPath, MarkdownExtension);
 
-                var readMeHTMLBlob = await UpdateReadMeAsync(edit, directory, originalReadMeHTMLPath, HtmlExtension);
-
                 try
                 {
                     Trace.TraceInformation($"Updating package record for {edit.Id} {edit.Version}");
@@ -273,7 +269,6 @@ namespace HandlePackageEdits
                         $"Rolled back updated blob for {edit.Id} {edit.Version}. Copying snapshot {sourceSnapshot.Uri.AbsoluteUri} to {sourceBlob.Uri.AbsoluteUri}");
 
                     await RollBackReadMeAsync(edit, directory, originalReadMeMDPath, readMeMDBlob.activeSnapshot, readMeMDBlob.activeBlob);
-                    await RollBackReadMeAsync(edit, directory, originalReadMeHTMLPath, readMeHTMLBlob.activeSnapshot, readMeHTMLBlob.activeBlob);
 
                     throw;
                 }
@@ -284,10 +279,6 @@ namespace HandlePackageEdits
                     Trace.TraceInformation($"Deleting pending ReadMe for {edit.Id} {edit.Version} from {readMeMDBlob.pendingBlob.Uri.AbsoluteUri}");
                     await readMeMDBlob.pendingBlob.DeleteIfExistsAsync();
                     Trace.TraceInformation($"Deleted pending ReadMe for {edit.Id} {edit.Version} from {readMeMDBlob.pendingBlob.Uri.AbsoluteUri}");
-
-                    Trace.TraceInformation($"Deleting pending ReadMe for {edit.Id} {edit.Version} from {readMeHTMLBlob.pendingBlob.Uri.AbsoluteUri}");
-                    await readMeHTMLBlob.pendingBlob.DeleteIfExistsAsync();
-                    Trace.TraceInformation($"Deleted pending ReadMe for {edit.Id} {edit.Version} from {readMeHTMLBlob.pendingBlob.Uri.AbsoluteUri}");
                 }
 
                 Trace.TraceInformation("Deleting snapshot blob {2} for {0} {1}.", edit.Id, edit.Version, sourceSnapshot.Uri.AbsoluteUri);
@@ -299,13 +290,6 @@ namespace HandlePackageEdits
                     Trace.TraceInformation("Deleting snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, readMeMDBlob.activeSnapshot.Uri.AbsoluteUri);
                     await readMeMDBlob.activeSnapshot.DeleteAsync();
                     Trace.TraceInformation("Deleted snapshot ReadMe{2} for {0} {1}.", edit.Id, edit.Version, readMeMDBlob.activeSnapshot.Uri.AbsoluteUri);
-                }
-
-                if (readMeHTMLBlob.activeSnapshot != null)
-                {
-                    Trace.TraceInformation("Deleting snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, readMeHTMLBlob.activeSnapshot.Uri.AbsoluteUri);
-                    await readMeHTMLBlob.activeSnapshot.DeleteAsync();
-                    Trace.TraceInformation("Deleted snapshot ReadMe {2} for {0} {1}.", edit.Id, edit.Version, readMeHTMLBlob.activeSnapshot.Uri.AbsoluteUri);
                 }
             }
             finally
