@@ -116,7 +116,7 @@ namespace NuGet.Jobs.Validation.Common
                     validationId,
                     packageId,
                     packageVersion);
-                return;
+                throw;
             }
 
             _logger.LogInformation("Finished writing Complete PackageValidationAudit for " +
