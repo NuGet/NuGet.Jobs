@@ -37,7 +37,7 @@ namespace Search.GenerateAuxiliaryData
 
             var rankingsTotalCommand = new SqlCommand(GetEmbeddedSqlScript(RankingsTotalScript), connection);
             rankingsTotalCommand.CommandType = CommandType.Text;
-            rankingsTotalCommand.Parameters.Add(new SqlParameter(_rankingCountParameterName, _rankingCount));
+            rankingsTotalCommand.Parameters.AddWithValue(_rankingCountParameterName, _rankingCount);
             rankingsTotalCommand.CommandTimeout = 60;
 
             var rankingsTotal = SqlDataReaderToJArray(rankingsTotalCommand.ExecuteReader(), _colPackageId);
@@ -52,8 +52,8 @@ namespace Search.GenerateAuxiliaryData
             {
                 var rankingsProjectTypeCommand = new SqlCommand(GetEmbeddedSqlScript(RankingsProjectTypesScript), connection);
                 rankingsProjectTypeCommand.CommandType = CommandType.Text;
-                rankingsProjectTypeCommand.Parameters.Add(new SqlParameter(_rankingCountParameterName, _rankingCount));
-                rankingsProjectTypeCommand.Parameters.Add(new SqlParameter(_projectGuidParameter, projectGuid));
+                rankingsProjectTypeCommand.Parameters.AddWithValue(_rankingCountParameterName, _rankingCount);
+                rankingsProjectTypeCommand.Parameters.AddWithValue(_projectGuidParameter, projectGuid);
 
                 var rankingsProjectType = SqlDataReaderToJArray(rankingsProjectTypeCommand.ExecuteReader(), _colPackageId);
                 result.Add(projectGuid, rankingsProjectType);
