@@ -10,8 +10,8 @@ namespace Stats.ImportAzureCdnStatistics
     internal class DataImporter
     {
         private readonly SqlConnectionStringBuilder _targetDatabase;
-        private const string _sqlTableParameterName = "TableName";
-        private const string _sqlSelectTop1FromTable = "SELECT TOP 1 * FROM [dbo].[" + "@" + _sqlTableParameterName + "]";
+        private const string _sqlTableParameterName = "@TableName";
+        private const string _sqlSelectTop1FromTable = "SELECT TOP 1 * FROM [dbo].[" + _sqlTableParameterName + "]";
 
         public DataImporter(SqlConnectionStringBuilder targetDatabase)
         {
