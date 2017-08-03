@@ -59,7 +59,7 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
                     using (var transaction = connection.BeginTransaction())
                     {
                         var numKeys = 0;
-                        var parameters = credentialKeys.Select(c => new SqlParameter("@Key" + numKeys++, SqlDbType.Int) { Value = c });
+                        var parameters = credentialKeys.Select(c => new SqlParameter("@Key" + numKeys++, SqlDbType.Int) { Value = c }).ToArray();
 
                         rowCount = await connection.ExecuteAsync(
                             string.Format(DeleteQuery, string.Join(",", parameters.Select(p => p.ParameterName))),
