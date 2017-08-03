@@ -17,7 +17,7 @@ namespace System.Data.SqlClient
             cmd.CommandText = sql;
             cmd.CommandType = CommandType.Text;
 
-            if (parameters != null && parameters.Any(p => p != null))
+            if (parameters != null)
             {
                 cmd.Parameters.AddRange(parameters);
             }
