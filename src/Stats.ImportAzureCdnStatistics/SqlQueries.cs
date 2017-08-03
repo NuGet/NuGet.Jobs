@@ -14,7 +14,7 @@ namespace Stats.ImportAzureCdnStatistics
         private const string _timeFormat = "yyyy-MM-dd";
         private const string _minParameterName = "Min";
         private const string _maxParameterName = "Max";
-        private const string _sqlGetDateDimensions = "SELECT [Id], [Date] FROM [dbo].[Dimension_Date] WHERE [Date] >= '" + "@" + _minParameterName + "' AND [Date] <= '" + "@" + _maxParameterName + "'";
+        private const string _sqlGetDateDimensions = "SELECT [Id], [Date] FROM [dbo].[Dimension_Date] WHERE [Date] >= @" + _minParameterName + " AND [Date] <= @" + _maxParameterName;
 
         public static SqlCommand GetAllTimeDimensions(SqlConnection connection, int commandTimeout)
         {
