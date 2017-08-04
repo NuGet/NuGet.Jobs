@@ -10,8 +10,7 @@ namespace Stats.ImportAzureCdnStatistics
     internal class DataImporter
     {
         private readonly SqlConnectionStringBuilder _targetDatabase;
-        private const string _sqlTableParameterName = "@TableName";
-        private const string _sqlSelectTop1FromTable = "SELECT TOP 1 * FROM [dbo].[" + _sqlTableParameterName + "]";
+        private const string _sqlSelectTop1FromTable = "SELECT TOP 1 * FROM [dbo].[{0}]";
 
         public DataImporter(SqlConnectionStringBuilder targetDatabase)
         {
@@ -21,10 +20,11 @@ namespace Stats.ImportAzureCdnStatistics
         public async Task<DataTable> GetDataTableAsync(string tableName)
         {
             var dataTable = new DataTable();
+            var query = string.Format(_sqlSelectTop1FromTable, tableName);
+
             using (var connection = await _targetDatabase.ConnectTo())
             {
-                var command = new SqlCommand(_sqlSelectTop1FromTable, connection);
-                command.Parameters.AddWithValue(_sqlTableParameterName, tableName);
+                var command = new SqlCommand(query, connection);
 
                 var tableAdapter = new SqlDataAdapter(command)
                 {
