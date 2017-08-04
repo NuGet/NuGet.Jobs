@@ -107,12 +107,6 @@
   <ItemGroup>
     <EmbeddedResource Include="SqlScripts\Rankings.sql" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="SqlScripts\RankingsProjectTypes.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="SqlScripts\RankingsDistinctProjectTypes.sql" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\build\sign.targets" Condition="Exists('..\..\build\sign.targets')" />
   <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
