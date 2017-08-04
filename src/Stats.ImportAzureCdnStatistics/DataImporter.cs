@@ -24,9 +24,7 @@ namespace Stats.ImportAzureCdnStatistics
 
             using (var connection = await _targetDatabase.ConnectTo())
             {
-                var command = new SqlCommand(query, connection);
-
-                var tableAdapter = new SqlDataAdapter(command)
+                var tableAdapter = new SqlDataAdapter(query, connection)
                 {
                     MissingSchemaAction = MissingSchemaAction.Add
                 };
