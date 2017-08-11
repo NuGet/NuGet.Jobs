@@ -91,6 +91,8 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <None Include="Scripts\*" />
+    <None Include="Search.GenerateAuxiliaryData.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="SqlScripts\CuratedFeed.sql" />

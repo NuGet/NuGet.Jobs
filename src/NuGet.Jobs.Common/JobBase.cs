@@ -28,8 +28,6 @@ namespace NuGet.Jobs
 
         public JobTraceListener JobTraceListener { get; private set; }
 
-        public bool ConsoleLogOnly { get; set; }
-
         public void SetJobTraceListener(JobTraceListener jobTraceListener)
         {
             JobTraceListener = jobTraceListener;

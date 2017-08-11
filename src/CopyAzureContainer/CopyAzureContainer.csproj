@@ -110,10 +110,8 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="Scripts\backupv3storage.cmd" />
-    <None Include="Scripts\Functions.ps1" />
-    <None Include="Scripts\InstallAzCopy.ps1" />
-    <None Include="Scripts\PostDeploy.ps1" />
+    <None Include="Scripts\*" />
+    <None Include="CopyAzureContainer.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">

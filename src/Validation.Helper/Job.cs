@@ -135,7 +135,6 @@ namespace NuGet.Jobs.Validation.Helper
                     $"-{JobArgumentNames.VaultName} <KeyVault name> " +
                     $"-{JobArgumentNames.ClientId} <KeyVault clientId> " +
                     $"-{JobArgumentNames.CertificateThumbprint} <KeyVault certificate thumbprint> " +
-                    $"-{JobArgumentNames.LogsAzureStorageConnectionString} <azure logs blob storage connection string> " +
                     $"-{JobArgumentNames.DataStorageAccount} <Azure Blob Storage connection string> " +
                     $"-{JobArgumentNames.ContainerName} <validation job container name> " +
                     $"-{JobArgumentNames.GalleryBaseAddress} <gallery base address> " +

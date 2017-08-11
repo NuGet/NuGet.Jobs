@@ -31,7 +31,7 @@ namespace Gallery.Maintenance
                 var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
-                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
+                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 Logger = loggerFactory.CreateLogger<Job>();
 

@@ -177,6 +177,8 @@
     <None Include="packagetranslations.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="Scripts\*" />
+    <None Include="Stats.ImportAzureCdnStatistics.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">

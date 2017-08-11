@@ -133,10 +133,7 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Scripts\Functions.ps1" />
-    <None Include="Scripts\PostDeploy.ps1" />
-    <None Include="Scripts\PreDeploy.ps1" />
-    <None Include="Scripts\Validation.Runner.cmd" />
+    <None Include="Scripts\*" />
     <None Include="Validation.Runner.nuspec" />
   </ItemGroup>
   <ItemGroup>

@@ -36,17 +36,10 @@ namespace NuGet.Jobs
         /// <returns></returns>
         public static async Task Run(JobBase job, string[] commandLineArgs)
         {
-            if (commandLineArgs.Length > 0 && string.Equals(commandLineArgs[0], "-dbg", StringComparison.OrdinalIgnoreCase))
+            if (commandLineArgs.Length > 0 && string.Equals(commandLineArgs[0], "-" + JobArgumentNames.Dbg, StringComparison.OrdinalIgnoreCase))
             {
                 commandLineArgs = commandLineArgs.Skip(1).ToArray();
                 Debugger.Launch();
-            }
-
-            bool consoleLogOnly = false;
-            if (commandLineArgs.Length > 0 && string.Equals(commandLineArgs[0], "-ConsoleLogOnly", StringComparison.OrdinalIgnoreCase))
-            {
-                commandLineArgs = commandLineArgs.Skip(1).ToArray();
-                consoleLogOnly = true;
             }
 
             // Set the default trace listener, so if we get args parsing issues they will be printed. This will be overriden by the configured trace listener
@@ -61,7 +54,7 @@ namespace NuGet.Jobs
                 var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
 
                 // Set JobTraceListener. This will be done on every job run as well
-                SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
+                SetJobTraceListener(job, jobArgsDictionary);
 
                 var runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
                 var sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
@@ -75,10 +68,10 @@ namespace NuGet.Jobs
                 }
 
                 // Setup the job for running
-                JobSetup(job, consoleLogOnly, jobArgsDictionary, ref sleepDuration);
+                JobSetup(job, jobArgsDictionary, ref sleepDuration);
 
                 // Run the job loop
-                await JobLoop(job, runContinuously, sleepDuration.Value, consoleLogOnly, jobArgsDictionary);
+                await JobLoop(job, runContinuously, sleepDuration.Value, jobArgsDictionary);
             }
             catch (Exception ex)
             {
@@ -99,29 +92,16 @@ namespace NuGet.Jobs
                 $"'{milliSeconds:F3}' ms (or '{seconds:F3}' seconds or '{minutes:F3}' mins)";
         }
 
-        private static void SetJobTraceListener(JobBase job, bool consoleLogOnly, IDictionary<string, string> argsDictionary)
+        private static void SetJobTraceListener(JobBase job, IDictionary<string, string> argsDictionary)
         {
-            if (consoleLogOnly)
-            {
-                job.SetJobTraceListener(new JobTraceListener());
-            }
-            else
-            {
-                var connectionString = JobConfigurationManager.GetArgument(argsDictionary, JobArgumentNames.LogsAzureStorageConnectionString);
-                job.SetJobTraceListener(new AzureBlobJobTraceListener(job.JobName, connectionString));
-            }
+            job.SetJobTraceListener(new JobTraceListener());
         }
 
-        private static void JobSetup(JobBase job, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary, ref int? sleepDuration)
+        private static void JobSetup(JobBase job, IDictionary<string, string> jobArgsDictionary, ref int? sleepDuration)
         {
-            if (JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, "dbg"))
+            if (JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Dbg))
             {
-                throw new ArgumentException("-dbg is a special argument and should be the first argument...");
-            }
-
-            if (JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, "ConsoleLogOnly"))
-            {
-                throw new ArgumentException("-ConsoleLogOnly is a special argument and should be the first argument (can be the second if '-dbg' is used)...");
+                throw new ArgumentException($"-{JobArgumentNames.Dbg} is a special argument and should be the first argument...");
             }
 
             if (sleepDuration == null)
@@ -129,11 +109,9 @@ namespace NuGet.Jobs
                 Trace.TraceWarning("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
                 sleepDuration = 5000;
             }
-
-            job.ConsoleLogOnly = consoleLogOnly;
         }
 
-        private static async Task JobLoop(JobBase job, bool runContinuously, int sleepDuration, bool consoleLogOnly, IDictionary<string, string> jobArgsDictionary)
+        private static async Task JobLoop(JobBase job, bool runContinuously, int sleepDuration, IDictionary<string, string> jobArgsDictionary)
         {
             // Run the job now
             var stopWatch = new Stopwatch();
@@ -185,7 +163,7 @@ namespace NuGet.Jobs
                 job.JobTraceListener.Close();
                 Thread.Sleep(sleepDuration);
 
-                SetJobTraceListener(job, consoleLogOnly, jobArgsDictionary);
+                SetJobTraceListener(job, jobArgsDictionary);
             }
         }
     }

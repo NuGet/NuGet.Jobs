@@ -26,7 +26,7 @@ namespace SnapshotAzureBlob
         {
             try
             {
-                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
+                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 Logger = loggerFactory.CreateLogger<SnapshotAzureBlobJob>();
                 _connectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.SnapshotAzureBlobJob_ConnectionString);

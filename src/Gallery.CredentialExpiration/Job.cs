@@ -51,7 +51,7 @@ namespace Gallery.CredentialExpiration
                 var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
                 ApplicationInsights.Initialize(instrumentationKey);
 
-                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(ConsoleLogOnly);
+                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
                 var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
                 _logger = loggerFactory.CreateLogger<Job>();
 

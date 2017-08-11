@@ -9,6 +9,8 @@ namespace NuGet.Jobs
     public static class JobArgumentNames
     {
         // Job argument names
+        public const string Dbg = "dbg";
+        
         public const string Once = "Once";
         public const string Sleep = "Sleep";
         public const string Interval = "Interval";
@@ -115,9 +117,6 @@ namespace NuGet.Jobs
         // Arguments specific to e-mail
         public const string MailFrom = "MailFrom";
         public const string SmtpUri = "SmtpUri";
-
-        // Arguments for Azure logs
-        public const string LogsAzureStorageConnectionString = "LogsAzureStorageConnectionString";
 
     }
 }
