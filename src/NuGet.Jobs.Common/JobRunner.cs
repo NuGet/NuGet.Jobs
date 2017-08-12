@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using NuGet.Services.Logging;
 
 namespace NuGet.Jobs
 {
@@ -15,9 +17,11 @@ namespace NuGet.Jobs
     {
         public static IServiceContainer ServiceContainer;
 
-        private const string JobUninitialized = "Job Failed to Initialize";
+        private static ILogger _logger;
+        
         private const string JobSucceeded = "Job Succeeded";
-        private const string JobFailed = "Job Failed";
+        private const string JobUninitialized = "Job Failed to Initialize";
+        private const string JobFailed = "Job Failed to Run";
 
         static JobRunner()
         {
@@ -42,19 +46,28 @@ namespace NuGet.Jobs
                 Debugger.Launch();
             }
 
-            // Set the default trace listener, so if we get args parsing issues they will be printed. This will be overriden by the configured trace listener
-            // after config is parsed.
-            job.SetJobTraceListener(new JobTraceListener());
+            var loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
+            var logger = loggerFactory.CreateLogger(job.GetType());
+
+            job.SetLogger(loggerFactory, logger);
+            _logger = loggerFactory.CreateLogger(typeof(JobRunner));
 
             try
             {
-                Trace.TraceInformation("Started...");
+                _logger.LogInformation("Started...");
 
                 // Get the args passed in or provided as an env variable based on jobName as a dictionary of <string argName, string argValue>
-                var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
+                var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger(typeof(JobConfigurationManager)), commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
 
-                // Set JobTraceListener. This will be done on every job run as well
-                SetJobTraceListener(job, jobArgsDictionary);
+                // Setup logging
+                if (!ApplicationInsights.Initialized)
+                {
+                    string instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+                    if (!string.IsNullOrWhiteSpace(instrumentationKey))
+                    {
+                        ApplicationInsights.Initialize(instrumentationKey);
+                    }
+                }
 
                 var runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
                 var sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
@@ -67,21 +80,13 @@ namespace NuGet.Jobs
                     }
                 }
 
-                // Setup the job for running
-                JobSetup(job, jobArgsDictionary, ref sleepDuration);
-
                 // Run the job loop
                 await JobLoop(job, runContinuously, sleepDuration.Value, jobArgsDictionary);
             }
             catch (Exception ex)
             {
-                ex.TraceException();
+                _logger.LogError("Job runner threw an exception: {Exception}", ex);
             }
-
-            // Flush here. This is VERY IMPORTANT!
-            // Exception messages from when the job faults are still in the queue and need to be flushed.
-            // Also, if the job is only run once, this is what flushes the queue.
-            job.JobTraceListener.Close();
         }
 
         private static string PrettyPrintTime(double milliSeconds)
@@ -90,11 +95,6 @@ namespace NuGet.Jobs
             var minutes = (milliSeconds/60000.0);
             return
                 $"'{milliSeconds:F3}' ms (or '{seconds:F3}' seconds or '{minutes:F3}' mins)";
-        }
-
-        private static void SetJobTraceListener(JobBase job, IDictionary<string, string> argsDictionary)
-        {
-            job.SetJobTraceListener(new JobTraceListener());
         }
 
         private static void JobSetup(JobBase job, IDictionary<string, string> jobArgsDictionary, ref int? sleepDuration)
@@ -106,7 +106,7 @@ namespace NuGet.Jobs
 
             if (sleepDuration == null)
             {
-                Trace.TraceWarning("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
+                _logger.LogInformation("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
                 sleepDuration = 5000;
             }
         }
@@ -118,35 +118,30 @@ namespace NuGet.Jobs
 
             while (true)
             {
-                Trace.WriteLine("Running " + (runContinuously ? " continuously..." : " once..."));
-                Trace.WriteLine("SleepDuration is " + PrettyPrintTime(sleepDuration));
-                Trace.TraceInformation("Job run started...");
-
-                // Force a flush here to create a blob corresponding to run indicating that the run has started
-                job.JobTraceListener.Flush();
-
+                _logger.LogInformation("Running {RunType}", (runContinuously ? " continuously..." : " once..."));
+                _logger.LogInformation("SleepDuration is {SleepDuration}", PrettyPrintTime(sleepDuration));
+                _logger.LogInformation("Job run started...");
+                
+                var initialized = false;
                 stopWatch.Restart();
-                var initialized = job.Init(jobArgsDictionary);
-                var succeeded = initialized && await job.Run();
-                stopWatch.Stop();
-
-                Trace.WriteLine("Job run ended...");
-                if (initialized)
+                try
                 {
-                    Trace.TraceInformation("Job run took {0}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
+                    job.Init(jobArgsDictionary);
+                    initialized = true;
 
-                    if (succeeded)
-                    {
-                        Trace.TraceInformation(JobSucceeded);
-                    }
-                    else
-                    {
-                        Trace.TraceWarning(JobFailed);
-                    }
+                    await job.Run();
+
+                    _logger.LogInformation(JobSucceeded);
                 }
-                else
+                catch (Exception e)
                 {
-                    Trace.TraceWarning(JobUninitialized);
+                    _logger.LogError("{JobState}: {Exception}", initialized ? JobFailed : JobUninitialized, e);
+                }
+                finally
+                {
+                    _logger.LogInformation("Job run ended...");
+                    stopWatch.Stop();
+                    _logger.LogInformation("Job run took {RunDuration}", PrettyPrintTime(stopWatch.ElapsedMilliseconds));
                 }
 
                 if (!runContinuously)
@@ -157,13 +152,9 @@ namespace NuGet.Jobs
                 }
 
                 // Wait for <sleepDuration> milliSeconds and run the job again
-                Trace.TraceInformation("Will sleep for {0} before the next Job run", PrettyPrintTime(sleepDuration));
-
-                // Flush all the logs for this run
-                job.JobTraceListener.Close();
+                _logger.LogInformation("Will sleep for {SleepDuration} before the next Job run", PrettyPrintTime(sleepDuration));
+                
                 Thread.Sleep(sleepDuration);
-
-                SetJobTraceListener(job, jobArgsDictionary);
             }
         }
     }

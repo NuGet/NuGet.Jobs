@@ -26,35 +26,15 @@ namespace CopyAzureContainer
 
         private IEnumerable<AzureContainerInfo> _sourceContainers;
 
-        public ILogger Logger { get; private set; }
-
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            try
-            {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
-                ApplicationInsights.Initialize(instrumentationKey);
-
-                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
-                var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
-                Logger = loggerFactory.CreateLogger<CopyAzureContainerJob>();
-
-                _backupDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_BackupDays)??
-                              DefaultBackupDays;
-                _destStorageAccountName = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageAccountName);
-                _destStorageKeyValue = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageKeyValue);
-                _sourceContainers = jobArgsDictionary.
-                                        Where( kvp =>  kvp.Key.StartsWith(ArgumentNames.CopyAzureContainer_SourceContainerPrefix) ).
-                                        Select( kvp => new AzureContainerInfo(kvp.Value) );
-
-            }
-            catch (Exception exception)
-            {
-                Logger.LogCritical(LogEvents.JobInitFailed, exception, "Failed to initialize job!");
-                return false;
-            }
-
-            return true;
+            _backupDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_BackupDays) ??
+                          DefaultBackupDays;
+            _destStorageAccountName = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageAccountName);
+            _destStorageKeyValue = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.CopyAzureContainer_DestStorageKeyValue);
+            _sourceContainers = jobArgsDictionary.
+                                    Where(kvp => kvp.Key.StartsWith(ArgumentNames.CopyAzureContainer_SourceContainerPrefix)).
+                                    Select(kvp => new AzureContainerInfo(kvp.Value));
         }
 
         public string GetUsage()
@@ -71,7 +51,7 @@ namespace CopyAzureContainer
                    + $"-{JobArgumentNames.ValidateCertificate} true|false";
         }
 
-        public override async Task<bool> Run()
+        public override async Task Run()
         {
             var currentDate = DateTimeOffset.UtcNow;
             var deleteTasks = (_backupDays > 0) ? _sourceContainers.
@@ -86,7 +66,6 @@ namespace CopyAzureContainer
             {
                 Task.WaitAll(deleteTasks);
             }
-            return true;
         }
 
         private async Task<bool> TryCopyContainerAsync(string containerName, string sourceAccountName, string sourceAccountKey , DateTimeOffset date)

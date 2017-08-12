@@ -17,49 +17,28 @@ namespace NuGet.SupportRequests.Notifications
         private ILogger _logger;
         private IDictionary<string, string> _jobArgsDictionary;
 
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            try
+            var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
+            ApplicationInsights.Initialize(instrumentationKey);
+
+            var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
+            _loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
+            _logger = _loggerFactory.CreateLogger<Job>();
+
+            if (!jobArgsDictionary.ContainsKey(JobArgumentNames.ScheduledTask))
             {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
-                ApplicationInsights.Initialize(instrumentationKey);
-
-                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
-                _loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
-                _logger = _loggerFactory.CreateLogger<Job>();
-
-                if (!jobArgsDictionary.ContainsKey(JobArgumentNames.ScheduledTask))
-                {
-                    throw new NotSupportedException("The required argument -Task is missing.");
-                }
-
-                _jobArgsDictionary = jobArgsDictionary;
-            }
-            catch (Exception exception)
-            {
-                _logger.LogCritical(LogEvents.JobInitFailed, exception, "Failed to initialize job!");
-
-                return false;
+                throw new NotSupportedException("The required argument -Task is missing.");
             }
 
-            return true;
+            _jobArgsDictionary = jobArgsDictionary;
         }
 
-        public override async Task<bool> Run()
+        public override async Task Run()
         {
-            try
-            {
-                var scheduledTask = ScheduledTaskFactory.Create(_jobArgsDictionary, _loggerFactory);
+            var scheduledTask = ScheduledTaskFactory.Create(_jobArgsDictionary, _loggerFactory);
 
-                await scheduledTask.RunAsync();
-            }
-            catch (Exception exception)
-            {
-                _logger.LogCritical(LogEvents.JobRunFailed, exception, "Job run failed!");
-                return false;
-            }
-
-            return true;
+            await scheduledTask.RunAsync();
         }
     }
 }

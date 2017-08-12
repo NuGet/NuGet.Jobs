@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Gallery.Maintenance
 {
@@ -10,11 +11,12 @@ namespace Gallery.Maintenance
     /// </summary>
     public interface IMaintenanceTask
     {
+        void SetLogger(ILogger logger);
+
         /// <summary>
         /// Run the maintenance task for the Gallery.
         /// </summary>
         /// <param name="job">Gallery maintenance job, for SQL connection and logging.</param>
-        /// <returns>True for success, false for exception or other failure.</returns>
-        Task<bool> RunAsync(Job job);
+        Task RunAsync(Job job);
     }
 }

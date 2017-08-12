@@ -9,7 +9,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
-using NuGet.Services.Logging;
 
 namespace Gallery.Maintenance
 {
@@ -22,35 +21,15 @@ namespace Gallery.Maintenance
 
         public SqlConnectionStringBuilder GalleryDatabase { get; private set; }
 
-        public ILogger Logger { get; private set; }
-
-        public override bool Init(IDictionary<string, string> jobArgsDictionary)
+        public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            try
-            {
-                var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
-                ApplicationInsights.Initialize(instrumentationKey);
-
-                var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
-                var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
-                Logger = loggerFactory.CreateLogger<Job>();
-
-                var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryDatabase);
-                GalleryDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
-            }
-            catch (Exception exception)
-            {
-                Logger.LogCritical(LogEvents.JobInitFailed, exception, "Failed to initialize job!");
-
-                return false;
-            }
-
-            return true;
+            var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryDatabase);
+            GalleryDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
         }
 
-        public override async Task<bool> Run()
+        public override async Task Run()
         {
-            var result = true;
+            var failedTasks = new List<string>();
 
             foreach (var task in _tasks.Value)
             {
@@ -60,24 +39,21 @@ namespace Gallery.Maintenance
                 {
                     Logger.LogInformation("Running task '{taskName}'...", taskName);
 
-                    if (await task.RunAsync(this))
-                    {
-                        Logger.LogInformation("Finished task '{taskName}'.", taskName);
-                    }
-                    else
-                    {
-                        Logger.LogWarning("Task '{taskName}' returned failure status.", taskName);
-                        result = false;
-                    }
+                    await task.RunAsync(this);
+
+                    Logger.LogInformation("Finished task '{taskName}'.", taskName);
                 }
                 catch (Exception exception)
                 {
-                    Logger.LogCritical(LogEvents.JobRunFailed, exception, "Job run failed for task '{taskName}'.", taskName);
-                    result = false;
+                    Logger.LogError("Task '{taskName}' failed: {Exception}", taskName, exception);
+                    failedTasks.Add(taskName);
                 }
             }
-
-            return result;
+            
+            if (failedTasks.Any())
+            {
+                throw new Exception($"{failedTasks.Count()} tasks failed: {string.Join(", ", failedTasks)}");
+            }
         }
 
         private static IEnumerable<IMaintenanceTask> GetMaintenanceTasks()
