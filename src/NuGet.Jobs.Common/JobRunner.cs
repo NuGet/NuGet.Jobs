@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -80,6 +81,16 @@ namespace NuGet.Jobs
                     }
                 }
 
+                if (sleepDuration == null)
+                {
+                    _logger.LogInformation("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
+                    sleepDuration = 5000;
+                }
+
+                // Ensure that SSLv3 is disabled and that Tls v1.2 is enabled.
+                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+
                 // Run the job loop
                 await JobLoop(job, runContinuously, sleepDuration.Value, jobArgsDictionary);
             }
@@ -95,20 +106,6 @@ namespace NuGet.Jobs
             var minutes = (milliSeconds/60000.0);
             return
                 $"'{milliSeconds:F3}' ms (or '{seconds:F3}' seconds or '{minutes:F3}' mins)";
-        }
-
-        private static void JobSetup(JobBase job, IDictionary<string, string> jobArgsDictionary, ref int? sleepDuration)
-        {
-            if (JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Dbg))
-            {
-                throw new ArgumentException($"-{JobArgumentNames.Dbg} is a special argument and should be the first argument...");
-            }
-
-            if (sleepDuration == null)
-            {
-                _logger.LogInformation("SleepDuration is not provided or is not a valid integer. Unit is milliSeconds. Assuming default of 5000 ms...");
-                sleepDuration = 5000;
-            }
         }
 
         private static async Task JobLoop(JobBase job, bool runContinuously, int sleepDuration, IDictionary<string, string> jobArgsDictionary)
