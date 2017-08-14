@@ -13,7 +13,7 @@ using NuGet.Jobs;
 namespace Gallery.Maintenance
 {
     /// <summary>
-    /// Runs all <see cref="IMaintenanceTask"/>s against the Gallery database.
+    /// Runs all <see cref="MaintenanceTask"/>s against the Gallery database.
     /// </summary>
     public class Job : JobBase
     {
@@ -54,14 +54,14 @@ namespace Gallery.Maintenance
             }
         }
 
-        public IEnumerable<IMaintenanceTask> GetMaintenanceTasks()
+        public IEnumerable<MaintenanceTask> GetMaintenanceTasks()
         {
-            var taskBaseType = typeof(IMaintenanceTask);
+            var taskBaseType = typeof(MaintenanceTask);
 
             return taskBaseType.Assembly.GetTypes()
                 .Where(type => type.IsClass && taskBaseType.IsAssignableFrom(type))
                 .Select(type => 
-                    (IMaintenanceTask) type.GetConstructor(
+                    (MaintenanceTask) type.GetConstructor(
                         new Type[] { typeof(ILogger<>).MakeGenericType(type) })
                             .Invoke(new[] { CreateTypedLogger(type) }));
         }
