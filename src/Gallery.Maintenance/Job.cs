@@ -54,7 +54,7 @@ namespace Gallery.Maintenance
             }
         }
 
-        private IEnumerable<IMaintenanceTask> GetMaintenanceTasks()
+        public IEnumerable<IMaintenanceTask> GetMaintenanceTasks()
         {
             var taskBaseType = typeof(IMaintenanceTask);
 

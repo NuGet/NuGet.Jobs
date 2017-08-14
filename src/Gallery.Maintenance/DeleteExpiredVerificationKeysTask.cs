@@ -42,7 +42,7 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
 
             var credentialKeys = expiredKeys.Select(expiredKey =>
             {
-                Logger.LogInformation(
+                _logger.LogInformation(
                     "Found expired verification key: Credential='{credentialKey}' UserKey='{userKey}', User='{userName}', Subject='{scopeSubject}', Expires={expires}",
                     expiredKey.CredentialKey, expiredKey.UserKey, expiredKey.Username, expiredKey.ScopeSubject, expiredKey.Expires);
 
@@ -71,7 +71,7 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
                 }
             }
 
-            Logger.LogInformation("Deleted {0} expired verification keys and scopes. Expected={1}.", rowCount, expectedRowCount);
+            _logger.LogInformation("Deleted {0} expired verification keys and scopes. Expected={1}.", rowCount, expectedRowCount);
 
             if (expectedRowCount != rowCount)
             {

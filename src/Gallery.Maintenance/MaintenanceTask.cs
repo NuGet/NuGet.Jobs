@@ -9,13 +9,13 @@ namespace Gallery.Maintenance
 {
     public abstract class MaintenanceTask : IMaintenanceTask
     {
-        protected ILogger<IMaintenanceTask> Logger;
+        protected ILogger<IMaintenanceTask> _logger;
 
         public abstract Task RunAsync(Job job);
 
         public MaintenanceTask(ILogger<IMaintenanceTask> logger)
         {
-            Logger = logger;
+            _logger = logger;
         }
     }
 }

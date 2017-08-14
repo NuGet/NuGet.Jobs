@@ -13,19 +13,10 @@ namespace NuGet.SupportRequests.Notifications
     internal class Job
         : JobBase
     {
-        private ILoggerFactory _loggerFactory;
-        private ILogger _logger;
         private IDictionary<string, string> _jobArgsDictionary;
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            var instrumentationKey = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.InstrumentationKey);
-            ApplicationInsights.Initialize(instrumentationKey);
-
-            var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(true);
-            _loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
-            _logger = _loggerFactory.CreateLogger<Job>();
-
             if (!jobArgsDictionary.ContainsKey(JobArgumentNames.ScheduledTask))
             {
                 throw new NotSupportedException("The required argument -Task is missing.");
@@ -36,7 +27,7 @@ namespace NuGet.SupportRequests.Notifications
 
         public override async Task Run()
         {
-            var scheduledTask = ScheduledTaskFactory.Create(_jobArgsDictionary, _loggerFactory);
+            var scheduledTask = ScheduledTaskFactory.Create(_jobArgsDictionary, LoggerFactory);
 
             await scheduledTask.RunAsync();
         }
