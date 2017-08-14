@@ -81,6 +81,7 @@
     <Compile Include="IMaintenanceTask.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="LogEvents.cs" />
+    <Compile Include="MaintenanceTask.cs" />
     <Compile Include="Models\PackageVerificationKey.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

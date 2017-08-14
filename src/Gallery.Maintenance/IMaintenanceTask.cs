@@ -11,8 +11,6 @@ namespace Gallery.Maintenance
     /// </summary>
     public interface IMaintenanceTask
     {
-        void SetLogger(ILogger logger);
-
         /// <summary>
         /// Run the maintenance task for the Gallery.
         /// </summary>

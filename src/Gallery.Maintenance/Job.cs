@@ -17,8 +17,6 @@ namespace Gallery.Maintenance
     /// </summary>
     public class Job : JobBase
     {
-        private static readonly Lazy<IEnumerable<IMaintenanceTask>> _tasks = new Lazy<IEnumerable<IMaintenanceTask>>(GetMaintenanceTasks);
-
         public SqlConnectionStringBuilder GalleryDatabase { get; private set; }
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
@@ -31,7 +29,7 @@ namespace Gallery.Maintenance
         {
             var failedTasks = new List<string>();
 
-            foreach (var task in _tasks.Value)
+            foreach (var task in GetMaintenanceTasks())
             {
                 var taskName = task.GetType().Name;
 
@@ -56,13 +54,34 @@ namespace Gallery.Maintenance
             }
         }
 
-        private static IEnumerable<IMaintenanceTask> GetMaintenanceTasks()
+        private IEnumerable<IMaintenanceTask> GetMaintenanceTasks()
         {
             var taskBaseType = typeof(IMaintenanceTask);
 
             return taskBaseType.Assembly.GetTypes()
                 .Where(type => type.IsClass && taskBaseType.IsAssignableFrom(type))
-                .Select(type => (IMaintenanceTask)Activator.CreateInstance(type));
+                .Select(type => 
+                    (IMaintenanceTask) type.GetConstructor(
+                        new Type[] { typeof(ILogger<>).MakeGenericType(type) })
+                            .Invoke(new[] { CreateTypedLogger(type) }));
+        }
+
+
+        /// <summary>
+        /// This is necessary because <see cref="LoggerFactoryExtensions.CreateLogger(ILoggerFactory, Type)"/> does not create a typed logger. 
+        /// </summary>
+        public ILogger CreateTypedLogger(Type type)
+        {
+            var typedCreateLoggerMethod =
+                typeof(LoggerFactoryExtensions)
+                .GetMethods()
+                .SingleOrDefault(m =>
+                    m.Name == nameof(LoggerFactoryExtensions.CreateLogger) &&
+                    m.IsGenericMethod);
+
+            return typedCreateLoggerMethod
+                .MakeGenericMethod(type)
+                .Invoke(null, new object[] { LoggerFactory }) as ILogger;
         }
     }
 }

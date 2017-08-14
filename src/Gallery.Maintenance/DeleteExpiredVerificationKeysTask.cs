@@ -12,10 +12,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Gallery.Maintenance
 {
-    internal class DeleteExpiredVerificationKeysTask : IMaintenanceTask
+    internal class DeleteExpiredVerificationKeysTask : MaintenanceTask
     {
-        private ILogger _logger;
-
         private readonly TimeSpan _commandTimeout = TimeSpan.FromMinutes(5);
 
         private const string SelectQuery = @"
@@ -30,7 +28,7 @@ WHERE c.[Type] LIKE 'apikey.verify%' AND c.[Expires] < GETUTCDATE()
 DELETE FROM [dbo].[Scopes] WHERE [CredentialKey] IN ({0})
 DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
 
-        public async Task RunAsync(Job job)
+        public override async Task RunAsync(Job job)
         {
             IEnumerable<PackageVerificationKey> expiredKeys;
 
@@ -44,7 +42,7 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
 
             var credentialKeys = expiredKeys.Select(expiredKey =>
             {
-                _logger.LogInformation(
+                Logger.LogInformation(
                     "Found expired verification key: Credential='{credentialKey}' UserKey='{userKey}', User='{userName}', Subject='{scopeSubject}', Expires={expires}",
                     expiredKey.CredentialKey, expiredKey.UserKey, expiredKey.Username, expiredKey.ScopeSubject, expiredKey.Expires);
 
@@ -73,17 +71,17 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
                 }
             }
 
-            _logger.LogInformation("Deleted {0} expired verification keys and scopes. Expected={1}.", rowCount, expectedRowCount);
+            Logger.LogInformation("Deleted {0} expired verification keys and scopes. Expected={1}.", rowCount, expectedRowCount);
 
             if (expectedRowCount != rowCount)
             {
-
+                throw new Exception($"Expected to delete {expectedRowCount} verification keys, but only deleted {rowCount}!");
             }
         }
 
-        public void SetLogger(ILogger logger)
+        public DeleteExpiredVerificationKeysTask(ILogger<DeleteExpiredVerificationKeysTask> logger)
+            : base(logger)
         {
-            _logger = logger;
         }
     }
 }
