@@ -66,8 +66,8 @@ namespace Gallery.CredentialExpiration
             var storageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
             var storageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
 
-            var csa = CloudStorageAccount.Parse(storageConnectionString);
-            var storageFactory = new AzureStorageFactory(csa, storageContainerName, LoggerFactory);
+            var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
+            var storageFactory = new AzureStorageFactory(storageAccount, storageContainerName, LoggerFactory);
             _storage = storageFactory.Create();
         }
 
@@ -211,13 +211,13 @@ namespace Gallery.CredentialExpiration
             }
             catch (SmtpFailedRecipientException ex)
             {
-                var logMessage = $"Failed to handle credential for user {username} - recipient failed!";
-                Logger.LogWarning(LogEvents.FailedToSendMail, ex, logMessage);
+                var logMessage = "Failed to handle credential for user {Username} - recipient failed!";
+                Logger.LogWarning(LogEvents.FailedToSendMail, ex, logMessage, username);
             }
             catch (Exception ex)
             {
-                var logMessage = $"Failed to handle credential for user {username}.";
-                Logger.LogCritical(LogEvents.FailedToHandleExpiredCredential, ex, logMessage);
+                var logMessage = "Failed to handle credential for user {Username}.";
+                Logger.LogCritical(LogEvents.FailedToHandleExpiredCredential, ex, logMessage, username);
 
                 throw;
             }

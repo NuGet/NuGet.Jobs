@@ -28,6 +28,11 @@ WHERE c.[Type] LIKE 'apikey.verify%' AND c.[Expires] < GETUTCDATE()
 DELETE FROM [dbo].[Scopes] WHERE [CredentialKey] IN ({0})
 DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
 
+        public DeleteExpiredVerificationKeysTask(ILogger<DeleteExpiredVerificationKeysTask> logger)
+            : base(logger)
+        {
+        }
+
         public override async Task RunAsync(Job job)
         {
             IEnumerable<PackageVerificationKey> expiredKeys;
@@ -77,11 +82,6 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})";
             {
                 throw new Exception($"Expected to delete {expectedRowCount} verification keys, but only deleted {rowCount}!");
             }
-        }
-
-        public DeleteExpiredVerificationKeysTask(ILogger<DeleteExpiredVerificationKeysTask> logger)
-            : base(logger)
-        {
         }
     }
 }

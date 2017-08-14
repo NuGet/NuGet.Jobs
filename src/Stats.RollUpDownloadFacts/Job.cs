@@ -28,8 +28,8 @@ namespace Stats.RollUpDownloadFacts
             var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
             _targetDatabase = new SqlConnectionStringBuilder(databaseConnectionString);
 
-            _minAgeInDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, "MinAgeInDays") ?? DefaultMinAgeInDays;
-            Logger.LogInformation("Min age in days: " + _minAgeInDays);
+            _minAgeInDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.MinAgeInDays) ?? DefaultMinAgeInDays;
+            Logger.LogInformation("Min age in days: {MinAgeInDays}", _minAgeInDays);
         }
 
         public override async Task Run()
@@ -55,7 +55,7 @@ namespace Stats.RollUpDownloadFacts
                 return;
             }
 
-            Logger.LogInformation(e.Message);
+            Logger.LogInformation("SqlConnection info message: {Message}", e.Message);
 
             if (e.Message.StartsWith(_startTemplateRecordsDeletion) &&
                 e.Message.EndsWith(_endTemplateFactDownloadDeletion))

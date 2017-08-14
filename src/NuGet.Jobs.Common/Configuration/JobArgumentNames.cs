@@ -85,6 +85,9 @@ namespace NuGet.Jobs
         public const string AzureCdnCloudStorageTableName = "AzureCdnCloudStorageTableName";
         public const string AggregatesOnly = "AggregatesOnly";
 
+        // Arguments specific to RollUpDownloadFacts
+        public const string MinAgeInDays = "MinAgeInDays";
+
         //Arguments specific to Heartbeat
         public const string HeartbeatConfig = "HeartbeatConfig";
         public const string DashboardStorageAccount = "DashboardStorageAccount";
