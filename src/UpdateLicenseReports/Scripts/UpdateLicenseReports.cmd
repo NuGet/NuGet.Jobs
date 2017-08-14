@@ -7,7 +7,7 @@ cd bin
 	
 	title #{Jobs.updatelicensereports.Title}
 
-    start /w updatelicensereports.exe -VaultName "#{Deployment.Azure.KeyVault.VaultName}" -ClientId "#{Deployment.Azure.KeyVault.ClientId}" -CertificateThumbprint "#{Deployment.Azure.KeyVault.CertificateThumbprint}" -LicenseReportService "#{Jobs.updatelicensereports.LicenseReportServiceUri}" -LicenseReportUser "#{Jobs.updatelicensereports.LicenseReportUser}" -LicenseReportPassword "#{Jobs.updatelicensereports.LicenseReportPassword}" -PackageDatabase "#{Jobs.updatelicensereports.PackageDatabase}" -verbose true -Sleep #{Jobs.updatelicensereports.Sleep}
+    start /w updatelicensereports.exe -VaultName "#{Deployment.Azure.KeyVault.VaultName}" -ClientId "#{Deployment.Azure.KeyVault.ClientId}" -CertificateThumbprint "#{Deployment.Azure.KeyVault.CertificateThumbprint}" -LicenseReportService "#{Jobs.updatelicensereports.LicenseReportServiceUri}" -LicenseReportUser "#{Jobs.updatelicensereports.LicenseReportUser}" -LicenseReportPassword "#{Jobs.updatelicensereports.LicenseReportPassword}" -PackageDatabase "#{Jobs.updatelicensereports.PackageDatabase}" -verbose true -Sleep #{Jobs.updatelicensereports.Sleep} -InstrumentationKey "#{Jobs.validation.ApplicationInsightsInstrumentationKey}"
 
 	echo "Finished #{Jobs.updatelicensereports.Title}"
 
