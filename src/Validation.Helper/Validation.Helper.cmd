@@ -7,9 +7,9 @@ if "%1"=="" (
 	exit 1
 )
 
-SET vn=#{KeyVault:VaultName}
-SET clientid=#{KeyVault:ClientId}
-SET tp=#{KeyVault:CertificateThumbprint}
+SET vn=#{Jobs.validation.KeyVault.VaultName}
+SET clientid=#{Jobs.validation.KeyVault.ClientId}
+SET tp=#{Jobs.validation.KeyVault.CertificateThumbprint}
 SET la=#{Jobs.validation.DataStorageAccount}
 SET dsa=#{Jobs.validation.DataStorageAccount}
 SET cn=#{Jobs.validation.ContainerName}
