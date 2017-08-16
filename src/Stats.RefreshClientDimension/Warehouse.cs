@@ -148,7 +148,8 @@ namespace Stats.RefreshClientDimension
                 command.Parameters.AddWithValue("NewClientDimensionId", link.NewClientDimensionId);
                 command.Parameters.AddWithValue("UserAgentId", link.UserAgentId);
 
-                logger.LogInformation("[{LinkIndex}/{TotalLinksCount}]: User Agent '{UserAgent}', User Agent Id '{UserAgentId}', Old Client Id '{OldClientId}', New Client Id '{NewClientId}'", i, count, link.UserAgent, link.UserAgentId, link.CurrentClientDimensionId, link.NewClientDimensionId);
+                logger.LogInformation("[{LinkIndex}/{TotalLinksCount}]: User Agent '{UserAgent}', User Agent Id '{UserAgentId}', Old Client Id '{OldClientId}', New Client Id '{NewClientId}'", 
+                    i, count, link.UserAgent, link.UserAgentId, link.CurrentClientDimensionId, link.NewClientDimensionId);
 
                 await command.ExecuteNonQueryAsync();
             }

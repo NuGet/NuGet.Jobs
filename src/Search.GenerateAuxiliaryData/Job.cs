@@ -78,7 +78,7 @@ namespace Search.GenerateAuxiliaryData
             
             if (failedSqlExporters.Any())
             {
-                throw new Exception($"{failedSqlExporters.Count()} tasks failed: {string.Join(", ", failedSqlExporters)}");
+                throw new SqlExporterException($"{failedSqlExporters.Count()} tasks failed: {string.Join(", ", failedSqlExporters)}");
             }
         }
     }
