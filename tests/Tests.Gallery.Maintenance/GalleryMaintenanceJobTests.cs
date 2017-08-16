@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Gallery.Maintenance;
+﻿using Gallery.Maintenance;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
