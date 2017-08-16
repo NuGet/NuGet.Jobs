@@ -13,7 +13,6 @@ using ICSharpCode.SharpZipLib.GZip;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
-using NuGet.Services.Logging;
 using Stats.AzureCdnLogs.Common;
 using Stats.CollectAzureCdnLogs.Blob;
 using Stats.CollectAzureCdnLogs.Ftp;

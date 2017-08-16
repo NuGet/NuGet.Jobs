@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -14,7 +13,6 @@ using NuGet.Jobs.Validation.Common.OData;
 using NuGet.Jobs.Validation.Common.Validators;
 using NuGet.Jobs.Validation.Common.Validators.Unzip;
 using NuGet.Jobs.Validation.Common.Validators.Vcs;
-using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Runner
 {

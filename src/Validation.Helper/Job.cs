@@ -5,15 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.Common.OData;
-using NuGet.Jobs.Validation.Common.Validators.Vcs;
-using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation.Helper
 {

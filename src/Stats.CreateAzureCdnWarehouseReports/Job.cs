@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
-using NuGet.Services.Logging;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace Stats.CreateAzureCdnWarehouseReports

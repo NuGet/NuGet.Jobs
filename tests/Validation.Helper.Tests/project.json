@@ -1,7 +1,6 @@
 ﻿{
   "dependencies": {
     "moq": "4.5.23",
-    "NuGet.Services.Logging": "2.2.3",
     "xunit": "2.1.0",
     "xunit.runner.visualstudio": "2.1.0"
   },
