@@ -47,11 +47,9 @@ namespace NuGet.Jobs
                 Debugger.Launch();
             }
 
-            var loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
-            var logger = loggerFactory.CreateLogger(job.GetType());
-
-            job.SetLogger(loggerFactory, logger);
-            _logger = loggerFactory.CreateLogger(typeof(JobRunner));
+            // Configure logging before Application Insights is enabled.
+            // This is done so, in case Application Insights fails to initialize, we still see output.
+            var loggerFactory = ConfigureLogging(job);
 
             try
             {
@@ -69,6 +67,9 @@ namespace NuGet.Jobs
                         ApplicationInsights.Initialize(instrumentationKey);
                     }
                 }
+
+                // Configure our logging again with Application Insights initialized.
+                loggerFactory = ConfigureLogging(job);
 
                 var runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
                 var sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
@@ -98,6 +99,17 @@ namespace NuGet.Jobs
             {
                 _logger.LogError("Job runner threw an exception: {Exception}", ex);
             }
+        }
+
+        private static ILoggerFactory ConfigureLogging(JobBase job)
+        {
+            var loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
+            var logger = loggerFactory.CreateLogger(job.GetType());
+
+            job.SetLogger(loggerFactory, logger);
+            _logger = loggerFactory.CreateLogger(typeof(JobRunner));
+
+            return loggerFactory;
         }
 
         private static string PrettyPrintTime(double milliSeconds)
