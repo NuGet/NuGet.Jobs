@@ -10,8 +10,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Search.GenerateAuxiliaryData
 {
-    // Public only to facilitate testing.
-    public sealed class VerifiedPackagesExporter : SqlExporter
+    internal sealed class VerifiedPackagesExporter : SqlExporter
     {
         private const string _colPackageId = "Id";
         private readonly string _verifiedPackagesScript;
@@ -29,14 +28,25 @@ namespace Search.GenerateAuxiliaryData
 
         protected override JContainer GetResultOfQuery(SqlConnection connection)
         {
-            var rankingsTotalCommand = new SqlCommand(GetEmbeddedSqlScript(_verifiedPackagesScript), connection);
-            rankingsTotalCommand.CommandType = CommandType.Text;
-            rankingsTotalCommand.CommandTimeout = 60;
+            var verifiedPackagesCommand = new SqlCommand(GetEmbeddedSqlScript(_verifiedPackagesScript), connection);
+            verifiedPackagesCommand.CommandType = CommandType.Text;
+            verifiedPackagesCommand.CommandTimeout = 60;
 
-            return GetVerifiedPackages(rankingsTotalCommand.ExecuteReader());
+            SqlDataReader reader = null;
+
+            try
+            {
+                reader = verifiedPackagesCommand.ExecuteReader();
+
+                return GetVerifiedPackages(reader);
+            }
+            finally
+            {
+                reader?.Close();
+            }
         }
 
-        public JArray GetVerifiedPackages(IDataReader reader)
+        internal JArray GetVerifiedPackages(IDataReader reader)
         {
             if (reader == null) throw new ArgumentNullException(nameof(reader));
 
@@ -47,8 +57,6 @@ namespace Search.GenerateAuxiliaryData
             {
                 result.Add(reader.GetString(colNames[_colPackageId]));
             }
-
-            reader.Close();
 
             return result;
         }
