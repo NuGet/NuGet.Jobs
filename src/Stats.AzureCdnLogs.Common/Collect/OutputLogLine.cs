@@ -1,13 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 namespace Stats.AzureCdnLogs.Common.Collect
 {
+    /// <summary>
+    /// The schema of the line in statistic logs. 
+    /// Any log needs to have its lines formatted like this in order to be inserted in the stats db. 
+    /// </summary>
     public class OutputLogLine
-    {//timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
+    {
+        //timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
         public string TimeStamp { get; private set; }
 
         public string TimeTaken { get; private set; }

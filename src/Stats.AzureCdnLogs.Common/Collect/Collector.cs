@@ -1,47 +1,118 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Stats.AzureCdnLogs.Common.Collect
 {
+    /// <summary>
+    /// An represention of a Stats collector. 
+    /// A collector is a type that copies the files from a <see cref="Stats.AzureCdnLogs.Common.Collect.ILogSource"/> to a <see cref="Stats.AzureCdnLogs.Common.Collect.ILogDestination"/>.
+    /// The collector can also transform the lines from the source during the processing.
+    /// </summary>
     public abstract class Collector
     {
         private static readonly DateTime _unixTimestamp = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         protected ILogSource _source;
         protected ILogDestination _destination;
+        
+        public Collector()
+        { }
 
+        /// <summary>
+        /// .ctor for the Collector
+        /// </summary>
+        /// <param name="source">The source of the Collector.</param>
+        /// <param name="destination">The destination for the collector.</param>
         public Collector(ILogSource source, ILogDestination destination)
         {
             _source = source;
             _destination = destination;
         }
 
-        public async Task ProcessAsync()
+        /// <summary>
+        /// Try to process the files from the source.
+        /// After processing the file is cleaned. This means it wil be moved either to a archive or a deadletter container.
+        /// </summary>
+        /// <param name="maxFileCount">Only max this number of files will be processed at once.</param>
+        /// <param name="fileNameTransform">A Func to be used to generate the output file name fro the input filename.</param>
+        /// <param name="destinationContentType">The <see cref="Stats.AzureCdnLogs.Common.Collect.ContentType"./></param>
+        /// <param name="token">A <see cref="System.Threading.CancellationToken"/> to be used for cancelling the operation.</param>
+        /// <returns>A collection of exceptions if any.</returns>
+        public virtual async Task<AggregateException> TryProcessAsync(int maxFileCount, Func<string,string> fileNameTransform,  ContentType destinationContentType, CancellationToken token)
         {
-            var files = _source.GetFiles();
-            
-            foreach(var file in files)
+            ConcurrentBag<Exception> exceptions = new ConcurrentBag<Exception>();
+            try
             {
-                if(_source.TryLock(file))
+                var files = await _source.GetFilesAsync(maxFileCount, token);
+                var parallelResult = Parallel.ForEach(files, (file) =>
                 {
-                    try
+                    if(token.IsCancellationRequested)
                     {
-                        var inputStream = await _source.OpenReadAsync(file);
-                        _destination.TryWriteAsync(inputStream, "todo");
-
+                        return;
                     }
-                    catch
+                    if (_source.TakeLockAsync(file, token).Result)
                     {
-
+                        using (var inputStream = _source.OpenReadAsync(file, token).Result)
+                        {
+                            var writeAction = _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, token).
+                             ContinueWith(t =>
+                             {
+                                 AddException(exceptions, t.Exception);
+                                 return _source.CleanAsync(file, onError: t.IsFaulted, token:token).Result;
+                             }).
+                              ContinueWith(t =>
+                              {
+                                  AddException(exceptions, t.Exception);
+                                  return _source.ReleaseLockAsync(file, token).Result;
+                              }).
+                              ContinueWith(t =>
+                              {
+                                  AddException(exceptions, t.Exception);
+                                  return t.Result;
+                              }).Result;
+                        }
                     }
+                });
+            }
+            catch (Exception e)
+            {
+                AddException(exceptions, e);
+            }
+            return exceptions.Count() > 0 ? new AggregateException(exceptions.ToArray()) : null;
+        }
+
+        private void AddException(ConcurrentBag<Exception> exceptions, Exception e)
+        {
+            if(e == null)
+            {
+                return;
+            }
+            if (e is AggregateException)
+            {
+                foreach (Exception innerEx in ((AggregateException)e).InnerExceptions)
+                {
+                    AddException(exceptions, innerEx);
                 }
+            }
+            else
+            {
+                exceptions.Add(e);
             }
         }
 
+        /// <summary>
+        /// A method to transform each line from the input stream before writing it to the output stream. It is useful for example to modify the schema of each line.
+        /// </summary>
+        /// <param name="line">A line from the input stream.</param>
+        /// <returns>The transformed line.</returns>
         public virtual OutputLogLine TransformRawLogLine(string line)
         {
             // the default implementation will assume that the entries are space separated and in the correct order
@@ -65,25 +136,25 @@ namespace Stats.AzureCdnLogs.Common.Collect
                                     entries[15]);
         }
 
-        private void ProcessLogStream(Stream sourceStream, Stream targetStream)
+        protected void ProcessLogStream(Stream sourceStream, Stream targetStream)
         {
-            // note: not using async/await pattern as underlying streams do not support async
             using (var sourceStreamReader = new StreamReader(sourceStream))
             {
                 using (var targetStreamWriter = new StreamWriter(targetStream))
                 {
                     targetStreamWriter.Write(OutputLogLine.Header);
-
                     var lineNumber = 0;
                     do
                     {
-                        var rawLogLine = TransformRawLogLine(sourceStreamReader.ReadLine()).ToString();
-                        lineNumber++;
-
-                        var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine);
-                        if (!string.IsNullOrEmpty(logLine))
+                        var rawLogLine = TransformRawLogLine(sourceStreamReader.ReadLine());
+                        if (rawLogLine != null)
                         {
-                            targetStreamWriter.Write(logLine);
+                            lineNumber++;
+                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine.ToString());
+                            if (!string.IsNullOrEmpty(logLine))
+                            {
+                                targetStreamWriter.Write(logLine);
+                            }
                         }
                     }
                     while (!sourceStreamReader.EndOfStream);
@@ -102,10 +173,9 @@ namespace Stats.AzureCdnLogs.Common.Collect
             {
                 return null;
             }
-
+ 
             const string spaceCharacter = " ";
             const string dashCharacter = "-";
-
             var stringBuilder = new StringBuilder();
 
             // timestamp
@@ -150,7 +220,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             return stringBuilder.ToString();
         }
 
-        private static string ToUnixTimeStamp(DateTime dateTime)
+        protected static string ToUnixTimeStamp(DateTime dateTime)
         {
             var secondsPastEpoch = (dateTime - _unixTimestamp).TotalSeconds;
             return secondsPastEpoch.ToString(CultureInfo.InvariantCulture);

@@ -1,24 +1,24 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Stats.AzureCdnLogs.Common.Collect
 {
     public interface ILogSource
     {
-        /// <summary>
-        /// It returns the files' uri existent at the source.
-        /// </summary>
-        /// <returns></returns>
-        IEnumerable<Uri> GetFiles();
+        Task<IEnumerable<Uri>> GetFilesAsync(int maxResults, CancellationToken token);
 
-        Task<bool> TryDeleteAsync(Uri file);
+        Task<bool> CleanAsync(Uri fileUri, bool onError, CancellationToken token);
 
-        Task<Stream> OpenReadAsync(Uri uri);
+        Task<Stream> OpenReadAsync(Uri fileUri, CancellationToken token);
 
-        bool TryLock(Uri file);
+        Task<bool> TakeLockAsync(Uri fileUri, CancellationToken token);
+
+        Task<bool> ReleaseLockAsync(Uri fileUri, CancellationToken token);
     }
 }
