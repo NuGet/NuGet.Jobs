@@ -27,11 +27,6 @@ namespace Stats.CollectAzureChinaCDNLogs
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            //var collector = new ChinaStatsCollector();
-            //string input = "40.125.202.231,7/27/2017 4:50:09 PM +00:00,GET, \"/v3-flatcontainer/system.net.primitives/index.json\",HTTP/1.1,200,1196,\"-\",\"NuGet+Command+Line/4.3.0+(Microsoft+Windows+NT+6.2.9200.0)\",133,TCP_MISS,118.180.6.168";
-            //string output = collector.TransformRawLogLine(input).ToString();
-
-
             var cloudStorageAccountConnStringSource = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureStorageAccountConnectionStringSource);
             var cloudStorageAccountConnStringDest = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureStorageAccountConnectionStringDestination);
             _cloudStorageAccountSource = ValidateAzureCloudStorageAccount(cloudStorageAccountConnStringSource);
@@ -58,6 +53,11 @@ namespace Stats.CollectAzureChinaCDNLogs
                 {
                     Logger.LogError(ex, ex.Message);
                 }
+            }
+
+            if(cts.IsCancellationRequested)
+            {
+                Logger.LogInformation($"Execution exceeded the timeout of {_executionTimeoutInSeconds} seconds and it was cancelled.");
             }
         }
 

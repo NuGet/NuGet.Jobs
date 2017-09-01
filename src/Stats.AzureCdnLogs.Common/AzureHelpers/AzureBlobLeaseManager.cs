@@ -12,8 +12,8 @@ namespace Stats.AzureCdnLogs.Common
 {
     public class AzureBlobLeaseManager
     {
-        ConcurrentDictionary<Uri, string> _leasedBlobs = new ConcurrentDictionary<Uri, string>();
-        BlobRequestOptions _blobRequestOptions;
+        private ConcurrentDictionary<Uri, string> _leasedBlobs = new ConcurrentDictionary<Uri, string>();
+        private BlobRequestOptions _blobRequestOptions;
 
         public AzureBlobLeaseManager(BlobRequestOptions blobRequestOptions=null)
         {
@@ -38,7 +38,7 @@ namespace Stats.AzureCdnLogs.Common
             {
                 return false;
             }
-            string proposedLeaseId = Guid.NewGuid().ToString();
+            var proposedLeaseId = Guid.NewGuid().ToString();
             string leaseId;
 
             leaseId = blob.AcquireLease(TimeSpan.FromSeconds(maxRenewPeriodInSeconds), proposedLeaseId);
@@ -94,7 +94,7 @@ namespace Stats.AzureCdnLogs.Common
         /// <returns>True if the Release was successful.</returns>
         public bool TryReleaseLease(CloudBlob blob)
         {
-            string leaseId = string.Empty;
+            var leaseId = string.Empty;
             if (!_leasedBlobs.TryGetValue(blob.Uri, out leaseId))
             {
                 return false;

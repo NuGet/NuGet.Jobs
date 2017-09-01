@@ -46,7 +46,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         }
 
         /// <summary>
-        /// Gets the Azure blobs from the specific container that do not have a lease on them.
+        /// Gets the Azure blobs that do not have a lease on them from the specific container .
         /// </summary>
         /// <param name="maxResults">The max number of files to be returned.</param>
         /// <param name="token">A token to be used for cancellation.</param>

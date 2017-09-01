@@ -71,13 +71,15 @@ namespace Stats.CollectAzureChinaCDNLogs
                 }
                 else
                 {
-                    //this case is when an entry is like "
+                    //this case is when an entry is like 
+                    //""Mozilla/5.0+(X11;+Linux+x86_64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/11.0.1111.11+Safari/537.36+Google+Favicon""
+                    //Note the comma inside of the entry
                     string resultInt = segments[i++];
                     while(i< segments.Length && !segments[i].EndsWith("\""))
                     {
-                        resultInt += segments[i++].Trim();
+                        resultInt += segments[i++];
                     }
-                    if (i < segments.Length) { resultInt += segments[i]; }
+                    if (i < segments.Length) { resultInt += "," + segments[i]; }
                     result.Add(resultInt);
                 }
             }
