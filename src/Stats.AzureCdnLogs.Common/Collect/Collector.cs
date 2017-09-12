@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Stats.AzureCdnLogs.Common.Collect
 {
     /// <summary>
-    /// An represention of a Stats collector. 
+    /// A representation of a Stats collector. 
     /// A collector is a type that copies the files from a <see cref="Stats.AzureCdnLogs.Common.Collect.ILogSource"/> to a <see cref="Stats.AzureCdnLogs.Common.Collect.ILogDestination"/>.
     /// The collector can also transform the lines from the source during the processing.
     /// </summary>
@@ -58,7 +58,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
                     {
                         return;
                     }
-                    if (_source.TakeLockAsync(file, token).Result)
+                    var lockResult = _source.TakeLockAsync(file, token).Result;
+                    if (lockResult.Item1)
                     {
                         using (var inputStream = _source.OpenReadAsync(file, token).Result)
                         {
@@ -80,6 +81,12 @@ namespace Stats.AzureCdnLogs.Common.Collect
                               }).Result;
                         }
                     }
+                    //log any exceptions from the renewlease task if faulted
+                    //if the task is still running at this moment any future failure would not matter 
+                    if(lockResult.Item2 != null && lockResult.Item2.IsFaulted)
+                    {
+                        AddException(exceptions, lockResult.Item2.Exception);
+                    }
                 });
             }
             catch (Exception e)
@@ -97,9 +104,9 @@ namespace Stats.AzureCdnLogs.Common.Collect
             }
             if (e is AggregateException)
             {
-                foreach (Exception innerEx in ((AggregateException)e).InnerExceptions)
+                foreach (Exception innerEx in ((AggregateException)e).Flatten().InnerExceptions)
                 {
-                    AddException(exceptions, innerEx);
+                    exceptions.Add(innerEx);
                 }
             }
             else
@@ -113,61 +120,37 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// </summary>
         /// <param name="line">A line from the input stream.</param>
         /// <returns>The transformed line.</returns>
-        public virtual OutputLogLine TransformRawLogLine(string line)
-        {
-            // the default implementation will assume that the entries are space separated and in the correct order
-            string[] entries = line.Split(' ');
-
-            return new OutputLogLine(entries[0],
-                                    entries[1],
-                                    entries[2],
-                                    entries[3],
-                                    entries[4],
-                                    entries[5],
-                                    entries[6],
-                                    entries[7],
-                                    entries[8],
-                                    entries[9],
-                                    entries[10],
-                                    entries[11],
-                                    entries[12],
-                                    entries[13],
-                                    entries[14],
-                                    entries[15]);
-        }
+        public abstract OutputLogLine TransformRawLogLine(string line);
 
         protected void ProcessLogStream(Stream sourceStream, Stream targetStream)
         {
             using (var sourceStreamReader = new StreamReader(sourceStream))
+            using (var targetStreamWriter = new StreamWriter(targetStream))
             {
-                using (var targetStreamWriter = new StreamWriter(targetStream))
+                targetStreamWriter.Write(OutputLogLine.Header);
+                var lineNumber = 0;
+                while (!sourceStreamReader.EndOfStream)
                 {
-                    targetStreamWriter.Write(OutputLogLine.Header);
-                    var lineNumber = 0;
-                    do
+                    var rawLogLine = TransformRawLogLine(sourceStreamReader.ReadLine());
+                    if (rawLogLine != null)
                     {
-                        var rawLogLine = TransformRawLogLine(sourceStreamReader.ReadLine());
-                        if (rawLogLine != null)
+                        lineNumber++;
+                        var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine.ToString());
+                        if (!string.IsNullOrEmpty(logLine))
                         {
-                            lineNumber++;
-                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine.ToString());
-                            if (!string.IsNullOrEmpty(logLine))
-                            {
-                                targetStreamWriter.Write(logLine);
-                            }
+                            targetStreamWriter.Write(logLine);
                         }
                     }
-                    while (!sourceStreamReader.EndOfStream);
-                }
+                };
             }
         }
 
         private string GetParsedModifiedLogEntry(int lineNumber, string rawLogEntry)
         {
             var parsedEntry = CdnLogEntryParser.ParseLogEntryFromLine(
-                lineNumber,
-                rawLogEntry,
-                null);
+                lineNumber: lineNumber,
+                line: rawLogEntry,
+                onErrorAction: null);
 
             if (parsedEntry == null)
             {

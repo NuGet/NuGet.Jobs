@@ -17,7 +17,13 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         Task<Stream> OpenReadAsync(Uri fileUri, CancellationToken token);
 
-        Task<bool> TakeLockAsync(Uri fileUri, CancellationToken token);
+        /// <summary>
+        /// Take lock.
+        /// </summary>
+        /// <param name="fileUri">The file uri.</param>
+        /// <param name="token">The token for cancellation.</param>
+        /// <returns>The status of the operaton and a task that will continue taking the lock overtime.</returns>
+        Task<Tuple<bool, Task>> TakeLockAsync(Uri fileUri, CancellationToken token);
 
         Task<bool> ReleaseLockAsync(Uri fileUri, CancellationToken token);
     }

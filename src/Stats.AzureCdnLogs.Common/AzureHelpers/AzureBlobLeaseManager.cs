@@ -10,8 +10,13 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace Stats.AzureCdnLogs.Common
 {
+    /// <summary>
+    /// Manages lease acquisition on Azure Blobs.
+    /// A lease, once is acquired, it will be continuously renewed every 60 minutes.
+    /// </summary>
     public class AzureBlobLeaseManager
     {
+        private const int MaxRenewPeriodInSeconds = 60;
         private ConcurrentDictionary<Uri, string> _leasedBlobs = new ConcurrentDictionary<Uri, string>();
         private BlobRequestOptions _blobRequestOptions;
 
@@ -21,17 +26,16 @@ namespace Stats.AzureCdnLogs.Common
         }
 
         /// <summary>
-        /// Try to aquire a lease on the blob. If the aquire is sucessful the lease will be renewed at every 60 seconds. 
+        /// Try to acquire a lease on the blob. If the acquire is successful the lease will be renewed at every 60 seconds. 
         /// In order to stop the renew task the <see cref="Stats.AzureCdnLogs.Common.AzureBlobLeaseManager.TryReleaseLease(CloudBlob)"/> needs to be invoked
         /// or the token to be cancelled.
         /// </summary>
-        /// <param name="blob">The blob to aquire the lease on.</param>
+        /// <param name="blob">The blob to acquire the lease on.</param>
         /// <param name="token">A token to cancel the operation.</param>
         /// <param name="renewStatusTask">The renew task.</param>
-        /// <returns></returns>
+        /// <returns>True if the lease was acquired. </returns>
         public bool AcquireLease(CloudBlob blob, CancellationToken token, out Task<bool> renewStatusTask)
         {
-            int maxRenewPeriodInSeconds = 60;
             renewStatusTask = null;
             blob.FetchAttributes();
             if (token.IsCancellationRequested || blob.Properties.LeaseStatus == LeaseStatus.Locked)
@@ -41,7 +45,7 @@ namespace Stats.AzureCdnLogs.Common
             var proposedLeaseId = Guid.NewGuid().ToString();
             string leaseId;
 
-            leaseId = blob.AcquireLease(TimeSpan.FromSeconds(maxRenewPeriodInSeconds), proposedLeaseId);
+            leaseId = blob.AcquireLease(TimeSpan.FromSeconds(MaxRenewPeriodInSeconds), proposedLeaseId);
             _leasedBlobs.AddOrUpdate(blob.Uri, leaseId, (uri, guid) => leaseId);
 
             //start a task that will renew the lease until the token is cancelled or the Release methods was invoked
@@ -56,10 +60,11 @@ namespace Stats.AzureCdnLogs.Common
                             while (!token.IsCancellationRequested)
                             {
                                 string blobLeaseId = string.Empty;
-                                //it will renew the lease only of the lease was not explicitelly released 
+                                //it will renew the lease only if the lease was not explicitelly released 
                                 if (_leasedBlobs.TryGetValue(blob.Uri, out blobLeaseId) && blobLeaseId == leaseId)
                                 {
-                                    Thread.Sleep(maxRenewPeriodInSeconds * 1000);
+                                    int sleepBeforeRenewInSeconds = MaxRenewPeriodInSeconds - 5 < 0 ? MaxRenewPeriodInSeconds : MaxRenewPeriodInSeconds - 5;
+                                    Thread.Sleep(sleepBeforeRenewInSeconds * 1000);
                                     AccessCondition acc = new AccessCondition() { LeaseId = leaseId };
                                     blob.RenewLease(accessCondition: acc, options: _blobRequestOptions, operationContext: null);
                                 }

@@ -17,8 +17,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
     /// </summary>
     public class AzureStatsLogDestination : ILogDestination
     {
-        private const string _contentType_Gzip = "application/x-gzip";
-        private const string _contentType_Text = "text/plain";
+        private const string ContentTypeGzip = "application/x-gzip";
+        private const string ContentTypeText = "text/plain";
 
         private CloudStorageAccount _azureAccount;
         private CloudBlobClient _cloudBlobClient;
@@ -34,7 +34,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         /// <summary>
         /// Writes the input stream to the destination using the writeAction.
-        /// If the destinationfile exists the method will be noop.
+        /// If the destinationfile exists it will be overwritten.
         /// </summary>
         /// <param name="inputStream">The input stream.</param>
         /// <param name="writeAction">The write action between the two streams.</param>
@@ -48,10 +48,6 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 return;
             }
             var blob = _cloudBlobContainer.GetBlockBlobReference(destinationFileName);
-            if(blob.Exists())
-            {
-                return;
-            }
             blob.Properties.ContentType = GetContentType(destinationContentType);
             var resultStream = await blob.OpenWriteAsync();
             if (destinationContentType == ContentType.GZip)
@@ -75,11 +71,11 @@ namespace Stats.AzureCdnLogs.Common.Collect
             switch(contentType)
             {
                 case ContentType.GZip:
-                    return _contentType_Gzip;
+                    return ContentTypeGzip;
                 case ContentType.Text:
-                    return _contentType_Text;
+                    return ContentTypeText;
                 default:
-                    return null;
+                    throw new ArgumentOutOfRangeException(nameof(contentType));
             }
         }
     }

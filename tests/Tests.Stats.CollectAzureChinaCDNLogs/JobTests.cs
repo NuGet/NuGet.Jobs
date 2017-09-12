@@ -47,12 +47,12 @@ namespace Tests.Stats.CollectAzureChinaCDNLogs
         private static Dictionary<string, string> CreateValidJobArgsDictionary()
         {
             var jobArgsDictionary = new Dictionary<string, string>();
-            jobArgsDictionary.Add("AzureAccountConStringSource", "DefaultEndpointsProtocol=https;AccountName=name;AccountKey=cdummy4aadummyAAWhdummyAdummyA6A+dummydoAdummyJqdummymnm+H+2dummyA/dummygdummyqdummyKK==;EndpointSuffix=core.chinacloudapi.cn");
-            jobArgsDictionary.Add("AzureAccountConStringDest", "DefaultEndpointsProtocol=https;AccountName=name;AccountKey=cdummy4aadummyAAWhdummyAdummyA6A+dummydoAdummyJqdummymnm+H+2dummyA/dummygdummyqdummyKK==;EndpointSuffix=core.windows.net");
-            jobArgsDictionary.Add("AzureContainerNameDest", "DestContainer");
+            jobArgsDictionary.Add("AzureAccountConnectionStringSource", "DefaultEndpointsProtocol=https;AccountName=name;AccountKey=cdummy4aadummyAAWhdummyAdummyA6A+dummydoAdummyJqdummymnm+H+2dummyA/dummygdummyqdummyKK==;EndpointSuffix=core.chinacloudapi.cn");
+            jobArgsDictionary.Add("AzureAccountConnectionStringDestination", "DefaultEndpointsProtocol=https;AccountName=name;AccountKey=cdummy4aadummyAAWhdummyAdummyA6A+dummydoAdummyJqdummymnm+H+2dummyA/dummygdummyqdummyKK==;EndpointSuffix=core.windows.net");
+            jobArgsDictionary.Add("AzureContainerNameDestination", "DestContainer");
             jobArgsDictionary.Add("AzureContainerNameSource", "SourceContainer");
             jobArgsDictionary.Add("DestinationFilePrefix", "SomePrfix");
-            jobArgsDictionary.Add("ExecutionTimeoutInSec", "60");
+            jobArgsDictionary.Add("ExecutionTimeoutInSeconds", "60");
 
             return jobArgsDictionary;
         }

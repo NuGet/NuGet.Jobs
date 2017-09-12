@@ -27,14 +27,14 @@ namespace Stats.CollectAzureChinaCDNLogs
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            var cloudStorageAccountConnStringSource = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureStorageAccountConnectionStringSource);
-            var cloudStorageAccountConnStringDest = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureStorageAccountConnectionStringDestination);
+            var cloudStorageAccountConnStringSource = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureAccountConnectionStringSource);
+            var cloudStorageAccountConnStringDest = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureAccountConnectionStringDestination);
             _cloudStorageAccountSource = ValidateAzureCloudStorageAccount(cloudStorageAccountConnStringSource);
             _cloudStorageAccountDestination = ValidateAzureCloudStorageAccount(cloudStorageAccountConnStringDest);
             _cloudStorageContainerNameDestination = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureContainerNameDestination);
             _cloudStorageContainerNameSource = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.AzureContainerNameSource);
             _destinationFilePrefix = JobConfigurationManager.GetArgument(jobArgsDictionary, ArgumentNames.DestinationFilePrefix);
-            _executionTimeoutInSeconds = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ArgumentNames.AzureContainerNameSource) ?? DefaultExecutionTimeoutInSeconds;
+            _executionTimeoutInSeconds = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, ArgumentNames.ExecutionTimeoutInSeconds) ?? DefaultExecutionTimeoutInSeconds;
 
             var source = new AzureStatsLogSource(cloudStorageAccountConnStringSource, _cloudStorageContainerNameSource, _executionTimeoutInSeconds/MaxFilesToProcess);
             var dest = new AzureStatsLogDestination(cloudStorageAccountConnStringDest,_cloudStorageContainerNameDestination);
@@ -45,11 +45,11 @@ namespace Stats.CollectAzureChinaCDNLogs
         {
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(_executionTimeoutInSeconds*1000);
-            var aggregateException = await _chinaCollector.TryProcessAsync(MaxFilesToProcess, s => $"{_destinationFilePrefix}_{s}", ContentType.GZip, cts.Token);
+            var aggregateExceptions = await _chinaCollector.TryProcessAsync(MaxFilesToProcess, s => $"{_destinationFilePrefix}_{s}", ContentType.GZip, cts.Token);
 
-            if (aggregateException != null)
+            if (aggregateExceptions != null)
             {
-                foreach(var ex in aggregateException.InnerExceptions)
+                foreach(var ex in aggregateExceptions.InnerExceptions)
                 {
                     Logger.LogError(ex, ex.Message);
                 }

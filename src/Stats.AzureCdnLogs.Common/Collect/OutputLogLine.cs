@@ -10,37 +10,37 @@ namespace Stats.AzureCdnLogs.Common.Collect
     public class OutputLogLine
     {
         //timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
-        public string TimeStamp { get; private set; }
+        public string TimeStamp { get; }
 
-        public string TimeTaken { get; private set; }
+        public string TimeTaken { get; }
 
-        public string CIp { get; private set; }
+        public string CIp { get; }
 
-        public string FileSize { get; private set; }
+        public string FileSize { get; }
 
-        public string SIp { get; private set; }
+        public string SIp { get; }
 
-        public string SPort { get; private set; }
+        public string SPort { get; }
 
-        public string ScStatus { get; private set; }
+        public string ScStatus { get; }
 
-        public string ScBytes { get; private set; }
+        public string ScBytes { get; }
 
-        public string CsMethod { get; private set; }
+        public string CsMethod { get; }
 
-        public string CsUriStem { get; private set; }
+        public string CsUriStem { get; }
 
-        public string RsDuration { get; private set; }
+        public string RsDuration { get; }
 
-        public string RsBytes { get; private set; }
+        public string RsBytes { get; }
 
-        public string CReferrer { get; private set; }
+        public string CReferrer { get; }
 
-        public string CUserAgent { get; private set; }
+        public string CUserAgent { get; }
 
-        public string CustomerId { get; private set; }
+        public string CustomerId { get; }
 
-        public string XEc_Custom_1 { get; private set; }
+        public string XEc_Custom_1 { get; }
 
         public OutputLogLine(string timestamp,
                              string timetaken,

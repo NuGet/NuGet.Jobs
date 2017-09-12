@@ -108,12 +108,17 @@
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\AssemblyInfo.*.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Scripts\Functions.ps1" />
+    <None Include="Scripts\PostDeploy.ps1" />
+    <None Include="Scripts\PreDeploy.ps1" />
+    <None Include="Scripts\Stats.CollectAzureChinaCDNLogs.cmd" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">
@@ -124,6 +129,9 @@
       <Project>{f72c31a7-424d-48c6-924c-ebfd4be0918b}</Project>
       <Name>Stats.AzureCdnLogs.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scripts\nssm.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

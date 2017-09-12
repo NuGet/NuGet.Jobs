@@ -18,7 +18,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
     /// </summary>
     public class AzureStatsLogSource : ILogSource
     {
-        private const ushort _gzipLeadBytes = 0x8b1f;
+        private const ushort GzipLeadBytes = 0x8b1f;
 
         private string _deadletterContainerName = "-deadletter";
         private string _archiveContainerName = "-archive";
@@ -55,13 +55,13 @@ namespace Stats.AzureCdnLogs.Common.Collect
         {
             if (maxResults<= 0)
             {
-                throw new ArgumentException($"{nameof(maxResults)} needs to be positive.");
+                throw new ArgumentOutOfRangeException($"{nameof(maxResults)} needs to be positive.");
             }
             BlobContinuationToken continuationToken = null;
-            List<Uri> result = new List<Uri>();
+            var result = new List<Uri>();
             do
             {
-                var resultsInternal = await _container.ListBlobsSegmentedAsync(null,
+                var resultsInternal = await _container.ListBlobsSegmentedAsync(prefix: null,
                     useFlatBlobListing: true,
                     blobListingDetails: BlobListingDetails.Metadata,
                     maxResults: null,
@@ -106,6 +106,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             if (await IsGzipCompressedAsync(inputRawStream))
             {
                 return new GZipInputStream(inputRawStream);
+                //return new GZipStream(inputRawStream, CompressionMode.Decompress);
             }
             else
             {
@@ -115,23 +116,23 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         /// <summary>
         /// Take the lease on the blob. 
-        /// The lease will be renewd at every 60 seconds. In order to stop the renew of the lease:
+        /// The lease will be renewed at every 60 seconds. In order to stop the renew of the lease:
         /// 1. Call ReleaseLockAsync
         ///     or
         /// 2.Cancel the cancellation token
         /// </summary>
         /// <param name="blobUri">The blob uri.</param>
         /// <param name="token">A token to be used for cancellation.</param>
-        /// <returns>True if the lock was taken. False otherwise.</returns>
-        public async Task<bool> TakeLockAsync(Uri blobUri, CancellationToken token)
+        /// <returns>True if the lock was taken. False otherwise. And the task that renews the lock overtime.</returns>
+        public async Task<Tuple<bool, Task>> TakeLockAsync(Uri blobUri, CancellationToken token)
         {
             var blob = await GetBlobAsync(blobUri);
             if (blob == null)
             {
-                return false;
+                return new Tuple<bool, Task>(false, null);
             }
             Task<bool> renewStateTask;
-            return _blobLeaseManager.AcquireLease(blob, token, out renewStateTask);
+            return new Tuple<bool,Task>(_blobLeaseManager.AcquireLease(blob, token, out renewStateTask), renewStateTask);
         }
 
         /// <summary>
@@ -139,7 +140,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// </summary>
         /// <param name="blobUri">The blob uri to be released.</param>
         /// <param name="token">A token to be used for cancellation. For this implemention the token is ignored.</param>
-        /// <returns>True if the lease was released or the blob does not exist..</returns>
+        /// <returns>True if the lease was released or the blob does not exist.</returns>
         public async Task<bool> ReleaseLockAsync(Uri blobUri, CancellationToken token)
         {
             var blob = await GetBlobAsync(blobUri);
@@ -170,9 +171,9 @@ namespace Stats.AzureCdnLogs.Common.Collect
             {
                 return false;
             }
-            string archiveContainerName = onError ? _deadletterContainerName : _archiveContainerName;
-            var container = await CreateContainerAsync(archiveContainerName);
-            if (await CopyBlobToContainerAsync(blobUri, container))
+            string archiveTargetContainerName = onError ? _deadletterContainerName : _archiveContainerName;
+            var archiveTargetContainer = await CreateContainerAsync(archiveTargetContainerName);
+            if (await CopyBlobToContainerAsync(blobUri, archiveTargetContainer))
             {
                 string leaseId;
                 AccessCondition acc = _blobLeaseManager.HasLease(sourceBlob, out leaseId) ? new AccessCondition() { LeaseId = leaseId } : null;
@@ -196,7 +197,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         private async Task<bool> CopyBlobToContainerAsync(Uri sourceblobUri, CloudBlobContainer destcontainer)
         {
-            //just get a refference to the future blob
+            //just get a reference to the future blob
             var destinationBlob = destcontainer.GetBlobReference(GetBlobNameFromUri(sourceblobUri));
             if (!await destinationBlob.ExistsAsync())
             {
@@ -234,7 +235,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             {
                 var bytes = new byte[4];
                 await stream.ReadAsync(bytes, 0, 4);
-                return BitConverter.ToUInt16(bytes, 0) == _gzipLeadBytes;
+                return BitConverter.ToUInt16(bytes, 0) == GzipLeadBytes;
             }
             finally
             {
