@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigurationFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +49,15 @@
     <PackageReference Include="moq" Version="4.5.23" />
     <PackageReference Include="xunit" Version="2.1.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Validation.Orchestrator\Validation.Orchestrator.csproj">
+      <Project>{E6D094FB-9068-4578-B176-116F97E7506B}</Project>
+      <Name>Validation.Orchestrator</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
