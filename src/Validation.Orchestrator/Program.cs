@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Validation.Orchestrator
+namespace NuGet.Services.Validation.Orchestrator
 {
     class Program
     {

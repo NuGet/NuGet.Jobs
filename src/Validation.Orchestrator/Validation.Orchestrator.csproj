@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{E6D094FB-9068-4578-B176-116F97E7506B}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Validation.Orchestrator</RootNamespace>
+    <RootNamespace>NuGet.Services.Validation.Orchestrator</RootNamespace>
     <AssemblyName>Validation.Orchestrator</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
