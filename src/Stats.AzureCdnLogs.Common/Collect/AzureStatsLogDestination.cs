@@ -40,6 +40,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <param name="writeAction">The write action between the two streams.</param>
         /// <param name="destinationFileName">The destination file name.</param>
         /// <param name="destinationContentType">The destination content type.</param>
+        /// <param name="token">A token to cancel the operation.</param>
         /// <returns></returns>
         public async Task WriteAsync(Stream inputStream, Action<Stream,Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
         {

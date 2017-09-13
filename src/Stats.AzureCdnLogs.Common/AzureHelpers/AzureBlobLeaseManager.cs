@@ -75,7 +75,8 @@ namespace Stats.AzureCdnLogs.Common
                             }
                         }
                     }
-                    return true;
+                    token.ThrowIfCancellationRequested();
+                    return false;
                 }, token);
             return true;
         }
