@@ -145,7 +145,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj", `
             "src/Validation.Helper/Validation.Helper.csproj", `
             "src/CopyAzureContainer/CopyAzureContainer.csproj", `
-            "src/NuGetCDNRedirect/NuGetCDNRedirect.csproj",`
+            "src/NuGetCDNRedirect/NuGetCDNRedirect.csproj", `
             "src/Validation.Orchestrator/Validation.Orchestrator.csproj"
         
         Foreach ($Project in $Projects) {
