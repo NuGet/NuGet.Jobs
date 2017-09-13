@@ -4,7 +4,7 @@ using System.Configuration;
 using System.Linq;
 using System.Xml;
 
-namespace Validation.Orchestrator
+namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidationConfigurationItem
     {

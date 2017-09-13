@@ -3,7 +3,7 @@ using System.Configuration;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
-using Validation.Orchestrator;
+using NuGet.Services.Validation.Orchestrator;
 using Xunit;
 
 namespace Tests.Validation.Orchestrator
