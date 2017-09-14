@@ -4,8 +4,15 @@
       {
         "name": "",
         "failAfter": "",
-        "requiredValidations": [ ]
+        "requiredValidations": []
       }
     ]
-  }
+  },
+  "KeyVault_VaultName": "",
+  "KeyVault_ClientId": "",
+  "KeyVault_CertificateThumbprint": "",
+  "KeyVault_ValidateCertificate": true,
+  "KeyVault_StoreName": "My",
+  "KeyVault_StoreLocation": "LocalMachine",
+  "InstrumentationKey": ""
 }

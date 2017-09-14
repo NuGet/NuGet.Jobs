@@ -2,52 +2,141 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
 using NuGet.Services.Configuration;
-using NuGet.Services.Logging;
-using Serilog;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
     class Program
     {
-        static void Main(string[] args)
+        private const string LoggingCategory = "Validation.Orchestrator";
+
+        private const string ConfigurationArgument = "Configuration";
+        private const string ValidateArgument = "Validate";
+
+        private const string ConfigurationSectionName = "Configuration";
+        private const string ValidateOnlyConfigurationKey = "ValidateOnly";
+
+        private static ILogger logger = null;
+
+        static int Main(string[] args)
         {
-            IServiceCollection services = new ServiceCollection();
-            ConfigureWithCommandLine(services, args);
+            var services = new ServiceCollection();
+            Configuration configuration;
+            try
+            {
+                configuration = ConfigureWithCommandLine(services, args);
+            }
+            catch(Exception e)
+            {
+                if (logger != null)
+                {
+                    logger.LogError(Error.ConfigurationReadFailure, e, "Failed to read configuration");
+                }
+                else
+                {
+                    Console.Error.WriteLine("Failed to read configuration: {0}", e);
+                }
+                return 1;
+            }
+            ConfigureServices(services, configuration);
+            var serviceProvider = CreateProvider(services);
+
+            try
+            {
+                ConfigurationValidator.Validate(configuration);
+            }
+            catch(Exception e)
+            {
+                logger.LogError(Error.ConfigurationValidationFailure, e, "Failed to validate configuration");
+                return 1;
+            }
+
+            logger.LogInformation("Configuration validate successfully");
+
+            var configurationRoot = serviceProvider.GetService<IConfigurationRoot>();
+            if (configurationRoot[ValidateOnlyConfigurationKey] == "true")
+            {
+                return 0;
+            }
+
+            return 0;
+        }
+
+        private static Configuration ConfigureWithCommandLine(IServiceCollection services, string[] args)
+        {
+            var loggerFactoryBootstrapper = new LoggerFactoryBootstrapper();
+            logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
+            logger.LogInformation("Reading configuration");
+
+            var configurationRoot = GetConfigurationRoot(args, loggerFactoryBootstrapper);
+
+            if (loggerFactoryBootstrapper.TryInitializeApplicationInsights(configurationRoot[JobArgumentNames.InstrumentationKey]))
+            {
+                logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
+            }
+
+            services.AddSingleton(loggerFactoryBootstrapper.LoggerFactory);
+            services.AddLogging();
+
+            var configuration = new Configuration();
+            configurationRoot.GetSection(ConfigurationSectionName).Bind(configuration);
+
+            services.AddSingleton(configuration);
+            return configuration;
+        }
+
+        private static IConfigurationRoot GetConfigurationRoot(string[] args, LoggerFactoryBootstrapper loggerFactoryBootstrapper)
+        {
+            bool validateOnly = args.Any(arg => arg == "-" + ValidateArgument);
+            if (validateOnly)
+            {
+                args = args.Where(arg => arg != "-" + ValidateArgument).ToArray();
+            }
+
+            IDictionary<string, string> argsDictionary = GetCommandLineArguments(args, loggerFactoryBootstrapper.LoggerFactory);
+            string configurationFilename = JobConfigurationManager.GetArgument(argsDictionary, ConfigurationArgument);
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile("settings.json");
+                .AddJsonFile(configurationFilename);
 
-            var nonInjectedConfiguration = builder.Build();
-            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(nonInjectedConfiguration);
-            var configurationRoot = new SecretConfigurationReader(nonInjectedConfiguration, secretReaderFactory);
+            if (validateOnly)
+            {
+                builder.AddInMemoryCollection(new[] { new KeyValuePair<string, string>(ValidateOnlyConfigurationKey, "true") });
+            }
 
-            var configuration = new Configuration();
-            var configurationSection = configurationRoot.GetSection("Configuration");
-            configurationSection.Bind(configuration);
-
-            ConfigurationValidator.Validate(configuration);
+            var unprocessedConfiguration = builder.Build();
+            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(unprocessedConfiguration);
+            var configurationRoot = new SecretConfigurationReader(unprocessedConfiguration, secretReaderFactory);
+            return configurationRoot;
         }
 
-        private static void ConfigureWithCommandLine(IServiceCollection services, string[] args)
+        private static void ConfigureServices(IServiceCollection services, Configuration configuration)
         {
-            var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(false);
-            loggerConfiguration.WriteTo.Console();
+        }
 
-            //services.AddTransient<ISecretReaderFactory>();
+        private static IServiceProvider CreateProvider(IServiceCollection services)
+        {
+            var containerBuilder = new ContainerBuilder();
+            containerBuilder.Populate(services);
 
-            var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
+            return new AutofacServiceProvider(containerBuilder.Build());
+        }
+
+        private static IDictionary<string, string> GetCommandLineArguments(string[] args, ILoggerFactory loggerFactory)
+        {
             var bootstrapConfigurationBuilder = new ConfigurationBuilder();
             var bootstrapConfiguration = bootstrapConfigurationBuilder.Build();
             var secretReaderFactory = new ConfigurationRootSecretReaderFactory(bootstrapConfiguration);
-
-            var argsDictionary = JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger("Validation"), args, "Validation.Orchestrator", secretReaderFactory);
-
-            throw new NotImplementedException();
+            return JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger(LoggingCategory), args, LoggingCategory, secretReaderFactory);
         }
     }
 }
