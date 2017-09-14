@@ -59,13 +59,15 @@ namespace NuGet.Services.Validation.Orchestrator
                 return 1;
             }
 
-            logger.LogInformation("Configuration validate successfully");
+            logger.LogInformation("Configuration validated successfully");
 
             var configurationRoot = serviceProvider.GetService<IConfigurationRoot>();
             if (configurationRoot[ValidateOnlyConfigurationKey] == "true")
             {
                 return 0;
             }
+
+            logger.LogInformation("Starting up the orchestration");
 
             return 0;
         }
@@ -90,6 +92,7 @@ namespace NuGet.Services.Validation.Orchestrator
             configurationRoot.GetSection(ConfigurationSectionName).Bind(configuration);
 
             services.AddSingleton(configuration);
+            services.AddSingleton(configurationRoot);
             return configuration;
         }
 
