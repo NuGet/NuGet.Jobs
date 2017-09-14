@@ -3,7 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Stats.AzureCdnLogs.Common.Collect;
 
 namespace Stats.CollectAzureChinaCDNLogs
@@ -13,6 +16,7 @@ namespace Stats.CollectAzureChinaCDNLogs
     /// </summary>
     public class ChinaStatsCollector : Collector
     {
+        const string Header = "c-ip, timestamp, cs-method, cs-uri-stem, http-ver, sc-status, sc-bytes, c-referer, c-user-agent, rs-duration(ms), hit-miss, s-ip";
         //representation of the header of the log files from China CDN
         enum ChinaLogHeaderFields
         {
@@ -77,6 +81,16 @@ namespace Stats.CollectAzureChinaCDNLogs
                 customerid: notAvailableString,
                 xeccustom1: notAvailableString
                );
+        }
+
+        public override async Task<bool> VerifyStreamAsync(Stream stream)
+        {
+            using (var reader = new StreamReader(stream))
+            {
+                //read the first line
+                string firstLine = await reader.ReadLineAsync();
+                return firstLine.Trim().Equals(Header, StringComparison.InvariantCultureIgnoreCase);
+            }
         }
 
         private string[] GetSegments(string line)

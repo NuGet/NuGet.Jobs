@@ -89,9 +89,10 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// Open the blob from the specific Uri for read.
         /// </summary>
         /// <param name="blobUri">The blob uri.</param>
+        /// <param name="contentType">A flag for the expected compression type of the blob.</param>
         /// <param name="token">A token to be used for cancellation.</param>
         /// <returns>The stream opened for read.</returns>
-        public async Task<Stream> OpenReadAsync(Uri blobUri, CancellationToken token)
+        public async Task<Stream> OpenReadAsync(Uri blobUri, ContentType contentType, CancellationToken token)
         {
             if(token.IsCancellationRequested)
             {
@@ -103,14 +104,15 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 return null;
             }
             var inputRawStream = await blob.OpenReadAsync();
-            if (await IsGzipCompressedAsync(inputRawStream))
+            switch (contentType)
             {
-                return new GZipInputStream(inputRawStream);
-                //return new GZipStream(inputRawStream, CompressionMode.Decompress);
-            }
-            else
-            {
-                return inputRawStream;
+                case ContentType.GZip:
+                    return new GZipInputStream(inputRawStream);
+                case ContentType.Text:
+                case ContentType.None:
+                    return inputRawStream;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(contentType));
             }
         }
 

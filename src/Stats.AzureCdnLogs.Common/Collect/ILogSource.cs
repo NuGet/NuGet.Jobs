@@ -15,7 +15,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         Task<bool> CleanAsync(Uri fileUri, bool onError, CancellationToken token);
 
-        Task<Stream> OpenReadAsync(Uri fileUri, CancellationToken token);
+        Task<Stream> OpenReadAsync(Uri fileUri, ContentType contentType, CancellationToken token);
 
         /// <summary>
         /// Take lock.

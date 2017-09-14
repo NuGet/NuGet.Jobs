@@ -45,7 +45,11 @@ namespace Stats.CollectAzureChinaCDNLogs
         {
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(_executionTimeoutInSeconds*1000);
-            var aggregateExceptions = await _chinaCollector.TryProcessAsync(MaxFilesToProcess, s => $"{_destinationFilePrefix}_{s}", ContentType.GZip, cts.Token);
+            var aggregateExceptions = await _chinaCollector.TryProcessAsync(maxFileCount: MaxFilesToProcess,
+                 fileNameTransform: s => $"{_destinationFilePrefix}_{s}",
+                 sourceContentType: ContentType.GZip,
+                 destinationContentType: ContentType.GZip,
+                 token: cts.Token);
 
             if (aggregateExceptions != null)
             {

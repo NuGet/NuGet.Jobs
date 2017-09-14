@@ -5,6 +5,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 {
     public enum ContentType
     {
+        None,
         GZip,
         Text
     }

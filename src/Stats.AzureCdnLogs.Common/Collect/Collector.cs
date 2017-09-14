@@ -43,10 +43,11 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// </summary>
         /// <param name="maxFileCount">Only max this number of files will be processed at once.</param>
         /// <param name="fileNameTransform">A Func to be used to generate the output file name fro the input filename.</param>
-        /// <param name="destinationContentType">The <see cref="Stats.AzureCdnLogs.Common.Collect.ContentType"./></param>
+        /// <param name="sourceContentType">The <see cref="Stats.AzureCdnLogs.Common.Collect.ContentType" for the source file./></param>
+        /// <param name="destinationContentType">The <see cref="Stats.AzureCdnLogs.Common.Collect.ContentType" for the destination file./></param>
         /// <param name="token">A <see cref="System.Threading.CancellationToken"/> to be used for cancelling the operation.</param>
         /// <returns>A collection of exceptions if any.</returns>
-        public virtual async Task<AggregateException> TryProcessAsync(int maxFileCount, Func<string,string> fileNameTransform,  ContentType destinationContentType, CancellationToken token)
+        public virtual async Task<AggregateException> TryProcessAsync(int maxFileCount, Func<string,string> fileNameTransform, ContentType sourceContentType, ContentType destinationContentType, CancellationToken token)
         {
             ConcurrentBag<Exception> exceptions = new ConcurrentBag<Exception>();
             try
@@ -59,26 +60,35 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         return;
                     }
                     var lockResult = _source.TakeLockAsync(file, token).Result;
-                    if (lockResult.Item1)
+                    if (lockResult.Item1 /*lockResult*/)
                     {
-                        using (var inputStream = _source.OpenReadAsync(file, token).Result)
+                        using (var inputStream = _source.OpenReadAsync(file, sourceContentType, token).Result)
                         {
-                            var writeAction = _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, token).
-                             ContinueWith(t =>
-                             {
-                                 AddException(exceptions, t.Exception);
-                                 return _source.CleanAsync(file, onError: t.IsFaulted, token:token).Result;
-                             }).
-                              ContinueWith(t =>
-                              {
-                                  AddException(exceptions, t.Exception);
-                                  return _source.ReleaseLockAsync(file, token).Result;
-                              }).
-                              ContinueWith(t =>
-                              {
-                                  AddException(exceptions, t.Exception);
-                                  return t.Result;
-                              }).Result;
+                            var writeAction = VerifyStreamInternalAsync(file, sourceContentType, token).
+                            ContinueWith(t =>
+                            {
+                                //if validation failed clean the file to not continue processing over and over 
+                                if (!t.Result)
+                                {
+                                    throw new ApplicationException($"File {file} failed validation.");
+                                }
+                                _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, token).Wait();
+                            }).
+                            ContinueWith(t =>
+                            {
+                                AddException(exceptions, t.Exception);
+                                return _source.CleanAsync(file, onError: t.IsFaulted, token: token).Result;
+                            }).
+                            ContinueWith(t =>
+                            {
+                                AddException(exceptions, t.Exception);
+                                return _source.ReleaseLockAsync(file, token).Result;
+                            }).
+                            ContinueWith(t =>
+                            {
+                                AddException(exceptions, t.Exception);
+                                return t.Result;
+                            }).Result;
                         }
                     }
                     //log any exceptions from the renewlease task if faulted
@@ -122,12 +132,19 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <returns>The transformed line.</returns>
         public abstract OutputLogLine TransformRawLogLine(string line);
 
+        /// <summary>
+        /// A method to validate the stream integrity before data transfer.
+        /// </summary>
+        /// <param name="stream">The input to validate.</param>
+        /// <returns>True if the validation passed.</returns>
+        public abstract Task<bool> VerifyStreamAsync(Stream stream);
+      
         protected void ProcessLogStream(Stream sourceStream, Stream targetStream)
         {
             using (var sourceStreamReader = new StreamReader(sourceStream))
             using (var targetStreamWriter = new StreamWriter(targetStream))
             {
-                targetStreamWriter.Write(OutputLogLine.Header);
+                targetStreamWriter.WriteLine(OutputLogLine.Header);
                 var lineNumber = 0;
                 while (!sourceStreamReader.EndOfStream)
                 {
@@ -164,6 +181,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             // timestamp
             stringBuilder.Append(ToUnixTimeStamp(parsedEntry.EdgeServerTimeDelivered));
             stringBuilder.Append(spaceCharacter);
+
             // time-taken
             stringBuilder.Append((parsedEntry.EdgeServerTimeTaken.HasValue ? parsedEntry.EdgeServerTimeTaken.Value.ToString() : dashCharacter));
             stringBuilder.Append(spaceCharacter);
@@ -198,6 +216,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
             // cs-uri-stem
             stringBuilder.Append((parsedEntry.RequestUrl ?? dashCharacter));
+            stringBuilder.Append(spaceCharacter);
 
             // -
             stringBuilder.Append(dashCharacter);
@@ -225,7 +244,6 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
             // x-ec_custom-1
             stringBuilder.AppendLine((parsedEntry.CustomField ?? dashCharacter));
-            stringBuilder.Append(spaceCharacter);
 
             return stringBuilder.ToString();
         }
@@ -234,6 +252,18 @@ namespace Stats.AzureCdnLogs.Common.Collect
         {
             var secondsPastEpoch = (dateTime - _unixTimestamp).TotalSeconds;
             return secondsPastEpoch.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private async Task<bool> VerifyStreamInternalAsync(Uri file, ContentType contentType , CancellationToken token)
+        {
+            if(token.IsCancellationRequested)
+            {
+                return false;
+            }
+            using (var stream = await _source.OpenReadAsync(file, contentType, token))
+            {
+                return await VerifyStreamAsync(stream);
+            }
         }
     }
 }
