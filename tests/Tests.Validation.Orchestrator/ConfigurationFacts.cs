@@ -1,137 +1,140 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System.Collections.Generic;
 using System.Configuration;
-using System.IO;
-using System.Xml;
-using System.Xml.Serialization;
 using NuGet.Services.Validation.Orchestrator;
 using Xunit;
+using Configuration = NuGet.Services.Validation.Orchestrator.Configuration;
 
 namespace Tests.Validation.Orchestrator
 {
     public class ConfigurationFacts
     {
         [Fact]
-        public void ThrowsIfNull()
+        public void ConfigurationValidatorSmokeTest()
         {
-            var configurationHandler = new ConfigurationHandler();
-            Assert.Throws<ArgumentNullException>(() => configurationHandler.Create(null, null, null));
-        }
-
-        [Fact]
-        public void ThrowsOnUnknownSection()
-        {
-            const string section = @"<someSection></someSection>";
-
-            var configurationHandler = new ConfigurationHandler();
-            Assert.Throws<InvalidOperationException>(() => configurationHandler.Create(null, null, GetRootNode(section)));
-        }
-
-        [Fact]
-        public void SmokeTest()
-        {
-            const string section =
-@"
-  <validations>
-    <validation name=""VCS"" failAfterMinutes=""360"">
-      <runAfter validation=""DetonationChamber"" />
-     </validation>
-   </validations>
- ";
-
-            var configurationHandler = new ConfigurationHandler();
-            configurationHandler.Create(null, null, GetRootNode(section));
-        }
-
-        [Fact]
-        public void ValidationConfigurationItemConstructorThrowsIfNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => new ValidationConfigurationItem(null));
-        }
-
-        [Fact]
-        public void ValidationConfigurationItemConstructorThrowsOnUnexpectedNodeName()
-        {
-            const string validationXml = "<someRandomNode />";
-
-            Assert.Throws<ConfigurationErrorsException>(() => new ValidationConfigurationItem(GetRootNode(validationXml)));
-        }
-
-        [Fact]
-        public void ValidationConfigurationItemThrowsOnUnknownAttribute()
-        {
-            const string validationXml = "<validation someAttribute='someValue' />";
-            Assert.Throws<ConfigurationErrorsException>(() => new ValidationConfigurationItem(GetRootNode(validationXml)));
-        }
-
-        [Theory]
-        [InlineData("<validation />")]
-        [InlineData("<validation name='SomeValidation' />")]
-        [InlineData("<validation failAfterMinutes='42' />")]
-        public void ValidationConfigurationItemThrowsOnMissingAttribute(string validationXml)
-        {
-            Assert.Throws<ConfigurationErrorsException>(() => new ValidationConfigurationItem(GetRootNode(validationXml)));
-        }
-
-        [Theory]
-        [InlineData("<validation name='SomeValidation' failAfterMinutes='abc' />")]
-        [InlineData("<validation name='' failAfterMinutes='42' />")]
-        [InlineData("<validation name='SomeValidation' failAfterMinutes='17.43' />")]
-        [InlineData("<validation name='SomeValidation' failAfterMinutes='' />")]
-        public void ValidationConfigurationItemThrowsOnInvalidAttributeValue(string validationXml)
-        {
-            Assert.Throws<ConfigurationErrorsException>(() => new ValidationConfigurationItem(GetRootNode(validationXml)));
-        }
-
-        [Fact]
-        public void ValidationConfigurationItemSmokeTest()
-        {
-            const string validationXml = 
-@"
-<validation name='TestValidation' failAfterMinutes='123'>
-  <runAfter validation='Prerequisite1' />
-  <runAfter validation='Prerequisite2' />
-</validation>
-";
-
-            var validation = new ValidationConfigurationItem(GetRootNode(validationXml));
-
-            Assert.Equal("TestValidation", validation.Name);
-            Assert.Equal(123, validation.FailAfter.TotalMinutes, 3);
-            Assert.Equal(2, validation.RequiredValidations.Count);
-            Assert.Contains("Prerequisite1", validation.RequiredValidations);
-            Assert.Contains("Prerequisite2", validation.RequiredValidations);
-        }
-
-        [Fact]
-        public void SerializationTest()
-        {
-            const string validationXml =
-@"
-<validation name='TestValidation' failAfterMinutes='123'>
-  <runAfter validation='Prerequisite1' />
-  <runAfter validation='Prerequisite2' />
-</validation>
-";
-
-            var vci = new ValidationConfigurationItem(GetRootNode(validationXml));
-
-            var x = new XmlSerializer(typeof(ValidationConfigurationItem));
-            string xml;
-
-            using (var sw = new StringWriter())
-            using (var xw = XmlWriter.Create(sw))
+            var configuration = new Configuration()
             {
-                x.Serialize(xw, vci);
-                xml = sw.ToString();
-            }
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        RequiredValidations = new List<string>{ "Validation2" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        RequiredValidations = new List<string>()
+                    }
+                }
+            };
+
+            ConfigurationValidator.Validate(configuration);
         }
 
-        private static XmlNode GetRootNode(string xml)
+        [Fact]
+        public void ConfigurationValidatorDetectsDuplicates()
         {
-            var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml(xml);
+            var configuration = new Configuration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1"
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1"
+                    }
+                }
+            };
 
-            return xmlDocument.FirstChild;
+            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+        }
+
+        [Fact]
+        public void ConfigurationValidatorDetectsUnknownValidationPrerequisites()
+        {
+            var configuration = new Configuration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        RequiredValidations = new List<string>{ "SomeValidation" }
+                    },
+                }
+            };
+
+            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+        }
+
+        [Fact]
+        public void ConfigurationValidatorDetectsLoops()
+        {
+            var configuration = new Configuration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        RequiredValidations = new List<string>{ "Validation2" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        RequiredValidations = new List<string>{ "Validation1" }
+                    }
+                }
+            };
+
+            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+        }
+
+        [Fact]
+        public void ConfigurationValidatorDetectsSelfReferencingValidation()
+        {
+            var configuration = new Configuration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        RequiredValidations = new List<string>{ "Validation1" }
+                    },
+                }
+            };
+
+            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+        }
+
+        [Fact]
+        public void ConfigurationValidatorDetectsSelfReferencingValidation2()
+        {
+            var configuration = new Configuration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        RequiredValidations = new List<string>{ "Validation2" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        RequiredValidations = new List<string>{ "Validation2" }
+                    }
+                }
+            };
+
+            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
         }
     }
 }
