@@ -41,12 +41,13 @@ namespace NuGet.Services.Validation.Orchestrator
             //services.AddTransient<ISecretReaderFactory>();
 
             var loggerFactory = LoggingSetup.CreateLoggerFactory(loggerConfiguration);
+            var bootstrapConfigurationBuilder = new ConfigurationBuilder();
+            var bootstrapConfiguration = bootstrapConfigurationBuilder.Build();
+            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(bootstrapConfiguration);
 
-            JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger("Validation"), args, "Validation.Orchestrator", );
+            var argsDictionary = JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger("Validation"), args, "Validation.Orchestrator", secretReaderFactory);
 
             throw new NotImplementedException();
         }
-
-
     }
 }
