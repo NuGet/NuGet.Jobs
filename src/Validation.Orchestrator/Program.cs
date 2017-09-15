@@ -67,6 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator
             var configurationRoot = serviceProvider.GetService<IConfigurationRoot>();
             if (configurationRoot[ValidateOnlyConfigurationKey] == "true")
             {
+                logger.LogInformation("Validation only was requested. Terminating.");
                 return 0;
             }
 
@@ -101,7 +102,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static IConfigurationRoot GetConfigurationRoot(string[] args, LoggerFactoryBootstrapper loggerFactoryBootstrapper)
         {
-            bool validateOnly = args.Any(arg => arg == "-" + ValidateArgument);
+            bool validateOnly = args.Any(arg => arg.Equals("-" + ValidateArgument, StringComparison.OrdinalIgnoreCase));
             if (validateOnly)
             {
                 args = args.Where(arg => arg != "-" + ValidateArgument).ToArray();
