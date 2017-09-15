@@ -24,6 +24,8 @@ namespace NuGet.Services.Validation.Orchestrator
                 throw new ArgumentNullException(nameof(configuration));
             }
 
+            CheckValidationsNumber(configuration.Validations);
+
             CheckPropertyValues(configuration);
 
             CheckDuplicateValidations(configuration);
@@ -31,6 +33,14 @@ namespace NuGet.Services.Validation.Orchestrator
             CheckUnknownPrerequisites(configuration);
 
             CheckPrerequisitesLoops(configuration);
+        }
+
+        private static void CheckValidationsNumber(List<ValidationConfigurationItem> validations)
+        {
+            if (validations == null || !validations.Any())
+            {
+                throw new ConfigurationErrorsException("Must have at least one validation declared");
+            }
         }
 
         private static void CheckPropertyValues(ValidationConfiguration configuration)
