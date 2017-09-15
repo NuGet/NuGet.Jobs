@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -44,6 +46,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 {
                     Console.Error.WriteLine("Failed to read configuration: {0}", e);
                 }
+                PrintUsage();
                 return 1;
             }
             ConfigureServices(services, configuration);
@@ -149,6 +152,12 @@ namespace NuGet.Services.Validation.Orchestrator
             var bootstrapConfiguration = bootstrapConfigurationBuilder.Build();
             var secretReaderFactory = new ConfigurationRootSecretReaderFactory(bootstrapConfiguration);
             return JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger(LoggingCategory), args, LoggingCategory, secretReaderFactory);
+        }
+
+        private static void PrintUsage()
+        {
+            var executableName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
+            Console.WriteLine("Usage: {0} -{1} <filename> [-{2}]", executableName, ConfigurationArgument, ValidateArgument);
         }
     }
 }
