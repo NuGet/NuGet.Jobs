@@ -8,7 +8,7 @@ namespace NuGet.Services.Validation.Orchestrator
     /// <summary>
     /// Stores the orchestrator configuration
     /// </summary>
-    public class Configuration
+    public class ValidationConfiguration
     {
         /// <summary>
         /// List of validations to run with their settings and dependencies

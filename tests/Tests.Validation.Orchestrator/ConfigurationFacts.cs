@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Configuration;
 using NuGet.Services.Validation.Orchestrator;
 using Xunit;
-using Configuration = NuGet.Services.Validation.Orchestrator.Configuration;
 
 namespace Tests.Validation.Orchestrator
 {
@@ -14,7 +13,7 @@ namespace Tests.Validation.Orchestrator
         [Fact]
         public void ConfigurationValidatorSmokeTest()
         {
-            var configuration = new Configuration()
+            var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
@@ -37,7 +36,7 @@ namespace Tests.Validation.Orchestrator
         [Fact]
         public void ConfigurationValidatorDetectsDuplicates()
         {
-            var configuration = new Configuration()
+            var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
@@ -58,7 +57,7 @@ namespace Tests.Validation.Orchestrator
         [Fact]
         public void ConfigurationValidatorDetectsUnknownValidationPrerequisites()
         {
-            var configuration = new Configuration()
+            var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
@@ -76,7 +75,7 @@ namespace Tests.Validation.Orchestrator
         [Fact]
         public void ConfigurationValidatorDetectsLoops()
         {
-            var configuration = new Configuration()
+            var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
@@ -99,7 +98,7 @@ namespace Tests.Validation.Orchestrator
         [Fact]
         public void ConfigurationValidatorDetectsSelfReferencingValidation()
         {
-            var configuration = new Configuration()
+            var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
@@ -117,7 +116,7 @@ namespace Tests.Validation.Orchestrator
         [Fact]
         public void ConfigurationValidatorDetectsSelfReferencingValidation2()
         {
-            var configuration = new Configuration()
+            var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {

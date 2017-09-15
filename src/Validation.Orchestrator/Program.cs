@@ -29,7 +29,7 @@ namespace NuGet.Services.Validation.Orchestrator
         static int Main(string[] args)
         {
             var services = new ServiceCollection();
-            Configuration configuration;
+            ValidationConfiguration configuration;
             try
             {
                 configuration = ConfigureWithCommandLine(services, args);
@@ -72,7 +72,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return 0;
         }
 
-        private static Configuration ConfigureWithCommandLine(IServiceCollection services, string[] args)
+        private static ValidationConfiguration ConfigureWithCommandLine(IServiceCollection services, string[] args)
         {
             var loggerFactoryBootstrapper = new LoggerFactoryBootstrapper();
             logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
@@ -88,7 +88,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddSingleton(loggerFactoryBootstrapper.LoggerFactory);
             services.AddLogging();
 
-            var configuration = new Configuration();
+            var configuration = new ValidationConfiguration();
             configurationRoot.GetSection(ConfigurationSectionName).Bind(configuration);
 
             services.AddSingleton(configuration);
@@ -131,7 +131,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return configurationRoot;
         }
 
-        private static void ConfigureServices(IServiceCollection services, Configuration configuration)
+        private static void ConfigureServices(IServiceCollection services, ValidationConfiguration configuration)
         {
         }
 

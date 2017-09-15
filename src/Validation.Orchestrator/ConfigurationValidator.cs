@@ -17,7 +17,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// Checks if configuration object is valid
         /// </summary>
         /// <param name="configuration">Configuration object to check</param>
-        public static void Validate(Configuration configuration)
+        public static void Validate(ValidationConfiguration configuration)
         {
             if (configuration == null)
             {
@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator
             CheckPrerequisitesLoops(configuration);
         }
 
-        private static void CheckPrerequisitesLoops(Configuration configuration)
+        private static void CheckPrerequisitesLoops(ValidationConfiguration configuration)
         {
             var validations = configuration.Validations.ToDictionary(v => v.Name);
 
@@ -58,7 +58,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private static void CheckUnknownPrerequisites(Configuration configuration)
+        private static void CheckUnknownPrerequisites(ValidationConfiguration configuration)
         {
             var declaredValidations = new HashSet<string>(configuration.Validations.Select(v => v.Name));
             var prerequisites = new HashSet<string>(configuration.Validations.Select(v => v.RequiredValidations).SelectMany(p => p));
@@ -69,7 +69,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private static void CheckDuplicateValidations(Configuration configuration)
+        private static void CheckDuplicateValidations(ValidationConfiguration configuration)
         {
             var duplicateValidations = configuration.Validations.Select(v => v.Name).GroupBy(n => n).Where(g => g.Count() > 1).ToList();
             if (duplicateValidations.Any())
