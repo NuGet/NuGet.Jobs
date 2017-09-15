@@ -30,31 +30,15 @@ namespace NuGet.Services.Validation.Orchestrator
 
         static int Main(string[] args)
         {
-            var services = new ServiceCollection();
-            ValidationConfiguration configuration;
-            try
+            IServiceProvider serviceProvider;
+            if ( !TryConfigure(args, out serviceProvider) )
             {
-                configuration = ConfigureWithCommandLine(services, args);
-            }
-            catch(Exception e)
-            {
-                if (logger != null)
-                {
-                    logger.LogError(Error.ConfigurationReadFailure, e, "Failed to read configuration");
-                }
-                else
-                {
-                    Console.Error.WriteLine("Failed to read configuration: {0}", e);
-                }
-                PrintUsage();
                 return 1;
             }
-            ConfigureServices(services, configuration);
-            var serviceProvider = CreateProvider(services);
 
             try
             {
-                ConfigurationValidator.Validate(configuration);
+                ConfigurationValidator.Validate(serviceProvider.GetRequiredService<ValidationConfiguration>());
             }
             catch(Exception e)
             {
@@ -74,6 +58,44 @@ namespace NuGet.Services.Validation.Orchestrator
             logger.LogInformation("Starting up the orchestration");
 
             return 0;
+        }
+
+        private static bool TryConfigure(string[] args, out IServiceProvider serviceProvider)
+        {
+            serviceProvider = null;
+            var services = new ServiceCollection();
+            ValidationConfiguration configuration;
+            try
+            {
+                configuration = ConfigureWithCommandLine(services, args);
+            }
+            catch (Exception e)
+            {
+                if (logger != null)
+                {
+                    logger.LogError(Error.ConfigurationReadFailure, e, "Failed to read configuration");
+                }
+                else
+                {
+                    Console.Error.WriteLine("Failed to read configuration: {0}", e);
+                }
+                PrintUsage();
+                return false;
+            }
+            ConfigureServices(services, configuration);
+            serviceProvider = CreateProvider(services);
+
+            try
+            {
+                ConfigurationValidator.Validate(configuration);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(Error.ConfigurationValidationFailure, e, "Failed to validate configuration");
+                return false;
+            }
+
+            return true;
         }
 
         private static ValidationConfiguration ConfigureWithCommandLine(IServiceCollection services, string[] args)
