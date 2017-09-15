@@ -133,6 +133,8 @@ namespace NuGet.Services.Validation.Orchestrator
             IDictionary<string, string> argsDictionary = GetCommandLineArguments(args, loggerFactoryBootstrapper.LoggerFactory);
             string configurationFilename = JobConfigurationManager.GetArgument(argsDictionary, ConfigurationArgument);
 
+            logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile(configurationFilename);
