@@ -117,6 +117,15 @@ namespace NuGet.Services.Validation.Orchestrator
             }
 
             var unprocessedConfiguration = builder.Build();
+
+            if (validateOnly)
+            {
+                // don't try to access KeyVault if only validation is requested:
+                // we might not be running on a machine with KeyVault access.
+                // Validation settings should not contain KeyVault references anyway
+                return unprocessedConfiguration;
+            }
+
             var secretReaderFactory = new ConfigurationRootSecretReaderFactory(unprocessedConfiguration);
             var configurationRoot = new SecretConfigurationReader(unprocessedConfiguration, secretReaderFactory);
             return configurationRoot;
