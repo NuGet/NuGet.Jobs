@@ -24,11 +24,29 @@ namespace NuGet.Services.Validation.Orchestrator
                 throw new ArgumentNullException(nameof(configuration));
             }
 
+            CheckPropertyValues(configuration);
+
             CheckDuplicateValidations(configuration);
 
             CheckUnknownPrerequisites(configuration);
 
             CheckPrerequisitesLoops(configuration);
+        }
+
+        private static void CheckPropertyValues(ValidationConfiguration configuration)
+        {
+            foreach (var validationConfigurationItem in configuration.Validations)
+            {
+                if ( string.IsNullOrWhiteSpace(validationConfigurationItem.Name) )
+                {
+                    throw new ConfigurationErrorsException("Validation name cannot be empty");
+                }
+
+                if (validationConfigurationItem.FailAfter == TimeSpan.Zero)
+                {
+                    throw new ConfigurationErrorsException($"failAfter timeout must be set for validation {validationConfigurationItem.Name}");
+                }
+            }
         }
 
         private static void CheckPrerequisitesLoops(ValidationConfiguration configuration)

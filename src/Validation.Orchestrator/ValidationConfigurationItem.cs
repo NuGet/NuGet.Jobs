@@ -25,5 +25,10 @@ namespace NuGet.Services.Validation.Orchestrator
         /// List of validation names that must succeed before this validation can run
         /// </summary>
         public List<string> RequiredValidations { get; set; }
+
+        public ValidationConfigurationItem()
+        {
+            this.RequiredValidations = new List<string>();
+        }
     }
 }
