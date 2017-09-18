@@ -68,7 +68,11 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static void CheckDuplicateValidations(ValidationConfiguration configuration)
         {
-            var duplicateValidations = configuration.Validations.Select(v => v.Name).GroupBy(n => n).Where(g => g.Count() > 1).ToList();
+            var duplicateValidations = configuration.Validations
+                .Select(v => v.Name)
+                .GroupBy(n => n)
+                .Where(g => g.Count() > 1)
+                .ToList();
             if (duplicateValidations.Any())
             {
                 throw new ConfigurationErrorsException($"Duplicate validations: {string.Join(", ", duplicateValidations.Select(d => d.Key))}");
