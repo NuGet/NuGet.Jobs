@@ -79,6 +79,9 @@
       <Version>1.1.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions">
+      <Version>1.1.2</Version>
+    </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration" Version="2.2.5" />
     <PackageReference Include="NuGet.Services.Logging">
       <Version>2.2.5</Version>
