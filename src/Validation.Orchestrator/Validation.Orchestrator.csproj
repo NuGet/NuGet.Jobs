@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="ConfigurationValidator.cs" />
     <Compile Include="Error.cs" />
+    <Compile Include="Job.cs" />
     <Compile Include="LoggerBootstrapper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
