@@ -54,7 +54,7 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             foreach (var validationConfigurationItem in configuration.Validations)
             {
-                if ( string.IsNullOrWhiteSpace(validationConfigurationItem.Name) )
+                if (string.IsNullOrWhiteSpace(validationConfigurationItem.Name))
                 {
                     throw new ConfigurationErrorsException("Validation name cannot be empty");
                 }
@@ -94,7 +94,7 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             var validations = configuration.Validations.ToDictionary(v => v.Name);
 
-            foreach ( var validationName in validations.Keys )
+            foreach (var validationName in validations.Keys)
             {
                 CheckPrerequisiteLoop(validations, validationName);
             }
