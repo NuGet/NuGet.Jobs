@@ -26,7 +26,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string ConfigurationSectionName = "Configuration";
         private const string ValidateOnlyConfigurationKey = "ValidateOnly";
 
-        private static ILogger logger = null;
+        private static ILogger _logger = null;
 
         static int Main(string[] args)
         {
@@ -36,16 +36,16 @@ namespace NuGet.Services.Validation.Orchestrator
                 return 1;
             }
 
-            logger.LogInformation("Configuration validated successfully");
+            _logger.LogInformation("Configuration validated successfully");
 
             var configurationRoot = serviceProvider.GetService<IConfigurationRoot>();
             if (configurationRoot[ValidateOnlyConfigurationKey] == "true")
             {
-                logger.LogInformation("Validation only was requested. Terminating.");
+                _logger.LogInformation("Validation only was requested. Terminating.");
                 return 0;
             }
 
-            logger.LogInformation("Starting up the orchestration");
+            _logger.LogInformation("Starting up the orchestration");
 
             return 0;
         }
@@ -60,9 +60,9 @@ namespace NuGet.Services.Validation.Orchestrator
             }
             catch (Exception e)
             {
-                if (logger != null)
+                if (_logger != null)
                 {
-                    logger.LogError(Error.ConfigurationReadFailure, e, "Failed to read configuration");
+                    _logger.LogError(Error.ConfigurationReadFailure, e, "Failed to read configuration");
                 }
                 else
                 {
@@ -81,7 +81,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
             catch (Exception e)
             {
-                logger.LogError(Error.ConfigurationValidationFailure, e, "Failed to validate configuration");
+                _logger.LogError(Error.ConfigurationValidationFailure, e, "Failed to validate configuration");
                 return false;
             }
 
@@ -91,14 +91,14 @@ namespace NuGet.Services.Validation.Orchestrator
         private static void ConfigureWithCommandLine(IServiceCollection services, string[] args)
         {
             var loggerFactoryBootstrapper = new LoggerFactoryBootstrapper();
-            logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
-            logger.LogInformation("Reading configuration");
+            _logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
+            _logger.LogInformation("Reading configuration");
 
             var configurationRoot = GetConfigurationRoot(args, loggerFactoryBootstrapper);
 
             if (loggerFactoryBootstrapper.TryInitializeApplicationInsights(configurationRoot[JobArgumentNames.InstrumentationKey]))
             {
-                logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
+                _logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
             }
 
             services.AddSingleton(loggerFactoryBootstrapper.LoggerFactory);
@@ -121,7 +121,7 @@ namespace NuGet.Services.Validation.Orchestrator
             IDictionary<string, string> argsDictionary = GetCommandLineArguments(args, loggerFactoryBootstrapper.LoggerFactory);
             string configurationFilename = JobConfigurationManager.GetArgument(argsDictionary, ConfigurationArgument);
 
-            logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
+            _logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
