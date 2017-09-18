@@ -5,19 +5,26 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using Microsoft.Extensions.Options;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
     /// <summary>
     /// Provides a methods for checking configuration validity
     /// </summary>
-    public static class ConfigurationValidator
+    public class ConfigurationValidator
     {
+        private readonly ValidationConfiguration configuration;
+
+        public ConfigurationValidator(IOptions<ValidationConfiguration> optionsAccessor)
+        {
+            this.configuration = optionsAccessor.Value;
+        }
+
         /// <summary>
         /// Checks if configuration object is valid
         /// </summary>
-        /// <param name="configuration">Configuration object to check</param>
-        public static void Validate(ValidationConfiguration configuration)
+        public void Validate()
         {
             if (configuration == null)
             {
@@ -59,30 +66,12 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private static void CheckPrerequisitesLoops(ValidationConfiguration configuration)
+        private static void CheckDuplicateValidations(ValidationConfiguration configuration)
         {
-            var validations = configuration.Validations.ToDictionary(v => v.Name);
-
-            foreach ( var validationName in validations.Keys )
+            var duplicateValidations = configuration.Validations.Select(v => v.Name).GroupBy(n => n).Where(g => g.Count() > 1).ToList();
+            if (duplicateValidations.Any())
             {
-                CheckPrerequisiteLoop(validations, validationName);
-            }
-        }
-
-        private static void CheckPrerequisiteLoop(IReadOnlyDictionary<string, ValidationConfigurationItem> validationItems, string startValidation)
-        {
-            var seenValidations = new HashSet<string>();
-            var queue = new Queue<string>(new[] { startValidation });
-            while (queue.Any())
-            {
-                var currentValidationName = queue.Dequeue();
-                if (!seenValidations.Add(currentValidationName))
-                {
-                    // already visited current validation
-                    throw new ConfigurationErrorsException($"Prerequisite loop detected starting at {startValidation}");
-                }
-                var currentValidation = validationItems[currentValidationName];
-                currentValidation.RequiredValidations.ForEach(queue.Enqueue);
+                throw new ConfigurationErrorsException($"Duplicate validations: {string.Join(", ", duplicateValidations.Select(d => d.Key))}");
             }
         }
 
@@ -97,12 +86,40 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private static void CheckDuplicateValidations(ValidationConfiguration configuration)
+        private static void CheckPrerequisitesLoops(ValidationConfiguration configuration)
         {
-            var duplicateValidations = configuration.Validations.Select(v => v.Name).GroupBy(n => n).Where(g => g.Count() > 1).ToList();
-            if (duplicateValidations.Any())
+            var validations = configuration.Validations.ToDictionary(v => v.Name);
+
+            foreach ( var validationName in validations.Keys )
             {
-                throw new ConfigurationErrorsException($"Duplicate validations: {string.Join(", ", duplicateValidations)}");
+                CheckPrerequisiteLoop(validations, validationName);
+            }
+        }
+
+        /// <summary>
+        /// Checks if there is a dependency loop that starts from specified validation
+        /// </summary>
+        /// <remarks>
+        /// Implementation details:
+        /// Method does the breadth-first search starting from the validation specified as an argument and tracks visited validations.
+        /// If at some point the validation to be added to the queue is in the visited list, it means we have circular dependcies.
+        /// </remarks>
+        /// <param name="validationItems">Map of validation configuration, key is the validation name, value is the configuration item for that validation</param>
+        /// <param name="startValidation">The validation name to start searching from</param>
+        private static void CheckPrerequisiteLoop(IReadOnlyDictionary<string, ValidationConfigurationItem> validationItems, string startValidation)
+        {
+            var seenValidations = new HashSet<string>();
+            var queue = new Queue<string>(new[] { startValidation });
+            while (queue.Any())
+            {
+                var currentValidationName = queue.Dequeue();
+                if (!seenValidations.Add(currentValidationName))
+                {
+                    // already visited current validation
+                    throw new ConfigurationErrorsException($"Prerequisite loop detected starting at {startValidation} and ending at {currentValidationName}.");
+                }
+                var currentValidation = validationItems[currentValidationName];
+                currentValidation.RequiredValidations.ForEach(queue.Enqueue);
             }
         }
     }

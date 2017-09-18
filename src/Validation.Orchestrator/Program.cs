@@ -36,16 +36,6 @@ namespace NuGet.Services.Validation.Orchestrator
                 return 1;
             }
 
-            try
-            {
-                ConfigurationValidator.Validate(serviceProvider.GetRequiredService<ValidationConfiguration>());
-            }
-            catch(Exception e)
-            {
-                logger.LogError(Error.ConfigurationValidationFailure, e, "Failed to validate configuration");
-                return 1;
-            }
-
             logger.LogInformation("Configuration validated successfully");
 
             var configurationRoot = serviceProvider.GetService<IConfigurationRoot>();
@@ -64,10 +54,9 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             serviceProvider = null;
             var services = new ServiceCollection();
-            ValidationConfiguration configuration;
             try
             {
-                configuration = ConfigureWithCommandLine(services, args);
+                ConfigureWithCommandLine(services, args);
             }
             catch (Exception e)
             {
@@ -82,12 +71,13 @@ namespace NuGet.Services.Validation.Orchestrator
                 PrintUsage();
                 return false;
             }
-            ConfigureServices(services, configuration);
+            ConfigureServices(services);
             serviceProvider = CreateProvider(services);
 
             try
             {
-                ConfigurationValidator.Validate(configuration);
+                var validator = serviceProvider.GetRequiredService<ConfigurationValidator>();
+                validator.Validate();
             }
             catch (Exception e)
             {
@@ -98,7 +88,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return true;
         }
 
-        private static ValidationConfiguration ConfigureWithCommandLine(IServiceCollection services, string[] args)
+        private static void ConfigureWithCommandLine(IServiceCollection services, string[] args)
         {
             var loggerFactoryBootstrapper = new LoggerFactoryBootstrapper();
             logger = loggerFactoryBootstrapper.LoggerFactory.CreateLogger(LoggingCategory);
@@ -114,12 +104,10 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddSingleton(loggerFactoryBootstrapper.LoggerFactory);
             services.AddLogging();
 
-            var configuration = new ValidationConfiguration();
-            configurationRoot.GetSection(ConfigurationSectionName).Bind(configuration);
+            services.AddOptions();
+            services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
 
-            services.AddSingleton(configuration);
             services.AddSingleton(configurationRoot);
-            return configuration;
         }
 
         private static IConfigurationRoot GetConfigurationRoot(string[] args, LoggerFactoryBootstrapper loggerFactoryBootstrapper)
@@ -159,8 +147,9 @@ namespace NuGet.Services.Validation.Orchestrator
             return configurationRoot;
         }
 
-        private static void ConfigureServices(IServiceCollection services, ValidationConfiguration configuration)
+        private static void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<ConfigurationValidator>();
         }
 
         private static IServiceProvider CreateProvider(IServiceCollection services)

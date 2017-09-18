@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using Microsoft.Extensions.Options;
 using NuGet.Services.Validation.Orchestrator;
 using Xunit;
 
@@ -33,33 +34,43 @@ namespace Tests.Validation.Orchestrator
                 }
             };
 
-            ConfigurationValidator.Validate(configuration);
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.Null(ex);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsDuplicates()
         {
+            const string validationName = "Validation1";
             var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
                     new ValidationConfigurationItem
                     {
-                        Name = "Validation1"
+                        Name = validationName,
+                        FailAfter = TimeSpan.FromHours(1),
                     },
                     new ValidationConfigurationItem
                     {
-                        Name = "Validation1"
+                        Name = validationName,
+                        FailAfter = TimeSpan.FromHours(1),
                     }
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains("duplicate", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(validationName, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsUnknownValidationPrerequisites()
         {
+            const string NonExistentValidationName = "SomeValidation";
             var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
@@ -67,35 +78,47 @@ namespace Tests.Validation.Orchestrator
                     new ValidationConfigurationItem
                     {
                         Name = "Validation1",
-                        RequiredValidations = new List<string>{ "SomeValidation" }
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ NonExistentValidationName }
                     },
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains(NonExistentValidationName, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsLoops()
         {
+            const string Validation1Name = "Validation1";
+            const string Validation2Name = "Validation2";
+
             var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
                     new ValidationConfigurationItem
                     {
-                        Name = "Validation1",
-                        RequiredValidations = new List<string>{ "Validation2" }
+                        Name = Validation1Name,
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ Validation2Name }
                     },
                     new ValidationConfigurationItem
                     {
-                        Name = "Validation2",
-                        RequiredValidations = new List<string>{ "Validation1" }
+                        Name = Validation2Name,
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ Validation1Name }
                     }
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains("loop", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -108,12 +131,16 @@ namespace Tests.Validation.Orchestrator
                     new ValidationConfigurationItem
                     {
                         Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
                         RequiredValidations = new List<string>{ "Validation1" }
                     },
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains("loop", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -126,17 +153,22 @@ namespace Tests.Validation.Orchestrator
                     new ValidationConfigurationItem
                     {
                         Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
                         RequiredValidations = new List<string>{ "Validation2" }
                     },
                     new ValidationConfigurationItem
                     {
                         Name = "Validation2",
+                        FailAfter = TimeSpan.FromHours(1),
                         RequiredValidations = new List<string>{ "Validation2" }
                     }
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains("loop", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -154,7 +186,10 @@ namespace Tests.Validation.Orchestrator
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -172,7 +207,82 @@ namespace Tests.Validation.Orchestrator
                 }
             };
 
-            Assert.Throws<ConfigurationErrorsException>(() => ConfigurationValidator.Validate(configuration));
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.IsType<ConfigurationErrorsException>(ex);
+            Assert.Contains("FailAfter", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void ConfigurationValidatorTreatsDepencyGraphAsOriented()
+        {
+            var configuration = new ValidationConfiguration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation3", "Validation4" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation3", "Validation4" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation3",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation4",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    }
+                }
+            };
+
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void ConfigurationValidatorBehavesWellOnUnconnectedGraph()
+        {
+            var configuration = new ValidationConfiguration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    }
+                }
+            };
+
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.Null(ex);
+        }
+
+        private static void Validate(ValidationConfiguration configuration)
+        {
+            var validator = new ConfigurationValidator(Options.Create(configuration));
+            validator.Validate();
         }
     }
 }
