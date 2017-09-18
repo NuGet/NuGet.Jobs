@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator
         static int Main(string[] args)
         {
             IServiceProvider serviceProvider;
-            if ( !TryConfigure(args, out serviceProvider) )
+            if (!TryConfigure(args, out serviceProvider))
             {
                 return 1;
             }
