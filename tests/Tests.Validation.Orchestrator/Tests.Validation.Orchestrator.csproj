@@ -7,7 +7,7 @@
     <ProjectGuid>{A3B0B15D-22D9-4F1F-94C4-B24B28ECF632}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tests.Validation.Orchestrator</RootNamespace>
+    <RootNamespace>NuGet.Services.Validation.Orchestrator.Tests</RootNamespace>
     <AssemblyName>Tests.Validation.Orchestrator</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

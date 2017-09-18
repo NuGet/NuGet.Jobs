@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 using NuGet.Services.Validation.Orchestrator;
 using Xunit;
 
-namespace Tests.Validation.Orchestrator
+namespace NuGet.Services.Validation.Orchestrator.Tests
 {
     public class ConfigurationFacts
     {
