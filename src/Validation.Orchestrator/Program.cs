@@ -11,6 +11,7 @@ using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NuGet.Jobs;
 using NuGet.Services.Configuration;
 
@@ -24,7 +25,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string ValidateArgument = "Validate";
 
         private const string ConfigurationSectionName = "Configuration";
-        private const string ValidateOnlyConfigurationKey = "ValidateOnly";
+        private const string ValidateOnlyConfigurationKey = nameof(ValidateOnlyConfiguration.ValidateOnly);
 
         private static ILogger _logger = null;
 
@@ -38,8 +39,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
             _logger.LogInformation("Configuration validated successfully");
 
-            var configurationRoot = serviceProvider.GetService<IConfigurationRoot>();
-            if (configurationRoot[ValidateOnlyConfigurationKey] == "true")
+            var validateOnlyConfigurationAccessor = serviceProvider.GetRequiredService<IOptions<ValidateOnlyConfiguration>>();
+            if (validateOnlyConfigurationAccessor.Value.ValidateOnly)
             {
                 _logger.LogInformation("Validation only was requested. Terminating.");
                 return 0;
@@ -106,6 +107,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             services.AddOptions();
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
+            services.Configure<ValidateOnlyConfiguration>(configurationRoot);
 
             services.AddSingleton(configurationRoot);
         }
@@ -125,12 +127,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile(configurationFilename);
-
-            if (validateOnly)
-            {
-                builder.AddInMemoryCollection(new[] { new KeyValuePair<string, string>(ValidateOnlyConfigurationKey, "true") });
-            }
+                .AddJsonFile(configurationFilename)
+                .AddInMemoryCollection(new[] { new KeyValuePair<string, string>(ValidateOnlyConfigurationKey, validateOnly.ToString()) });
 
             var unprocessedConfiguration = builder.Build();
 
