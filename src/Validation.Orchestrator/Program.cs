@@ -114,14 +114,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static IConfigurationRoot GetConfigurationRoot(string[] args, LoggerFactoryBootstrapper loggerFactoryBootstrapper)
         {
-            bool validateOnly = args.Any(arg => arg.Equals("-" + ValidateArgument, StringComparison.OrdinalIgnoreCase));
-            if (validateOnly)
-            {
-                args = args.Where(arg => arg != "-" + ValidateArgument).ToArray();
-            }
-
             IDictionary<string, string> argsDictionary = GetCommandLineArguments(args, loggerFactoryBootstrapper.LoggerFactory);
             string configurationFilename = JobConfigurationManager.GetArgument(argsDictionary, ConfigurationArgument);
+            bool validateOnly = JobConfigurationManager.TryGetBoolArgument(argsDictionary, ValidateArgument, defaultValue:false);
 
             _logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
 
@@ -169,7 +164,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private static void PrintUsage()
         {
             var executableName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
-            Console.WriteLine("Usage: {0} -{1} <filename> [-{2}]", executableName, ConfigurationArgument, ValidateArgument);
+            Console.WriteLine("Usage: {0} -{1} <filename> [-{2} true]", executableName, ConfigurationArgument, ValidateArgument);
         }
     }
 }
