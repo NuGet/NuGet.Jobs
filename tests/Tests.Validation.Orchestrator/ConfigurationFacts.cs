@@ -371,6 +371,44 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.Null(ex);
         }
 
+        [Fact]
+        public void ConfigurationValidatorDetectsLoopInUnconnectedGraphs()
+        {
+            /*  Validation1           Validation2 ---> Validation3
+             *                                 ^       /
+             *                                  \     /
+             *                                   -----
+             */
+            var configuration = new ValidationConfiguration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation3" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation3",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation2" }
+                    }
+                }
+            };
+
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.Contains("loop", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static void Validate(ValidationConfiguration configuration)
         {
             var validator = new ConfigurationValidator(Options.Create(configuration));
