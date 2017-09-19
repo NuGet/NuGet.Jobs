@@ -18,7 +18,12 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public ConfigurationValidator(IOptions<ValidationConfiguration> optionsAccessor)
         {
-            this.configuration = optionsAccessor.Value;
+            if (optionsAccessor == null)
+            {
+                throw new ArgumentNullException(nameof(optionsAccessor));
+            }
+
+            this.configuration = optionsAccessor.Value ?? throw new ArgumentException("Value property cannot be null", nameof(optionsAccessor));
         }
 
         /// <summary>
@@ -26,11 +31,6 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         public void Validate()
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
             CheckValidationsNumber(configuration.Validations);
 
             CheckPropertyValues(configuration);
