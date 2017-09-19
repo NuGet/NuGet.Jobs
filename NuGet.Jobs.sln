@@ -91,7 +91,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stats.CollectAzureChinaCDNL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.Stats.CollectAzureChinaCDNLogs", "tests\Tests.Stats.CollectAzureChinaCDNLogs\Tests.Stats.CollectAzureChinaCDNLogs.csproj", "{0C887292-C5AB-4107-946C-A53B18A38D22}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Services.Validation.Orchestrator", "src\Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj", "{E6D094FB-9068-4578-B176-116F97E7506B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Services.Validation.Orchestrator", "src\NuGet.Services.Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj", "{E6D094FB-9068-4578-B176-116F97E7506B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Services.Validation.Orchestrator.Tests", "tests\NuGet.Services.Validation.Orchestrator.Tests\NuGet.Services.Validation.Orchestrator.Tests.csproj", "{A3B0B15D-22D9-4F1F-94C4-B24B28ECF632}"
 EndProject
