@@ -253,6 +253,45 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Fact]
+        public void ConfigurationValidatorTreatsDepencyGraphAsOriented2()
+        {
+            var configuration = new ValidationConfiguration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation2", "Validation3" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation4" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation3",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation4" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation4",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    }
+                }
+            };
+
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
         public void ConfigurationValidatorBehavesWellOnUnconnectedGraph()
         {
             var configuration = new ValidationConfiguration()
