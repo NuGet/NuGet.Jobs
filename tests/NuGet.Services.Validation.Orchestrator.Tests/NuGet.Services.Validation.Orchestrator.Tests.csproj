@@ -60,9 +60,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Validation.Orchestrator\Validation.Orchestrator.csproj">
+    <ProjectReference Include="..\..\src\Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj">
       <Project>{E6D094FB-9068-4578-B176-116F97E7506B}</Project>
-      <Name>Validation.Orchestrator</Name>
+      <Name>NuGet.Services.Validation.Orchestrator</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
