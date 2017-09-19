@@ -93,8 +93,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public void ConfigurationValidatorDetectsLoops()
         {
-            const string Validation1Name = "Validation1";
-            const string Validation2Name = "Validation2";
 
             var configuration = new ValidationConfiguration()
             {
@@ -102,15 +100,15 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 {
                     new ValidationConfigurationItem
                     {
-                        Name = Validation1Name,
+                        Name = "Validation1",
                         FailAfter = TimeSpan.FromHours(1),
-                        RequiredValidations = new List<string>{ Validation2Name }
+                        RequiredValidations = new List<string>{ "Validation2"}
                     },
                     new ValidationConfigurationItem
                     {
-                        Name = Validation2Name,
+                        Name = "Validation2",
                         FailAfter = TimeSpan.FromHours(1),
-                        RequiredValidations = new List<string>{ Validation1Name }
+                        RequiredValidations = new List<string>{ "Validation1"}
                     }
                 }
             };
@@ -216,6 +214,17 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public void ConfigurationValidatorTreatsDepencyGraphAsOriented()
         {
+            /*                       Validation1
+             *                         /     \
+             *                        /       \
+             *                       v         v
+             *               Validation3     Validation4
+             *                       ^         ^
+             *                        \       /
+             *                         \     /
+             *                       Validation2
+             */
+
             var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
@@ -255,6 +264,16 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public void ConfigurationValidatorTreatsDepencyGraphAsOriented2()
         {
+            /*                       Validation1
+             *                         /     \
+             *                        /       \
+             *                       v         v
+             *               Validation2     Validation3
+             *                       \         /
+             *                        \       /
+             *                         v     v
+             *                       Validation4
+             */
             var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
@@ -294,6 +313,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public void ValidationOrderingDoesNotAffectLoopDetection()
         {
+            // Validation3 ---> Validation1 ---> Validation2
             var configuration = new ValidationConfiguration()
             {
                 Validations = new List<ValidationConfigurationItem>
