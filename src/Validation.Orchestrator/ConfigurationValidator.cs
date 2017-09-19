@@ -97,9 +97,7 @@ namespace NuGet.Services.Validation.Orchestrator
             var globalVisitedValidations = new HashSet<string>();
             foreach (var validationName in validations.Keys)
             {
-                var callStackValidations = new HashSet<string>();
-
-                ValidationDepthFirstSearch(validationName, callStackValidations, globalVisitedValidations, validations);
+                ValidationDepthFirstSearch(validationName, new HashSet<string>(), globalVisitedValidations, validations);
             }
         }
 
