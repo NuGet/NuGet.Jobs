@@ -292,6 +292,39 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Fact]
+        public void ValidationOrderingDoesNotAffectLoopDetection()
+        {
+            var configuration = new ValidationConfiguration()
+            {
+                Validations = new List<ValidationConfigurationItem>
+                {
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation1",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation2" }
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation2",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>()
+                    },
+                    new ValidationConfigurationItem
+                    {
+                        Name = "Validation3",
+                        FailAfter = TimeSpan.FromHours(1),
+                        RequiredValidations = new List<string>{ "Validation1" }
+                    }
+                }
+            };
+
+            var ex = Record.Exception(() => Validate(configuration));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
         public void ConfigurationValidatorBehavesWellOnUnconnectedGraph()
         {
             var configuration = new ValidationConfiguration()

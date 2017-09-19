@@ -94,37 +94,50 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             var validations = configuration.Validations.ToDictionary(v => v.Name);
 
+            var globalVisitedValidations = new HashSet<string>();
             foreach (var validationName in validations.Keys)
             {
-                CheckPrerequisiteLoop(validations, validationName);
+                var callStackValidations = new HashSet<string>();
+
+                ValidationDepthFirstSearch(validationName, callStackValidations, globalVisitedValidations, validations);
             }
         }
 
         /// <summary>
-        /// Checks if there is a dependency loop that starts from specified validation
+        /// Runs depth first search across validations starting at specified validation.
+        /// Throws <see cref="ConfigurationErrorsException"> if it finds an opportunity to visit a validation that was 
+        /// visited in current call stack
         /// </summary>
-        /// <remarks>
-        /// Implementation details:
-        /// Method does the breadth-first search starting from the validation specified as an argument and tracks visited validations.
-        /// If at some point the validation to be added to the queue is in the visited list, it means we have circular dependcies.
-        /// </remarks>
-        /// <param name="validationItems">Map of validation configuration, key is the validation name, value is the configuration item for that validation</param>
-        /// <param name="startValidation">The validation name to start searching from</param>
-        private static void CheckPrerequisiteLoop(IReadOnlyDictionary<string, ValidationConfigurationItem> validationItems, string startValidation)
+        /// <param name="validationName">Current validation name</param>
+        /// <param name="callStackValidations">
+        /// Hashset where validations visited in current call stack are tracked.
+        /// Must be empty when called from outside.
+        /// </param>
+        /// <param name="globalVisitedList">
+        /// Global list of visited validations across all calls.
+        /// Must be empty on the very first call to the <see cref="ValidationDepthFirstSearch"/>, and kept between subsequent calls.
+        /// </param>
+        /// <param name="validationItems">Map of the validation name to that validation configuration.</param>
+        private static void ValidationDepthFirstSearch(string validationName, HashSet<string> callStackValidations, HashSet<string> globalVisitedList, IReadOnlyDictionary<string, ValidationConfigurationItem> validationItems)
         {
-            var seenValidations = new HashSet<string>();
-            var queue = new Queue<string>(new[] { startValidation });
-            while (queue.Any())
+            callStackValidations.Add(validationName);
+            globalVisitedList.Add(validationName);
+
+            var currentValidation = validationItems[validationName];
+
+            foreach (var validationDependency in currentValidation.RequiredValidations)
             {
-                var currentValidationName = queue.Dequeue();
-                if (!seenValidations.Add(currentValidationName))
+                if (!globalVisitedList.Contains(validationDependency))
                 {
-                    // already visited current validation
-                    throw new ConfigurationErrorsException($"Prerequisite loop detected starting at {startValidation} and ending at {currentValidationName}.");
+                    ValidationDepthFirstSearch(validationDependency, callStackValidations, globalVisitedList, validationItems);
                 }
-                var currentValidation = validationItems[currentValidationName];
-                currentValidation.RequiredValidations.ForEach(queue.Enqueue);
+                else if (callStackValidations.Contains(validationDependency))
+                {
+                    throw new ConfigurationErrorsException($"Validation dependency loop detected at {validationName}");
+                }
             }
+
+            callStackValidations.Remove(validationName);
         }
     }
 }
