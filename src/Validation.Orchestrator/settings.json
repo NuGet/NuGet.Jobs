@@ -13,6 +13,5 @@
   "KeyVault_CertificateThumbprint": "",
   "KeyVault_ValidateCertificate": true,
   "KeyVault_StoreName": "My",
-  "KeyVault_StoreLocation": "LocalMachine",
-  "InstrumentationKey": ""
+  "KeyVault_StoreLocation": "LocalMachine"
 }
