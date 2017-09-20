@@ -43,10 +43,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigurationFacts.cs" />
+    <Compile Include="ConfigurationIntegrationFacts.cs" />
+    <Compile Include="KeyVaultInjectingConfigurationProviderFacts.cs" />
+    <Compile Include="OrchestrationRunnerFacts.cs" />
+    <Compile Include="OrchestratorFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ScopedPackageValidationMessageHandlerFacts.cs" />
+    <Compile Include="ValidationMessageHandlerFacts.cs" />
+    <Compile Include="ValidationOutcomeProcessorFacts.cs" />
+    <Compile Include="ValidationSetProcessorFacts.cs" />
+    <Compile Include="ValidationSetProviderFacts.cs" />
     <Compile Include="Vcs\VcsValidatorFacts.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="EntityFramework">
+      <Version>6.1.3</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
       <Version>1.1.2</Version>
     </PackageReference>

@@ -15,7 +15,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// Should be used to figure out when shutting down had finished.
         /// </summary>
         /// <returns>The number of validation requests being processed.</returns>
-        Task<int> GetNumberOfRequestsInProgressAsync();
+        int GetNumberOfRequestsInProgress();
 
         /// <summary>
         /// Starts listening for incoming validation requests.
@@ -26,7 +26,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// Initiate shutdown sequence. Orchestrator will stop listening for new requests (requests being processed will continue running).
         /// </summary>
         /// <remarks>
-        /// The calling code should call <see cref="GetNumberOfRequestsInProgressAsync"/> after calling this method repeatedly until it returns 0, 
+        /// The calling code should call <see cref="GetNumberOfRequestsInProgress"/> after calling this method repeatedly until it returns 0, 
         /// or the calling code runs out of patience.
         /// </remarks>
         Task StartShuttingDownAsync();

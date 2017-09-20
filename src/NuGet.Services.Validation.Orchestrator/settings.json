@@ -3,10 +3,12 @@
     "Validations": [
       {
         "name": "",
-        "failAfter": "00:01:00",
+        "failAfter": "1:00:00:00",
         "requiredValidations": []
       }
-    ]
+    ],
+    "ValidationStorageConnectionString": "",
+    "ValidationMessageRecheckPeriod":  "00:01:00"
   },
   "Vcs": {
     "ContainerName": "validation",
@@ -14,7 +16,18 @@
   },
   "RunnerConfiguration": {
     "ProcessRecycleInterval": "1:00:00:00",
-    "ShutdownWaitInterval":  "00:01:00"
+    "ShutdownWaitInterval": "00:01:00"
+  },
+  "GalleryDb": {
+    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=NuGetGallery; Integrated Security=True; MultipleActiveResultSets=True"
+  },
+  "ValidationDb": {
+    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=Validation; Integrated Security=True; MultipleActiveResultSets=True"
+  },
+  "ServiceBus": {
+    "ConnectionString": "",
+    "TopicPath": "",
+    "SubscriptionName": ""
   },
   "KeyVault_VaultName": "",
   "KeyVault_ClientId": "",

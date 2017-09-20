@@ -14,15 +14,19 @@ namespace NuGet.Services.Validation.Orchestrator
     /// </summary>
     public class OrchestrationRunner
     {
-        private readonly ILogger<OrchestrationRunner> _logger;
         private readonly IOrchestrator _orchestrator;
         private readonly OrchestrationRunnerConfiguration _configuration;
+        private readonly ILogger<OrchestrationRunner> _logger;
 
-        public OrchestrationRunner(ILogger<OrchestrationRunner> logger, IOrchestrator orchestrator, IOptions<OrchestrationRunnerConfiguration> configurationAccessor)
+        public OrchestrationRunner(
+            IOrchestrator orchestrator,
+            IOptionsSnapshot<OrchestrationRunnerConfiguration> configurationAccessor,
+            ILogger<OrchestrationRunner> logger)
         {
-            _logger = logger;
-            _orchestrator = orchestrator;
-            _configuration = configurationAccessor.Value;
+            _orchestrator = orchestrator  ?? throw new ArgumentNullException(nameof(orchestrator));
+            configurationAccessor = configurationAccessor ?? throw new ArgumentNullException(nameof(configurationAccessor));
+            _configuration = configurationAccessor.Value ?? throw new ArgumentException("Value property cannot be null", nameof(configurationAccessor));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task RunOrchestrationAsync()
@@ -30,7 +34,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _logger.LogInformation("Starting up the orchestration");
 
             await _orchestrator.StartProcessingMessagesAsync();
-            Thread.Sleep(_configuration.ProcessRecycleInterval);
+            await Task.Delay(_configuration.ProcessRecycleInterval);
 
             _logger.LogInformation("Recycling the process...");
             await _orchestrator.StartShuttingDownAsync();
@@ -39,15 +43,15 @@ namespace NuGet.Services.Validation.Orchestrator
 
             while (DateTimeOffset.Now - waitStart < _configuration.ShutdownWaitInterval)
             {
-                if (await _orchestrator.GetNumberOfRequestsInProgressAsync() <= 0)
+                if (_orchestrator.GetNumberOfRequestsInProgress() <= 0)
                 {
                     break;
                 }
 
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
 
-            int stillRunning = await _orchestrator.GetNumberOfRequestsInProgressAsync();
+            int stillRunning = _orchestrator.GetNumberOfRequestsInProgress();
 
             if (stillRunning > 0)
             {

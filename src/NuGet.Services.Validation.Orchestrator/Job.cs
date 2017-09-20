@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Core;
@@ -15,6 +16,7 @@ using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Services.Configuration;
+using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Vcs;
 
 namespace NuGet.Services.Validation.Orchestrator
@@ -26,10 +28,16 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private const string ConfigurationSectionName = "Configuration";
         private const string VcsSectionName = "Vcs";
-        private const string ValidateOnlyConfigurationKey = nameof(ValidateOnlyConfiguration.ValidateOnly);
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
+        private const string GalleryDbConfigurationSectionName = "GalleryDb";
+        private const string ValidationDbConfiguraitonSectionName = "ValidationDb";
+        private const string ServiceBusConfigurationSectionName = "ServiceBus";
 
         private const string VcsBindingKey = VcsSectionName;
+        private const string ValidationStorageBindingKey = "ValidationStorage";
+        private const string OrchestratorBindingKey = "Orchestrator";
+
+        private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
         private string _configurationFilename;
         private bool _validateOnly;
@@ -46,6 +54,16 @@ namespace NuGet.Services.Validation.Orchestrator
             _validateOnly = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, ValidateArgument, defaultValue: false);
             _serviceProvider = GetServiceProvider(GetConfigurationRoot(_configurationFilename, _validateOnly));
             ConfigurationValidated = false;
+
+            // Override any custom DB configuration specified for entity context classes with one specific configuration
+            // Needed because entity configuration specified through the attribute for the context class MUST exist in
+            // the same assembly as the entity class itself AND there can be only one DB configuration per application.
+            // In our case we have two entity contexts: Gallery and Validation which both specify their own configuration
+            // and hence they cannot coexist without additional setup below.
+            //System.Data.Entity.DbConfiguration.Loaded += (_, a) =>
+            //{
+            //    a.ReplaceService<System.Data.Entity.DbConfiguration>((s, k) => new NuGetGallery.EntitiesConfiguration());
+            //};
         }
 
         public override async Task Run()
@@ -54,9 +72,9 @@ namespace NuGet.Services.Validation.Orchestrator
             validator.Validate();
             ConfigurationValidated = true;
 
-            var validateOnly = GetRequiredService<ValidateOnlyConfiguration>();
-            if (validateOnly.ValidateOnly)
+            if (_validateOnly)
             {
+                Logger.LogInformation("Configuration validation successful");
                 return;
             }
 
@@ -69,21 +87,27 @@ namespace NuGet.Services.Validation.Orchestrator
             Logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile(configurationFilename)
-                .AddInMemoryCollection(new[] { new KeyValuePair<string, string>(ValidateOnlyConfigurationKey, validateOnly.ToString()) });
+                .AddJsonFile(configurationFilename, optional: false, reloadOnChange: true);
 
-            var unprocessedConfiguration = builder.Build();
+            var uninjectedConfiguration = builder.Build();
 
             if (_validateOnly)
             {
                 // don't try to access KeyVault if only validation is requested:
                 // we might not be running on a machine with KeyVault access.
                 // Validation settings should not contain KeyVault references anyway
-                return unprocessedConfiguration;
+                return uninjectedConfiguration;
             }
 
-            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(unprocessedConfiguration);
-            return new SecretConfigurationReader(unprocessedConfiguration, secretReaderFactory);
+            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(uninjectedConfiguration);
+            var cachingSecretReaderFactory = new CachingSecretReaderFactory(secretReaderFactory, KeyVaultSecretCachingTimeout);
+            var secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
+
+            builder = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddInjectedJsonFile(configurationFilename, secretInjector);
+
+            return builder.Build();
         }
 
         private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot)
@@ -97,8 +121,10 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void ConfigureLibraries(IServiceCollection services)
         {
-            services.AddOptions();
-            services.AddSingleton(this.LoggerFactory);
+            // we do not call services.AddOptions here, because we want our own custom version of IOptionsSnapshot 
+            // to be present in the service collection for KeyVault secret injection to work properly
+            services.Add(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(NonCachingOptionsSnapshot<>)));
+            services.AddSingleton(LoggerFactory);
             services.AddLogging();
         }
 
@@ -106,12 +132,40 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
-            services.Configure<ValidateOnlyConfiguration>(configurationRoot);
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
+            services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
+            services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfiguraitonSectionName));
+            services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
+
             services.AddTransient<ConfigurationValidator>();
-            services.AddTransient<VcsValidator>();
-            services.AddTransient<IOrchestrator, Orchestrator>();
             services.AddTransient<OrchestrationRunner>();
+
+            services.AddScoped<NuGetGallery.IEntitiesContext>(serviceProvider =>
+                new NuGetGallery.EntitiesContext(
+                    serviceProvider.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value.ConnectionString, false));
+            services.AddScoped<NuGet.Services.Validation.ValidationEntitiesContext>(serviceProvider =>
+                new NuGet.Services.Validation.ValidationEntitiesContext(
+                    serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationDbConfiguration>>().Value.ConnectionString));
+            services.AddScoped<IValidationStorageService, ValidationStorageService>();
+            services.Add(ServiceDescriptor.Transient(typeof(NuGetGallery.IEntityRepository<>), typeof(NuGetGallery.EntityRepository<>)));
+            services.AddTransient<NuGetGallery.ICorePackageService, NuGetGallery.CorePackageService>();
+            services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
+            services.AddTransient<ISubscriptionClient>(serviceProvider =>
+            {
+                var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ServiceBusConfiguration>>().Value;
+                return new SubscriptionClientWrapper(configuration.ConnectionString, configuration.TopicPath, configuration.SubscriptionName);
+            });
+            services.AddTransient<ITopicClient>(serviceProvider =>
+            {
+                var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ServiceBusConfiguration>>().Value;
+                return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+            });
+            services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
+            services.AddTransient<IValidatorProvider, ValidatorProvider>();
+            services.AddTransient<IServiceScopeProvider, ServiceScopeProvider>();
+            services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
+            services.AddTransient<IValidationMessageHandler, ValidationMessageHandler>();
+            services.AddTransient<VcsValidator>();
         }
 
         private static IServiceProvider CreateProvider(IServiceCollection services)
@@ -133,9 +187,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             containerBuilder
                 .RegisterType<PackageValidationService>()
-                .WithParameter(new ResolvedParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(CloudStorageAccount),
-                    (pi, ctx) => ctx.ResolveKeyed<CloudStorageAccount>(VcsBindingKey)))
+                .WithKeyedParameter(typeof(CloudStorageAccount), VcsBindingKey)
                 .WithParameter(new ResolvedParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
                     (pi, ctx) => ctx.Resolve<IOptionsSnapshot<VcsConfiguration>>().Value.ContainerName))
@@ -143,13 +195,42 @@ namespace NuGet.Services.Validation.Orchestrator
 
             containerBuilder
                 .RegisterType<PackageValidationAuditor>()
-                .WithParameter(new ResolvedParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(CloudStorageAccount),
-                    (pi, ctx) => ctx.ResolveKeyed<CloudStorageAccount>(VcsBindingKey)))
+                .WithKeyedParameter(typeof(CloudStorageAccount), VcsBindingKey)
                 .WithParameter(new ResolvedParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
                     (pi, ctx) => ctx.Resolve<IOptionsSnapshot<VcsConfiguration>>().Value.ContainerName))
                 .As<IPackageValidationAuditor>();
+
+            containerBuilder
+                .Register(c => 
+                {
+                    var configurationAccessor = c.Resolve<IOptionsSnapshot<ValidationConfiguration>>();
+                    return new NuGetGallery.CloudBlobClientWrapper(configurationAccessor.Value.ValidationStorageConnectionString, false);
+                })
+                .Keyed<NuGetGallery.ICloudBlobClient>(ValidationStorageBindingKey);
+
+            containerBuilder
+                .RegisterKeyedTypeWithKeyedParameter<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService, NuGetGallery.ICloudBlobClient>(
+                    typeKey: ValidationStorageBindingKey,
+                    parameterKey: ValidationStorageBindingKey);
+
+            containerBuilder
+                .RegisterKeyedTypeWithKeyedParameter<NuGetGallery.ICorePackageFileService, NuGetGallery.CorePackageFileService, NuGetGallery.ICoreFileStorageService>(
+                    typeKey: ValidationStorageBindingKey,
+                    parameterKey: ValidationStorageBindingKey);
+
+            containerBuilder
+                .RegisterTypeWithKeyedParameter<IValidationOutcomeProcessor, ValidationOutcomeProcessor, NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
+
+            containerBuilder
+                .RegisterTypeWithKeyedParameter<IValidationSetProcessor, ValidationSetProcessor, NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
+
+            containerBuilder
+                .RegisterType<ScopedPackageValidationMessageHandler>()
+                .Keyed<IValidationMessageHandler>(OrchestratorBindingKey);
+
+            containerBuilder
+                .RegisterTypeWithKeyedParameter<IOrchestrator, Orchestrator, IValidationMessageHandler>(OrchestratorBindingKey);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
