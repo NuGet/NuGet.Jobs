@@ -3,7 +3,7 @@
     "Validations": [
       {
         "name": "",
-        "failAfter": "",
+        "failAfter": "00:01:00",
         "requiredValidations": []
       }
     ]
@@ -11,6 +11,10 @@
   "Vcs": {
     "ContainerName": "validation",
     "DataStorageAccount": "UseDevelopmentStorage=true"
+  },
+  "RunnerConfiguration": {
+    "ProcessRecycleInterval": "1:00:00:00",
+    "ShutdownWaitInterval":  "00:01:00"
   },
   "KeyVault_VaultName": "",
   "KeyVault_ClientId": "",

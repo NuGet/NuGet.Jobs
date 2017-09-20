@@ -27,6 +27,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string ConfigurationSectionName = "Configuration";
         private const string VcsSectionName = "Vcs";
         private const string ValidateOnlyConfigurationKey = nameof(ValidateOnlyConfiguration.ValidateOnly);
+        private const string RunnerConfigurationSectionName = "RunnerConfiguration";
 
         private const string VcsBindingKey = VcsSectionName;
 
@@ -47,13 +48,20 @@ namespace NuGet.Services.Validation.Orchestrator
             ConfigurationValidated = false;
         }
 
-        public override Task Run()
+        public override async Task Run()
         {
             var validator = GetRequiredService<ConfigurationValidator>();
             validator.Validate();
             ConfigurationValidated = true;
 
-            return Task.FromResult(0);
+            var validateOnly = GetRequiredService<ValidateOnlyConfiguration>();
+            if (validateOnly.ValidateOnly)
+            {
+                return;
+            }
+
+            var runner = GetRequiredService<OrchestrationRunner>();
+            await runner.RunOrchestrationAsync();
         }
 
         private IConfigurationRoot GetConfigurationRoot(string configurationFilename, bool validateOnly)
@@ -99,8 +107,11 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
             services.Configure<ValidateOnlyConfiguration>(configurationRoot);
+            services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<VcsValidator>();
+            services.AddTransient<IOrchestrator, Orchestrator>();
+            services.AddTransient<OrchestrationRunner>();
         }
 
         private static IServiceProvider CreateProvider(IServiceCollection services)
