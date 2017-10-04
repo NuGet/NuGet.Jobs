@@ -37,7 +37,13 @@ namespace NuGet.Services.Validation.PackageSigning
                 // Arrange
                 _validatorStateService
                     .Setup(x => x.GetStatus(It.IsAny<IValidationRequest>()))
-                    .Returns(status);
+                    .Returns(new ValidatorStatus
+                    {
+                        ValidationId = ValidationId,
+                        PackageKey = PackageKey,
+                        ValidatorName = nameof(PackageSigningValidator),
+                        State = status,
+                    });
 
                 // Act & Assert
                 var actual = await _target.GetStatusAsync(_validationRequest.Object);
@@ -64,7 +70,13 @@ namespace NuGet.Services.Validation.PackageSigning
                 // Arrange
                 _validatorStateService
                      .Setup(x => x.GetStatus(It.IsAny<IValidationRequest>()))
-                     .Returns(status);
+                     .Returns(new ValidatorStatus
+                     {
+                         ValidationId = ValidationId,
+                         PackageKey = PackageKey,
+                         ValidatorName = nameof(PackageSigningValidator),
+                         State = status,
+                     });
 
                 // Act & Assert
                 // TODO: More specific exception!
@@ -81,7 +93,13 @@ namespace NuGet.Services.Validation.PackageSigning
 
                 _validatorStateService
                      .Setup(x => x.GetStatus(It.IsAny<IValidationRequest>()))
-                     .Returns(ValidationStatus.NotStarted);
+                     .Returns(new ValidatorStatus
+                     {
+                         ValidationId = ValidationId,
+                         PackageKey = PackageKey,
+                         ValidatorName = nameof(PackageSigningValidator),
+                         State = ValidationStatus.NotStarted,
+                     });
 
                 _packageSignatureVerifier
                     .Setup(x => x.StartVerificationAsync(It.IsAny<IValidationRequest>()))
@@ -92,7 +110,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     .Returns(Task.FromResult(0));
 
                 _validatorStateService
-                    .Setup(x => x.AddStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidationStatus>()))
+                    .Setup(x => x.AddStatusAsync(It.IsAny<ValidatorStatus>()))
                     .Callback(() =>
                     {
                         statePersisted = true;
@@ -109,8 +127,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 _validatorStateService
                     .Verify(
                         x => x.AddStatusAsync(
-                                It.IsAny<IValidationRequest>(),
-                                It.Is<ValidationStatus>(s => s == ValidationStatus.Incomplete)),
+                                It.Is<ValidatorStatus>(s => s.State == ValidationStatus.Incomplete)),
                         Times.Once);
 
                 Assert.True(verificationQueuedBeforeStatePersisted);

@@ -28,15 +28,17 @@ namespace NuGet.Services.Validation.PackageSigning
 
         public Task<ValidationStatus> GetStatusAsync(IValidationRequest request)
         {
-            return Task.FromResult(_validatorStateService.GetStatus(request));
+            var validatorStatus = _validatorStateService.GetStatus(request);
+
+            return Task.FromResult(validatorStatus.State);
         }
 
         public async Task<ValidationStatus> StartValidationAsync(IValidationRequest request)
         {
             // Check that this is the first validation for this specific request.
-            var currentStatus = await GetStatusAsync(request);
+            var validatorStatus = _validatorStateService.GetStatus(request);
 
-            if (currentStatus != ValidationStatus.NotStarted)
+            if (validatorStatus.State != ValidationStatus.NotStarted)
             {
                 _logger.LogError(
                     Error.PackageSigningValidationAlreadyStarted,
@@ -50,8 +52,10 @@ namespace NuGet.Services.Validation.PackageSigning
 
             // Kick off the verification process. Note that the jobs will not verify the package until the
             // state of this validator has been persisted to the database.
+            validatorStatus.State = ValidationStatus.Incomplete;
+
             await _packageSignatureVerifier.StartVerificationAsync(request);
-            await _validatorStateService.AddStatusAsync(request, ValidationStatus.Incomplete);
+            await _validatorStateService.AddStatusAsync(validatorStatus);
 
             return ValidationStatus.Incomplete;
         }

@@ -19,14 +19,25 @@ namespace NuGet.Services.Validation.Orchestrator
             _validatorName = typeof(TValidator).Name;
         }
 
-        public ValidationStatus GetStatus(IValidationRequest request)
+        public ValidatorStatus GetStatus(IValidationRequest request)
         {
             var status = _validationContext
                 .ValidatorStatuses
                 .Where(s => s.ValidationId == request.ValidationId)
                 .FirstOrDefault();
 
-            return status?.State ?? ValidationStatus.NotStarted;
+            if (status == null)
+            {
+                return new ValidatorStatus
+                {
+                    ValidationId = request.ValidationId,
+                    PackageKey = request.PackageKey,
+                    ValidatorName = _validatorName,
+                    State = ValidationStatus.NotStarted,
+                };
+            }
+
+            return status;
         }
 
         public bool IsRevalidationRequest(IValidationRequest request)
@@ -39,27 +50,28 @@ namespace NuGet.Services.Validation.Orchestrator
                         .Any();
         }
 
-        public async Task AddStatusAsync(IValidationRequest request, ValidationStatus status)
+        public async Task AddStatusAsync(ValidatorStatus status)
         {
-            _validationContext.ValidatorStatuses.Add(new ValidatorStatus
+            if (status.ValidatorName != _validatorName)
             {
-                ValidationId = request.ValidationId,
-                PackageKey = request.PackageKey,
-                ValidatorName = _validatorName,
-                State = status,
-            });
+                throw new ArgumentException(
+                    $"Expected validator name '{_validatorName}', actual: '{status.ValidatorName}'",
+                    nameof(status));
+            }
+
+            _validationContext.ValidatorStatuses.Add(status);
 
             await _validationContext.SaveChangesAsync();
         }
 
-        public async Task SaveStatusAsync(IValidationRequest request, ValidationStatus status)
+        public async Task SaveStatusAsync(ValidatorStatus status)
         {
-            var entity = _validationContext
-                            .ValidatorStatuses
-                            .Where(s => s.ValidationId == request.ValidationId)
-                            .First();
-
-            entity.State = status;
+            if (status.ValidatorName != _validatorName)
+            {
+                throw new ArgumentException(
+                    $"Expected validator name '{_validatorName}', actual: '{status.ValidatorName}'",
+                    nameof(status));
+            }
 
             await _validationContext.SaveChangesAsync();
         }
