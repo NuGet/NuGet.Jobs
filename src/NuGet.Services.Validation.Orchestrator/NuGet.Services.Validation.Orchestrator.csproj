@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="ConfigurationValidator.cs" />
     <Compile Include="Error.cs" />
+    <Compile Include="IValidatorStateService.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="PackageSigning\IPackageSignatureVerifier.cs" />
     <Compile Include="PackageSigning\PackageSignatureVerifier.cs" />
