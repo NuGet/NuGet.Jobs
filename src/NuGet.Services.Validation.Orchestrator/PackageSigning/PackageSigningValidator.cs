@@ -2,22 +2,21 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Data.Entity.Infrastructure;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation.Orchestrator;
 
 namespace NuGet.Services.Validation.PackageSigning
 {
-    using ValidatorStateService = IValidatorStateService<PackageSigningValidator>;
-
     public class PackageSigningValidator : IValidator
     {
-        private readonly ValidatorStateService _validatorStateService;
+        private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSignatureVerifier _packageSignatureVerifier;
         private readonly ILogger<PackageSigningValidator> _logger;
 
         public PackageSigningValidator(
-            ValidatorStateService validatorStateService,
+            IValidatorStateService validatorStateService,
             IPackageSignatureVerifier packageSignatureVerifier,
             ILogger<PackageSigningValidator> logger)
         {
@@ -26,28 +25,28 @@ namespace NuGet.Services.Validation.PackageSigning
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<ValidationStatus> GetStatusAsync(IValidationRequest request)
+        public async Task<ValidationStatus> GetStatusAsync(IValidationRequest request)
         {
-            var validatorStatus = _validatorStateService.GetStatus(request);
+            var validatorStatus = await _validatorStateService.GetStatusAsync(nameof(PackageSigningValidator), request);
 
-            return Task.FromResult(validatorStatus.State);
+            return validatorStatus.State;
         }
 
         public async Task<ValidationStatus> StartValidationAsync(IValidationRequest request)
         {
             // Check that this is the first validation for this specific request.
-            var validatorStatus = _validatorStateService.GetStatus(request);
+            var validatorStatus = await _validatorStateService.GetStatusAsync(nameof(PackageSigningValidator), request);
 
-            if (validatorStatus.State != ValidationStatus.NotStarted)
+            if (validatorStatus.State != ValidationStatus.NotStarted && false)
             {
-                _logger.LogError(
+                _logger.LogWarning(
                     Error.PackageSigningValidationAlreadyStarted,
                     "Package Signing validation with validationId {validationId} ({packageId} {packageVersion}) has already started.",
                     request.ValidationId,
                     request.PackageId,
                     request.PackageVersion);
 
-                throw new Exception("TODO: What's the exception if the job has already started?");
+                return validatorStatus.State;
             }
 
             // Kick off the verification process. Note that the jobs will not verify the package until the
@@ -55,7 +54,23 @@ namespace NuGet.Services.Validation.PackageSigning
             validatorStatus.State = ValidationStatus.Incomplete;
 
             await _packageSignatureVerifier.StartVerificationAsync(request);
-            await _validatorStateService.AddStatusAsync(validatorStatus);
+
+            try
+            {
+                await _validatorStateService.AddStatusAsync(nameof(PackageSigningValidator), validatorStatus);
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogWarning(
+                    Error.PackageSigningValidationAlreadyStarted,
+                    e,
+                    "Attempted to validate validationId {validationId} ({packageId} {packageVersion}), but it had already started.",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion);
+
+                return await GetStatusAsync(request);
+            }
 
             return ValidationStatus.Incomplete;
         }

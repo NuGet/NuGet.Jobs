@@ -36,8 +36,8 @@ namespace NuGet.Services.Validation.PackageSigning
             {
                 // Arrange
                 _validatorStateService
-                    .Setup(x => x.GetStatus(It.IsAny<IValidationRequest>()))
-                    .Returns(new ValidatorStatus
+                    .Setup(x => x.GetStatusAsync(It.IsAny<string>(), It.IsAny<IValidationRequest>()))
+                    .ReturnsAsync(new ValidatorStatus
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
@@ -65,12 +65,12 @@ namespace NuGet.Services.Validation.PackageSigning
 
             [Theory]
             [MemberData(nameof(StartedValidationStatuses))]
-            public async Task ThrowsIfValidationAlreadyStarted(ValidationStatus status)
+            public async Task ReturnsPersistedStatusesIfValidationAlreadyStarted(ValidationStatus status)
             {
                 // Arrange
                 _validatorStateService
-                     .Setup(x => x.GetStatus(It.IsAny<IValidationRequest>()))
-                     .Returns(new ValidatorStatus
+                     .Setup(x => x.GetStatusAsync(It.IsAny<string>(), It.IsAny<IValidationRequest>()))
+                     .ReturnsAsync(new ValidatorStatus
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
@@ -79,8 +79,13 @@ namespace NuGet.Services.Validation.PackageSigning
                      });
 
                 // Act & Assert
-                // TODO: More specific exception!
-                await Assert.ThrowsAsync<Exception>(() => _target.StartValidationAsync(_validationRequest.Object));
+                await _target.StartValidationAsync(_validationRequest.Object);
+
+                _packageSignatureVerifier
+                    .Verify(x => x.StartVerificationAsync(It.IsAny<IValidationRequest>()), Times.Never);
+
+                _validatorStateService
+                    .Verify(x => x.AddStatusAsync(It.IsAny<string>(), It.IsAny<ValidatorStatus>()), Times.Never);
             }
 
             [Fact]
@@ -92,8 +97,8 @@ namespace NuGet.Services.Validation.PackageSigning
                 bool verificationQueuedBeforeStatePersisted = false;
 
                 _validatorStateService
-                     .Setup(x => x.GetStatus(It.IsAny<IValidationRequest>()))
-                     .Returns(new ValidatorStatus
+                     .Setup(x => x.GetStatusAsync(It.IsAny<string>(), It.IsAny<IValidationRequest>()))
+                     .ReturnsAsync(new ValidatorStatus
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
@@ -110,7 +115,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     .Returns(Task.FromResult(0));
 
                 _validatorStateService
-                    .Setup(x => x.AddStatusAsync(It.IsAny<ValidatorStatus>()))
+                    .Setup(x => x.AddStatusAsync(It.IsAny<string>(), It.IsAny<ValidatorStatus>()))
                     .Callback(() =>
                     {
                         statePersisted = true;
@@ -127,6 +132,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 _validatorStateService
                     .Verify(
                         x => x.AddStatusAsync(
+                                It.IsAny<string>(),
                                 It.Is<ValidatorStatus>(s => s.State == ValidationStatus.Incomplete)),
                         Times.Once);
 
@@ -139,7 +145,7 @@ namespace NuGet.Services.Validation.PackageSigning
 
         public abstract class FactsBase
         {
-            protected readonly Mock<IValidatorStateService<PackageSigningValidator>> _validatorStateService;
+            protected readonly Mock<IValidatorStateService> _validatorStateService;
             protected readonly Mock<IPackageSignatureVerifier> _packageSignatureVerifier;
             protected readonly Mock<ILogger<PackageSigningValidator>> _logger;
             protected readonly Mock<IValidationRequest> _validationRequest;
@@ -147,7 +153,7 @@ namespace NuGet.Services.Validation.PackageSigning
 
             public FactsBase()
             {
-                _validatorStateService = new Mock<IValidatorStateService<PackageSigningValidator>>();
+                _validatorStateService = new Mock<IValidatorStateService>();
                 _packageSignatureVerifier = new Mock<IPackageSignatureVerifier>();
                 _logger = new Mock<ILogger<PackageSigningValidator>>();
 

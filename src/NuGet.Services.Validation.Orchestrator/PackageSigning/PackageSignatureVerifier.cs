@@ -10,7 +10,7 @@ namespace NuGet.Services.Validation.PackageSigning
     /// <summary>
     /// Kicks off package signature verifications.
     /// </summary>
-    public class PackageSignatureVerifier
+    public class PackageSignatureVerifier : IPackageSignatureVerifier
     {
         private readonly ITopicClient _topicClient;
 

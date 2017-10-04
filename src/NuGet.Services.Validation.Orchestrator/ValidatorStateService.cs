@@ -2,29 +2,27 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class ValidatorStateService<TValidator> : IValidatorStateService<TValidator>
-        where TValidator : IValidator
+    public class ValidatorStateService : IValidatorStateService
     {
         private IValidationEntitiesContext _validationContext;
-        private string _validatorName;
 
         public ValidatorStateService(IValidationEntitiesContext validationContext)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
-            _validatorName = typeof(TValidator).Name;
         }
 
-        public ValidatorStatus GetStatus(IValidationRequest request)
+        public async Task<ValidatorStatus> GetStatusAsync(string validatorName, IValidationRequest request)
         {
-            var status = _validationContext
-                .ValidatorStatuses
-                .Where(s => s.ValidationId == request.ValidationId)
-                .FirstOrDefault();
+            var status = await _validationContext
+                                    .ValidatorStatuses
+                                    .Where(s => s.ValidationId == request.ValidationId)
+                                    .FirstOrDefaultAsync();
 
             if (status == null)
             {
@@ -32,30 +30,42 @@ namespace NuGet.Services.Validation.Orchestrator
                 {
                     ValidationId = request.ValidationId,
                     PackageKey = request.PackageKey,
-                    ValidatorName = _validatorName,
+                    ValidatorName = validatorName,
                     State = ValidationStatus.NotStarted,
                 };
+            }
+            else if (status.PackageKey != request.PackageKey)
+            {
+                throw new ArgumentException(
+                    $"Validation expected package key {status.PackageKey}, actual {request.PackageKey}",
+                    nameof(request));
+            }
+            else if (status.ValidatorName != validatorName)
+            {
+                throw new ArgumentException(
+                    $"Validation expected validator {status.ValidatorName}, actual {validatorName}",
+                    nameof(request));
             }
 
             return status;
         }
 
-        public bool IsRevalidationRequest(IValidationRequest request)
+        public Task<bool> IsRevalidationRequestAsync(string validatorName, IValidationRequest request)
         {
             return _validationContext
                         .ValidatorStatuses
                         .Where(s => s.PackageKey == request.PackageKey)
-                        .Where(s => s.ValidatorName == _validatorName)
+                        .Where(s => s.ValidatorName == validatorName)
                         .Where(s => s.ValidationId != request.ValidationId)
-                        .Any();
+                        .AnyAsync();
         }
 
-        public async Task AddStatusAsync(ValidatorStatus status)
+        public async Task AddStatusAsync(string validatorName, ValidatorStatus status)
         {
-            if (status.ValidatorName != _validatorName)
+            if (status.ValidatorName != validatorName)
             {
                 throw new ArgumentException(
-                    $"Expected validator name '{_validatorName}', actual: '{status.ValidatorName}'",
+                    $"Expected validator name '{validatorName}', actual: '{status.ValidatorName}'",
                     nameof(status));
             }
 
@@ -64,12 +74,12 @@ namespace NuGet.Services.Validation.Orchestrator
             await _validationContext.SaveChangesAsync();
         }
 
-        public async Task SaveStatusAsync(ValidatorStatus status)
+        public async Task SaveStatusAsync(string validatorName, ValidatorStatus status)
         {
-            if (status.ValidatorName != _validatorName)
+            if (status.ValidatorName != validatorName)
             {
                 throw new ArgumentException(
-                    $"Expected validator name '{_validatorName}', actual: '{status.ValidatorName}'",
+                    $"Expected validator name '{validatorName}', actual: '{status.ValidatorName}'",
                     nameof(status));
             }
 
