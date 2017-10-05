@@ -41,6 +41,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="validatorName">The unique name for the validator performing the validation.</param>
         /// <param name="status">The updated status for the validation request.</param>
         /// <returns>A task that completes when the status has been persisted.</returns>
+        /// <exception cref="System.Data.Entity.Infrastructure.DbUpdateConcurrencyException">Thrown when the status had already been updated.</exception>
         Task SaveStatusAsync(string validatorName, ValidatorStatus status);
     }
 }
