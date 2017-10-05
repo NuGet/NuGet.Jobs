@@ -40,7 +40,6 @@ namespace NuGet.Services.Validation.PackageSigning
             if (validatorStatus.State != ValidationStatus.NotStarted && false)
             {
                 _logger.LogWarning(
-                    Error.PackageSigningValidationAlreadyStarted,
                     "Package Signing validation with validationId {validationId} ({packageId} {packageVersion}) has already started.",
                     request.ValidationId,
                     request.PackageId,
@@ -61,10 +60,15 @@ namespace NuGet.Services.Validation.PackageSigning
             }
             catch (DbUpdateException e)
             {
-                _logger.LogWarning(
+                // This exception happens when the validation ID's state has already been persisted to the database
+                // by some other instance of this validator. This may happen if more than one instance of this validator
+                // is validating the request, both instances saw no matching status in the database, and then both
+                // instances attempted to add a new status to the database. This scenario means that the "StartVerificationAsync"
+                // message has been duplicated.
+                _logger.LogError(
                     Error.PackageSigningValidationAlreadyStarted,
                     e,
-                    "Attempted to validate validationId {validationId} ({packageId} {packageVersion}), but it had already started.",
+                    "Failed to add validation status for {validationId} ({packageId} {packageVersion}) as a record already exists!",
                     request.ValidationId,
                     request.PackageId,
                     request.PackageVersion);
