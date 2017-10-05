@@ -3,6 +3,8 @@
 
 using System;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,6 +12,8 @@ namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidatorStateService : IValidatorStateService
     {
+        private const int UniqueConstraintViolationErrorCode = 2627;
+
         private IValidationEntitiesContext _validationContext;
 
         public ValidatorStateService(IValidationEntitiesContext validationContext)
@@ -17,8 +21,10 @@ namespace NuGet.Services.Validation.Orchestrator
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
         }
 
-        public async Task<ValidatorStatus> GetStatusAsync(string validatorName, IValidationRequest request)
+        public async Task<ValidatorStatus> GetStatusAsync<T>(IValidationRequest request)
+            where T : IValidator
         {
+            var validatorName = typeof(T).Name;
             var status = await _validationContext
                                     .ValidatorStatuses
                                     .Where(s => s.ValidationId == request.ValidationId)
@@ -50,8 +56,11 @@ namespace NuGet.Services.Validation.Orchestrator
             return status;
         }
 
-        public Task<bool> IsRevalidationRequestAsync(string validatorName, IValidationRequest request)
+        public Task<bool> IsRevalidationRequestAsync<T>(IValidationRequest request)
+            where T : IValidator
         {
+            var validatorName = typeof(T).Name;
+
             return _validationContext
                         .ValidatorStatuses
                         .Where(s => s.PackageKey == request.PackageKey)
@@ -60,8 +69,11 @@ namespace NuGet.Services.Validation.Orchestrator
                         .AnyAsync();
         }
 
-        public async Task AddStatusAsync(string validatorName, ValidatorStatus status)
+        public async Task<AddStatusResult> AddStatusAsync<T>(ValidatorStatus status)
+            where T : IValidator
         {
+            var validatorName = typeof(T).Name;
+
             if (status.ValidatorName != validatorName)
             {
                 throw new ArgumentException(
@@ -71,11 +83,22 @@ namespace NuGet.Services.Validation.Orchestrator
 
             _validationContext.ValidatorStatuses.Add(status);
 
-            await _validationContext.SaveChangesAsync();
+            try
+            {
+                await _validationContext.SaveChangesAsync();
+
+                return AddStatusResult.Success;
+            }
+            catch (DbUpdateException e) when (IsUniqueConstraintViolationException(e))
+            {
+                return AddStatusResult.StatusAlreadyExists;
+            }
         }
 
-        public async Task SaveStatusAsync(string validatorName, ValidatorStatus status)
+        public async Task<SaveStatusResult> SaveStatusAsync<T>(ValidatorStatus status) where T : IValidator
         {
+            var validatorName = typeof(T).Name;
+
             if (status.ValidatorName != validatorName)
             {
                 throw new ArgumentException(
@@ -83,7 +106,28 @@ namespace NuGet.Services.Validation.Orchestrator
                     nameof(status));
             }
 
-            await _validationContext.SaveChangesAsync();
+            try
+            {
+                await _validationContext.SaveChangesAsync();
+
+                return SaveStatusResult.Success;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return SaveStatusResult.StaleStatus;
+            }
+        }
+
+        private static bool IsUniqueConstraintViolationException(DbUpdateException e)
+        {
+            var sqlException = e.GetBaseException() as SqlException;
+
+            if (sqlException != null)
+            {
+                return sqlException.Errors.Cast<SqlError>().Any(error => error.Number == UniqueConstraintViolationErrorCode);
+            }
+
+            return false;
         }
     }
 }

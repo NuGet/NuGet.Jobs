@@ -2,9 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Data.Entity.Infrastructure;
-using System.Data.SqlClient;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation.Orchestrator;
@@ -13,8 +10,6 @@ namespace NuGet.Services.Validation.PackageSigning
 {
     public class PackageSigningValidator : IValidator
     {
-        private const int UniqueConstraintViolationErrorCode = 2627;
-
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSignatureVerifier _packageSignatureVerifier;
         private readonly ILogger<PackageSigningValidator> _logger;
@@ -31,7 +26,7 @@ namespace NuGet.Services.Validation.PackageSigning
 
         public async Task<ValidationStatus> GetStatusAsync(IValidationRequest request)
         {
-            var validatorStatus = await _validatorStateService.GetStatusAsync(nameof(PackageSigningValidator), request);
+            var validatorStatus = await _validatorStateService.GetStatusAsync<PackageSigningValidator>(request);
 
             return validatorStatus.State;
         }
@@ -39,12 +34,12 @@ namespace NuGet.Services.Validation.PackageSigning
         public async Task<ValidationStatus> StartValidationAsync(IValidationRequest request)
         {
             // Check that this is the first validation for this specific request.
-            var validatorStatus = await _validatorStateService.GetStatusAsync(nameof(PackageSigningValidator), request);
+            var validatorStatus = await _validatorStateService.GetStatusAsync<PackageSigningValidator>(request);
 
             if (validatorStatus.State != ValidationStatus.NotStarted)
             {
                 _logger.LogWarning(
-                    "Package Signing validation with validationId {validationId} ({packageId} {packageVersion}) has already started.",
+                    "Package Signing validation with validationId {ValidationId} ({PackageId} {PackageVersion}) has already started.",
                     request.ValidationId,
                     request.PackageId,
                     request.PackageVersion);
@@ -57,42 +52,28 @@ namespace NuGet.Services.Validation.PackageSigning
             validatorStatus.State = ValidationStatus.Incomplete;
 
             await _packageSignatureVerifier.StartVerificationAsync(request);
+            var result = await _validatorStateService.AddStatusAsync<PackageSigningValidator>(validatorStatus);
 
-            try
+            if (result == AddStatusResult.StatusAlreadyExists)
             {
-                await _validatorStateService.AddStatusAsync(nameof(PackageSigningValidator), validatorStatus);
-            }
-            catch (DbUpdateException e) when (IsUniqueConstraintViolationException(e))
-            {
-                // This exception happens when the validation ID's state has already been persisted to the database
-                // by some other instance of this validator. This may happen if more than one instance of this validator
-                // is validating the request, both instances saw no matching status in the database, and then both
-                // instances attempted to add a new status to the database. This scenario means that the "StartVerificationAsync"
+                // This is a possible concurrency issue that may happen when the Orchestrator calls StartValidationAsync
+                // multiple times for the same validation request. This scenario means that the "StartVerificationAsync"
                 // message has been duplicated.
                 _logger.LogError(
                     Error.PackageSigningValidationAlreadyStarted,
-                    e,
-                    "Failed to add validation status for {validationId} ({packageId} {packageVersion}) as a record already exists!",
+                    "Failed to add validation status for {ValidationId} ({PackageId} {PackageVersion}) as a record already exists!",
                     request.ValidationId,
                     request.PackageId,
                     request.PackageVersion);
 
                 return await GetStatusAsync(request);
             }
-
-            return ValidationStatus.Incomplete;
-        }
-
-        private bool IsUniqueConstraintViolationException(DbUpdateException e)
-        {
-            var sqlException = e.GetBaseException() as SqlException;
-
-            if (sqlException != null)
+            else if (result != AddStatusResult.Success)
             {
-                return sqlException.Errors.Cast<SqlError>().Any(error => error.Number == UniqueConstraintViolationErrorCode);
+                throw new NotSupportedException($"Unknown {nameof(AddStatusResult)}: {result}");
             }
 
-            return false;
+            return ValidationStatus.Incomplete;
         }
     }
 }
