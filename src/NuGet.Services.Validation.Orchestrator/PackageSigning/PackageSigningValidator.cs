@@ -3,6 +3,8 @@
 
 using System;
 using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation.Orchestrator;
@@ -11,6 +13,8 @@ namespace NuGet.Services.Validation.PackageSigning
 {
     public class PackageSigningValidator : IValidator
     {
+        private const int UniqueConstraintViolationErrorCode = 2627;
+
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSignatureVerifier _packageSignatureVerifier;
         private readonly ILogger<PackageSigningValidator> _logger;
@@ -37,7 +41,7 @@ namespace NuGet.Services.Validation.PackageSigning
             // Check that this is the first validation for this specific request.
             var validatorStatus = await _validatorStateService.GetStatusAsync(nameof(PackageSigningValidator), request);
 
-            if (validatorStatus.State != ValidationStatus.NotStarted && false)
+            if (validatorStatus.State != ValidationStatus.NotStarted)
             {
                 _logger.LogWarning(
                     "Package Signing validation with validationId {validationId} ({packageId} {packageVersion}) has already started.",
@@ -58,7 +62,7 @@ namespace NuGet.Services.Validation.PackageSigning
             {
                 await _validatorStateService.AddStatusAsync(nameof(PackageSigningValidator), validatorStatus);
             }
-            catch (DbUpdateException e)
+            catch (DbUpdateException e) when (IsUniqueConstraintViolationException(e))
             {
                 // This exception happens when the validation ID's state has already been persisted to the database
                 // by some other instance of this validator. This may happen if more than one instance of this validator
@@ -77,6 +81,18 @@ namespace NuGet.Services.Validation.PackageSigning
             }
 
             return ValidationStatus.Incomplete;
+        }
+
+        private bool IsUniqueConstraintViolationException(DbUpdateException e)
+        {
+            var sqlException = e.GetBaseException() as SqlException;
+
+            if (sqlException != null)
+            {
+                return sqlException.Errors.Cast<SqlError>().Any(error => error.Number == UniqueConstraintViolationErrorCode);
+            }
+
+            return false;
         }
     }
 }
