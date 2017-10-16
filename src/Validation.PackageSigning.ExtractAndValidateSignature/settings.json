@@ -1,0 +1,16 @@
+﻿{
+  "ValidationDb": {
+    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=Validation; Integrated Security=True; MultipleActiveResultSets=True"
+  },
+  "ServiceBus": {
+    "ConnectionString": "",
+    "TopicPath": "",
+    "SubscriptionName": ""
+  },
+  "KeyVault_VaultName": "",
+  "KeyVault_ClientId": "",
+  "KeyVault_CertificateThumbprint": "",
+  "KeyVault_ValidateCertificate": true,
+  "KeyVault_StoreName": "My",
+  "KeyVault_StoreLocation": "LocalMachine"
+}

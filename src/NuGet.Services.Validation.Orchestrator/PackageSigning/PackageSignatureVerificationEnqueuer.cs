@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Services.ServiceBus;
 
 namespace NuGet.Services.Validation.PackageSigning
@@ -13,6 +14,7 @@ namespace NuGet.Services.Validation.PackageSigning
     public class PackageSignatureVerificationEnqueuer : IPackageSignatureVerificationEnqueuer
     {
         private readonly ITopicClient _topicClient;
+        private static readonly IBrokeredMessageSerializer<SignatureValidationMessage> _signatureValidationSerializer = new SignatureValidationMessageSerializer();
 
         public PackageSignatureVerificationEnqueuer(ITopicClient topicClient)
         {
@@ -27,13 +29,13 @@ namespace NuGet.Services.Validation.PackageSigning
         /// </summary>
         /// <param name="request">The request that details the package to be verified.</param>
         /// <returns>A task that will complete when the verification process has been queued.</returns>
-        public Task EnqueueVerificationAsync(IValidationRequest request)
+        public async Task EnqueueVerificationAsync(IValidationRequest request)
         {
-            // TODO:
-            // 1. Serialize the request into a IBrokeredMessage
-            // 2. _topicClient.SendAsync(message);
             // TODO: Apparently ServiceBus supports duplicate detection from client side?
-            throw new NotImplementedException();
+            var brokeredMessage = _signatureValidationSerializer.Serialize(
+                new SignatureValidationMessage(request.PackageId, request.PackageVersion, new Uri(request.NupkgUrl), request.ValidationId));
+
+            await _topicClient.SendAsync(brokeredMessage);
         }
     }
 }
