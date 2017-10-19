@@ -10,7 +10,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.Messages
     {
         private const string CertificateValidationSchemaName = "CertificateValidationMessageData";
 
-        private BrokeredMessageSerializer<CertificateValidationMessageData1> _serializer;
+        private IBrokeredMessageSerializer<CertificateValidationMessageData1> _serializer =
+            new BrokeredMessageSerializer<CertificateValidationMessageData1>();
 
         public IBrokeredMessage Serialize(CertificateValidationMessage message)
         {
