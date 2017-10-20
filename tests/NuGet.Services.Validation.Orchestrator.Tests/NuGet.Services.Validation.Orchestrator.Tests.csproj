@@ -45,6 +45,7 @@
     <Compile Include="ConfigurationFacts.cs" />
     <Compile Include="PackageSigning\PackageSigningValidatorFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestDbAsyncQueryProvider.cs" />
     <Compile Include="ValidationContextHelpers.cs" />
     <Compile Include="ValidatorStateServiceFacts.cs" />
     <Compile Include="Vcs\VcsValidatorFacts.cs" />
