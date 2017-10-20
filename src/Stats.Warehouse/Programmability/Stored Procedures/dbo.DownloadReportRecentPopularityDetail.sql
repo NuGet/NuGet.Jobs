@@ -27,7 +27,10 @@ BEGIN
 			AND ISNULL(D.[Date], CONVERT(DATE, DATEADD(day, 1, @ReportGenerationTime))) <= CONVERT(DATE, @ReportGenerationTime)
 			AND F.[Timestamp] <= @Cursor
 			AND C.ClientCategory NOT IN ('Crawler', 'Unknown')
-			AND NOT (C.ClientCategory = 'NuGet' AND CAST(ISNULL(C.[Major], '0') AS INT) > 10)
+			AND NOT (C.ClientCategory = 'NuGet' AND CAST(ISNULL(C.[Major], '0') AS INT) > 10)			
+			AND (P.[LowercasedPackageId] NOT LIKE 'microsoft.%'
+				AND P.[LowercasedPackageId] NOT LIKE 'system.%'
+				AND P.[LowercasedPackageId] NOT LIKE 'runtime.native.%')
 
 	GROUP BY	P.[PackageId],
 				P.[PackageVersion]
