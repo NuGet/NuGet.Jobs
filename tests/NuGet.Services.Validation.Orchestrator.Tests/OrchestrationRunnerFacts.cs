@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using NuGet.Services.ServiceBus;
 using Xunit;
 
 namespace NuGet.Services.Validation.Orchestrator.Tests
@@ -15,7 +16,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public async Task StartsMessageProcessing()
         {
-            var orchestratorMock = new Mock<IOrchestrator>();
+            var subscriptionProcessor = new Mock<ISubscriptionProcessor<PackageValidationMessageData>>();
             var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
             var loggerMock = new Mock<ILogger<OrchestrationRunner>>();
 
@@ -27,16 +28,16 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     ShutdownWaitInterval = TimeSpan.Zero
                 });
 
-            var runner = new OrchestrationRunner(orchestratorMock.Object, optionsAccessorMock.Object, loggerMock.Object);
+            var runner = new OrchestrationRunner(subscriptionProcessor.Object, optionsAccessorMock.Object, loggerMock.Object);
             await runner.RunOrchestrationAsync();
 
-            orchestratorMock.Verify(o => o.StartProcessingMessagesAsync(), Times.Once());
+            subscriptionProcessor.Verify(o => o.Start(), Times.Once());
         }
 
         [Fact]
         public async Task ShutsDownMessageProcessing()
         {
-            var orchestratorMock = new Mock<IOrchestrator>();
+            var orchestratorMock = new Mock<ISubscriptionProcessor<PackageValidationMessageData>>();
             var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
             var loggerMock = new Mock<ILogger<OrchestrationRunner>>();
 
@@ -50,24 +51,23 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var startCalled = false;
             orchestratorMock
-                .Setup(o => o.StartProcessingMessagesAsync())
-                .Callback(() => startCalled = true)
-                .Returns(Task.FromResult(0));
+                .Setup(o => o.Start())
+                .Callback(() => startCalled = true);
 
             orchestratorMock
-                .Setup(o => o.StartShuttingDownAsync())
+                .Setup(o => o.StartShutdownAsync())
                 .Callback(() => Assert.True(startCalled))
                 .Returns(Task.FromResult(0));
             var runner = new OrchestrationRunner(orchestratorMock.Object, optionsAccessorMock.Object, loggerMock.Object);
             await runner.RunOrchestrationAsync();
 
-            orchestratorMock.Verify(o => o.StartShuttingDownAsync(), Times.Once());
+            orchestratorMock.Verify(o => o.StartShutdownAsync(), Times.Once());
         }
 
         [Fact]
         public async Task WaitsOrchestratorToShutDown()
         {
-            var orchestratorMock = new Mock<IOrchestrator>();
+            var orchestratorMock = new Mock<ISubscriptionProcessor<PackageValidationMessageData>>();
             var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
             var loggerMock = new Mock<ILogger<OrchestrationRunner>>();
 
@@ -81,13 +81,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             int numberOfRequestsInProgress = 2;
             orchestratorMock
-                .Setup(o => o.GetNumberOfRequestsInProgress())
+                .SetupGet(o => o.NumberOfMessagesInProgress)
                 .Returns(() => numberOfRequestsInProgress--);
 
             var runner = new OrchestrationRunner(orchestratorMock.Object, optionsAccessorMock.Object, loggerMock.Object);
             await runner.RunOrchestrationAsync();
 
-            orchestratorMock.Verify(o => o.GetNumberOfRequestsInProgress(), Times.Exactly(3));
+            orchestratorMock.Verify(o => o.NumberOfMessagesInProgress, Times.Exactly(3));
         }
     }
 }

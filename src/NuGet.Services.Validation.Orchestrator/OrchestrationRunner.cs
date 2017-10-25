@@ -2,10 +2,10 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuGet.Services.ServiceBus;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -14,16 +14,16 @@ namespace NuGet.Services.Validation.Orchestrator
     /// </summary>
     public class OrchestrationRunner
     {
-        private readonly IOrchestrator _orchestrator;
+        private readonly ISubscriptionProcessor<PackageValidationMessageData> _subscriptionProcessor;
         private readonly OrchestrationRunnerConfiguration _configuration;
         private readonly ILogger<OrchestrationRunner> _logger;
 
         public OrchestrationRunner(
-            IOrchestrator orchestrator,
+            ISubscriptionProcessor<PackageValidationMessageData> subscriptionProcessor,
             IOptionsSnapshot<OrchestrationRunnerConfiguration> configurationAccessor,
             ILogger<OrchestrationRunner> logger)
         {
-            _orchestrator = orchestrator  ?? throw new ArgumentNullException(nameof(orchestrator));
+            _subscriptionProcessor = subscriptionProcessor  ?? throw new ArgumentNullException(nameof(subscriptionProcessor));
             configurationAccessor = configurationAccessor ?? throw new ArgumentNullException(nameof(configurationAccessor));
             _configuration = configurationAccessor.Value ?? throw new ArgumentException("Value property cannot be null", nameof(configurationAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -33,17 +33,17 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             _logger.LogInformation("Starting up the orchestration");
 
-            await _orchestrator.StartProcessingMessagesAsync();
+            _subscriptionProcessor.Start();
             await Task.Delay(_configuration.ProcessRecycleInterval);
 
             _logger.LogInformation("Recycling the process...");
-            await _orchestrator.StartShuttingDownAsync();
+            await _subscriptionProcessor.StartShutdownAsync();
 
             DateTimeOffset waitStart = DateTimeOffset.Now;
 
             while (DateTimeOffset.Now - waitStart < _configuration.ShutdownWaitInterval)
             {
-                if (_orchestrator.GetNumberOfRequestsInProgress() <= 0)
+                if (_subscriptionProcessor.NumberOfMessagesInProgress <= 0)
                 {
                     break;
                 }
@@ -51,7 +51,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
 
-            int stillRunning = _orchestrator.GetNumberOfRequestsInProgress();
+            int stillRunning = _subscriptionProcessor.NumberOfMessagesInProgress;
 
             if (stillRunning > 0)
             {

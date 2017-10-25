@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using NuGet.Services.ServiceBus;
 using Xunit;
 
 namespace NuGet.Services.Validation.Orchestrator.Tests
@@ -17,7 +18,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             var serviceScopeProviderMock = new Mock<IServiceScopeProvider>();
             var serviceScopeMock = new Mock<IServiceScope>();
             var serviceProviderMock = new Mock<IServiceProvider>();
-            var validationMessageHandlerMock = new Mock<IValidationMessageHandler>();
+            var validationMessageHandlerMock = new Mock<IMessageHandler<PackageValidationMessageData>>();
 
             serviceScopeProviderMock
                 .Setup(ssp => ssp.CreateScope())
@@ -28,16 +29,16 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(serviceProviderMock.Object);
 
             serviceProviderMock
-                .Setup(sp => sp.GetService(typeof(IValidationMessageHandler)))
+                .Setup(sp => sp.GetService(typeof(IMessageHandler<PackageValidationMessageData>)))
                 .Returns(validationMessageHandlerMock.Object);
 
             var handler = new ScopedPackageValidationMessageHandler(serviceScopeProviderMock.Object);
             var pvmd = new PackageValidationMessageData("SomePackageId", "1.2.3", Guid.NewGuid());
-            await handler.OnMessageAsync(pvmd);
+            await handler.HandleAsync(pvmd);
 
             serviceScopeProviderMock.Verify(ssp => ssp.CreateScope(), Times.Once());
-            serviceProviderMock.Verify(sp => sp.GetService(typeof(IValidationMessageHandler)), Times.Once());
-            validationMessageHandlerMock.Verify(mh => mh.OnMessageAsync(pvmd), Times.Once());
+            serviceProviderMock.Verify(sp => sp.GetService(typeof(IMessageHandler<PackageValidationMessageData>)), Times.Once());
+            validationMessageHandlerMock.Verify(mh => mh.HandleAsync(pvmd), Times.Once());
         }
     }
 }

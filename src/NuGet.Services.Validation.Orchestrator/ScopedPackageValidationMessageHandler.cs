@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using NuGet.Services.ServiceBus;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -11,7 +12,7 @@ namespace NuGet.Services.Validation.Orchestrator
     /// Runs <see cref="IValidationMessageHandler"/> implementation set up in the DI container
     /// inside its personal scope.
     /// </summary>
-    public class ScopedPackageValidationMessageHandler : IValidationMessageHandler
+    public class ScopedPackageValidationMessageHandler : IMessageHandler<PackageValidationMessageData>
     {
         private readonly IServiceScopeProvider _serviceScopeProvider;
 
@@ -22,19 +23,19 @@ namespace NuGet.Services.Validation.Orchestrator
             _serviceScopeProvider = serviceScopeProvider ?? throw new ArgumentNullException(nameof(serviceScopeProvider));
         }
 
-        public async Task OnMessageAsync(PackageValidationMessageData message)
+        public async Task<bool> HandleAsync(PackageValidationMessageData message)
         {
             using (var scope = _serviceScopeProvider.CreateScope())
             {
-                IValidationMessageHandler messageHandler;
+                IMessageHandler<PackageValidationMessageData> messageHandler;
                 // NuGet.Services.KeyVault.CachingSecretReader is not thread-safe and WILL be invoked
                 // in IValidationMessageHandler construction process, we need lock around it to prevent
                 // issues
                 lock (_validationMessageHandlerLock)
                 {
-                    messageHandler = scope.ServiceProvider.GetRequiredService<IValidationMessageHandler>();
+                    messageHandler = scope.ServiceProvider.GetRequiredService<IMessageHandler<PackageValidationMessageData>>();
                 }
-                await messageHandler.OnMessageAsync(message);
+                return await messageHandler.HandleAsync(message);
             }
         }
     }

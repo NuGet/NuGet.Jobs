@@ -26,7 +26,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var handler = mocks.CreateHandler();
 
-            await handler.OnMessageAsync(messageData);
+            await handler.HandleAsync(messageData);
 
             mocks.CorePackageServiceMock.Verify(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion), Times.Once());
         }
@@ -48,7 +48,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var handler = mocks.CreateHandler();
-            await handler.OnMessageAsync(messageData);
+            await handler.HandleAsync(messageData);
 
             mocks.ValidationSetProviderMock
                 .Verify(vsp => vsp.GetOrCreateValidationSetAsync(messageData.ValidationTrackingId, package));
@@ -75,7 +75,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var handler = mocks.CreateHandler();
-            await handler.OnMessageAsync(messageData);
+            await handler.HandleAsync(messageData);
 
             mocks.ValidationSetProcessorMock
                 .Verify(vsp => vsp.ProcessValidationsAsync(validationSet, package), Times.Once());
@@ -106,7 +106,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var handler = mocks.CreateHandler();
-            await handler.OnMessageAsync(messageData);
+            await handler.HandleAsync(messageData);
 
             mocks.ValidationOutcomeProcessorMock
                 .Verify(vop => vop.ProcessValidationOutcomeAsync(validationSet, package));

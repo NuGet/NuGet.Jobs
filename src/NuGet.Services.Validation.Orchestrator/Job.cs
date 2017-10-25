@@ -149,7 +149,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddScoped<IValidationStorageService, ValidationStorageService>();
             services.Add(ServiceDescriptor.Transient(typeof(NuGetGallery.IEntityRepository<>), typeof(NuGetGallery.EntityRepository<>)));
             services.AddTransient<NuGetGallery.ICorePackageService, NuGetGallery.CorePackageService>();
-            services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
             services.AddTransient<ISubscriptionClient>(serviceProvider =>
             {
                 var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ServiceBusConfiguration>>().Value;
@@ -164,7 +163,8 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IValidatorProvider, ValidatorProvider>();
             services.AddTransient<IServiceScopeProvider, ServiceScopeProvider>();
             services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
-            services.AddTransient<IValidationMessageHandler, ValidationMessageHandler>();
+            services.AddTransient<IMessageHandler<PackageValidationMessageData>, ValidationMessageHandler>();
+            services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, BrokeredMessageSerializer<PackageValidationMessageData>>();
             services.AddTransient<VcsValidator>();
         }
 
@@ -227,10 +227,14 @@ namespace NuGet.Services.Validation.Orchestrator
 
             containerBuilder
                 .RegisterType<ScopedPackageValidationMessageHandler>()
-                .Keyed<IValidationMessageHandler>(OrchestratorBindingKey);
+                .Keyed<IMessageHandler<PackageValidationMessageData>>(OrchestratorBindingKey);
 
             containerBuilder
-                .RegisterTypeWithKeyedParameter<IOrchestrator, Orchestrator, IValidationMessageHandler>(OrchestratorBindingKey);
+                .RegisterTypeWithKeyedParameter<
+                    ISubscriptionProcessor<PackageValidationMessageData>, 
+                    SubscriptionProcessor<PackageValidationMessageData>, 
+                    IMessageHandler<PackageValidationMessageData>>(
+                        OrchestratorBindingKey);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }

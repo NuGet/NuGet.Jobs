@@ -4,11 +4,12 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Services.ServiceBus;
 using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class ValidationMessageHandler : IValidationMessageHandler
+    public class ValidationMessageHandler : IMessageHandler<PackageValidationMessageData>
     {
         private readonly ICorePackageService _galleryPackageService;
         private readonly IValidationSetProvider _validationSetProvider;
@@ -30,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task OnMessageAsync(PackageValidationMessageData message)
+        public async Task<bool> HandleAsync(PackageValidationMessageData message)
         {
             var package = _galleryPackageService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageVersion);
 
@@ -40,7 +41,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 _logger.LogInformation("Did not find information in DB for package {PackageId} {PackageVersion}",
                     message.PackageId,
                     message.PackageVersion);
-                return;
+                return false;
             }
 
             var validationSet = await _validationSetProvider.GetOrCreateValidationSetAsync(message.ValidationTrackingId, package);
@@ -48,6 +49,7 @@ namespace NuGet.Services.Validation.Orchestrator
             await _validationSetProcessor.ProcessValidationsAsync(validationSet, package);
 
             await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, package);
+            return true;
         }
     }
 }
