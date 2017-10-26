@@ -7,15 +7,6 @@ namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidationRequest : IValidationRequest
     {
-        public ValidationRequest(Guid validationId, int packageKey, string packageId, string packageVersion, string nupkgUrl)
-        {
-            ValidationId = validationId;
-            PackageKey = packageKey;
-            PackageId = packageId;
-            PackageVersion = packageVersion;
-            NupkgUrl = nupkgUrl;
-        }
-
         public Guid ValidationId { get; }
 
         public int PackageKey { get; }
@@ -25,5 +16,14 @@ namespace NuGet.Services.Validation.Orchestrator
         public string PackageVersion { get; }
 
         public string NupkgUrl { get; }
+
+        public ValidationRequest(Guid validationId, int packageKey, string packageId, string packageVersion, string nupkgUrl)
+        {
+            ValidationId = validationId;
+            PackageKey = packageKey;
+            PackageId = packageId;
+            PackageVersion = packageVersion;
+            NupkgUrl = nupkgUrl;
+        }
     }
 }

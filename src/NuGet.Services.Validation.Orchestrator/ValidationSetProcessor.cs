@@ -107,7 +107,9 @@ namespace NuGet.Services.Validation.Orchestrator
                         break;
 
                     default:
-                        throw new InvalidOperationException($"Unexpected validation state: DB: {(int)ValidationStatus.Incomplete}, Actual: {(int)validationStatus}");
+                        throw new InvalidOperationException($"Unexpected validation state: " +
+                            $"DB: {ValidationStatus.Incomplete} ({(int)ValidationStatus.Incomplete}), " +
+                            $"Actual: {validationStatus} {(int)validationStatus}");
                 }
             }
 
@@ -168,7 +170,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 if (validationStatus == ValidationStatus.NotStarted)
                 {
-                    _logger.LogWarning("Unexpected NotStarted state for validation {ValidationName}, package: {PackageId} {PackageVersion}",
+                    _logger.LogWarning("Unexpected NotStarted state after start attempt for validation {ValidationName}, package: {PackageId} {PackageVersion}",
                         packageValidation.Type,
                         packageValidation.PackageValidationSet.PackageId,
                         packageValidation.PackageValidationSet.PackageNormalizedVersion);

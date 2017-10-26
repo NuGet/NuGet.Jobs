@@ -38,6 +38,16 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 validationSet = await CreateValidationSet(validationTrackingId, package);
             }
+            else
+            {
+                var sameId = package.PackageRegistration.Id.Equals(validationSet.PackageId, StringComparison.InvariantCultureIgnoreCase);
+                var sameVersion = package.NormalizedVersion.Equals(validationSet.PackageNormalizedVersion, StringComparison.InvariantCultureIgnoreCase);
+                if (!sameId || !sameVersion)
+                {
+                    throw new Exception($"Validation set package identity ({validationSet.PackageId} {validationSet.PackageNormalizedVersion})" +
+                        $"does not match expected package identity ({package.PackageRegistration.Id} {package.NormalizedVersion})");
+                }
+            }
 
             return validationSet;
         }

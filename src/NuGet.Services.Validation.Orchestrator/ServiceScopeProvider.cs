@@ -6,6 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
+    /// <summary>
+    /// Wrapper around <see cref="ServiceProviderServiceExtensions.CreateScope(IServiceProvider)"/> to enable
+    /// mocking of the extension method that otherwise cannot be mocked.
+    /// </summary>
     public class ServiceScopeProvider : IServiceScopeProvider
     {
         private readonly IServiceProvider _serviceProvider;

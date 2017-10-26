@@ -32,11 +32,11 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task<PackageValidationSet> CreateValidationSetAsync(PackageValidationSet packageValidationSet)
         {
+            packageValidationSet = packageValidationSet ?? throw new ArgumentNullException(nameof(packageValidationSet));
             _logger.LogInformation("Adding validation set entry to DB, {ValidationSetId} {PackageId} {PackageVersion}",
                 packageValidationSet.ValidationTrackingId,
                 packageValidationSet.PackageId,
                 packageValidationSet.PackageNormalizedVersion);
-            packageValidationSet = packageValidationSet ?? throw new ArgumentNullException(nameof(packageValidationSet));
             foreach (var validation in packageValidationSet.PackageValidations)
             {
                 _validationContext.PackageValidations.Add(validation);
@@ -74,13 +74,13 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task UpdateValidationStatusAsync(PackageValidation packageValidation, ValidationStatus validationStatus)
         {
+            packageValidation = packageValidation ?? throw new ArgumentNullException(nameof(packageValidation));
             _logger.LogInformation("Updating the status of the validation {ValidationName} {ValidationId} {PackageId} {PackageVersion} to {ValidationStatus}",
                 packageValidation.Type,
                 packageValidation.PackageValidationSet.ValidationTrackingId,
                 packageValidation.PackageValidationSet.PackageId,
                 packageValidation.PackageValidationSet.PackageNormalizedVersion,
                 validationStatus);
-            packageValidation = packageValidation ?? throw new ArgumentNullException(nameof(packageValidation));
             if (packageValidation.ValidationStatus == validationStatus)
             {
                 return;
