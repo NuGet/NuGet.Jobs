@@ -14,6 +14,11 @@ namespace NuGet.Services.Validation.Orchestrator
     /// </summary>
     public class OrchestrationRunner
     {
+        /// <summary>
+        /// The time to sleep in each iteration of the waiting for shutdown loop
+        /// </summary>
+        private static readonly TimeSpan ShutdownLoopSleepTime = TimeSpan.FromSeconds(1);
+
         private readonly ISubscriptionProcessor<PackageValidationMessageData> _subscriptionProcessor;
         private readonly OrchestrationRunnerConfiguration _configuration;
         private readonly ILogger<OrchestrationRunner> _logger;
@@ -48,7 +53,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     break;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(ShutdownLoopSleepTime);
             }
 
             int stillRunning = _subscriptionProcessor.NumberOfMessagesInProgress;
