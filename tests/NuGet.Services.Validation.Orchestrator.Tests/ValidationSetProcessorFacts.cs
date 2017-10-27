@@ -161,10 +161,70 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
             Assert.Equal(targetStatus, validation.ValidationStatus);
         }
+
+        [Theory]
+        [InlineData(true, false, PublicContainerName)]
+        [InlineData(false, true, ValidationContainerName)]
+        public async Task UsesProperNupkgUrl(bool existsInPublicContainer, bool existsInValidationContainer, string expectedUrlSubstring)
+        {
+            UseDefaultValidatorProvider();
+            var validator = AddValidation("validation1", TimeSpan.FromDays(1));
+
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesPackageFileExistAsync(Package))
+                .ReturnsAsync(existsInPublicContainer);
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesValidationPackageFileExistAsync(Package))
+                .ReturnsAsync(existsInValidationContainer);
+            IValidationRequest validationRequest = null;
+            validator
+                .Setup(v => v.GetStatusAsync(It.IsAny<IValidationRequest>()))
+                .ReturnsAsync(ValidationStatus.NotStarted)
+                .Callback<IValidationRequest>(vr => validationRequest = vr);
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationsAsync(ValidationSet, Package);
+
+            validator
+                .Verify(v => v.GetStatusAsync(It.IsAny<IValidationRequest>()), Times.AtLeastOnce());
+            Assert.NotNull(validationRequest);
+            Assert.Contains(expectedUrlSubstring, validationRequest.NupkgUrl);
+            Assert.Equal(Package.PackageRegistration.Id, validationRequest.PackageId);
+            Assert.Equal(Package.NormalizedVersion, validationRequest.PackageVersion);
+        }
+
+        [Fact]
+        public void ThrowsIfNupkgDoesNotExist()
+        {
+            UseDefaultValidatorProvider();
+            var validator = AddValidation("validation1", TimeSpan.FromDays(1));
+
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesPackageFileExistAsync(Package))
+                .ReturnsAsync(false);
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesValidationPackageFileExistAsync(Package))
+                .ReturnsAsync(false);
+
+            var processor = CreateProcessor();
+            var ex = Assert.ThrowsAsync<Exception>(() => processor.ProcessValidationsAsync(ValidationSet, Package));
+
+            PackageFileServiceMock
+                .Verify(pfs => pfs.DoesPackageFileExistAsync(Package), Times.Once());
+            PackageFileServiceMock
+                .Verify(pfs => pfs.DoesPackageFileExistAsync(It.IsAny<Package>()), Times.Once());
+            PackageFileServiceMock
+                .Verify(pfs => pfs.DoesValidationPackageFileExistAsync(Package), Times.Once());
+            PackageFileServiceMock
+                .Verify(pfs => pfs.DoesValidationPackageFileExistAsync(It.IsAny<Package>()), Times.Once());
+        }
     }
 
     public abstract class ValidationSetProcessorFactsBase
     {
+        protected const string PublicContainerName = "packages-container";
+        protected const string ValidationContainerName = "validation-container";
+
         protected Mock<IValidatorProvider> ValidatorProviderMock { get; }
         protected Mock<IValidationStorageService> ValidationStorageMock { get; }
         protected Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
@@ -221,7 +281,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             PackageFileServiceMock
                 .Setup(pfs => pfs.GetValidationPackageReadUriAsync(It.IsAny<Package>(), It.IsAny<DateTimeOffset>()))
                 .Returns<Package, DateTimeOffset>(
-                    (p, e) => Task.FromResult(new Uri($"https://example.com/{p.PackageRegistration.Id}/{p.NormalizedVersion}?e={e:yyyy-MM-dd-hh-mm-ss}")));
+                    (p, e) => Task.FromResult(new Uri($"https://example.com/{ValidationContainerName}/{p.PackageRegistration.Id}/{p.NormalizedVersion}?e={e:yyyy-MM-dd-hh-mm-ss}")));
+
+            PackageFileServiceMock
+                .Setup(pfs => pfs.GetPackageReadUriAsync(It.IsAny<Package>()))
+                .Returns<Package>(
+                    p => Task.FromResult(new Uri($"https://example.com/{PublicContainerName}/{p.PackageRegistration.Id}/{p.NormalizedVersion}")));
         }
 
         protected ValidationSetProcessor CreateProcessor()

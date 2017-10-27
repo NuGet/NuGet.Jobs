@@ -152,12 +152,13 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 if (validationStatus == ValidationStatus.NotStarted)
                 {
-                    _logger.LogInformation("Requesting validation {ValidationType} {ValidationSetId} {ValidationId} for package {PackageId} {PackageVersion}",
+                    _logger.LogInformation("Requesting validation {ValidationType} {ValidationSetId} {ValidationId} for package {PackageId} {PackageVersion} {NupkgUrl}",
                         packageValidation.Type,
                         validationSet.ValidationTrackingId,
                         packageValidation.Key,
                         package.PackageRegistration.Id,
-                        package.NormalizedVersion);
+                        package.NormalizedVersion,
+                        validationRequest.NupkgUrl);
                     validationStatus = await validator.StartValidationAsync(validationRequest);
                     _logger.LogInformation("Got validationStatus = {ValidationStatus} for validation {ValidationType} {ValidationSetId} {ValidationId} for package {PackageId} {PackageVersion}",
                         validationStatus,
@@ -235,9 +236,18 @@ namespace NuGet.Services.Validation.Orchestrator
             return validationRequest;
         }
 
-        private Task<Uri> GetNupkgUrl(Package package, ValidationConfigurationItem validationConfiguration)
+        private async Task<Uri> GetNupkgUrl(Package package, ValidationConfigurationItem validationConfiguration)
         {
-            return _packageFileService.GetValidationPackageReadUriAsync(package, DateTimeOffset.UtcNow.Add(validationConfiguration.FailAfter));
+            if (await _packageFileService.DoesValidationPackageFileExistAsync(package))
+            {
+                return await _packageFileService.GetValidationPackageReadUriAsync(package, DateTimeOffset.UtcNow.Add(validationConfiguration.FailAfter));
+            }
+            else if (await _packageFileService.DoesPackageFileExistAsync(package))
+            {
+                return await _packageFileService.GetPackageReadUriAsync(package);
+            }
+
+            throw new Exception($"Package {package.PackageRegistration.Id} {package.NormalizedVersion} does not exist neither in validation nor in public container");
         }
 
         private bool ArePrerequisitesMet(PackageValidation packageValidation, PackageValidationSet packageValidationSet)
