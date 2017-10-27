@@ -44,8 +44,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CachingSecretReaderFactory.cs" />
-    <Compile Include="ConfigurationBuilderExtensions.cs" />
     <Compile Include="ConfigurationValidator.cs" />
     <Compile Include="ContainerBuilderExtensions.cs" />
     <Compile Include="Error.cs" />
@@ -57,9 +55,6 @@
     <Compile Include="IValidationStorageService.cs" />
     <Compile Include="IValidatorProvider.cs" />
     <Compile Include="Job.cs" />
-    <Compile Include="KeyVaultInjectingConfigurationProvider.cs" />
-    <Compile Include="KeyVaultJsonInjectingConfigurationSource.cs" />
-    <Compile Include="NonCachingOptionsSnapshot.cs" />
     <Compile Include="OrchestrationRunner.cs" />
     <Compile Include="OrchestrationRunnerConfiguration.cs" />
     <Compile Include="Program.cs" />
@@ -122,13 +117,13 @@
       <Version>1.1.2</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration">
-      <Version>2.3.2-master-15927</Version>
+      <Version>2.3.2-dev-16405</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Contracts">
       <Version>2.3.2-master-15927</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.KeyVault">
-      <Version>2.3.2-master-15927</Version>
+      <Version>2.3.2-dev-16405</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Logging">
       <Version>2.3.2-master-15927</Version>

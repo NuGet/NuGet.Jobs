@@ -43,8 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigurationFacts.cs" />
-    <Compile Include="ConfigurationIntegrationFacts.cs" />
-    <Compile Include="KeyVaultInjectingConfigurationProviderFacts.cs" />
     <Compile Include="OrchestrationRunnerFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScopedPackageValidationMessageHandlerFacts.cs" />

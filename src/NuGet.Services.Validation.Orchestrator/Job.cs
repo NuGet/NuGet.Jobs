@@ -16,6 +16,7 @@ using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Services.Configuration;
+using NuGet.Services.KeyVault;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Vcs;
 
