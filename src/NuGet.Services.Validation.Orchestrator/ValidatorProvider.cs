@@ -2,30 +2,46 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using NuGet.Services.Validation.Vcs;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidatorProvider : IValidatorProvider
     {
-        private const string VcsValidatorName = "VcsValidator";
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<ValidatorProvider> _logger;
+        private readonly Dictionary<string, Type> _validatorTypes;
 
-        private readonly Func<VcsValidator> _vcsValidatorFactory;
-
-        public ValidatorProvider(
-            Func<VcsValidator> vcsValidatorFactory)
+        public ValidatorProvider(IServiceProvider serviceProvider, ILogger<ValidatorProvider> logger)
         {
-            _vcsValidatorFactory = vcsValidatorFactory ?? throw new ArgumentNullException(nameof(vcsValidatorFactory));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            using (_logger.BeginScope("Enumerating all IValidator implementations"))
+            {
+                _logger.LogTrace("Before enumeration");
+                _validatorTypes = AppDomain
+                    .CurrentDomain
+                    .GetAssemblies()
+                    .SelectMany(assembly => assembly.GetTypes())
+                    .Where(type => typeof(IValidator).IsAssignableFrom(type) && type != typeof(IValidator))
+                    .ToDictionary(type => type.Name);
+                _logger.LogTrace("After enumeration, got {NumImplementations} implementations: {TypeNames}", 
+                    _validatorTypes.Count, 
+                    _validatorTypes.Keys);
+            }
         }
 
         public IValidator GetValidator(string validationName)
         {
             validationName = validationName ?? throw new ArgumentNullException(nameof(validationName));
 
-            switch (validationName)
+            if (_validatorTypes.TryGetValue(validationName, out Type validatorType))
             {
-                case VcsValidatorName:
-                    return _vcsValidatorFactory();
+                return (IValidator)_serviceProvider.GetRequiredService(validatorType);
             }
 
             throw new ArgumentException($"Unknown validation name: {validationName}", nameof(validationName));
