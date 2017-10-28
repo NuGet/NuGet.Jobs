@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string VcsSectionName = "Vcs";
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
-        private const string ValidationDbConfiguraitonSectionName = "ValidationDb";
+        private const string ValidationDbConfigurationSectionName = "ValidationDb";
         private const string ServiceBusConfigurationSectionName = "ServiceBus";
 
         private const string VcsBindingKey = VcsSectionName;
@@ -40,7 +40,6 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
-        private string _configurationFilename;
         private bool _validateOnly;
         private IServiceProvider _serviceProvider;
 
@@ -51,20 +50,10 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            _configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
+            var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
             _validateOnly = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, ValidateArgument, defaultValue: false);
-            _serviceProvider = GetServiceProvider(GetConfigurationRoot(_configurationFilename, _validateOnly));
+            _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename, _validateOnly));
             ConfigurationValidated = false;
-
-            // Override any custom DB configuration specified for entity context classes with one specific configuration
-            // Needed because entity configuration specified through the attribute for the context class MUST exist in
-            // the same assembly as the entity class itself AND there can be only one DB configuration per application.
-            // In our case we have two entity contexts: Gallery and Validation which both specify their own configuration
-            // and hence they cannot coexist without additional setup below.
-            //System.Data.Entity.DbConfiguration.Loaded += (_, a) =>
-            //{
-            //    a.ReplaceService<System.Data.Entity.DbConfiguration>((s, k) => new NuGetGallery.EntitiesConfiguration());
-            //};
         }
 
         public override async Task Run()
@@ -92,7 +81,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             var uninjectedConfiguration = builder.Build();
 
-            if (_validateOnly)
+            if (validateOnly)
             {
                 // don't try to access KeyVault if only validation is requested:
                 // we might not be running on a machine with KeyVault access.
@@ -135,7 +124,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
-            services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfiguraitonSectionName));
+            services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
             services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
 
             services.AddTransient<ConfigurationValidator>();
