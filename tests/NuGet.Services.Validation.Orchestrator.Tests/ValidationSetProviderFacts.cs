@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,98 +15,104 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 {
     public class ValidationSetProviderFacts
     {
+        public Mock<IValidationStorageService> ValidationStorageMock { get; }
+        public Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
+        public Mock<ILogger<ValidationSetProvider>> LoggerMock { get; }
+        public ValidationConfiguration Configuration { get; }
+        public Package Package { get; }
+        public PackageValidationSet ValidationSet { get; }
+
         [Fact]
         public async Task TriesToGetValidationSetFirst()
         {
-            var validationStorageMock = new Mock<IValidationStorageService>(MockBehavior.Strict);
-            var configurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
-            var loggerMock = new Mock<ILogger<ValidationSetProvider>>();
-
-            var configuration = new ValidationConfiguration();
-            configurationAccessorMock
-                .SetupGet(ca => ca.Value)
-                .Returns(configuration);
-
-            var package = new Package();
-            Guid validationTrackingId = Guid.NewGuid();
-            var validationSet = new PackageValidationSet();
-
-            validationStorageMock
-                .Setup(vs => vs.GetValidationSetAsync(validationTrackingId))
-                .ReturnsAsync(validationSet)
+            ValidationStorageMock
+                .Setup(vs => vs.GetValidationSetAsync(ValidationSet.ValidationTrackingId))
+                .ReturnsAsync(ValidationSet)
                 .Verifiable();
 
-            var provider = new ValidationSetProvider(
-                validationStorageMock.Object,
-                configurationAccessorMock.Object,
-                loggerMock.Object);
+            var provider = CreateProvider();
 
-            var set = await provider.GetOrCreateValidationSetAsync(validationTrackingId, package);
+            var set = await provider.GetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package);
 
-            validationStorageMock
-                .Verify(vs => vs.GetValidationSetAsync(validationTrackingId), Times.Once());
+            ValidationStorageMock
+                .Verify(vs => vs.GetValidationSetAsync(ValidationSet.ValidationTrackingId), Times.Once());
 
-            Assert.Same(validationSet, set);
+            Assert.Same(ValidationSet, set);
+        }
+
+        [Fact]
+        public async Task ThrowsIfPackageIdDoesNotMatchValidationSet()
+        {
+            ValidationSet.PackageId = string.Join("", ValidationSet.PackageId.Reverse());
+            ValidationStorageMock
+                .Setup(vs => vs.GetValidationSetAsync(ValidationSet.ValidationTrackingId))
+                .ReturnsAsync(ValidationSet)
+                .Verifiable();
+
+            var provider = CreateProvider();
+
+            var ex = await Assert.ThrowsAsync<Exception>(() => provider.GetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package));
+            Assert.Contains(ValidationSet.PackageId, ex.Message);
+            Assert.Contains(Package.PackageRegistration.Id, ex.Message);
+        }
+
+        [Fact]
+        public async Task ThrowsIfPackageVersionDoesNotMatchValidationSet()
+        {
+            ValidationSet.PackageNormalizedVersion = ValidationSet.PackageNormalizedVersion + ".42";
+            ValidationStorageMock
+                .Setup(vs => vs.GetValidationSetAsync(ValidationSet.ValidationTrackingId))
+                .ReturnsAsync(ValidationSet)
+                .Verifiable();
+
+            var provider = CreateProvider();
+
+            var ex = await Assert.ThrowsAsync<Exception>(() => provider.GetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package));
+            Assert.Contains(ValidationSet.PackageNormalizedVersion, ex.Message);
+            Assert.Contains(Package.NormalizedVersion, ex.Message);
         }
 
         [Fact]
         public async Task ProperlyConstructsValidationSet()
         {
-            var validationStorageMock = new Mock<IValidationStorageService>(MockBehavior.Strict);
-            var configurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
-            var loggerMock = new Mock<ILogger<ValidationSetProvider>>();
-
-            var configuration = new ValidationConfiguration();
             const string validation1 = "validation1";
             const string validation2 = "validation2";
-            configuration.Validations = new List<ValidationConfigurationItem>
+            Configuration.Validations = new List<ValidationConfigurationItem>
             {
                 new ValidationConfigurationItem(){ Name = validation1, FailAfter = TimeSpan.FromDays(1), RequiredValidations = new List<string>{ validation2 } },
                 new ValidationConfigurationItem(){ Name = validation2, FailAfter = TimeSpan.FromDays(1), RequiredValidations = new List<string>{ } }
             };
-            configurationAccessorMock
-                .SetupGet(ca => ca.Value)
-                .Returns(configuration);
-
-            var package = new Package
-            {
-                PackageRegistration = new PackageRegistration { Id = "package1" },
-                Version = "1.2.3.456",
-                NormalizedVersion = "1.2.3",
-                Key = 42,
-            };
-            package.PackageRegistration.Packages = new List<Package> { package };
 
             Guid validationTrackingId = Guid.NewGuid();
-            validationStorageMock
+            ValidationStorageMock
                 .Setup(vs => vs.GetValidationSetAsync(validationTrackingId))
                 .ReturnsAsync(null)
                 .Verifiable();
 
             PackageValidationSet createdSet = null;
-            validationStorageMock
+            ValidationStorageMock
                 .Setup(vs => vs.CreateValidationSetAsync(It.IsAny<PackageValidationSet>()))
                 .Returns<PackageValidationSet>(pvs => Task.FromResult(pvs))
                 .Callback<PackageValidationSet>(pvs => createdSet = pvs)
                 .Verifiable();
 
             var provider = new ValidationSetProvider(
-                validationStorageMock.Object,
-                configurationAccessorMock.Object,
-                loggerMock.Object);
+                ValidationStorageMock.Object,
+                ConfigurationAccessorMock.Object,
+                LoggerMock.Object);
 
-            var returnedSet = await provider.GetOrCreateValidationSetAsync(validationTrackingId, package);
+            var returnedSet = await provider.GetOrCreateValidationSetAsync(validationTrackingId, Package);
             var endOfCallTimestamp = DateTime.UtcNow;
 
-            validationStorageMock
+            ValidationStorageMock
                 .Verify(vs => vs.CreateValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Once);
 
             Assert.NotNull(returnedSet);
             Assert.NotNull(createdSet);
             Assert.Same(createdSet, returnedSet);
-            Assert.Equal(package.PackageRegistration.Id, createdSet.PackageId);
-            Assert.Equal(package.NormalizedVersion, createdSet.PackageNormalizedVersion);
-            Assert.Equal(package.Key, createdSet.PackageKey);
+            Assert.Equal(Package.PackageRegistration.Id, createdSet.PackageId);
+            Assert.Equal(Package.NormalizedVersion, createdSet.PackageNormalizedVersion);
+            Assert.Equal(Package.Key, createdSet.PackageKey);
             Assert.Equal(validationTrackingId, createdSet.ValidationTrackingId);
             Assert.True(createdSet.Created.Kind == DateTimeKind.Utc);
             Assert.True(createdSet.Updated.Kind == DateTimeKind.Utc);
@@ -120,6 +125,42 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.All(createdSet.PackageValidations, v => Assert.True(endOfCallTimestamp - v.ValidationStatusTimestamp < allowedTimeDifference));
             Assert.Contains(createdSet.PackageValidations, v => v.Type == validation1);
             Assert.Contains(createdSet.PackageValidations, v => v.Type == validation2);
+        }
+
+        public ValidationSetProviderFacts()
+        {
+            ValidationStorageMock = new Mock<IValidationStorageService>(MockBehavior.Strict);
+            ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
+            LoggerMock = new Mock<ILogger<ValidationSetProvider>>();
+
+            Configuration = new ValidationConfiguration();
+            ConfigurationAccessorMock
+                .SetupGet(ca => ca.Value)
+                .Returns(() => Configuration);
+
+            Package = new Package
+            {
+                PackageRegistration = new PackageRegistration { Id = "package1" },
+                Version = "1.2.3.456",
+                NormalizedVersion = "1.2.3",
+                Key = 42,
+            };
+            Package.PackageRegistration.Packages = new List<Package> { Package };
+
+            ValidationSet = new PackageValidationSet
+            {
+                PackageId = Package.PackageRegistration.Id,
+                PackageNormalizedVersion = Package.NormalizedVersion,
+                ValidationTrackingId = Guid.NewGuid()
+            };
+        }
+
+        private ValidationSetProvider CreateProvider()
+        {
+            return new ValidationSetProvider(
+                ValidationStorageMock.Object,
+                ConfigurationAccessorMock.Object,
+                LoggerMock.Object);
         }
     }
 }

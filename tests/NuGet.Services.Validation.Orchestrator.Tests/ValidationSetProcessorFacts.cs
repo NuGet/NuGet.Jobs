@@ -287,6 +287,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Setup(pfs => pfs.GetPackageReadUriAsync(It.IsAny<Package>()))
                 .Returns<Package>(
                     p => Task.FromResult(new Uri($"https://example.com/{PublicContainerName}/{p.PackageRegistration.Id}/{p.NormalizedVersion}")));
+
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesValidationPackageFileExistAsync(Package))
+                .ReturnsAsync(true);
         }
 
         protected ValidationSetProcessor CreateProcessor()
