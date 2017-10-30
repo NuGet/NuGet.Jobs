@@ -238,13 +238,13 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private async Task<Uri> GetNupkgUrl(Package package, ValidationConfigurationItem validationConfiguration)
         {
-            if (await _packageFileService.DoesValidationPackageFileExistAsync(package))
-            {
-                return await _packageFileService.GetValidationPackageReadUriAsync(package, DateTimeOffset.UtcNow.Add(validationConfiguration.FailAfter));
-            }
-            else if (await _packageFileService.DoesPackageFileExistAsync(package))
+            if (await _packageFileService.DoesPackageFileExistAsync(package))
             {
                 return await _packageFileService.GetPackageReadUriAsync(package);
+            }
+            else if (await _packageFileService.DoesValidationPackageFileExistAsync(package))
+            {
+                return await _packageFileService.GetValidationPackageReadUriAsync(package, DateTimeOffset.UtcNow.Add(validationConfiguration.FailAfter));
             }
 
             throw new Exception($"Package {package.PackageRegistration.Id} {package.NormalizedVersion} does not exist neither in validation nor in public container");
