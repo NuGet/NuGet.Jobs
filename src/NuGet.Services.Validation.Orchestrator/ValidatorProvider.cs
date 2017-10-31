@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -23,14 +24,13 @@ namespace NuGet.Services.Validation.Orchestrator
             using (_logger.BeginScope("Enumerating all IValidator implementations"))
             {
                 _logger.LogTrace("Before enumeration");
-                _validatorTypes = AppDomain
-                    .CurrentDomain
-                    .GetAssemblies()
-                    .SelectMany(assembly => assembly.GetTypes())
+                IEnumerable<Type> candidateTypes = GetCandidateTypes(Assembly.GetCallingAssembly());
+
+                _validatorTypes = candidateTypes
                     .Where(type => typeof(IValidator).IsAssignableFrom(type) && type != typeof(IValidator))
                     .ToDictionary(type => type.Name);
-                _logger.LogTrace("After enumeration, got {NumImplementations} implementations: {TypeNames}", 
-                    _validatorTypes.Count, 
+                _logger.LogTrace("After enumeration, got {NumImplementations} implementations: {TypeNames}",
+                    _validatorTypes.Count,
                     _validatorTypes.Keys);
             }
         }
@@ -45,6 +45,18 @@ namespace NuGet.Services.Validation.Orchestrator
             }
 
             throw new ArgumentException($"Unknown validation name: {validationName}", nameof(validationName));
+        }
+
+        private static IEnumerable<Type> GetCandidateTypes(Assembly callingAssembly)
+        {
+            var executingAssembly = Assembly.GetExecutingAssembly();
+            IEnumerable<Type> candidateTypes = executingAssembly.GetTypes();
+            if (callingAssembly != executingAssembly)
+            {
+                candidateTypes = candidateTypes.Concat(callingAssembly.GetTypes());
+            }
+
+            return candidateTypes;
         }
     }
 }
