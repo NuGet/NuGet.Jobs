@@ -47,7 +47,17 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.ValidationTrackingId,
                     GetFailedValidations(validationSet));
 
-                await _galleryPackageService.UpdatePackageStatusAsync(package, PackageStatus.FailedValidation);
+                if (package.PackageStatusKey != PackageStatus.Available)
+                {
+                    await _galleryPackageService.UpdatePackageStatusAsync(package, PackageStatus.FailedValidation);
+                }
+                else
+                {
+                    _logger.LogInformation("Package {PackageId} {PackageVersion} was available when validation set {ValidationSetId} failed. Will not mark it as failed",
+                        package.PackageRegistration.Id,
+                        package.NormalizedVersion,
+                        validationSet.ValidationTrackingId);
+                }
             }
             else if (AllValidationsSucceeded(validationSet))
             {

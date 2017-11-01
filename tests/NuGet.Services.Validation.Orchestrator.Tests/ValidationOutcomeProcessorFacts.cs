@@ -214,6 +214,19 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.Equal(expectedOrder, operations);
         }
 
+        [Fact]
+        public async Task DoesNotTakeDownAvailablePackages()
+        {
+            AddValidation("validation1", ValidationStatus.Failed);
+            Package.PackageStatusKey = PackageStatus.Available;
+
+            var procecssor = CreateProcessor();
+            await procecssor.ProcessValidationOutcomeAsync(ValidationSet, Package);
+
+            PackageServiceMock
+                .Verify(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.FailedValidation, It.IsAny<bool>()), Times.Never());
+        }
+
         public ValidationOutcomeProcessorFacts()
         {
             PackageServiceMock = new Mock<ICorePackageService>();
