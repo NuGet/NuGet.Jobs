@@ -48,13 +48,13 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task MarkValidationStartedAsync(PackageValidation packageValidation, ValidationStatus startedStatus)
         {
+            packageValidation = packageValidation ?? throw new ArgumentNullException(nameof(packageValidation));
             _logger.LogInformation("Marking validation {ValidationName} {ValidationId} {PackageId} {PackageVersion} as started with status {ValidationStatus}",
                 packageValidation.Type,
                 packageValidation.PackageValidationSet.ValidationTrackingId,
                 packageValidation.PackageValidationSet.PackageId,
                 packageValidation.PackageValidationSet.PackageNormalizedVersion,
                 startedStatus);
-            packageValidation = packageValidation ?? throw new ArgumentNullException(nameof(packageValidation));
             if (startedStatus == ValidationStatus.NotStarted)
             {
                 throw new ArgumentOutOfRangeException(
