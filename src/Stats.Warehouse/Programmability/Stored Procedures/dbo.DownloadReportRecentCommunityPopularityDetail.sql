@@ -14,10 +14,12 @@ BEGIN
 		(
 			SELECT PS.[Id]
 			FROM [dbo].[Dimension_PackageSet] PS
-			WHERE
-				PS.[Name] = 'Microsoft' OR
-				PS.[Name] = 'ASP.NET MVC' OR
-				PS.[Name] = 'ASP.NET Web API'
+			WHERE PS.[Name] IN
+			(
+				'Microsoft',
+				'ASP.NET MVC',
+				'ASP.NET Web API'
+			)
 		)
 
 	DECLARE @Cursor DATETIME = (SELECT ISNULL(MAX([Position]), @ReportGenerationTime) FROM [dbo].[Cursors] (NOLOCK) WHERE [Name] = 'GetDirtyPackageId')
