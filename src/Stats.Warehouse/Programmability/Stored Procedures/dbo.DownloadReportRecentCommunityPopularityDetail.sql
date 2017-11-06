@@ -10,17 +10,9 @@ BEGIN
 	INSERT INTO @NonCommunityPackages
 		SELECT P.[LowercasedPackageId]
 		FROM [dbo].[Fact_Package_PackageSet] P
-		WHERE P.[Dimension_PackageSet_Id] IN
-		(
-			SELECT PS.[Id]
-			FROM [dbo].[Dimension_PackageSet] PS
-			WHERE PS.[Name] IN
-			(
-				'Microsoft',
-				'ASP.NET MVC',
-				'ASP.NET Web API'
-			)
-		)
+		INNER JOIN [dbo].[Dimension_PackageSet] PS
+		ON P.[Dimension_PackageSet_Id] = PS.[Id]
+		WHERE PS.[Name] = 'NonCommunityPackages'
 
 	DECLARE @Cursor DATETIME = (SELECT ISNULL(MAX([Position]), @ReportGenerationTime) FROM [dbo].[Cursors] (NOLOCK) WHERE [Name] = 'GetDirtyPackageId')
 
