@@ -21,9 +21,6 @@ BEGIN
 	INNER JOIN	[dbo].[Dimension_Package] AS P (NOLOCK)
 	ON			F.[Dimension_Package_Id] = P.[Id]
 
-	LEFT JOIN   [dbo].[Fact_Package_PackageSet] AS PS (NOLOCK)
-	ON          P.[LowercasedPackageId] = PS.[LowercasedPackageId]
-
 	INNER JOIN	Dimension_Client AS C (NOLOCK)
 	ON			C.[Id] = F.[Dimension_Client_Id]
 
@@ -33,7 +30,9 @@ BEGIN
 			AND F.[Timestamp] <= @Cursor
 			AND C.ClientCategory NOT IN ('Crawler', 'Unknown')
 			AND NOT (C.ClientCategory = 'NuGet' AND CAST(ISNULL(C.[Major], '0') AS INT) > 10)
-			AND (PS.[Id] IS NULL OR PS.[Id] != @NonCommunityPackagesId)
+			AND P.[LowercasedPackageId] NOT IN (
+				SELECT [LowercasedPackageId] FROM [dbo].[Fact_Package_PackageSet] WHERE [Dimension_PackageSet_Id] = @NonCommunityPackagesId
+			)
 
 	GROUP BY	P.[PackageId],
 				P.[PackageVersion]
