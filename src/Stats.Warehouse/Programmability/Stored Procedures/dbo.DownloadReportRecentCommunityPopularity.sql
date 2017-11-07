@@ -28,7 +28,9 @@ BEGIN
 			AND C.ClientCategory NOT IN ('Crawler', 'Unknown')
 			AND NOT (C.ClientCategory = 'NuGet' AND CAST(ISNULL(C.[Major], '0') AS INT) > 10)
 			AND P.[LowercasedPackageId] NOT IN (
-				SELECT [LowercasedPackageId] FROM [dbo].[Fact_Package_PackageSet] WHERE [Dimension_PackageSet_Id] = @NonCommunityPackagesId
+				SELECT [LowercasedPackageId]
+				FROM [dbo].[Fact_Package_PackageSet]
+				WHERE [Dimension_PackageSet_Id] = @NonCommunityPackagesId
 			)
 
 	GROUP BY	P.[PackageId]
