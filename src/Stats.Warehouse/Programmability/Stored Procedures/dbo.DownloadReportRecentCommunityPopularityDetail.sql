@@ -5,16 +5,8 @@ BEGIN
 	SET NOCOUNT ON;
 
 	-- Find all non-community package ids that should be filtered out from the report
-	Declare @NonCommunityPackages TABLE (LowercasedPackageId nvarchar(128))
-
-	INSERT INTO @NonCommunityPackages
-		SELECT P.[LowercasedPackageId]
-		FROM [dbo].[Fact_Package_PackageSet] P
-		INNER JOIN [dbo].[Dimension_PackageSet] PS
-		ON P.[Dimension_PackageSet_Id] = PS.[Id]
-		WHERE PS.[Name] = 'NonCommunityPackages'
-
 	DECLARE @Cursor DATETIME = (SELECT ISNULL(MAX([Position]), @ReportGenerationTime) FROM [dbo].[Cursors] (NOLOCK) WHERE [Name] = 'GetDirtyPackageId')
+	DECLARE @NonCommunityPackagesId int = (SELECT [Id] FROM [dbo].[Dimension_PackageSet] WHERE [Name] = 'NonCommunityPackages');
 
 	-- Find all packages that have had download facts added in the last 42 days, today inclusive
 	SELECT		TOP 500
@@ -29,6 +21,9 @@ BEGIN
 	INNER JOIN	[dbo].[Dimension_Package] AS P (NOLOCK)
 	ON			F.[Dimension_Package_Id] = P.[Id]
 
+	LEFT JOIN   [dbo].[Fact_Package_PackageSet] AS PS (NOLOCK)
+	ON          P.[LowercasedPackageId] = PS.[LowercasedPackageId]
+
 	INNER JOIN	Dimension_Client AS C (NOLOCK)
 	ON			C.[Id] = F.[Dimension_Client_Id]
 
@@ -38,7 +33,7 @@ BEGIN
 			AND F.[Timestamp] <= @Cursor
 			AND C.ClientCategory NOT IN ('Crawler', 'Unknown')
 			AND NOT (C.ClientCategory = 'NuGet' AND CAST(ISNULL(C.[Major], '0') AS INT) > 10)
-			AND P.LowercasedPackageId NOT IN (SELECT [LowercasedPackageId] FROM @NonCommunityPackages)
+			AND (PS.[Id] IS NULL OR PS.[Id] != @NonCommunityPackagesId)
 
 	GROUP BY	P.[PackageId],
 				P.[PackageVersion]
