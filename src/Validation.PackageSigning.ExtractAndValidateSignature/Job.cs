@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -98,7 +99,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private IConfigurationRoot GetConfigurationRoot(string configurationFilename)
         {
-            Logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
+            Logger.LogInformation("Using the {ConfigurationFilename} configuration file", Path.Combine(Environment.CurrentDirectory, configurationFilename));
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
