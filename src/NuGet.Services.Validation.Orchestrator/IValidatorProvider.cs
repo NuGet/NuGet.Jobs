@@ -8,6 +8,6 @@ namespace NuGet.Services.Validation.Orchestrator
     /// </summary>
     public interface IValidatorProvider
     {
-        IValidator GetValidator(string validationName);
+        IValidator GetValidator(string validatorName);
     }
 }

@@ -33,7 +33,9 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 throw new ArgumentNullException(nameof(validationConfigurationAccessor));
             }
-            _validationConfiguration = validationConfigurationAccessor.Value ?? throw new ArgumentException($"The Value property cannot be null", nameof(validationConfigurationAccessor));
+            _validationConfiguration = validationConfigurationAccessor.Value 
+                ?? throw new ArgumentException($"The {nameof(validationConfigurationAccessor)}.Value property cannot be null",
+                    nameof(validationConfigurationAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -41,7 +43,7 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             if (AnyValidationFailed(validationSet))
             {
-                _logger.LogWarning("Some validations failed for package {PackageId} {PackageVersion} {ValidationSetId}: {FailedValidations}",
+                _logger.LogWarning("Some validations failed for package {PackageId} {PackageVersion}, validation set {ValidationSetId}: {FailedValidations}",
                     package.PackageRegistration.Id,
                     package.NormalizedVersion,
                     validationSet.ValidationTrackingId,
@@ -53,6 +55,10 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
                 else
                 {
+                    // The case when validation fails while PackageStatus is Available is the case of 
+                    // manual revalidation. In this case we don't want to take package down automatically
+                    // and let the person who requested revalidation to decide how to proceed. User will be
+                    // alerted by failed validation monitoring.
                     _logger.LogInformation("Package {PackageId} {PackageVersion} was available when validation set {ValidationSetId} failed. Will not mark it as failed",
                         package.PackageRegistration.Id,
                         package.NormalizedVersion,
@@ -61,7 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
             else if (AllValidationsSucceeded(validationSet))
             {
-                _logger.LogInformation("All validations are complete for the package {PackageId} {PackageVersion} {ValidationSetId}",
+                _logger.LogInformation("All validations are complete for the package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                     package.PackageRegistration.Id,
                     package.NormalizedVersion,
                     validationSet.ValidationTrackingId);
@@ -92,7 +98,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private async Task MoveFileToPublicStorageAndMarkPackageAsAvailable(PackageValidationSet validationSet, Package package)
         {
-            _logger.LogInformation("Copying .nupkg to public storage for package {PackageId} {PackageVersion} {ValidationSetId}",
+            _logger.LogInformation("Copying .nupkg to public storage for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 package.PackageRegistration.Id,
                 package.NormalizedVersion,
                 validationSet.ValidationTrackingId);
@@ -101,7 +107,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             try
             {
-                _logger.LogInformation("Marking package {PackageId} {PackageVersion} {ValidationSetId} as {PackageStatus} in DB",
+                _logger.LogInformation("Marking package {PackageId} {PackageVersion}, validation set {ValidationSetId} as {PackageStatus} in DB",
                     package.PackageRegistration.Id,
                     package.NormalizedVersion,
                     validationSet.ValidationTrackingId,
@@ -113,7 +119,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 _logger.LogError(
                     Error.UpdatingPackageDbStatusFailed,
                     e,
-                    "Failed to update package status in Gallery Db. Package {PackageId} {PackageVersion} {ValidationSetId}",
+                    "Failed to update package status in Gallery Db. Package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                     package.PackageRegistration.Id,
                     package.NormalizedVersion,
                     validationSet.ValidationTrackingId);
@@ -123,7 +129,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 throw;
             }
 
-            _logger.LogInformation("Deleting from the source for package {PackageId} {PackageVersion} {ValidationSetId}",
+            _logger.LogInformation("Deleting from the source for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 package.PackageRegistration.Id,
                 package.NormalizedVersion,
                 validationSet.ValidationTrackingId);

@@ -132,7 +132,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
             services.AddScoped<NuGetGallery.IEntitiesContext>(serviceProvider =>
                 new NuGetGallery.EntitiesContext(
-                    serviceProvider.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value.ConnectionString, false));
+                    serviceProvider.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value.ConnectionString,
+                    readOnly: false));
             services.AddScoped<NuGet.Services.Validation.ValidationEntitiesContext>(serviceProvider =>
                 new NuGet.Services.Validation.ValidationEntitiesContext(
                     serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationDbConfiguration>>().Value.ConnectionString));
@@ -211,10 +212,16 @@ namespace NuGet.Services.Validation.Orchestrator
                     parameterKey: ValidationStorageBindingKey);
 
             containerBuilder
-                .RegisterTypeWithKeyedParameter<IValidationOutcomeProcessor, ValidationOutcomeProcessor, NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
+                .RegisterTypeWithKeyedParameter<
+                    IValidationOutcomeProcessor,
+                    ValidationOutcomeProcessor,
+                    NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
 
             containerBuilder
-                .RegisterTypeWithKeyedParameter<IValidationSetProcessor, ValidationSetProcessor, NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
+                .RegisterTypeWithKeyedParameter<
+                    IValidationSetProcessor,
+                    ValidationSetProcessor,
+                    NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
 
             containerBuilder
                 .RegisterType<ScopedPackageValidationMessageHandler>()
