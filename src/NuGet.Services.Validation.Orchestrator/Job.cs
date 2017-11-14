@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
+using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
@@ -134,8 +135,8 @@ namespace NuGet.Services.Validation.Orchestrator
                 new NuGetGallery.EntitiesContext(
                     serviceProvider.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value.ConnectionString,
                     readOnly: false));
-            services.AddScoped<NuGet.Services.Validation.ValidationEntitiesContext>(serviceProvider =>
-                new NuGet.Services.Validation.ValidationEntitiesContext(
+            services.AddScoped<ValidationEntitiesContext>(serviceProvider =>
+                new ValidationEntitiesContext(
                     serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationDbConfiguration>>().Value.ConnectionString));
             services.AddScoped<IValidationStorageService, ValidationStorageService>();
             services.Add(ServiceDescriptor.Transient(typeof(NuGetGallery.IEntityRepository<>), typeof(NuGetGallery.EntityRepository<>)));

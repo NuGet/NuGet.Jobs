@@ -62,7 +62,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.*.cs" />
     <Compile Include="ScopedPackageValidationMessageHandler.cs" />
-    <Compile Include="ServiceBusConfiguration.cs" />
     <Compile Include="ServiceScopeProvider.cs" />
     <Compile Include="ValidationConfiguration.cs" />
     <Compile Include="ValidationConfigurationItem.cs" />
