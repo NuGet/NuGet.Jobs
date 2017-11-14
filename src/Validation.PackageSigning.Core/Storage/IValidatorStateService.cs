@@ -24,8 +24,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
         /// a different validation request.
         /// </summary>
         /// <param name="request">The package validation request.</param>
-        /// <param name="packageKey">The package key for the validation request.</param>
-        /// <param name="validationId">The validation id for the validation request.</param>
         /// <returns>Whether the <see cref="TValidator"/> has already validated this request's package in a different validation request.</returns>
         Task<bool> IsRevalidationRequestAsync(IValidationRequest request);
 

@@ -89,7 +89,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             }
             else if (validation.State != ValidationStatus.Incomplete)
             {
-                _logger.LogError(
+                _logger.LogWarning(
                     "Invalid signature verification status '{ValidatorState}' when 'Incomplete' was expected, dropping message (package id: {PackageId} package version: {PackageVersion} validation id: {ValidationId})",
                     validation.State,
                     message.PackageId,
