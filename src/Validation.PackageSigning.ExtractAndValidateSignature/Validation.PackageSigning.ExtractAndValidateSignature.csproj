@@ -7,7 +7,7 @@
     <ProjectGuid>{DD043977-6BCD-475A-BEE2-8C34309EC622}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>NuGet.Jobs.Validation.PackageSigning</RootNamespace>
-    <AssemblyName>NuGet.Jobs.Validation.PackageSigning</AssemblyName>
+    <AssemblyName>NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
