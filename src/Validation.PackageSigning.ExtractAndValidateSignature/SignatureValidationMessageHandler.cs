@@ -125,10 +125,10 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                 PackageSigningStatus.Unsigned);
 
             validation.State = ValidationStatus.Succeeded;
-            await _validatorStateService.SaveStatusAsync(validation);
+            var saveStateResult = await _validatorStateService.SaveStatusAsync(validation);
 
-            // Consume the message.
-            return true;
+            // Consume the message if successfully saved state.
+            return saveStateResult == SaveStatusResult.Success;
         }
 
         private async Task<bool> BlockSignedPackageAsync(ValidatorStatus validation, SignatureValidationMessage message)
@@ -139,10 +139,10 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                         message.PackageVersion);
 
             validation.State = ValidationStatus.Failed;
-            await _validatorStateService.SaveStatusAsync(validation);
-
-            // Consume the message.
-            return true;
+            var saveStateResult = await _validatorStateService.SaveStatusAsync(validation);
+            
+            // Consume the message if successfully saved state.
+            return saveStateResult == SaveStatusResult.Success;
         }
 
         private async Task<SignedPackageArchive> DownloadPackageAsync(Uri nupkgUri)
