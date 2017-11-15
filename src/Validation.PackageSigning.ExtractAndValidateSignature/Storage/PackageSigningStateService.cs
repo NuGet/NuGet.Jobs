@@ -3,10 +3,9 @@
 
 using System;
 using System.Data.Entity.Infrastructure;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
-using NuGet.Jobs.Validation.PackageSigning.Messages;
+using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation;
 using NuGet.Versioning;
 
@@ -15,12 +14,15 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
     public class PackageSigningStateService
         : IPackageSigningStateService
     {
-        private const int UniqueConstraintViolationErrorCode = 2627;
         private readonly IValidationEntitiesContext _validationContext;
+        private readonly ILogger<PackageSigningStateService> _logger;
 
-        public PackageSigningStateService(IValidationEntitiesContext validationContext)
+        public PackageSigningStateService(
+            IValidationEntitiesContext validationContext,
+            ILogger<PackageSigningStateService> logger)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<SavePackageSigningStateResult> TrySetPackageSigningState(
@@ -40,16 +42,16 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
             }
 
             // Check for revalidation
-            if (isRevalidationRequest)
+            var currentState = _validationContext.PackageSigningStates.FirstOrDefault(s => s.PackageKey == packageKey);
+            if (isRevalidationRequest && currentState != null)
             {
                 // Update existing record
-                var currentState = _validationContext.PackageSigningStates.FirstOrDefault(s => s.PackageKey == packageKey);
                 currentState.SigningStatus = status;
             }
             else
             {
                 // Insert new record
-                var currentState = new PackageSigningState
+                currentState = new PackageSigningState
                 {
                     PackageId = packageId,
                     PackageKey = packageKey,
@@ -70,8 +72,16 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
             {
                 return SavePackageSigningStateResult.StatusAlreadyExists;
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException e)
             {
+                _logger.LogWarning(
+                    0,
+                    e,
+                    "Failed to update package signing state for package id {PackageId} version {PackageVersion} to status {NewStatus} due to concurrency exception.",
+                    packageId,
+                    packageVersion,
+                    status);
+
                 return SavePackageSigningStateResult.Stale;
             }
         }

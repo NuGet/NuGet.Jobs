@@ -89,13 +89,13 @@
       <Version>1.1.2</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Common">
-      <Version>4.6.0-preview1-4646</Version>
+      <Version>4.6.0-preview1-4648</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Packaging">
-      <Version>4.6.0-preview1-4646</Version>
+      <Version>4.6.0-preview1-4648</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Packaging.Core">
-      <Version>4.6.0-preview1-4646</Version>
+      <Version>4.6.0-preview1-4648</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration">
       <Version>2.4.0</Version>
