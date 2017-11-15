@@ -31,6 +31,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSigningStateService _packageSigningStateService;
         private readonly ICertificateStore _certificateStore;
+        private readonly HttpClient _httpClient;
         private readonly ILogger<SignatureValidationMessageHandler> _logger;
 
         /// <summary>
@@ -45,12 +46,14 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             IValidatorStateService validatorStateService,
             IPackageSigningStateService packageSigningStateService,
             ICertificateStore certificateStore,
+            HttpClient httpClient,
             ILogger<SignatureValidationMessageHandler> logger)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _packageSigningStateService = packageSigningStateService ?? throw new ArgumentNullException(nameof(packageSigningStateService));
             _certificateStore = certificateStore ?? throw new ArgumentNullException(nameof(certificateStore));
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -140,25 +143,30 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             validation.State = ValidationStatus.Failed;
             var saveStateResult = await _validatorStateService.SaveStatusAsync(validation);
-            
+
             // Consume the message if successfully saved state.
             return saveStateResult == SaveStatusResult.Success;
         }
 
         private async Task<SignedPackageArchive> DownloadPackageAsync(Uri nupkgUri)
         {
-            Stream packageStream;
-            using (var httpClient = new HttpClient())
+            // Download nupkg using URL given in queue
+            var fileName = Path.GetFileName(nupkgUri.LocalPath);
+            var filePath = Path.Combine(Path.GetTempPath(), fileName);
+            
+            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                // Download nupkg using URL given in queue
-                packageStream = await httpClient.GetStreamAsync(nupkgUri);
+                using (var packageStream = await _httpClient.GetStreamAsync(nupkgUri))
+                {
+                    await packageStream.CopyToAsync(fileStream);
+                }
 
                 _logger.LogInformation($"Downloaded package from {{{TraceConstant.Url}}}", nupkgUri);
+
+                fileStream.Position = 0;
+
+                return new SignedPackageArchive(new ZipArchive(fileStream));
             }
-
-            packageStream.Position = 0;
-
-            return new SignedPackageArchive(new ZipArchive(packageStream));
         }
     }
 }
