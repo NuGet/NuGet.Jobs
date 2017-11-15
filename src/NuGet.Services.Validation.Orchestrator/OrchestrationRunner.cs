@@ -56,12 +56,12 @@ namespace NuGet.Services.Validation.Orchestrator
                 await Task.Delay(ShutdownLoopSleepTime);
             }
 
-            int stillRunning = _subscriptionProcessor.NumberOfMessagesInProgress;
+            int numStillRunning = _subscriptionProcessor.NumberOfMessagesInProgress;
 
-            if (stillRunning > 0)
+            if (numStillRunning > 0)
             {
                 _logger.LogWarning("There are still {StillRunningRequests} requests running after requesting shutdown and waiting for {ShutdownWaitInterval}",
-                    stillRunning,
+                    numStillRunning,
                     _configuration.ShutdownWaitInterval);
             }
             else

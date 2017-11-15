@@ -12,9 +12,6 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <summary>
         /// Adds type registration parameter that instructs Autofac to use keyed resolution for a certain constructor parameter type.
         /// </summary>
-        /// <typeparam name="TLimit">[Autofac guts] Registration limit type.</typeparam>
-        /// <typeparam name="TReflectionActivatorData">[Autofac guts] Activator data type.</typeparam>
-        /// <typeparam name="TStyle">[Autofac guts] Registration style.</typeparam>
         /// <param name="registrationBuilder">Registration builder object returned by <see cref="Autofac.RegistrationExtensions.RegisterType{TImplementer}(ContainerBuilder)"/> call</param>
         /// <param name="parameterType">The type of the constructor parameter to use keyed resolution for.</param>
         /// <param name="key">The key to use</param>
