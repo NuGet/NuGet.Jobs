@@ -37,7 +37,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.Messages
         }
 
         [Schema(Name = SignatureValidationSchemaName, Version = 1)]
-        private struct SignatureValidationMessageData1
+        private class SignatureValidationMessageData1
         {
             public string PackageId { get; set; }
             public string PackageVersion { get; set; }
