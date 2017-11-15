@@ -45,7 +45,6 @@
     <Compile Include="ConfigurationFacts.cs" />
     <Compile Include="OrchestrationRunnerFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ScopedPackageValidationMessageHandlerFacts.cs" />
     <Compile Include="ValidationMessageHandlerFacts.cs" />
     <Compile Include="ValidationOutcomeProcessorFacts.cs" />
     <Compile Include="ValidationProviderFacts.cs" />

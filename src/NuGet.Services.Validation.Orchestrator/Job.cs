@@ -225,7 +225,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     NuGetGallery.ICorePackageFileService>(ValidationStorageBindingKey);
 
             containerBuilder
-                .RegisterType<ScopedPackageValidationMessageHandler>()
+                .RegisterType<ScopedMessageHandler<PackageValidationMessageData>>()
                 .Keyed<IMessageHandler<PackageValidationMessageData>>(OrchestratorBindingKey);
 
             containerBuilder
