@@ -162,8 +162,5 @@
     <SignPath Condition="'$(BUILD_SOURCESDIRECTORY)' != ''">$(BUILD_SOURCESDIRECTORY)\build</SignPath>
     <SignPath Condition="'$(NuGetBuildPath)' != ''">$(NuGetBuildPath)</SignPath>
   </PropertyGroup>
-  <Target Name="AfterBuild">
-    <Message Text="SignPath = $(SignPath)" />
-  </Target>
   <Import Project="$(SignPath)\sign.targets" Condition="Exists('$(SignPath)\sign.targets')" />
 </Project>
