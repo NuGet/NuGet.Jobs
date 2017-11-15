@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-
 namespace NuGet.Jobs.Validation.PackageSigning.Storage
 {
     public enum SavePackageSigningStateResult
@@ -16,5 +15,10 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
         /// exists with the same validation id.
         /// </summary>
         StatusAlreadyExists,
+
+        /// <summary>
+        /// Failed to persist the <see cref="PackageSigningStatus"/> due to a concurrency exception.
+        /// </summary>
+        Stale
     }
 }

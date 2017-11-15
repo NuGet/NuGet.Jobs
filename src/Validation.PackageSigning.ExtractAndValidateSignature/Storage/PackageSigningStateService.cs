@@ -24,11 +24,21 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
         }
 
         public async Task<SavePackageSigningStateResult> TrySetPackageSigningState(
-            int packageKey, 
-            SignatureValidationMessage message, 
-            bool isRevalidationRequest, 
+            int packageKey,
+            string packageId,
+            string packageVersion,
+            bool isRevalidationRequest,
             PackageSigningStatus status)
         {
+            if (string.IsNullOrEmpty(packageId))
+            {
+                throw new ArgumentException(nameof(packageId));
+            }
+            if (string.IsNullOrEmpty(packageVersion))
+            {
+                throw new ArgumentException(nameof(packageVersion));
+            }
+
             // Check for revalidation
             if (isRevalidationRequest)
             {
@@ -41,9 +51,9 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
                 // Insert new record
                 var currentState = new PackageSigningState
                 {
-                    PackageId = message.PackageId,
+                    PackageId = packageId,
                     PackageKey = packageKey,
-                    PackageNormalizedVersion = NormalizePackageVersion(message.PackageVersion),
+                    PackageNormalizedVersion = NormalizePackageVersion(packageVersion),
                     SigningStatus = status
                 };
 
@@ -56,9 +66,13 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
 
                 return SavePackageSigningStateResult.Success;
             }
-            catch (DbUpdateException e) when (IsUniqueConstraintViolationException(e))
+            catch (DbUpdateException e) when (e.IsUniqueConstraintViolationException())
             {
                 return SavePackageSigningStateResult.StatusAlreadyExists;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return SavePackageSigningStateResult.Stale;
             }
         }
 
@@ -68,16 +82,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
                 .Parse(packageVersion)
                 .ToNormalizedString()
                 .ToLowerInvariant();
-        }
-
-        private static bool IsUniqueConstraintViolationException(DbUpdateException e)
-        {
-            if (e.GetBaseException() is SqlException sqlException)
-            {
-                return sqlException.Errors.Cast<SqlError>().Any(error => error.Number == UniqueConstraintViolationErrorCode);
-            }
-
-            return false;
         }
     }
 }

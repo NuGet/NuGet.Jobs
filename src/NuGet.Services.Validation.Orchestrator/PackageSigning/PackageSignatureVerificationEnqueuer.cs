@@ -32,13 +32,12 @@ namespace NuGet.Services.Validation.PackageSigning
         /// </summary>
         /// <param name="request">The request that details the package to be verified.</param>
         /// <returns>A task that will complete when the verification process has been queued.</returns>
-        public async Task EnqueueVerificationAsync(IValidationRequest request)
+        public Task EnqueueVerificationAsync(IValidationRequest request)
         {
-            // TODO: Apparently ServiceBus supports duplicate detection from client side?
             var brokeredMessage = _signatureValidationSerializer.Serialize(
                 new SignatureValidationMessage(request.PackageId, request.PackageVersion, new Uri(request.NupkgUrl), request.ValidationId));
 
-            await _topicClient.SendAsync(brokeredMessage);
+            return _topicClient.SendAsync(brokeredMessage);
         }
     }
 }

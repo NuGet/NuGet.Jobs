@@ -27,14 +27,11 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
     public class SignatureValidationMessageHandler
         : IMessageHandler<SignatureValidationMessage>
     {
-        private const int DefaultMaximumValidationFailures = 5;
-
         private readonly IValidationEntitiesContext _validationContext;
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSigningStateService _packageSigningStateService;
         private readonly ICertificateStore _certificateStore;
         private readonly ILogger<SignatureValidationMessageHandler> _logger;
-        private readonly int _maximumValidationFailures;
 
         /// <summary>
         /// Instantiate's a new package signatures validator.
@@ -48,16 +45,13 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             IValidatorStateService validatorStateService,
             IPackageSigningStateService packageSigningStateService,
             ICertificateStore certificateStore,
-            ILogger<SignatureValidationMessageHandler> logger,
-            int maximumValidationFailures = DefaultMaximumValidationFailures)
+            ILogger<SignatureValidationMessageHandler> logger)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _packageSigningStateService = packageSigningStateService ?? throw new ArgumentNullException(nameof(packageSigningStateService));
             _certificateStore = certificateStore ?? throw new ArgumentNullException(nameof(certificateStore));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            _maximumValidationFailures = maximumValidationFailures;
         }
 
         /// <summary>
@@ -125,7 +119,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             var savePackageSigningStateResult = await _packageSigningStateService.TrySetPackageSigningState(
                 validation.PackageKey,
-                message,
+                message.PackageId,
+                message.PackageVersion,
                 /*isRevalidating*/ false,
                 PackageSigningStatus.Unsigned);
 
@@ -142,14 +137,14 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                         "Signed package {PackageId} {PackageVersion} is blocked.",
                         message.PackageId,
                         message.PackageVersion);
-            
+
             validation.State = ValidationStatus.Failed;
             await _validatorStateService.SaveStatusAsync(validation);
 
             // Consume the message.
             return true;
         }
-        
+
         private async Task<SignedPackageArchive> DownloadPackageAsync(Uri nupkgUri)
         {
             Stream packageStream;

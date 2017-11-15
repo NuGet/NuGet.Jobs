@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Error.cs" />
+    <Compile Include="ExceptionExtensions.cs" />
     <Compile Include="Storage\AddStatusResult.cs" />
     <Compile Include="Storage\CertificateStore.cs" />
     <Compile Include="Storage\ICertificateStore.cs" />
