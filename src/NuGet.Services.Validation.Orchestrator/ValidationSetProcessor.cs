@@ -49,6 +49,12 @@ namespace NuGet.Services.Validation.Orchestrator
             await ProcessIncompleteValidations(validationSet, package);
             do
             {
+                // we will try to start more validations in case previous validation start attempts
+                // result in Succeeded validation immediately (i.e. the validation was synchronous).
+                // If no validation start attempts resulted in succeeded validation (ProcessNotStartedValidations
+                // returns false) we move on and will check on progress later.
+                // loopLimit is there to prevent looping here infinitely if there are any bugs that
+                // cause ProcessNotStartedValidations to always return true.
                 tryMoreValidations = await ProcessNotStartedValidations(validationSet, package);
             } while (tryMoreValidations && loopLimit-- > 0);
             if (loopLimit <= 0)
