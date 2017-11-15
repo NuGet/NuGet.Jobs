@@ -17,16 +17,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public async Task StartsMessageProcessing()
         {
             var subscriptionProcessor = new Mock<ISubscriptionProcessor<PackageValidationMessageData>>();
-            var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
             var loggerMock = new Mock<ILogger<OrchestrationRunner>>();
-
-            optionsAccessorMock
-                .SetupGet(o => o.Value)
-                .Returns(new OrchestrationRunnerConfiguration
-                {
-                    ProcessRecycleInterval = TimeSpan.Zero,
-                    ShutdownWaitInterval = TimeSpan.Zero
-                });
+            var optionsAccessorMock = CreateOptionsAccessorMock(TimeSpan.Zero, TimeSpan.Zero);
 
             var runner = new OrchestrationRunner(subscriptionProcessor.Object, optionsAccessorMock.Object, loggerMock.Object);
             await runner.RunOrchestrationAsync();
@@ -38,16 +30,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public async Task ShutsDownMessageProcessing()
         {
             var orchestratorMock = new Mock<ISubscriptionProcessor<PackageValidationMessageData>>();
-            var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
             var loggerMock = new Mock<ILogger<OrchestrationRunner>>();
-
-            optionsAccessorMock
-                .SetupGet(o => o.Value)
-                .Returns(new OrchestrationRunnerConfiguration
-                {
-                    ProcessRecycleInterval = TimeSpan.Zero,
-                    ShutdownWaitInterval = TimeSpan.Zero
-                });
+            var optionsAccessorMock = CreateOptionsAccessorMock(TimeSpan.Zero, TimeSpan.Zero);
 
             var startCalled = false;
             orchestratorMock
@@ -68,16 +52,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public async Task WaitsOrchestratorToShutDown()
         {
             var orchestratorMock = new Mock<ISubscriptionProcessor<PackageValidationMessageData>>();
-            var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
             var loggerMock = new Mock<ILogger<OrchestrationRunner>>();
-
-            optionsAccessorMock
-                .SetupGet(o => o.Value)
-                .Returns(new OrchestrationRunnerConfiguration
-                {
-                    ProcessRecycleInterval = TimeSpan.Zero,
-                    ShutdownWaitInterval = TimeSpan.FromSeconds(2)
-                });
+            var optionsAccessorMock = CreateOptionsAccessorMock(TimeSpan.Zero, TimeSpan.FromSeconds(2));
 
             int numberOfRequestsInProgress = 2;
             orchestratorMock
@@ -88,6 +64,21 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             await runner.RunOrchestrationAsync();
 
             orchestratorMock.Verify(o => o.NumberOfMessagesInProgress, Times.Exactly(3));
+        }
+
+        private static Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>> CreateOptionsAccessorMock(
+            TimeSpan processRecycleInterval,
+            TimeSpan shutdownWaitInterval)
+        {
+            var optionsAccessorMock = new Mock<IOptionsSnapshot<OrchestrationRunnerConfiguration>>();
+            optionsAccessorMock
+                .SetupGet(o => o.Value)
+                .Returns(new OrchestrationRunnerConfiguration
+                {
+                    ProcessRecycleInterval = processRecycleInterval,
+                    ShutdownWaitInterval = shutdownWaitInterval
+                });
+            return optionsAccessorMock;
         }
     }
 }
