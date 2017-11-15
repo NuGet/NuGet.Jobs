@@ -153,7 +153,6 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
             services.AddTransient<IValidatorProvider, ValidatorProvider>();
-            services.AddTransient<IServiceScopeProvider, ServiceScopeProvider>();
             services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
             services.AddTransient<IMessageHandler<PackageValidationMessageData>, ValidationMessageHandler>();
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
