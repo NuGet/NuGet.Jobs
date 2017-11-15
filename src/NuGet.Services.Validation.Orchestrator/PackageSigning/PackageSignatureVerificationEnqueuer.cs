@@ -14,11 +14,14 @@ namespace NuGet.Services.Validation.PackageSigning
     public class PackageSignatureVerificationEnqueuer : IPackageSignatureVerificationEnqueuer
     {
         private readonly ITopicClient _topicClient;
-        private static readonly IBrokeredMessageSerializer<SignatureValidationMessage> _signatureValidationSerializer = new SignatureValidationMessageSerializer();
+        private readonly IBrokeredMessageSerializer<SignatureValidationMessage> _signatureValidationSerializer;
 
-        public PackageSignatureVerificationEnqueuer(ITopicClient topicClient)
+        public PackageSignatureVerificationEnqueuer(
+            ITopicClient topicClient,
+            IBrokeredMessageSerializer<SignatureValidationMessage> signatureValidationSerializer)
         {
             _topicClient = topicClient ?? throw new ArgumentNullException(nameof(topicClient));
+            _signatureValidationSerializer = signatureValidationSerializer ?? throw new ArgumentNullException(nameof(signatureValidationSerializer));
         }
 
         /// <summary>
