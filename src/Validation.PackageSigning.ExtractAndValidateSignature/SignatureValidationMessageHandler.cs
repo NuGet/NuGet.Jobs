@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Data.Entity;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
@@ -27,7 +26,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
     public class SignatureValidationMessageHandler
         : IMessageHandler<SignatureValidationMessage>
     {
-        private readonly IValidationEntitiesContext _validationContext;
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSigningStateService _packageSigningStateService;
         private readonly ICertificateStore _certificateStore;
@@ -42,14 +40,12 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         /// <param name="validatorStateService">The service used to retrieve and persist this validator's state.</param>
         /// <param name="packageSigningStateService">The service used to retrieve and persist package signing state.</param>
         public SignatureValidationMessageHandler(
-            IValidationEntitiesContext validationContext,
             IValidatorStateService validatorStateService,
             IPackageSigningStateService packageSigningStateService,
             ICertificateStore certificateStore,
             HttpClient httpClient,
             ILogger<SignatureValidationMessageHandler> logger)
         {
-            _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _packageSigningStateService = packageSigningStateService ?? throw new ArgumentNullException(nameof(packageSigningStateService));
             _certificateStore = certificateStore ?? throw new ArgumentNullException(nameof(certificateStore));
@@ -68,9 +64,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         public async Task<bool> HandleAsync(SignatureValidationMessage message)
         {
             // Find the signature validation entity that matches this message.
-            var validation = await _validationContext
-                .ValidatorStatuses
-                .FirstOrDefaultAsync(v => v.ValidationId == message.ValidationId);
+            var validation = await _validatorStateService.GetStatusAsync(message.ValidationId);
 
             // A signature validation should be queued with ValidatorState == Incomplete.
             if (validation == null)

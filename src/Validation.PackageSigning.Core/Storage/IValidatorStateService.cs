@@ -20,6 +20,13 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
         Task<ValidatorStatus> GetStatusAsync(IValidationRequest request);
 
         /// <summary>
+        /// Get the persisted <see cref="ValidatorStatus"/> for the given validation ID.
+        /// </summary>
+        /// <param name="validationId">The validation ID of the validator status to be fetched.</param>
+        /// <returns>The persisted status of the validation request, or, a new <see cref="ValidatorStatus"/> if no status has been persisted.</returns>
+        Task<ValidatorStatus> GetStatusAsync(Guid validationId);
+
+        /// <summary>
         /// Check if the request intends to revalidate a package that has already been validated by <see cref="TValidator"/> by
         /// a different validation request.
         /// </summary>
