@@ -2,18 +2,14 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.IO;
-using System.IO.Compression;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
-using NuGet.Packaging.Signing;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation;
+using NuGet.Versioning;
 
 namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 {
@@ -92,19 +88,22 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             }
 
             // Validate package
-            using (var package = await DownloadPackageAsync(message.NupkgUri))
+            // TODO: consume actual client nupkg's containing missing signing APIs
+            if (!IsSigned(message.PackageVersion))
             {
-                // TODO: consume actual client nupkg's containing missing signing APIs
-                if (!await package.IsSignedAsync(CancellationToken.None))
-                {
-                    return await HandleUnsignedPackageAsync(validation, message);
-                }
-                else
-                {
-                    // Pre-wave 1: block signed packages on nuget.org
-                    return await BlockSignedPackageAsync(validation, message);
-                }
+                return await HandleUnsignedPackageAsync(validation, message);
             }
+            else
+            {
+                // Pre-wave 1: block signed packages on nuget.org
+                return await BlockSignedPackageAsync(validation, message);
+            }
+        }
+
+        private bool IsSigned(string packageVersion)
+        {
+            var nugetVersion = NuGetVersion.Parse(packageVersion);
+            return nugetVersion.IsPrerelease && string.Equals(nugetVersion.Release, "signed", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<bool> HandleUnsignedPackageAsync(ValidatorStatus validation, SignatureValidationMessage message)
@@ -140,27 +139,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             // Consume the message if successfully saved state.
             return saveStateResult == SaveStatusResult.Success;
-        }
-
-        private async Task<SignedPackageArchive> DownloadPackageAsync(Uri nupkgUri)
-        {
-            // Download nupkg using URL given in queue
-            var fileName = Path.GetFileName(nupkgUri.LocalPath);
-            var filePath = Path.Combine(Path.GetTempPath(), fileName);
-            
-            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            {
-                using (var packageStream = await _httpClient.GetStreamAsync(nupkgUri))
-                {
-                    await packageStream.CopyToAsync(fileStream);
-                }
-
-                _logger.LogInformation($"Downloaded package from {{{TraceConstant.Url}}}", nupkgUri);
-
-                fileStream.Position = 0;
-
-                return new SignedPackageArchive(new ZipArchive(fileStream));
-            }
         }
     }
 }

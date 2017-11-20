@@ -25,8 +25,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 {
     public class Job : JobBase
     {
-        private ISubscriptionProcessor<SignatureValidationMessage> _processor;
-
         /// <summary>
         /// The configured service provider, used to instiate the services this job depends on.
         /// </summary>
