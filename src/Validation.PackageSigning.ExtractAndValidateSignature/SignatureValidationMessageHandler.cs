@@ -111,8 +111,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                 validation.PackageKey,
                 message.PackageId,
                 message.PackageVersion,
-                /*isRevalidating*/ false,
-                PackageSigningStatus.Unsigned);
+                isRevalidationRequest: false,
+                status: PackageSigningStatus.Unsigned);
 
             validation.State = ValidationStatus.Succeeded;
             var saveStateResult = await _validatorStateService.SaveStatusAsync(validation);
