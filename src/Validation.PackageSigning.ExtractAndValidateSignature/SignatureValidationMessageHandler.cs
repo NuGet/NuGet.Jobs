@@ -24,8 +24,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
     {
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSigningStateService _packageSigningStateService;
-        private readonly ICertificateStore _certificateStore;
-        private readonly HttpClient _httpClient;
         private readonly ILogger<SignatureValidationMessageHandler> _logger;
 
         /// <summary>
@@ -38,14 +36,10 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         public SignatureValidationMessageHandler(
             IValidatorStateService validatorStateService,
             IPackageSigningStateService packageSigningStateService,
-            ICertificateStore certificateStore,
-            HttpClient httpClient,
             ILogger<SignatureValidationMessageHandler> logger)
         {
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _packageSigningStateService = packageSigningStateService ?? throw new ArgumentNullException(nameof(packageSigningStateService));
-            _certificateStore = certificateStore ?? throw new ArgumentNullException(nameof(certificateStore));
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
