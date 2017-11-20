@@ -55,7 +55,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
                 {
                     PackageId = packageId,
                     PackageKey = packageKey,
-                    PackageNormalizedVersion = NormalizePackageVersion(packageVersion),
+                    PackageNormalizedVersion = NuGetVersion.Parse(packageVersion).ToNormalizedString(),
                     SigningStatus = status
                 };
 
@@ -84,14 +84,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
 
                 return SavePackageSigningStateResult.Stale;
             }
-        }
-
-        private static string NormalizePackageVersion(string packageVersion)
-        {
-            return NuGetVersion
-                .Parse(packageVersion)
-                .ToNormalizedString()
-                .ToLowerInvariant();
         }
     }
 }
