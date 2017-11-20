@@ -53,7 +53,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
-            
+
             _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename));
         }
 
@@ -135,7 +135,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             });
 
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
-            services.AddTransient<IMessageHandler<SignatureValidationMessage>, SignatureValidationMessageHandler>();
             services.AddTransient<IPackageSigningStateService, PackageSigningStateService>();
         }
 
@@ -159,9 +158,23 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private static IServiceProvider CreateProvider(IServiceCollection services)
         {
+            const string validateSignatureBindingKey = "ValidateSignatureKey";
+            var signatureValidationMessageHandlerType = typeof(IMessageHandler<SignatureValidationMessage>);
+
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.Populate(services);
+
+            containerBuilder
+                .RegisterType<ScopedMessageHandler<SignatureValidationMessage>>()
+                .Keyed<IMessageHandler<SignatureValidationMessage>>(validateSignatureBindingKey);
+
+            containerBuilder
+                .RegisterType<SubscriptionProcessor<SignatureValidationMessage>>()
+                .WithParameter(
+                    (parameter, context) => parameter.ParameterType == signatureValidationMessageHandlerType,
+                    (parameter, context) => context.ResolveKeyed(validateSignatureBindingKey, signatureValidationMessageHandlerType))
+                .As<ISubscriptionProcessor<SignatureValidationMessage>>();
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
