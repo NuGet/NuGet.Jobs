@@ -135,6 +135,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             });
 
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
+            services.AddTransient<IMessageHandler<SignatureValidationMessage>, SignatureValidationMessageHandler>();
             services.AddTransient<IPackageSigningStateService, PackageSigningStateService>();
         }
 
