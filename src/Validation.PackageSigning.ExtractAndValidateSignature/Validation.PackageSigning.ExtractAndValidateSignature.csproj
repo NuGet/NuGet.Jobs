@@ -51,9 +51,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="Scripts\*" />
-    <None Include="settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="Settings\*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">
