@@ -1,15 +1,15 @@
 ﻿{
   "ValidationDb": {
-    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=Validation; Integrated Security=True; MultipleActiveResultSets=True"
+    "ConnectionString": "Data Source=tcp:d1unhwb16g.database.windows.net;Initial Catalog=nuget-dev-validation;Integrated Security=False;User ID=$$Dev-ValidationDBWriter-UserName$$;Password=$$Dev-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
   },
   "ServiceBus": {
-    "ConnectionString": "",
-    "TopicPath": "",
-    "SubscriptionName": ""
+    "ConnectionString": "Endpoint=sb://nugetdev.servicebus.windows.net/;SharedAccessKeyName=extract-and-validate-signature;SharedAccessKey=$$Dev-ServiceBus-SharedAccessKey-Validation-ExtractAndValidatePackageSignature$$",
+    "TopicPath": "validate-signature",
+    "SubscriptionName": "extract-and-validate-signature"
   },
-  "KeyVault_VaultName": "",
-  "KeyVault_ClientId": "",
-  "KeyVault_CertificateThumbprint": "",
+  "KeyVault_VaultName": "#{Deployment.Azure.KeyVault.VaultName}",
+  "KeyVault_ClientId": "#{Deployment.Azure.KeyVault.ClientId}",
+  "KeyVault_CertificateThumbprint": "#{Deployment.Azure.KeyVault.CertificateThumbprint}",
   "KeyVault_ValidateCertificate": true,
   "KeyVault_StoreName": "My",
   "KeyVault_StoreLocation": "LocalMachine"
