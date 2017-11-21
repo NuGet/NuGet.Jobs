@@ -1,6 +1,6 @@
 ﻿{
   "ValidationDb": {
-    "ConnectionString": "Data Source=tcp:amejn8fzzh.database.windows.net;Initial Catalog=nuget-prod-validation;Integrated Security=False;User ID=$$Prod-ValidationDBWriter-UserName$$;Password=$$Prod-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
+    "ConnectionString": "Data Source=tcp:#{Jobs.validation.DatabaseAddress};Initial Catalog=nuget-prod-validation;Integrated Security=False;User ID=$$Prod-ValidationDBWriter-UserName$$;Password=$$Prod-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
   },
   "ServiceBus": {
     "ConnectionString": "Endpoint=sb://nugetprod.servicebus.windows.net/;SharedAccessKeyName=extract-and-validate-signature;SharedAccessKey=$$Prod-ServiceBus-SharedAccessKey-Validation-ExtractAndValidatePackageSignature$$",
