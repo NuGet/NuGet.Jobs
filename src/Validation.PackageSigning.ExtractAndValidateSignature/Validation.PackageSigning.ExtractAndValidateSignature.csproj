@@ -60,6 +60,10 @@
       <Project>{4B4B1EFB-8F33-42E6-B79F-54E7F3293D31}</Project>
       <Name>NuGet.Jobs.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\NuGet.Services.Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj">
+      <Project>{E6D094FB-9068-4578-B176-116F97E7506B}</Project>
+      <Name>NuGet.Services.Validation.Orchestrator</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Validation.Common\Validation.Common.csproj">
       <Project>{2539DDF3-0CC5-4A03-B5F9-39B47744A7BD}</Project>
       <Name>Validation.Common</Name>

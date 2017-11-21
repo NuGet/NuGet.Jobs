@@ -19,6 +19,7 @@ using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation;
+using NuGet.Services.Validation.PackageSigning;
 
 namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 {
@@ -171,6 +172,17 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.Populate(services);
+
+            containerBuilder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(Type),
+                    (pi, ctx) => typeof(PackageSigningValidator))
+                .As<IValidatorStateService>();
+
+            containerBuilder
+                .RegisterType<PackageSigningStateService>()
+                .As<IPackageSigningStateService>();
 
             containerBuilder
                 .RegisterType<ScopedMessageHandler<SignatureValidationMessage>>()
