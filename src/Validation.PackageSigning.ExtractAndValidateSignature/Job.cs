@@ -34,6 +34,9 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         /// </summary>
         private const string ConfigurationArgument = "Configuration";
 
+        private const string ValidationDbConfigurationSectionName = "ValidationDb";
+        private const string ServiceBusConfigurationSectionName = "ServiceBus";
+
         /// <summary>
         /// The maximum time that a KeyVault secret will be cached for.
         /// </summary>
@@ -118,6 +121,9 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
+            services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
+            services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
+
             services.AddTransient<ISubscriptionProcessor<SignatureValidationMessage>, SubscriptionProcessor<SignatureValidationMessage>>();
 
             services.AddScoped<IValidationEntitiesContext>(p =>

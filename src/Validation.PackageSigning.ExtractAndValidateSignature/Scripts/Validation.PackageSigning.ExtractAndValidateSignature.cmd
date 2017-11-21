@@ -7,7 +7,7 @@ cd bin
 	
 	title #{Jobs.validation.packagesigning.extractandvalidatesignature.Title}
 
-	start /w NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature.exe -Configuration #{Jobs.validation.configuration} -InstrumentationKey "#{Jobs.validation.packagesigning.extractandvalidatesignature.InstrumentationKey}"
+	start /w NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature.exe -Configuration #{Jobs.validation.packagesigning.extractandvalidatesignature.Configuration} -InstrumentationKey "#{Jobs.validation.packagesigning.extractandvalidatesignature.InstrumentationKey}"
 
 	echo "Finished #{Jobs.validation.packagesigning.extractandvalidatesignature.Title}"
 
