@@ -8,7 +8,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
 {
     public interface IPackageSigningStateService
     {
-        Task<SavePackageSigningStateResult> TrySetPackageSigningState(
+        Task<SavePackageSigningStateResult> SetPackageSigningState(
             int packageKey,
             string packageId,
             string packageVersion,
