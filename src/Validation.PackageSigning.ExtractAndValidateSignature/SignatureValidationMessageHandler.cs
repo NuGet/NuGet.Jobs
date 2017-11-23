@@ -111,7 +111,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             // Update the package's state.
             // TODO: Determine whether this is a revalidation request.
-            var result = await _packageSigningStateService.SetPackageSigningState(
+            var result = await _packageSigningStateService.TrySetPackageSigningState(
                             validation.PackageKey,
                             message.PackageId,
                             message.PackageVersion,
