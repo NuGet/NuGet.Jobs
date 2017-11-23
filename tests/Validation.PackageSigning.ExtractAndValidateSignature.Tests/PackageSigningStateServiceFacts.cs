@@ -54,6 +54,10 @@ namespace Validation.PackageSigning.ExtractAndValidateSignature.Tests
 
                 // Assert
                 Assert.Equal(SavePackageSigningStateResult.StatusAlreadyExists, result);
+                validationContextMock.Verify(
+                    m => m.SaveChangesAsync(),
+                    Times.Never,
+                    "Saving the context here is unnecessary.");
             }
 
             [Fact]
@@ -91,6 +95,10 @@ namespace Validation.PackageSigning.ExtractAndValidateSignature.Tests
                 // Assert
                 Assert.Equal(SavePackageSigningStateResult.Success, result);
                 Assert.Equal(newStatus, packageSigningState.SigningStatus);
+                validationContextMock.Verify(
+                    m => m.SaveChangesAsync(),
+                    Times.Never,
+                    "Saving the context here is incorrect as updating the validator's status also saves the context. Doing so would cause both queries not to be executed in the same transaction.");
             }
 
             [Fact]
@@ -127,6 +135,10 @@ namespace Validation.PackageSigning.ExtractAndValidateSignature.Tests
                 Assert.Equal(packageId, newState.PackageId);
                 Assert.Equal(packageVersion, newState.PackageNormalizedVersion);
                 Assert.Equal(newStatus, newState.SigningStatus);
+                validationContextMock.Verify(
+                    m => m.SaveChangesAsync(),
+                    Times.Never,
+                    "Saving the context here is incorrect as updating the validator's status also saves the context. Doing so would cause both queries not to be executed in the same transaction.");
             }
         }
     }
