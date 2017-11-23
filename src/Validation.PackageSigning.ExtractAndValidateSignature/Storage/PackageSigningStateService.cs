@@ -24,7 +24,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<SavePackageSigningStateResult> SetPackageSigningState(
+        public async Task<SavePackageSigningStateResult> TrySetPackageSigningState(
             int packageKey,
             string packageId,
             string packageVersion,
