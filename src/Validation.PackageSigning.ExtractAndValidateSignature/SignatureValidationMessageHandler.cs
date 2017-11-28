@@ -99,12 +99,11 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private async Task<bool> IsSigned(Uri packageUri)
         {
+            using (var cancellationTokenSource = new CancellationTokenSource())
             using (var packageStream = await DownloadPackageAsync(packageUri))
             using (var package = new PackageArchiveReader(packageStream))
             {
-                var cancellationToken = new CancellationTokenSource().Token;
-
-                return await package.IsSignedAsync(cancellationToken);
+                return await package.IsSignedAsync(cancellationTokenSource.Token);
             }
         }
 
