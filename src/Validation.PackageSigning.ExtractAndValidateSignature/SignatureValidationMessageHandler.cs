@@ -3,11 +3,14 @@
 
 using System;
 using System.Data.Entity.Infrastructure;
+using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
+using NuGet.Packaging;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation;
 using NuGet.Versioning;
@@ -83,8 +86,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             }
 
             // Validate package
-            // TODO: consume actual client nupkg's containing missing signing APIs
-            if (!IsSigned(message.PackageVersion))
+            if ( ! await IsSigned(message.NupkgUri))
             {
                 return await HandleUnsignedPackageAsync(validation, message);
             }
@@ -95,10 +97,15 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             }
         }
 
-        private bool IsSigned(string packageVersion)
+        private async Task<bool> IsSigned(Uri packageUri)
         {
-            var nugetVersion = NuGetVersion.Parse(packageVersion);
-            return nugetVersion.IsPrerelease && string.Equals(nugetVersion.Release, "signed", StringComparison.OrdinalIgnoreCase);
+            using (var packageStream = await DownloadPackageAsync(packageUri))
+            using (var package = new PackageArchiveReader(packageStream))
+            {
+                var cancellationToken = new CancellationTokenSource().Token;
+
+                return await package.IsSignedAsync(cancellationToken);
+            }
         }
 
         private async Task<bool> HandleUnsignedPackageAsync(ValidatorStatus validation, SignatureValidationMessage message)
@@ -170,6 +177,24 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             // Consume the message if successfully saved state.
             return saveStateResult == SaveStatusResult.Success;
+        }
+
+        private async Task<Stream> DownloadPackageAsync(Uri packageUri)
+        {
+            Stream packageStream;
+
+            _logger.LogInformation("Attempting to download package from {PackageUri}...", packageUri);
+
+            using (var httpClient = new HttpClient())
+            {
+                packageStream = await httpClient.GetStreamAsync(packageUri);
+
+                _logger.LogInformation("Downloaded package from {PackageUri}", packageUri);
+            }
+
+            packageStream.Position = 0;
+
+            return packageStream;
         }
     }
 }
