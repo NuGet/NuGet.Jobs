@@ -3,7 +3,9 @@
 
 using System;
 using System.Data.Entity.Infrastructure;
+using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -90,7 +92,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             }
 
             // Validate package
-            if ( ! await IsSigned(message.NupkgUri))
+            if ( ! await IsSigned(message.NupkgUri, CancellationToken.None))
             {
                 return await HandleUnsignedPackageAsync(validation, message);
             }
@@ -101,10 +103,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             }
         }
 
-        private async Task<bool> IsSigned(Uri packageUri)
+        private async Task<bool> IsSigned(Uri packageUri, CancellationToken cancellationToken)
         {
-            var cancellationToken = CancellationToken.None;
-
             using (var packageStream = await DownloadPackageAsync(packageUri, cancellationToken))
             using (var package = new PackageArchiveReader(packageStream, leaveStreamOpen: false))
             {
@@ -188,29 +188,46 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             _logger.LogInformation("Attempting to download package from {PackageUri}...", packageUri);
 
             Stream packageStream = null;
+            var stopwatch = Stopwatch.StartNew();
 
             try
             {
                 // Download the package from the network to a temporary file.
-                var path = Path.GetTempFileName();
-
-                packageStream = new FileStream(
-                                    path,
-                                    FileMode.Create,
-                                    FileAccess.ReadWrite,
-                                    FileShare.None,
-                                    BufferSize,
-                                    FileOptions.DeleteOnClose | FileOptions.Asynchronous);
-
-                using (var response = await _httpClient.GetAsync(packageUri))
-                using (var networkStream = await response.Content.ReadAsStreamAsync())
+                using (var response = await _httpClient.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    await networkStream.CopyToAsync(packageStream, BufferSize, cancellationToken);
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        throw new InvalidOperationException($"Package download expected status code: {HttpStatusCode.OK}, actual: {response.StatusCode}");
+                    }
+
+                    _logger.LogInformation(
+                        "Received response {StatusCode}: {ReasonPhrase} of type {ContentType} for request {PackageUri}",
+                        response.StatusCode,
+                        response.ReasonPhrase,
+                        response.Content.Headers.ContentType,
+                        packageUri);
+
+                    using (var networkStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        packageStream = new FileStream(
+                                            Path.GetTempFileName(),
+                                            FileMode.Create,
+                                            FileAccess.ReadWrite,
+                                            FileShare.None,
+                                            BufferSize,
+                                            FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+
+                        await networkStream.CopyToAsync(packageStream, BufferSize, cancellationToken);
+                    }
                 }
 
-                packageStream.Seek(0, SeekOrigin.Begin);
+                packageStream.Position = 0;
 
-                _logger.LogInformation("Downloaded package from {PackageUri}", packageUri);
+                _logger.LogInformation(
+                    "Downloaded {PackageSizeInBytes} bytes in {DownloadElapsedTime} seconds for request {PackageUri}",
+                    packageStream.Length,
+                    stopwatch.Elapsed.TotalSeconds,
+                    packageUri);
 
                 return packageStream;
             }
@@ -222,10 +239,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                     "Exception thrown when trying to download package from {PackageUri}",
                     packageUri);
 
-                if (packageStream != null)
-                {
-                    packageStream.Close();
-                }
+                packageStream?.Dispose();
 
                 throw;
             }
