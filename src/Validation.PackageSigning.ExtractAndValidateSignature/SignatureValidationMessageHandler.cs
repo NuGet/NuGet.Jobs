@@ -13,7 +13,6 @@ using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Packaging;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation;
-using NuGet.Versioning;
 
 namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 {
@@ -26,6 +25,9 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
     public class SignatureValidationMessageHandler
         : IMessageHandler<SignatureValidationMessage>
     {
+        private const int BufferSize = 8192;
+
+        private readonly HttpClient _httpClient;
         private readonly IValidatorStateService _validatorStateService;
         private readonly IPackageSigningStateService _packageSigningStateService;
         private readonly ILogger<SignatureValidationMessageHandler> _logger;
@@ -33,15 +35,17 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
         /// <summary>
         /// Instantiate's a new package signatures validator.
         /// </summary>
-        /// <param name="validationContext">The persisted validation context.</param>
-        /// <param name="certificateStore">The persisted certificate store.</param>
+        /// <param name="httpClient">The HTTP client used to download packages.</param>
         /// <param name="validatorStateService">The service used to retrieve and persist this validator's state.</param>
         /// <param name="packageSigningStateService">The service used to retrieve and persist package signing state.</param>
+        /// <param name="logger">The logger that should be used.</param>
         public SignatureValidationMessageHandler(
+            HttpClient httpClient,
             IValidatorStateService validatorStateService,
             IPackageSigningStateService packageSigningStateService,
             ILogger<SignatureValidationMessageHandler> logger)
         {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _packageSigningStateService = packageSigningStateService ?? throw new ArgumentNullException(nameof(packageSigningStateService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -99,10 +103,12 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private async Task<bool> IsSigned(Uri packageUri)
         {
-            using (var packageStream = await DownloadPackageAsync(packageUri))
+            var cancellationToken = CancellationToken.None;
+
+            using (var packageStream = await DownloadPackageAsync(packageUri, cancellationToken))
             using (var package = new PackageArchiveReader(packageStream))
             {
-                return await package.IsSignedAsync(CancellationToken.None);
+                return await package.IsSignedAsync(cancellationToken);
             }
         }
 
@@ -177,22 +183,52 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             return saveStateResult == SaveStatusResult.Success;
         }
 
-        private async Task<Stream> DownloadPackageAsync(Uri packageUri)
+        private async Task<Stream> DownloadPackageAsync(Uri packageUri, CancellationToken cancellationToken)
         {
-            Stream packageStream;
-
             _logger.LogInformation("Attempting to download package from {PackageUri}...", packageUri);
 
-            using (var httpClient = new HttpClient())
+            Stream packageStream = null;
+
+            try
             {
-                packageStream = await httpClient.GetStreamAsync(packageUri);
+                // Download the package from the network to a temporary file.
+                var path = Path.GetTempFileName();
+
+                packageStream = new FileStream(
+                                    path,
+                                    FileMode.Create,
+                                    FileAccess.ReadWrite,
+                                    FileShare.None,
+                                    BufferSize,
+                                    FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+
+                using (var response = await _httpClient.GetAsync(packageUri))
+                using (var networkStream = await response.Content.ReadAsStreamAsync())
+                {
+                    await networkStream.CopyToAsync(packageStream, BufferSize, cancellationToken);
+                }
+
+                packageStream.Seek(0, SeekOrigin.Begin);
 
                 _logger.LogInformation("Downloaded package from {PackageUri}", packageUri);
+
+                return packageStream;
             }
+            catch (Exception e)
+            {
+                _logger.LogError(
+                    Error.ValidateSignatureFailedToDownloadPackageStatus,
+                    e,
+                    "Exception thrown when trying to download package from {PackageUri}",
+                    packageUri);
 
-            packageStream.Position = 0;
+                if (packageStream != null)
+                {
+                    packageStream.Close();
+                }
 
-            return packageStream;
+                throw;
+            }
         }
     }
 }

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -37,6 +39,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
         private const string ServiceBusConfigurationSectionName = "ServiceBus";
+        private const string PackageDownloadTimeoutName = "PackageDownloadTimeout";
 
         /// <summary>
         /// The maximum time that a KeyVault secret will be cached for.
@@ -144,6 +147,19 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IMessageHandler<SignatureValidationMessage>, SignatureValidationMessageHandler>();
             services.AddTransient<IPackageSigningStateService, PackageSigningStateService>();
+
+            services.AddTransient(p =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    AutomaticDecompression = (DecompressionMethods.GZip | DecompressionMethods.Deflate)
+                };
+
+                return new HttpClient(handler, disposeHandler: true)
+                {
+                    Timeout = configurationRoot.GetValue<TimeSpan>(PackageDownloadTimeoutName)
+                };
+            });
         }
 
         private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot)
