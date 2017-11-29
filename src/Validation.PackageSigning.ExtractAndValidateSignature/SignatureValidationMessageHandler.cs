@@ -106,7 +106,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
             var cancellationToken = CancellationToken.None;
 
             using (var packageStream = await DownloadPackageAsync(packageUri, cancellationToken))
-            using (var package = new PackageArchiveReader(packageStream))
+            using (var package = new PackageArchiveReader(packageStream, leaveStreamOpen: false))
             {
                 return await package.IsSignedAsync(cancellationToken);
             }
