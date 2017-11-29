@@ -195,17 +195,17 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                 // Download the package from the network to a temporary file.
                 using (var response = await _httpClient.GetAsync(packageUri, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    if (response.StatusCode != HttpStatusCode.OK)
-                    {
-                        throw new InvalidOperationException($"Package download expected status code: {HttpStatusCode.OK}, actual: {response.StatusCode}");
-                    }
-
                     _logger.LogInformation(
                         "Received response {StatusCode}: {ReasonPhrase} of type {ContentType} for request {PackageUri}",
                         response.StatusCode,
                         response.ReasonPhrase,
                         response.Content.Headers.ContentType,
                         packageUri);
+
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        throw new InvalidOperationException($"Expected status code {HttpStatusCode.OK} for package download, actual: {response.StatusCode}");
+                    }
 
                     using (var networkStream = await response.Content.ReadAsStreamAsync())
                     {
