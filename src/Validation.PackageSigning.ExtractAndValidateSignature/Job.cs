@@ -157,16 +157,18 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             services.AddSingleton(p =>
             {
-                var handler = new WebRequestHandler
+                var assemblyName = typeof(SignatureValidationMessage).Assembly.GetName();
+
+                var client = new HttpClient(new WebRequestHandler
                 {
                     AllowPipelining = true,
                     AutomaticDecompression = (DecompressionMethods.GZip | DecompressionMethods.Deflate),
-                };
+                });
 
-                return new HttpClient(handler)
-                {
-                    Timeout = configurationRoot.GetValue<TimeSpan>(PackageDownloadTimeoutName)
-                };
+                client.Timeout = configurationRoot.GetValue<TimeSpan>(PackageDownloadTimeoutName);
+                client.DefaultRequestHeaders.Add("user-agent", $"{assemblyName.Name}/{assemblyName.Version}");
+
+                return client;
             });
         }
 
