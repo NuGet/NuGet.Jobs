@@ -129,24 +129,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             validation.State = ValidationStatus.Succeeded;
 
-            return await SaveStatusAsync(validation, message);
-        }
-
-        private async Task<bool> BlockSignedPackageAsync(ValidatorStatus validation, SignatureValidationMessage message)
-        {
-            _logger.LogInformation(
-                        "Signed package {PackageId} {PackageVersion} is blocked for validation {ValidationId}.",
-                        message.PackageId,
-                        message.PackageVersion,
-                        message.ValidationId);
-
-            validation.State = ValidationStatus.Failed;
-
-            return await SaveStatusAsync(validation, message);
-        }
-
-        private async Task<bool> SaveStatusAsync(ValidatorStatus validation, SignatureValidationMessage message)
-        {
             try
             {
                 var saveStatus = await _validatorStateService.SaveStatusAsync(validation);
@@ -178,6 +160,21 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
             // Message may be retried.
             return false;
+        }
+
+        private async Task<bool> BlockSignedPackageAsync(ValidatorStatus validation, SignatureValidationMessage message)
+        {
+            _logger.LogInformation(
+                        "Signed package {PackageId} {PackageVersion} is blocked for validation {ValidationId}.",
+                        message.PackageId,
+                        message.PackageVersion,
+                        message.ValidationId);
+
+            validation.State = ValidationStatus.Failed;
+            var saveStateResult = await _validatorStateService.SaveStatusAsync(validation);
+
+            // Consume the message if successfully saved state.
+            return saveStateResult == SaveStatusResult.Success;
         }
 
         private async Task<Stream> DownloadPackageAsync(Uri packageUri, CancellationToken cancellationToken)
