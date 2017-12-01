@@ -84,6 +84,7 @@ namespace Validation.PackageSigning.ExtractAndValidateSignature.Tests
             }
 
             [Theory]
+            [InlineData(ValidationStatus.NotStarted)]
             [InlineData(ValidationStatus.Failed)]
             [InlineData(ValidationStatus.Succeeded)]
             public async Task DoesNotReprocessCompletedValidations(ValidationStatus state)
