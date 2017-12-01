@@ -52,6 +52,17 @@
     "TopicPath": "",
     "SubscriptionName": ""
   },
+  "Smtp": {
+    "SmtpHost": "",
+    "SmtpPort": "",
+    "EnableSsl": "",
+    "Username": "",
+    "Password": ""
+  },
+  "Email": {
+    "GalleryOwner": "NuGet Gallery <support@nuget.org>",
+    "GalleryNoReplyAddress": "NuGet Gallery <noreply@nuget.org>"
+  },
   "KeyVault_VaultName": "",
   "KeyVault_ClientId": "",
   "KeyVault_CertificateThumbprint": "",

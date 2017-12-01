@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using AnglicanGeek.MarkdownMailer;
 using Autofac;
 using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
@@ -24,6 +26,7 @@ using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.PackageCertificates;
 using NuGet.Services.Validation.PackageSigning;
 using NuGet.Services.Validation.Vcs;
+using NuGetGallery.Services;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -40,6 +43,8 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
         private const string ServiceBusConfigurationSectionName = "ServiceBus";
+        private const string SmtpConfigurationSectionName = "Smtp";
+        private const string EmailConfigurationSectionName = "Email";
 
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
@@ -138,6 +143,8 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
             services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
+            services.Configure<SmtpConfiguration>(configurationRoot.GetSection(SmtpConfigurationSectionName));
+            services.Configure<EmailConfiguration>(configurationRoot.GetSection(EmailConfigurationSectionName));
 
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
@@ -176,6 +183,32 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<PackageSigningValidator>();
+            services.AddTransient<MailSenderConfiguration>(serviceProvider =>
+            {
+                var smtpConfiguration = serviceProvider.GetRequiredService<SmtpConfiguration>();
+                if (string.IsNullOrWhiteSpace(smtpConfiguration.SmtpHost))
+                {
+                    return null;
+                }
+                return new MailSenderConfiguration
+                {
+                    DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
+                    Host = smtpConfiguration.SmtpHost,
+                    Port = smtpConfiguration.SmtpPort,
+                    EnableSsl = smtpConfiguration.EnableSsl,
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(smtpConfiguration.Username, smtpConfiguration.Password)
+                };
+            });
+            services.AddTransient<IMailSender>(serviceProvider =>
+            {
+                var mailSenderConfiguration = serviceProvider.GetService<MailSenderConfiguration>();
+                return mailSenderConfiguration != null 
+                    ? (IMailSender)new MailSender(mailSenderConfiguration) 
+                    : (IMailSender)new NullMailSender();
+            });
+            services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
+            services.AddTransient<ICoreMessageService, CoreMessageService>();
         }
 
         private static IServiceProvider CreateProvider(IServiceCollection services)
