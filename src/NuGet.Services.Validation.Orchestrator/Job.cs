@@ -209,6 +209,7 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
             services.AddTransient<ICoreMessageService, CoreMessageService>();
+            services.AddTransient<IMessageService, MessageService>();
         }
 
         private static IServiceProvider CreateProvider(IServiceCollection services)

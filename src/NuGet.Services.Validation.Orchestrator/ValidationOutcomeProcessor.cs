@@ -18,7 +18,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private readonly ICorePackageFileService _packageFileService;
         private readonly IPackageValidationEnqueuer _validationEnqueuer;
         private readonly ValidationConfiguration _validationConfiguration;
-        private readonly ICoreMessageService _coreMessageService;
+        private readonly IMessageService _messageService;
         private readonly ILogger<ValidationOutcomeProcessor> _logger;
 
         public ValidationOutcomeProcessor(
@@ -26,7 +26,7 @@ namespace NuGet.Services.Validation.Orchestrator
             ICorePackageFileService packageFileService,
             IPackageValidationEnqueuer validationEnqueuer,
             IOptionsSnapshot<ValidationConfiguration> validationConfigurationAccessor,
-            ICoreMessageService coreMessageService,
+            IMessageService messageService,
             ILogger<ValidationOutcomeProcessor> logger)
         {
             _galleryPackageService = galleryPackageService ?? throw new ArgumentNullException(nameof(galleryPackageService));
@@ -39,7 +39,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _validationConfiguration = validationConfigurationAccessor.Value 
                 ?? throw new ArgumentException($"The {nameof(validationConfigurationAccessor)}.Value property cannot be null",
                     nameof(validationConfigurationAccessor));
-            _coreMessageService = coreMessageService ?? throw new ArgumentNullException(nameof(coreMessageService));
+            _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -56,6 +56,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 if (package.PackageStatusKey != PackageStatus.Available)
                 {
                     await _galleryPackageService.UpdatePackageStatusAsync(package, PackageStatus.FailedValidation);
+                    _messageService.SendPackageValidationFailedMessage(package);
                 }
                 else
                 {
@@ -117,7 +118,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.ValidationTrackingId,
                     PackageStatus.Available);
                 await _galleryPackageService.UpdatePackageStatusAsync(package, PackageStatus.Available, commitChanges: true);
-                _coreMessageService.SendPackageAddedNotice(package, );
+                _messageService.SendPackagePublishedMessage(package);
             }
             catch (Exception e)
             {

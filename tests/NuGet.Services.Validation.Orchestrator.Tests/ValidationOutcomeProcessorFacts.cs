@@ -233,6 +233,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             PackageFileServiceMock = new Mock<ICorePackageFileService>();
             ValidationEnqueuerMock = new Mock<IPackageValidationEnqueuer>();
             ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
+            MessageServiceMock = new Mock<IMessageService>();
             LoggerMock = new Mock<ILogger<ValidationOutcomeProcessor>>();
 
             Configuration = new ValidationConfiguration();
@@ -265,6 +266,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 PackageFileServiceMock.Object,
                 ValidationEnqueuerMock.Object,
                 ConfigurationAccessorMock.Object,
+                MessageServiceMock.Object,
                 LoggerMock.Object
                 );
         }
@@ -273,6 +275,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         protected Mock<ICorePackageFileService> PackageFileServiceMock { get; }
         protected Mock<IPackageValidationEnqueuer> ValidationEnqueuerMock { get; }
         protected Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
+        protected Mock<IMessageService> MessageServiceMock { get; }
         protected Mock<ILogger<ValidationOutcomeProcessor>> LoggerMock { get; }
         protected ValidationConfiguration Configuration { get; }
         protected PackageValidationSet ValidationSet { get; }

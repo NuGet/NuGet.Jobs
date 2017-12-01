@@ -7,5 +7,8 @@ namespace NuGet.Services.Validation.Orchestrator
     {
         public string GalleryOwner { get; set; }
         public string GalleryNoReplyAddress { get; set; }
+        public string PackageUrlTemplate { get; set; }
+        public string PackageSupportTemplate { get; set; }
+        public string EmailSettingsUrl { get; set; }
     }
 }
