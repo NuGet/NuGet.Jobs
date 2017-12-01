@@ -227,6 +227,42 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.FailedValidation, It.IsAny<bool>()), Times.Never());
         }
 
+        [Fact]
+        public async Task PrefersDbOverConfigurationForDeterminingSuccess()
+        {
+            Configuration.Validations.Add(new ValidationConfigurationItem
+            {
+                Name = "validation1",
+                FailAfter = TimeSpan.FromDays(1),
+                RequiredValidations = new List<string> { }
+            });
+            Configuration.Validations.Add(new ValidationConfigurationItem
+            {
+                Name = "validation2",
+                FailAfter = TimeSpan.FromDays(1),
+                RequiredValidations = new List<string> { }
+            });
+
+            ValidationSet.PackageValidations.Add(new PackageValidation
+            {
+                Type = "validation1",
+                ValidationStatus = ValidationStatus.Succeeded
+            });
+
+            PackageServiceMock
+                .Setup(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.Available, true))
+                .Returns(Task.FromResult(0))
+                .Verifiable();
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package);
+
+            PackageServiceMock
+                .Verify(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.Available, true), Times.Once());
+            PackageServiceMock
+                .Verify(ps => ps.UpdatePackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()), Times.Once());
+        }
+
         public ValidationOutcomeProcessorFacts()
         {
             PackageServiceMock = new Mock<ICorePackageService>();
