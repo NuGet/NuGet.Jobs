@@ -46,7 +46,6 @@
     <Compile Include="ConfigurationValidator.cs" />
     <Compile Include="ContainerBuilderExtensions.cs" />
     <Compile Include="Error.cs" />
-    <Compile Include="GalleryDbConfiguration.cs" />
     <Compile Include="IValidationOutcomeProcessor.cs" />
     <Compile Include="IValidationSetProcessor.cs" />
     <Compile Include="IValidationSetProvider.cs" />
