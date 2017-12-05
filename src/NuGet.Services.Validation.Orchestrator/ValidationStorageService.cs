@@ -46,7 +46,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return await GetValidationSetAsync(packageValidationSet.ValidationTrackingId);
         }
 
-        public async Task MarkValidationStartedAsync(PackageValidation packageValidation, ValidationStatus startedStatus)
+        public async Task MarkValidationStartedAsync(PackageValidation packageValidation, IValidationResult validationResult)
         {
             packageValidation = packageValidation ?? throw new ArgumentNullException(nameof(packageValidation));
             _logger.LogInformation("Marking validation {ValidationName} {ValidationId} {PackageId} {PackageVersion} as started with status {ValidationStatus}",
@@ -54,25 +54,39 @@ namespace NuGet.Services.Validation.Orchestrator
                 packageValidation.PackageValidationSet.ValidationTrackingId,
                 packageValidation.PackageValidationSet.PackageId,
                 packageValidation.PackageValidationSet.PackageNormalizedVersion,
-                startedStatus);
-            if (startedStatus == ValidationStatus.NotStarted)
+                validationResult.Status);
+            if (validationResult.Status == ValidationStatus.NotStarted)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(startedStatus),
+                    nameof(validationResult),
                     $"Cannot mark validation {packageValidation.Type} for " +
                     $"{packageValidation.PackageValidationSet.PackageId} " +
                     $"{packageValidation.PackageValidationSet.PackageNormalizedVersion} as started " +
                     $"with status {ValidationStatus.NotStarted}");
             }
 
-            packageValidation.ValidationStatus = startedStatus;
+            packageValidation.ValidationStatus = validationResult.Status;
+
+            // If the validation has completed, save the validation issues to the package's validation.
+            if (validationResult.Status != ValidationStatus.Incomplete)
+            {
+                foreach (var validationIssue in validationResult.Issues)
+                {
+                    packageValidation.PackageValidationIssues.Add(new PackageValidationIssue
+                    {
+                        IssueCode = validationIssue.IssueCode,
+                        Data = validationIssue.Serialize(),
+                    });
+                }
+            }
+
             var now = DateTime.UtcNow;
             packageValidation.ValidationStatusTimestamp = now;
             packageValidation.Started = now;
             await _validationContext.SaveChangesAsync();
         }
 
-        public async Task UpdateValidationStatusAsync(PackageValidation packageValidation, ValidationStatus validationStatus)
+        public async Task UpdateValidationStatusAsync(PackageValidation packageValidation, IValidationResult validationResult)
         {
             packageValidation = packageValidation ?? throw new ArgumentNullException(nameof(packageValidation));
             _logger.LogInformation("Updating the status of the validation {ValidationName} {ValidationId} {PackageId} {PackageVersion} to {ValidationStatus}",
@@ -80,13 +94,23 @@ namespace NuGet.Services.Validation.Orchestrator
                 packageValidation.PackageValidationSet.ValidationTrackingId,
                 packageValidation.PackageValidationSet.PackageId,
                 packageValidation.PackageValidationSet.PackageNormalizedVersion,
-                validationStatus);
-            if (packageValidation.ValidationStatus == validationStatus)
+                validationResult.Status);
+            if (packageValidation.ValidationStatus == validationResult.Status)
             {
                 return;
             }
 
-            packageValidation.ValidationStatus = validationStatus;
+            // Save the validation issues to the package's validation.
+            foreach (var validationIssue in validationResult.Issues)
+            {
+                packageValidation.PackageValidationIssues.Add(new PackageValidationIssue
+                {
+                    IssueCode = validationIssue.IssueCode,
+                    Data = validationIssue.Serialize(),
+                });
+            }
+
+            packageValidation.ValidationStatus = validationResult.Status;
             packageValidation.ValidationStatusTimestamp = DateTime.UtcNow;
             await _validationContext.SaveChangesAsync();
         }
