@@ -138,8 +138,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private bool AllValidationsSucceeded(PackageValidationSet packageValidationSet)
         {
-            var allSucceeded = packageValidationSet.PackageValidations.All(pv => pv.ValidationStatus == ValidationStatus.Succeeded);
-            return allSucceeded;
+            return packageValidationSet.PackageValidations.All(pv => pv.ValidationStatus == ValidationStatus.Succeeded);
         }
 
         private IEnumerable<PackageValidation> GetFailedValidations(PackageValidationSet packageValidationSet)

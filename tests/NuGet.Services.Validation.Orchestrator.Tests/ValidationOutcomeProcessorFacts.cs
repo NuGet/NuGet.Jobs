@@ -227,40 +227,56 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.FailedValidation, It.IsAny<bool>()), Times.Never());
         }
 
-        [Fact]
-        public async Task PrefersDbOverConfigurationForDeterminingSuccess()
+        [Theory]
+        [InlineData(2, 1, 0, ValidationStatus.Incomplete, PackageStatus.Validating)]
+        [InlineData(2, 1, 1, ValidationStatus.Incomplete, PackageStatus.Available)]
+        [InlineData(3, 2, 0, ValidationStatus.Incomplete, PackageStatus.Validating)]
+        [InlineData(3, 2, 1, ValidationStatus.Incomplete, PackageStatus.Validating)]
+        [InlineData(3, 2, 2, ValidationStatus.Incomplete, PackageStatus.Available)]
+        [InlineData(2, 1, 0, ValidationStatus.Failed, PackageStatus.FailedValidation)]
+        [InlineData(3, 2, 0, ValidationStatus.Failed, PackageStatus.FailedValidation)]
+        [InlineData(3, 2, 1, ValidationStatus.Failed, PackageStatus.FailedValidation)]
+        public async Task PrefersDbOverConfigurationForDeterminingSuccess(
+            int numConfiguredValidators,
+            int numDbValidators,
+            int numSucceededValidators,
+            ValidationStatus notSucceededStatus,
+            PackageStatus expectedStatus)
         {
-            Configuration.Validations.Add(new ValidationConfigurationItem
+            for (int cfgValidatorIndex = 0; cfgValidatorIndex < numConfiguredValidators; ++cfgValidatorIndex)
             {
-                Name = "validation1",
-                FailAfter = TimeSpan.FromDays(1),
-                RequiredValidations = new List<string> { }
-            });
-            Configuration.Validations.Add(new ValidationConfigurationItem
-            {
-                Name = "validation2",
-                FailAfter = TimeSpan.FromDays(1),
-                RequiredValidations = new List<string> { }
-            });
+                Configuration.Validations.Add(new ValidationConfigurationItem
+                {
+                    Name = "validation" + cfgValidatorIndex,
+                    FailAfter = TimeSpan.FromDays(1),
+                    RequiredValidations = new List<string> { }
+                });
+            }
 
-            ValidationSet.PackageValidations.Add(new PackageValidation
+            for (int dbValidatorIndex = 0; dbValidatorIndex < numDbValidators; ++dbValidatorIndex)
             {
-                Type = "validation1",
-                ValidationStatus = ValidationStatus.Succeeded
-            });
-
-            PackageServiceMock
-                .Setup(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.Available, true))
-                .Returns(Task.FromResult(0))
-                .Verifiable();
+                ValidationSet.PackageValidations.Add(new PackageValidation
+                {
+                    Type = "validation" + dbValidatorIndex,
+                    ValidationStatus = dbValidatorIndex < numSucceededValidators ? ValidationStatus.Succeeded : notSucceededStatus
+                });
+            }
 
             var processor = CreateProcessor();
             await processor.ProcessValidationOutcomeAsync(ValidationSet, Package);
 
-            PackageServiceMock
-                .Verify(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.Available, true), Times.Once());
-            PackageServiceMock
-                .Verify(ps => ps.UpdatePackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()), Times.Once());
+            if (expectedStatus != PackageStatus.Validating)
+            {
+                PackageServiceMock
+                    .Verify(ps => ps.UpdatePackageStatusAsync(Package, expectedStatus, true), Times.Once());
+                PackageServiceMock
+                    .Verify(ps => ps.UpdatePackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()), Times.Once());
+            }
+            else
+            {
+                PackageServiceMock
+                    .Verify(ps => ps.UpdatePackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()), Times.Never());
+            }
         }
 
         public ValidationOutcomeProcessorFacts()
