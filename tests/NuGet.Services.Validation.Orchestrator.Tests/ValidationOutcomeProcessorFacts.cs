@@ -16,7 +16,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
     public class ValidationOutcomeProcessorFacts
     {
         [Fact]
-        public async Task MarksPackageAsFailedOnFailedValidation()
+        public async Task MarksPackageAsFailedAndSendsEmailOnFailedValidation()
         {
             AddValidation("validation1", ValidationStatus.Failed);
 
@@ -32,6 +32,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(ps => ps.UpdatePackageStatusAsync(Package, PackageStatus.FailedValidation, true), Times.Once());
             PackageServiceMock
                 .Verify(ps => ps.UpdatePackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()), Times.Once());
+
+            MessageServiceMock
+                .Verify(ms => ms.SendPackageValidationFailedMessage(Package), Times.Once());
+            MessageServiceMock
+                .Verify(ms => ms.SendPackageValidationFailedMessage(It.IsAny<Package>()), Times.Once());
         }
 
         [Fact]
@@ -62,7 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Fact]
-        public async Task CopiesPackageToPublicStorageUponSuccess()
+        public async Task CopiesPackageToPublicStorageAndSendsEmailUponSuccess()
         {
             AddValidation("validation1", ValidationStatus.Succeeded);
             Package.PackageStatusKey = PackageStatus.Validating;
@@ -91,6 +96,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(pfs => pfs.SavePackageFileAsync(Package, stream), Times.Once());
             PackageFileServiceMock
                 .Verify(pfs => pfs.SavePackageFileAsync(It.IsAny<Package>(), It.IsAny<Stream>()), Times.Once());
+
+            MessageServiceMock
+                .Verify(ms => ms.SendPackagePublishedMessage(Package), Times.Once());
+            MessageServiceMock
+                .Verify(ms => ms.SendPackagePublishedMessage(It.IsAny<Package>()), Times.Once());
         }
 
         [Fact]
