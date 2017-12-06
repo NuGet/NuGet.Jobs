@@ -9,7 +9,7 @@ using NuGetGallery.Services;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    class MessageService : IMessageService
+    public class MessageService : IMessageService
     {
         private readonly ICoreMessageService _coreMessageService;
         private readonly EmailConfiguration _emailConfiguration;
@@ -25,12 +25,30 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 throw new ArgumentNullException(nameof(emailConfigurationAccessor));
             }
-            _emailConfiguration = emailConfigurationAccessor.Value;
+            _emailConfiguration = emailConfigurationAccessor.Value ?? throw new ArgumentException("Value cannot be null", nameof(emailConfigurationAccessor));
+            if (string.IsNullOrWhiteSpace(_emailConfiguration.PackageUrlTemplate))
+            {
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.PackageUrlTemplate)} cannot be empty", nameof(emailConfigurationAccessor));
+            }
+            if (string.IsNullOrWhiteSpace(_emailConfiguration.PackageSupportTemplate))
+            {
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.PackageSupportTemplate)} cannot be empty", nameof(emailConfigurationAccessor));
+            }
+            if (string.IsNullOrWhiteSpace(_emailConfiguration.EmailSettingsUrl))
+            {
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.EmailSettingsUrl)} cannot be empty", nameof(emailConfigurationAccessor));
+            }
+            if (!Uri.TryCreate(_emailConfiguration.EmailSettingsUrl, UriKind.Absolute, out Uri result))
+            {
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.EmailSettingsUrl)} must be an absolute Url", nameof(emailConfigurationAccessor));
+            }
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void SendPackagePublishedMessage(Package package)
         {
+            package = package ?? throw new ArgumentNullException(nameof(package));
+
             var galleryPackageUrl = string.Format(_emailConfiguration.PackageUrlTemplate, package.PackageRegistration.Id, package.NormalizedVersion);
             var packageSupportUrl = string.Format(_emailConfiguration.PackageSupportTemplate, package.PackageRegistration.Id, package.NormalizedVersion);
             _coreMessageService.SendPackageAddedNotice(package, galleryPackageUrl, packageSupportUrl, _emailConfiguration.EmailSettingsUrl);
@@ -38,6 +56,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public void SendPackageValidationFailedMessage(Package package)
         {
+            package = package ?? throw new ArgumentNullException(nameof(package));
+
             var galleryPackageUrl = string.Format(_emailConfiguration.PackageUrlTemplate, package.PackageRegistration.Id, package.NormalizedVersion);
             var packageSupportUrl = string.Format(_emailConfiguration.PackageSupportTemplate, package.PackageRegistration.Id, package.NormalizedVersion);
             _coreMessageService.SendPackageValidationFailedNotice(package, galleryPackageUrl, packageSupportUrl, _emailConfiguration.EmailSettingsUrl);

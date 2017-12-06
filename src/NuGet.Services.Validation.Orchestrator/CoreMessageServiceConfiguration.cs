@@ -18,10 +18,19 @@ namespace NuGet.Services.Validation.Orchestrator
             }
 
             var emailConfiguration = emailConfigurationAccessor.Value ?? throw new ArgumentException("Value property cannot be null", nameof(emailConfigurationAccessor));
-            GalleryOwner = new MailAddress(emailConfiguration.GalleryOwner 
-                ?? throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(emailConfiguration.GalleryOwner)} property cannot be null", nameof(emailConfigurationAccessor)));
-            GalleryNoReplyAddress = new MailAddress(emailConfiguration.GalleryNoReplyAddress
-                ?? throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(emailConfiguration.GalleryNoReplyAddress)} property cannot be null", nameof(emailConfigurationAccessor)));
+
+            if (string.IsNullOrWhiteSpace(emailConfiguration.GalleryOwner))
+            {
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(emailConfiguration.GalleryOwner)} property cannot be empty", nameof(emailConfigurationAccessor));
+            }
+
+            if (string.IsNullOrWhiteSpace(emailConfiguration.GalleryNoReplyAddress))
+            {
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(emailConfiguration.GalleryNoReplyAddress)} property cannot be empty", nameof(emailConfigurationAccessor));
+            }
+
+            GalleryOwner = new MailAddress(emailConfiguration.GalleryOwner);
+            GalleryNoReplyAddress = new MailAddress(emailConfiguration.GalleryNoReplyAddress);
         }
 
         public MailAddress GalleryOwner { get; set; }
