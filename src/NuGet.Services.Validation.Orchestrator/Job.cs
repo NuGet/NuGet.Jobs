@@ -185,11 +185,8 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<PackageSigningValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
             {
-                var smtpConfiguration = serviceProvider.GetRequiredService<SmtpConfiguration>();
-                if (string.IsNullOrWhiteSpace(smtpConfiguration.SmtpHost))
-                {
-                    return null;
-                }
+                var smtpConfigurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<SmtpConfiguration>>();
+                var smtpConfiguration = smtpConfigurationAccessor.Value;
                 return new MailSenderConfiguration
                 {
                     DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
@@ -202,10 +199,10 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<IMailSender>(serviceProvider =>
             {
-                var mailSenderConfiguration = serviceProvider.GetService<MailSenderConfiguration>();
-                return mailSenderConfiguration != null 
-                    ? (IMailSender)new MailSender(mailSenderConfiguration) 
-                    : (IMailSender)new NullMailSender();
+                var mailSenderConfiguration = serviceProvider.GetRequiredService<MailSenderConfiguration>();
+                return string.IsNullOrWhiteSpace(mailSenderConfiguration.Host)
+                    ? (IMailSender)new NullMailSender()
+                    : (IMailSender)new MailSender(mailSenderConfiguration);
             });
             services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
             services.AddTransient<ICoreMessageService, CoreMessageService>();

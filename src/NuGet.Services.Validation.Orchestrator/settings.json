@@ -54,8 +54,8 @@
   },
   "Smtp": {
     "SmtpHost": "",
-    "SmtpPort": "",
-    "EnableSsl": "",
+    "SmtpPort": "587",
+    "EnableSsl": "true",
     "Username": "",
     "Password": ""
   },
@@ -64,7 +64,7 @@
     "GalleryNoReplyAddress": "NuGet Gallery <noreply@nuget.org>",
     "PackageUrlTemplate": "https://www.nuget.org/packages/{0}/{1}",
     "PackageSupportTemplate": "https://www.nuget.org/packages/{0}/{1}/ReportMyPackage",
-    "EmailSettingsUrl": "http://www.nuget.org/account"
+    "EmailSettingsUrl": "https://www.nuget.org/account"
   },
   "KeyVault_VaultName": "",
   "KeyVault_ClientId": "",
