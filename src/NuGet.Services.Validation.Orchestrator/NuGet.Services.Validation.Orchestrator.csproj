@@ -46,6 +46,7 @@
     <Compile Include="ConfigurationValidator.cs" />
     <Compile Include="ContainerBuilderExtensions.cs" />
     <Compile Include="CoreMessageServiceConfiguration.cs" />
+    <Compile Include="DiskMailSender.cs" />
     <Compile Include="EmailConfiguration.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="GalleryDbConfiguration.cs" />
@@ -57,7 +58,6 @@
     <Compile Include="IValidatorProvider.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="MessageService.cs" />
-    <Compile Include="NullMailSender.cs" />
     <Compile Include="OrchestrationRunner.cs" />
     <Compile Include="OrchestrationRunnerConfiguration.cs" />
     <Compile Include="PackageCertificates\CertificateVerificationEnqueuer.cs" />

@@ -201,7 +201,7 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 var mailSenderConfiguration = serviceProvider.GetRequiredService<MailSenderConfiguration>();
                 return string.IsNullOrWhiteSpace(mailSenderConfiguration.Host)
-                    ? (IMailSender)new NullMailSender()
+                    ? (IMailSender)new DiskMailSender()
                     : (IMailSender)new MailSender(mailSenderConfiguration);
             });
             services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
