@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -70,14 +71,7 @@ namespace NuGet.Services.Validation.Orchestrator
             // If the validation has completed, save the validation issues to the package's validation.
             if (validationResult.Status != ValidationStatus.Incomplete)
             {
-                foreach (var validationIssue in validationResult.Issues)
-                {
-                    packageValidation.PackageValidationIssues.Add(new PackageValidationIssue
-                    {
-                        IssueCode = validationIssue.IssueCode,
-                        Data = validationIssue.Serialize(),
-                    });
-                }
+                AddValidationIssues(packageValidation, validationResult.Issues);
             }
 
             var now = DateTime.UtcNow;
@@ -100,8 +94,16 @@ namespace NuGet.Services.Validation.Orchestrator
                 return;
             }
 
-            // Save the validation issues to the package's validation.
-            foreach (var validationIssue in validationResult.Issues)
+            AddValidationIssues(packageValidation, validationResult.Issues);
+
+            packageValidation.ValidationStatus = validationResult.Status;
+            packageValidation.ValidationStatusTimestamp = DateTime.UtcNow;
+            await _validationContext.SaveChangesAsync();
+        }
+
+        private void AddValidationIssues(PackageValidation packageValidation, IReadOnlyList<IValidationIssue> validationIssues)
+        {
+            foreach (var validationIssue in validationIssues)
             {
                 packageValidation.PackageValidationIssues.Add(new PackageValidationIssue
                 {
@@ -109,10 +111,6 @@ namespace NuGet.Services.Validation.Orchestrator
                     Data = validationIssue.Serialize(),
                 });
             }
-
-            packageValidation.ValidationStatus = validationResult.Status;
-            packageValidation.ValidationStatusTimestamp = DateTime.UtcNow;
-            await _validationContext.SaveChangesAsync();
         }
     }
 }
