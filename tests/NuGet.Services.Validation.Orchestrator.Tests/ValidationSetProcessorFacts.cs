@@ -70,7 +70,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             ValidationStorageMock
-                .Setup(vs => vs.MarkValidationStartedAsync(validation, It.IsAny<ValidationResult>()))
+                .Setup(vs => vs.MarkValidationStartedAsync(validation, It.Is<ValidationResult>(r => r.Status == startStatus)))
                 .Returns(Task.FromResult(0))
                 .Callback<PackageValidation, ValidationResult>((pv, vr) => pv.ValidationStatus = vr.Status)
                 .Verifiable();
@@ -82,7 +82,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             if (expectStorageUpdate)
             {
                 ValidationStorageMock.Verify(
-                    vs => vs.MarkValidationStartedAsync(validation, It.IsAny<ValidationResult>()), Times.Once());
+                    vs => vs.MarkValidationStartedAsync(validation, It.Is<ValidationResult>(r => r.Status == startStatus)), Times.Once());
                 ValidationStorageMock.Verify(
                     vs => vs.MarkValidationStartedAsync(It.IsAny<PackageValidation>(), It.IsAny<ValidationResult>()), Times.Once());
             }
@@ -138,7 +138,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             ValidationStorageMock
-                .Setup(vs => vs.UpdateValidationStatusAsync(validation, It.IsAny<IValidationResult>()))
+                .Setup(vs => vs.UpdateValidationStatusAsync(validation, It.Is<IValidationResult>(r => r.Status == targetStatus)))
                 .Returns(Task.FromResult(0))
                 .Callback<PackageValidation, IValidationResult>((pv, vr) => pv.ValidationStatus = vr.Status)
                 .Verifiable();
@@ -151,7 +151,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             if (expectStorageUdpate)
             {
                 ValidationStorageMock.Verify(
-                    vs => vs.UpdateValidationStatusAsync(validation, It.IsAny<IValidationResult>()), Times.Once());
+                    vs => vs.UpdateValidationStatusAsync(validation, It.Is<IValidationResult>(r => r.Status == targetStatus)), Times.Once());
                 ValidationStorageMock.Verify(
                     vs => vs.UpdateValidationStatusAsync(It.IsAny<PackageValidation>(), It.IsAny<ValidationResult>()), Times.Once());
             }
