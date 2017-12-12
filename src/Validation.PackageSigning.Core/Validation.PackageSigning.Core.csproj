@@ -38,10 +38,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Services.ServiceBus">
-      <Version>2.5.1-loshar-errors-19089</Version>
+      <Version>2.5.1-dev-19235</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Validation">
-      <Version>2.5.1-loshar-errors-19089</Version>
+      <Version>2.5.1-dev-19235</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

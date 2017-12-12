@@ -174,7 +174,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var validationResult = new ValidationResult(targetStatus, new List<IValidationIssue>
             {
-                new PackageIsSignedError("A", "B")
+                new PackageIsSigned("A", "B")
             });
 
             validator
@@ -210,7 +210,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var validationResult = new ValidationResult(targetStatus, new List<IValidationIssue>
             {
-                new PackageIsSignedError("A", "B")
+                new PackageIsSigned("A", "B")
             });
 
             validator
