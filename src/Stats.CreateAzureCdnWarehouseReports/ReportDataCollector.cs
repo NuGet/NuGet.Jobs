@@ -13,17 +13,18 @@ namespace Stats.CreateAzureCdnWarehouseReports
 {
     internal class ReportDataCollector
     {
-        private const int _commandTimeout = 1800; // 30 minutes max
+        private static int _commandTimeout;
         private readonly string _procedureName;
         private readonly SqlConnectionStringBuilder _sourceDatabase;
 
         private ILogger<ReportDataCollector> _logger;
 
-        public ReportDataCollector(ILogger<ReportDataCollector> logger, string procedureName, SqlConnectionStringBuilder sourceDatabase)
+        public ReportDataCollector(ILogger<ReportDataCollector> logger, string procedureName, SqlConnectionStringBuilder sourceDatabase, int timeout)
         {
             _logger = logger;
             _procedureName = procedureName;
             _sourceDatabase = sourceDatabase;
+            _commandTimeout = timeout;
         }
 
         public async Task<DataTable> CollectAsync(DateTime reportGenerationTime, params Tuple<string, int, string>[] parameters)
