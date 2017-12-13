@@ -17,7 +17,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
     public class Job
         : JobBase
     {
-        private const int _defaultSqlCommandTimeout = 1800; // 30 minute SQL command timeout by default
+        private const int DefaultSqlCommandTimeout = 1800; // 30 minute SQL command timeout by default
         private const string _recentPopularityDetailByPackageReportBaseName = "recentpopularitydetail_";
         private CloudStorageAccount _cloudStorageAccount;
         private CloudStorageAccount _dataStorageAccount;
@@ -26,7 +26,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
         private SqlConnectionStringBuilder _galleryDatabase;
         private string _reportName;
         private string[] _dataContainerNames;
-        private int _sqlCommandTimeout = _defaultSqlCommandTimeout;
+        private int _sqlCommandTimeout = DefaultSqlCommandTimeout;
 
         private static readonly IDictionary<string, string> _storedProcedures = new Dictionary<string, string>
         {
@@ -50,7 +50,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
             var statisticsDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
             var galleryDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.SourceDatabase);
             var dataStorageAccountConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
-            _sqlCommandTimeout = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.CommandTimeOut) ?? _defaultSqlCommandTimeout;
+            _sqlCommandTimeout = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.CommandTimeOut) ?? DefaultSqlCommandTimeout;
 
             _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccountConnectionString, JobArgumentNames.AzureCdnCloudStorageAccount);
             _statisticsContainerName = ValidateAzureContainerName(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageContainerName), JobArgumentNames.AzureCdnCloudStorageContainerName);
