@@ -165,7 +165,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
         private async Task RebuildPackageReports(CloudBlobContainer destinationContainer, DateTime reportGenerationTime)
         {
-            var dirtyPackageIds = await ReportDataCollector.GetDirtyPackageIds(LoggerFactory.CreateLogger<ReportDataCollector>(), _statisticsDatabase, reportGenerationTime);
+            var dirtyPackageIds = await ReportDataCollector.GetDirtyPackageIds(LoggerFactory.CreateLogger<ReportDataCollector>(), _statisticsDatabase, reportGenerationTime, _sqlCommandTimeout);
 
             if (!dirtyPackageIds.Any())
                 return;
@@ -219,7 +219,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 if (top100Task.IsCompleted)
                 {
                     var runToCursor = dirtyPackageIds.First().RunToCuror;
-                    await ReportDataCollector.UpdateDirtyPackageIdCursor(_statisticsDatabase, runToCursor);
+                    await ReportDataCollector.UpdateDirtyPackageIdCursor(_statisticsDatabase, runToCursor, _sqlCommandTimeout);
                 }
             }
         }
@@ -227,7 +227,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
         private async Task CleanInactiveRecentPopularityDetailByPackageReports(CloudBlobContainer destinationContainer, DateTime reportGenerationTime)
         {
             Logger.LogDebug("Getting list of inactive packages.");
-            var packageIds = await ReportDataCollector.ListInactivePackageIdReports(_statisticsDatabase, reportGenerationTime);
+            var packageIds = await ReportDataCollector.ListInactivePackageIdReports(_statisticsDatabase, reportGenerationTime, _sqlCommandTimeout);
             Logger.LogInformation("Found {InactivePackageCount} inactive packages.", packageIds.Count);
 
             // Collect the list of reports
