@@ -13,7 +13,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
 {
     internal class ReportDataCollector
     {
-        private static int _commandTimeout;
+        private int _commandTimeout;
         private readonly string _procedureName;
         private readonly SqlConnectionStringBuilder _sourceDatabase;
 
