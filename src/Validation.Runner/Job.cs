@@ -19,6 +19,7 @@ namespace NuGet.Jobs.Validation.Runner
     public class Job
         : JobBase
     {
+        private const int DefaultBatchSize = 10;
         private readonly List<IValidator> _validators = new List<IValidator>();
 
         private string _galleryBaseAddress;
@@ -39,7 +40,7 @@ namespace NuGet.Jobs.Validation.Runner
 
             _runValidationTasks = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.RunValidationTasks).Split(';');
             _requestValidationTasks = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.RequestValidationTasks).Split(';');
-            _batchSize = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.BatchSize) ?? 10;
+            _batchSize = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.BatchSize) ?? DefaultBatchSize;
 
             // Add validators
             if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
