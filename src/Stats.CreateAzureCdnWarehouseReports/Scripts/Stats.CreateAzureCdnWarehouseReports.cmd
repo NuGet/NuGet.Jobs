@@ -19,7 +19,7 @@ cd bin
 		-InstrumentationKey "#{Jobs.stats.createazurecdnwarehousereports.InstrumentationKey}" ^
 		-DataContainerName "#{Jobs.stats.createazurecdnwarehousereports.DataContainerName}" ^
 		-CommandTimeOut "#{Jobs.stats.createazurecdnwarehousereports.CommandTimeOut}" ^
-		-PerPackageReportDegreeOfParallelism "#{Jobs.stats.createazurecdnwarehousereports.PerPackageReportDegreeOfParallelism} ^
+		-PerPackageReportDegreeOfParallelism "#{Jobs.stats.createazurecdnwarehousereports.PerPackageReportDegreeOfParallelism}" ^
 		-verbose true ^
 		-Interval #{Jobs.stats.createazurecdnwarehousereports.Interval} 
 
