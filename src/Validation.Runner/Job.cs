@@ -26,6 +26,7 @@ namespace NuGet.Jobs.Validation.Runner
         private string _containerName;
         private string[] _runValidationTasks;
         private string[] _requestValidationTasks;
+        private int _batchSize;
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
@@ -38,6 +39,7 @@ namespace NuGet.Jobs.Validation.Runner
 
             _runValidationTasks = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.RunValidationTasks).Split(';');
             _requestValidationTasks = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.RequestValidationTasks).Split(';');
+            _batchSize = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.BatchSize) ?? 10;
 
             // Add validators
             if (_runValidationTasks.Contains(VcsValidator.ValidatorName))
@@ -128,7 +130,7 @@ namespace NuGet.Jobs.Validation.Runner
             var notificationService = new NotificationService(_cloudStorageAccount, _containerName);
 
             // Get messages to process
-            var messages = await packageValidationQueue.DequeueAsync(validator.Name, 16, validator.VisibilityTimeout);
+            var messages = await packageValidationQueue.DequeueAsync(validator.Name, _batchSize, validator.VisibilityTimeout);
             foreach (var message in messages)
             {
                 // Audit entry collection to which our validator can write
