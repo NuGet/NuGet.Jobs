@@ -56,9 +56,17 @@ namespace NuGet.Services.Validation.Orchestrator
                 if (package.PackageStatusKey != PackageStatus.Available)
                 {
                     await _galleryPackageService.UpdatePackageStatusAsync(package, PackageStatus.FailedValidation);
-                    if (validationSet.PackageValidations.SelectMany(pv => pv.PackageValidationIssues).All(pvi => pvi.IssueCode == ValidationIssueCode.PackageIsSigned))
+
+                    var issuesExistAndAllPackageSigned = validationSet
+                        .PackageValidations
+                        .SelectMany(pv => pv.PackageValidationIssues)
+                        .Select(pvi => pvi.IssueCode == ValidationIssueCode.PackageIsSigned)
+                        .DefaultIfEmpty(false)
+                        .All(v => v);
+
+                    if (issuesExistAndAllPackageSigned)
                     {
-                        // send "package is signed" message
+                        _messageService.SendPackageSignedValidationFailedMessage(package);
                     }
                     else
                     {
