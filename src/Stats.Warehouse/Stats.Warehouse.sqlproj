@@ -138,6 +138,7 @@
     <Build Include="Programmability\Stored Procedures\dbo.CheckLogFileHasToolStatistics.sql" />
     <Build Include="Programmability\Stored Procedures\dbo.DownloadReportRecentCommunityPopularity.sql" />
     <Build Include="Programmability\Stored Procedures\dbo.DownloadReportRecentCommunityPopularityDetail.sql" />
+    <Build Include="Programmability\Stored Procedures\dbo.GetDirtyPackageIdsCursor.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="StaticCodeAnalysis.SuppressMessages.xml" />
