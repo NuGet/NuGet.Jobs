@@ -45,6 +45,7 @@ namespace NuGet.Jobs
 
         //Arguments specific to CreateWarehouseReports job
         public const string WarehouseReportName = "WarehouseReportName";
+        public const string PerPackageReportDegreeOfParallelism = "PerPackageReportDegreeOfParallelism";
 
         // Arguments specific to Search* jobs
         public const string DataStorageAccount = "DataStorageAccount";
@@ -101,6 +102,7 @@ namespace NuGet.Jobs
         public const string RunValidationTasks = "RunValidationTasks";
         public const string RequestValidationTasks = "RequestValidationTasks";
         public const string PackageUrlTemplate = "PackageUrlTemplate";
+        public const string BatchSize = "BatchSize";
 
         // Arguments specific to VCS validation task
         public const string VcsValidatorServiceUrl = "VcsValidatorServiceUrl";
