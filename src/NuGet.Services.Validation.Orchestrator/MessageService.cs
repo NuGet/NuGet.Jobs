@@ -68,7 +68,7 @@ namespace NuGet.Services.Validation.Orchestrator
             package = package ?? throw new ArgumentNullException(nameof(package));
 
             var galleryPackageUrl = string.Format(_emailConfiguration.PackageUrlTemplate, package.PackageRegistration.Id, package.NormalizedVersion);
-            _coreMessageService.SendPackageSignedFailureNotice(package, galleryPackageUrl, _emailConfiguration.AnnouncementsUrl, _emailConfiguration.TwitterUrl);
+            _coreMessageService.SendSignedPackageNotAllowedNotice(package, galleryPackageUrl, _emailConfiguration.AnnouncementsUrl, _emailConfiguration.TwitterUrl);
         }
     }
 }
