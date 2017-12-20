@@ -145,6 +145,12 @@ namespace NuGet.Services.Validation.Orchestrator
                         continue;
                     }
 
+                    // don't start disabled validations
+                    if (validationConfiguration.ValidatorUsage == ValidatorUsage.Disabled)
+                    {
+                        continue;
+                    }
+
                     bool prerequisitesAreMet = ArePrerequisitesMet(packageValidation, validationSet);
                     if (!prerequisitesAreMet)
                     {

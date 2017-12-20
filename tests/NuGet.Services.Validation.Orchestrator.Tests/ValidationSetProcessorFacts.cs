@@ -121,14 +121,34 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(v => v.StartValidationAsync(It.IsAny<IValidationRequest>()), Times.Never());
         }
 
-        [Theory]
-        [InlineData(ValidationStatus.Incomplete, false)]
-        [InlineData(ValidationStatus.Succeeded, true)]
-        [InlineData(ValidationStatus.Failed, true)]
-        public async Task HandlesIncompleteValidationsStatusChanges(ValidationStatus targetStatus, bool expectStorageUdpate)
+        [Fact]
+        public async Task DoesNotStartDisabledValidations()
         {
             UseDefaultValidatorProvider();
-            var validator = AddValidation("validation1", TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete);
+            const string validation1 = "validation1";
+            var validator = AddValidation(validation1, TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, validatorUsageStatus: ValidatorUsage.Disabled);
+            validator
+                .Setup(v => v.GetStatusAsync(It.IsAny<IValidationRequest>()))
+                .ReturnsAsync(ValidationStatus.Incomplete);
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationsAsync(ValidationSet, Package);
+
+            validator
+                .Verify(v => v.StartValidationAsync(It.IsAny<IValidationRequest>()), Times.Never());
+        }
+
+        [Theory]
+        [InlineData(ValidationStatus.Incomplete, ValidatorUsage.Required, false)]
+        [InlineData(ValidationStatus.Succeeded, ValidatorUsage.Required, true)]
+        [InlineData(ValidationStatus.Failed, ValidatorUsage.Required, true)]
+        [InlineData(ValidationStatus.Incomplete, ValidatorUsage.Disabled, false)]
+        [InlineData(ValidationStatus.Succeeded, ValidatorUsage.Disabled, true)]
+        [InlineData(ValidationStatus.Failed, ValidatorUsage.Disabled, true)]
+        public async Task HandlesIncompleteValidationsStatusChanges(ValidationStatus targetStatus, ValidatorUsage validatorUsageStatus, bool expectStorageUdpate)
+        {
+            UseDefaultValidatorProvider();
+            var validator = AddValidation("validation1", TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, validatorUsageStatus: validatorUsageStatus);
             var validation = ValidationSet.PackageValidations.First();
 
             validator
@@ -320,13 +340,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             return validation;
         }
 
-        protected ValidationConfigurationItem AddValidationToConfiguration(string name, TimeSpan failAfter, params string[] requiredValidations)
+        protected ValidationConfigurationItem AddValidationToConfiguration(string name, TimeSpan failAfter, ValidatorUsage validatorUsageStatus, params string[] requiredValidations)
         {
             var validation = new ValidationConfigurationItem
             {
                 Name = name,
                 FailAfter = failAfter,
-                RequiredValidations = requiredValidations.ToList()
+                RequiredValidations = requiredValidations.ToList(),
+                ValidatorUsage = validatorUsageStatus
             };
             Configuration.Validations.Add(validation);
             return validation;
@@ -343,11 +364,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             string name,
             TimeSpan failAfter,
             string[] requiredValidations = null,
-            ValidationStatus validationStatus = ValidationStatus.NotStarted)
+            ValidationStatus validationStatus = ValidationStatus.NotStarted,
+            ValidatorUsage validatorUsageStatus = ValidatorUsage.Required)
         {
             requiredValidations = requiredValidations ?? new string[0];
             AddValidationToSet(name, validationStatus);
-            AddValidationToConfiguration(name, failAfter, requiredValidations);
+            AddValidationToConfiguration(name, failAfter, validatorUsageStatus, requiredValidations);
 
             var validatorMock = new Mock<IValidator>();
             Validators.Add(name, validatorMock);

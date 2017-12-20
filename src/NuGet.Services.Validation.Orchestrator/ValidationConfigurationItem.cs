@@ -26,6 +26,11 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         public List<string> RequiredValidations { get; set; }
 
+        /// <summary>
+        /// Validator usage.
+        /// </summary>
+        public ValidatorUsage ValidatorUsage { get; set; }
+
         public ValidationConfigurationItem()
         {
             RequiredValidations = new List<string>();
