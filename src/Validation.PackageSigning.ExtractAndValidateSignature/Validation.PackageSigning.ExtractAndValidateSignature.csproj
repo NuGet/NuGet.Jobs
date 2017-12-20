@@ -119,7 +119,7 @@
       <Version>2.5.1-dev-19235</Version>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
-      <Version>4.4.4-dev-18852</Version>
+      <Version>4.4.4-dev-19677</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http">
       <Version>4.3.3</Version>
