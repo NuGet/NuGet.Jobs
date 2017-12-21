@@ -190,6 +190,21 @@ namespace Validation.PackageSigning.ExtractAndValidateSignature.Tests
                     x => x.SaveStatusAsync(It.IsAny<ValidatorStatus>()),
                     Times.Never);
             }
+
+            [Fact]
+            public async Task FailsOn404()
+            {
+                var message = new SignatureValidationMessage(
+                    _message.PackageId,
+                    _message.PackageVersion,
+                    new Uri(_message.NupkgUri, "foobar"),
+                    _message.ValidationId);
+
+                var success = await _target.HandleAsync(message);
+
+                Assert.True(success, "Handler should succeed");
+                Assert.Equal(ValidationStatus.Failed, _validation.State);
+            }
         }
     }
 }

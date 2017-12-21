@@ -108,11 +108,18 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                 return true;
             }
 
-            // Validate package
-            using (var packageStream = await DownloadPackageAsync(message.NupkgUri, cancellationToken))
-            using (var package = new PackageArchiveReader(packageStream, leaveStreamOpen: false))
+            try
             {
-                await _signatureValidator.ValidateAsync(package, validation, message, cancellationToken);
+                // Validate package
+                using (var packageStream = await DownloadPackageAsync(message.NupkgUri, cancellationToken))
+                using (var package = new PackageArchiveReader(packageStream, leaveStreamOpen: false))
+                {
+                    await _signatureValidator.ValidateAsync(package, validation, message, cancellationToken);
+                }
+            }
+            catch (ResourceNotFoundException e)
+            {
+                validation.State = ValidationStatus.Failed;
             }
 
             // The signature validator should do all of the work to bring this validation to its completion.
@@ -184,11 +191,15 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
                         "Received response {StatusCode}: {ReasonPhrase} of type {ContentType} for request {PackageUri}",
                         response.StatusCode,
                         response.ReasonPhrase,
-                        response.Content.Headers.ContentType,
+                        response.Content?.Headers?.ContentType,
                         packageUri);
 
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
+                        if (response.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            throw new ResourceNotFoundException(packageUri);
+                        }
                         throw new InvalidOperationException($"Expected status code {HttpStatusCode.OK} for package download, actual: {response.StatusCode}");
                     }
 
