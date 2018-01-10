@@ -129,8 +129,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             const string validation1 = "validation1";
             var validator = AddValidation(validation1, TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, validatorUsageStatus: ValidatorUsage.Disabled);
             validator
-                .Setup(v => v.GetStatusAsync(It.IsAny<IValidationRequest>()))
-                .ReturnsAsync(ValidationStatus.Incomplete);
+                .Setup(v => v.GetResultAsync(It.IsAny<IValidationRequest>()))
+                .ReturnsAsync(ValidationResult.Incomplete);
 
             var processor = CreateProcessor();
             await processor.ProcessValidationsAsync(ValidationSet, Package);
