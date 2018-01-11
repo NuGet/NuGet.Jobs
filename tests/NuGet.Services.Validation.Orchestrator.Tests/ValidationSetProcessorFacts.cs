@@ -127,7 +127,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         {
             UseDefaultValidatorProvider();
             const string validation1 = "validation1";
-            var validator = AddValidation(validation1, TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, validatorUsageStatus: ValidatorUsage.Disabled);
+            var validator = AddValidation(validation1, TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, shouldStart: false);
             validator
                 .Setup(v => v.GetResultAsync(It.IsAny<IValidationRequest>()))
                 .ReturnsAsync(ValidationResult.Incomplete);
@@ -140,16 +140,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Theory]
-        [InlineData(ValidationStatus.Incomplete, ValidatorUsage.Required, false)]
-        [InlineData(ValidationStatus.Succeeded, ValidatorUsage.Required, true)]
-        [InlineData(ValidationStatus.Failed, ValidatorUsage.Required, true)]
-        [InlineData(ValidationStatus.Incomplete, ValidatorUsage.Disabled, false)]
-        [InlineData(ValidationStatus.Succeeded, ValidatorUsage.Disabled, true)]
-        [InlineData(ValidationStatus.Failed, ValidatorUsage.Disabled, true)]
-        public async Task HandlesIncompleteValidationsStatusChanges(ValidationStatus targetStatus, ValidatorUsage validatorUsageStatus, bool expectStorageUdpate)
+        [InlineData(ValidationStatus.Incomplete, true, ValidationFailureBehavior.MustSucceed, false)]
+        [InlineData(ValidationStatus.Succeeded, true, ValidationFailureBehavior.MustSucceed, true)]
+        [InlineData(ValidationStatus.Failed, true, ValidationFailureBehavior.MustSucceed, true)]
+        [InlineData(ValidationStatus.Incomplete, false, ValidationFailureBehavior.MustSucceed, false)]
+        [InlineData(ValidationStatus.Succeeded, false, ValidationFailureBehavior.MustSucceed, true)]
+        [InlineData(ValidationStatus.Failed, false, ValidationFailureBehavior.MustSucceed, true)]
+        [InlineData(ValidationStatus.Incomplete, true, ValidationFailureBehavior.AllowedToFail, false)]
+        [InlineData(ValidationStatus.Succeeded, true, ValidationFailureBehavior.AllowedToFail, true)]
+        [InlineData(ValidationStatus.Failed, true, ValidationFailureBehavior.AllowedToFail, true)]
+        [InlineData(ValidationStatus.Incomplete, false, ValidationFailureBehavior.AllowedToFail, false)]
+        [InlineData(ValidationStatus.Succeeded, false, ValidationFailureBehavior.AllowedToFail, true)]
+        [InlineData(ValidationStatus.Failed, false, ValidationFailureBehavior.AllowedToFail, true)]
+        public async Task HandlesIncompleteValidationsStatusChanges(ValidationStatus targetStatus, bool shouldStart, ValidationFailureBehavior failureBehavior, bool expectStorageUdpate)
         {
             UseDefaultValidatorProvider();
-            var validator = AddValidation("validation1", TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, validatorUsageStatus: validatorUsageStatus);
+            var validator = AddValidation("validation1", TimeSpan.FromDays(1), validationStatus: ValidationStatus.Incomplete, shouldStart: shouldStart, failureBehavior: failureBehavior);
             var validation = ValidationSet.PackageValidations.First();
 
             validator
@@ -415,14 +421,15 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             return validation;
         }
 
-        protected ValidationConfigurationItem AddValidationToConfiguration(string name, TimeSpan failAfter, ValidatorUsage validatorUsageStatus, params string[] requiredValidations)
+        protected ValidationConfigurationItem AddValidationToConfiguration(string name, TimeSpan failAfter, bool shouldStart, ValidationFailureBehavior failureBehavior, params string[] requiredValidations)
         {
             var validation = new ValidationConfigurationItem
             {
                 Name = name,
                 FailAfter = failAfter,
                 RequiredValidations = requiredValidations.ToList(),
-                ValidatorUsage = validatorUsageStatus
+                ShouldStart = shouldStart,
+                FailureBehavior = failureBehavior
             };
             Configuration.Validations.Add(validation);
             return validation;
@@ -440,11 +447,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             TimeSpan failAfter,
             string[] requiredValidations = null,
             ValidationStatus validationStatus = ValidationStatus.NotStarted,
-            ValidatorUsage validatorUsageStatus = ValidatorUsage.Required)
+            bool shouldStart = true,
+            ValidationFailureBehavior failureBehavior = ValidationFailureBehavior.MustSucceed)
         {
             requiredValidations = requiredValidations ?? new string[0];
             AddValidationToSet(name, validationStatus);
-            AddValidationToConfiguration(name, failAfter, validatorUsageStatus, requiredValidations);
+            AddValidationToConfiguration(name, failAfter, shouldStart, failureBehavior, requiredValidations);
 
             var validatorMock = new Mock<IValidator>();
             Validators.Add(name, validatorMock);

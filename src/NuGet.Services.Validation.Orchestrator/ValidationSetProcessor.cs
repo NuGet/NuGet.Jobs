@@ -145,8 +145,7 @@ namespace NuGet.Services.Validation.Orchestrator
                         continue;
                     }
 
-                    // don't start disabled validations
-                    if (validationConfiguration.ValidatorUsage == ValidatorUsage.Disabled)
+                    if (!validationConfiguration.ShouldStart)
                     {
                         continue;
                     }
