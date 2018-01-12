@@ -8,7 +8,8 @@
       }
     ],
     "ValidationStorageConnectionString": "",
-    "ValidationMessageRecheckPeriod": "00:01:00"
+    "ValidationMessageRecheckPeriod": "00:01:00",
+    "NewValidationRequestDeduplicationTimeout":  "00:10:00"
   },
   "Vcs": {
     "ContainerName": "validation",

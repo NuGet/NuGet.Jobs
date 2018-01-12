@@ -36,6 +36,15 @@ namespace NuGet.Services.Validation.Orchestrator
 
             if (validationSet == null)
             {
+                var shouldSkip = await _validationStorageService.RecentValidationSetForPackageExists(
+                    package.PackageRegistration.Id,
+                    package.NormalizedVersion,
+                    _validationConfiguration.NewValidationRequestDeduplicationTimeout,
+                    validationTrackingId);
+                if (shouldSkip)
+                {
+                    return null;
+                }
                 validationSet = await CreateValidationSet(validationTrackingId, package);
             }
             else

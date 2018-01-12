@@ -61,6 +61,11 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 var validationSet = await _validationSetProvider.GetOrCreateValidationSetAsync(message.ValidationTrackingId, package);
 
+                if (validationSet == null)
+                {
+                    return true;
+                }
+
                 await _validationSetProcessor.ProcessValidationsAsync(validationSet, package);
                 await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, package);
             }

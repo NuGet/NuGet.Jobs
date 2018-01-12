@@ -89,6 +89,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(null)
                 .Verifiable();
 
+            ValidationStorageMock
+                .Setup(vs => vs.RecentValidationSetForPackageExists(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), validationTrackingId))
+                .ReturnsAsync(false);
+
             PackageValidationSet createdSet = null;
             ValidationStorageMock
                 .Setup(vs => vs.CreateValidationSetAsync(It.IsAny<PackageValidationSet>()))
@@ -125,6 +129,39 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.All(createdSet.PackageValidations, v => Assert.True(endOfCallTimestamp - v.ValidationStatusTimestamp < allowedTimeDifference));
             Assert.Contains(createdSet.PackageValidations, v => v.Type == validation1);
             Assert.Contains(createdSet.PackageValidations, v => v.Type == validation2);
+        }
+
+        [Fact]
+        public async Task GetOrCreateValidationSetAsyncDoesNotCreateDuplicateValidationSet()
+        {
+            Guid validationTrackingId = Guid.NewGuid();
+
+            ValidationStorageMock
+                .Setup(vs => vs.GetValidationSetAsync(validationTrackingId))
+                .ReturnsAsync(null);
+
+            ValidationStorageMock
+                .Setup(vs => vs.RecentValidationSetForPackageExists(
+                    Package.PackageRegistration.Id,
+                    Package.NormalizedVersion,
+                    It.IsAny<TimeSpan>(),
+                    validationTrackingId))
+                .ReturnsAsync(true);
+
+            var provider = CreateProvider();
+            var result = await provider.GetOrCreateValidationSetAsync(validationTrackingId, Package);
+
+            Assert.Null(result);
+            ValidationStorageMock
+                .Verify(
+                    vs => vs.RecentValidationSetForPackageExists(
+                        Package.PackageRegistration.Id,
+                        Package.NormalizedVersion,
+                        It.IsAny<TimeSpan>(),
+                        validationTrackingId),
+                    Times.Once);
+            ValidationStorageMock
+                .Verify(vs => vs.CreateValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Never);
         }
 
         public ValidationSetProviderFacts()

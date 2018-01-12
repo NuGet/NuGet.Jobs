@@ -25,5 +25,11 @@ namespace NuGet.Services.Validation.Orchestrator
         /// Time to wait between checking the state of a certain validation.
         /// </summary>
         public TimeSpan ValidationMessageRecheckPeriod { get; set; }
+
+        /// <summary>
+        /// Time period during which all requests to start new validation
+        /// for a certain package except the very first one would be dropped.
+        /// </summary>
+        public TimeSpan NewValidationRequestDeduplicationTimeout { get; set; }
     }
 }

@@ -50,5 +50,20 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="validationResult">The result of the validation.</param>
         /// <returns>Task object tracking the async operation status.</returns>
         Task UpdateValidationStatusAsync(PackageValidation packageValidation, IValidationResult validationResult);
+
+        /// <summary>
+        /// Checks whether a validation set was created within the time range specified
+        /// by <paramref name="recentDuration"/> argument.
+        /// </summary>
+        /// <param name="packageId">Package ID for which recent validation sets are to be looked up.</param>
+        /// <param name="normalizedVersion">Normalized version of the package.</param>
+        /// <param name="recentDuration">Max amount of time to look back.</param>
+        /// <param name="currentValidationSetTrackingId">Validation set tracking for the currently processed request.</param>
+        /// <returns>True if validation set exists, false otherwise.</returns>
+        Task<bool> RecentValidationSetForPackageExists(
+            string packageId,
+            string normalizedVersion,
+            TimeSpan recentDuration,
+            Guid currentValidationSetTrackingId);
     }
 }
