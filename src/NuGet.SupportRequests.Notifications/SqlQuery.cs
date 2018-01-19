@@ -8,7 +8,7 @@ namespace NuGet.SupportRequests.Notifications
         internal static string GetUnresolvedIssues(string onCallPagerDutyUserName = null)
         {
             var query =
-                "SELECT I.[CreatedBy], I.[CreatedDate], I.[PackageId], I.[PackageVersion], I.[OwnerEmail], I.[Reason], I.[PackageRegistrationKey], ISNULL(A.[PagerDutyUsername], \'Unassigned\') AS \'AdminPagerDutyUsername\', ISNULL(A.[GalleryUsername], \'Unassigned\') AS \'AdminGalleryUsername\', I.[IssueStatusId] AS \'IssueStatus\' FROM [dbo].[Issues] AS I (NOLOCK) LEFT OUTER JOIN [dbo].[Admins] AS A (NOLOCK) ON I.[AssignedToId] = A.[Key] WHERE I.[IssueStatusId] <> 3 ";
+                "SELECT I.[CreatedBy], I.[CreatedDate], I.[PackageId], I.[PackageVersion], I.[OwnerEmail], I.[Reason], I.[PackageRegistrationKey], ISNULL(A.[PagerDutyUsername], \'Unassigned\') AS \'AdminPagerDutyUsername\', ISNULL(A.[GalleryUsername], \'Unassigned\') AS \'AdminGalleryUsername\', I.[IssueStatusId] AS \'IssueStatus\' FROM [dbo].[Issues] AS I (NOLOCK) LEFT OUTER JOIN [dbo].[Admins] AS A (NOLOCK) ON I.[AssignedToId] = A.[Key] WHERE I.[IssueStatusId] <> 3 AND I.[CreatedBy] IS NOT NULL";
 
             if (!string.IsNullOrEmpty(onCallPagerDutyUserName))
             {
