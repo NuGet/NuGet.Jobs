@@ -39,7 +39,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 var shouldSkip = await _validationStorageService.OtherRecentValidationSetForPackageExists(
                     package.PackageRegistration.Id,
                     package.NormalizedVersion,
-                    _validationConfiguration.NewValidationRequestDeduplicationTimeout,
+                    _validationConfiguration.NewValidationRequestDeduplicationWindow,
                     validationTrackingId);
                 if (shouldSkip)
                 {

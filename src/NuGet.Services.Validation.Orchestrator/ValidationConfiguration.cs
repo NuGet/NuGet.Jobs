@@ -27,9 +27,11 @@ namespace NuGet.Services.Validation.Orchestrator
         public TimeSpan ValidationMessageRecheckPeriod { get; set; }
 
         /// <summary>
-        /// Time period during which all requests to start new validation
-        /// for a certain package except the very first one would be dropped.
+        /// The duplication detection window used for new validation requests.
+        /// Validation requests will be ignored if there exists another validation
+        /// request for the same package id and version that was created within
+        /// this window.
         /// </summary>
-        public TimeSpan NewValidationRequestDeduplicationTimeout { get; set; }
+        public TimeSpan NewValidationRequestDeduplicationWindow { get; set; }
     }
 }
