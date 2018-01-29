@@ -32,7 +32,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var provider = CreateProvider();
 
-            var set = await provider.GetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package);
+            var set = await provider.TryGetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package);
 
             ValidationStorageMock
                 .Verify(vs => vs.GetValidationSetAsync(ValidationSet.ValidationTrackingId), Times.Once());
@@ -51,7 +51,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var provider = CreateProvider();
 
-            var ex = await Assert.ThrowsAsync<Exception>(() => provider.GetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package));
+            var ex = await Assert.ThrowsAsync<Exception>(() => provider.TryGetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package));
             Assert.Contains(ValidationSet.PackageId, ex.Message);
             Assert.Contains(Package.PackageRegistration.Id, ex.Message);
         }
@@ -67,7 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var provider = CreateProvider();
 
-            var ex = await Assert.ThrowsAsync<Exception>(() => provider.GetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package));
+            var ex = await Assert.ThrowsAsync<Exception>(() => provider.TryGetOrCreateValidationSetAsync(ValidationSet.ValidationTrackingId, Package));
             Assert.Contains(ValidationSet.PackageNormalizedVersion, ex.Message);
             Assert.Contains(Package.NormalizedVersion, ex.Message);
         }
@@ -105,7 +105,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ConfigurationAccessorMock.Object,
                 LoggerMock.Object);
 
-            var returnedSet = await provider.GetOrCreateValidationSetAsync(validationTrackingId, Package);
+            var returnedSet = await provider.TryGetOrCreateValidationSetAsync(validationTrackingId, Package);
             var endOfCallTimestamp = DateTime.UtcNow;
 
             ValidationStorageMock
@@ -149,7 +149,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(true);
 
             var provider = CreateProvider();
-            var result = await provider.GetOrCreateValidationSetAsync(validationTrackingId, Package);
+            var result = await provider.TryGetOrCreateValidationSetAsync(validationTrackingId, Package);
 
             Assert.Null(result);
             ValidationStorageMock

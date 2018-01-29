@@ -49,7 +49,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             ValidationSetProviderMock
-                .Setup(vsp => vsp.GetOrCreateValidationSetAsync(messageData.ValidationTrackingId, package))
+                .Setup(vsp => vsp.TryGetOrCreateValidationSetAsync(messageData.ValidationTrackingId, package))
                 .ReturnsAsync(null)
                 .Verifiable();
 
@@ -61,7 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             CorePackageServiceMock
                 .Verify(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion), Times.Once());
             ValidationSetProviderMock
-                .Verify(vsp => vsp.GetOrCreateValidationSetAsync(messageData.ValidationTrackingId, package), Times.Once());
+                .Verify(vsp => vsp.TryGetOrCreateValidationSetAsync(messageData.ValidationTrackingId, package), Times.Once());
         }
     }
 
@@ -83,7 +83,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(Package);
 
             ValidationSetProviderMock
-                .Setup(vsp => vsp.GetOrCreateValidationSetAsync(MessageData.ValidationTrackingId, Package))
+                .Setup(vsp => vsp.TryGetOrCreateValidationSetAsync(MessageData.ValidationTrackingId, Package))
                 .ReturnsAsync(ValidationSet);
         }
 
@@ -94,7 +94,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             await handler.HandleAsync(MessageData);
 
             ValidationSetProviderMock
-                .Verify(vsp => vsp.GetOrCreateValidationSetAsync(MessageData.ValidationTrackingId, Package));
+                .Verify(vsp => vsp.TryGetOrCreateValidationSetAsync(MessageData.ValidationTrackingId, Package));
         }
 
         [Fact]

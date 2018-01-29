@@ -46,7 +46,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}", message.PackageId, message.PackageVersion, message.ValidationTrackingId))
             {
-                var validationSet = await _validationSetProvider.GetOrCreateValidationSetAsync(message.ValidationTrackingId, package);
+                var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message.ValidationTrackingId, package);
 
                 if (validationSet == null)
                 {
