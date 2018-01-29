@@ -102,7 +102,7 @@ namespace NuGet.Services.Validation.Orchestrator
             await _validationContext.SaveChangesAsync();
         }
 
-        public async Task<bool> RecentValidationSetForPackageExists(
+        public async Task<bool> OtherRecentValidationSetForPackageExists(
             string packageId,
             string normalizedVersion,
             TimeSpan recentDuration,

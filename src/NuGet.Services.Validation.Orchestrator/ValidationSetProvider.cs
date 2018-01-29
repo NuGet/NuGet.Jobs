@@ -36,7 +36,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             if (validationSet == null)
             {
-                var shouldSkip = await _validationStorageService.RecentValidationSetForPackageExists(
+                var shouldSkip = await _validationStorageService.OtherRecentValidationSetForPackageExists(
                     package.PackageRegistration.Id,
                     package.NormalizedVersion,
                     _validationConfiguration.NewValidationRequestDeduplicationTimeout,

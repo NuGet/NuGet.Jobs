@@ -90,7 +90,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             ValidationStorageMock
-                .Setup(vs => vs.RecentValidationSetForPackageExists(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), validationTrackingId))
+                .Setup(vs => vs.OtherRecentValidationSetForPackageExists(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), validationTrackingId))
                 .ReturnsAsync(false);
 
             PackageValidationSet createdSet = null;
@@ -141,7 +141,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(null);
 
             ValidationStorageMock
-                .Setup(vs => vs.RecentValidationSetForPackageExists(
+                .Setup(vs => vs.OtherRecentValidationSetForPackageExists(
                     Package.PackageRegistration.Id,
                     Package.NormalizedVersion,
                     It.IsAny<TimeSpan>(),
@@ -154,7 +154,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.Null(result);
             ValidationStorageMock
                 .Verify(
-                    vs => vs.RecentValidationSetForPackageExists(
+                    vs => vs.OtherRecentValidationSetForPackageExists(
                         Package.PackageRegistration.Id,
                         Package.NormalizedVersion,
                         It.IsAny<TimeSpan>(),
