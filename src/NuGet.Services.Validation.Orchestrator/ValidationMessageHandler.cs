@@ -50,6 +50,10 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 if (validationSet == null)
                 {
+                    _logger.LogInformation("The validation request for {PackageId} {PackageVersion} validation set {ValidationSetId} is a duplicate. Discarding.",
+                        message.PackageId,
+                        message.PackageVersion,
+                        message.ValidationTrackingId);
                     return true;
                 }
 
