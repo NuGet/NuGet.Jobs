@@ -73,6 +73,9 @@ namespace Validation.PackageSigning.ValidateCertificate
                     }
 
                     break;
+
+                default:
+                    throw new ArgumentException($"Unknown status '{status}'", nameof(status));
             }
 
             Status = status;
@@ -93,7 +96,7 @@ namespace Validation.PackageSigning.ValidateCertificate
 
         /// <summary>
         /// The time that the end <see cref="X509Certificate2"/>'s status was last updated, according to the
-        /// Certificate Authority. This value will be <c>null</c> if the <see cref="Status"/> is
+        /// Certificate Authority. This value may be <c>null</c> if the <see cref="Status"/> is
         /// <see cref="EndCertificateStatus.Unknown"/> or if the status could not be determined.
         /// </summary>
         public DateTime? StatusUpdateTime { get; }
@@ -103,6 +106,31 @@ namespace Validation.PackageSigning.ValidateCertificate
         /// is not <see cref="CertificateStatus.Revoked"/>, this will have a value of <c>null</c>.
         /// </summary>
         public DateTime? RevocationTime { get; }
+
+        /// <summary>
+        /// Convert a verification to a human readable string.
+        /// </summary>
+        /// <returns>A human readable string that summarizes the verification result.</returns>
+        public override string ToString()
+        {
+            switch (Status)
+            {
+                case EndCertificateStatus.Good:
+                    return $"Good (StatusUpdateTime = {StatusUpdateTime})";
+
+                case EndCertificateStatus.Invalid:
+                    return $"Invalid (Flags = {StatusFlags}, StatusUpdateTime = {StatusUpdateTime})";
+
+                case EndCertificateStatus.Revoked:
+                    return $"Revoked (Flags = {StatusFlags}, RevocationTime = {RevocationTime}, StatusUpdateTime = {StatusUpdateTime})";
+
+                case EndCertificateStatus.Unknown:
+                    return $"Unknown (Flags = {StatusFlags}, StatusUpdateTime = {StatusUpdateTime})";
+
+                default:
+                    throw new InvalidOperationException($"Unknown status {Status}");
+            }
+        }
 
         /// <summary>
         /// Helper used to create valid <see cref="CertificateVerificationResult"/>s.
