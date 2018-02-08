@@ -33,19 +33,24 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task<bool> HandleAsync(PackageValidationMessageData message)
         {
-            var package = _galleryPackageService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageVersion);
-
-            if (package == null)
+            using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}, {CallGuid}, {StartTimestamp}",
+                message.PackageId,
+                message.PackageVersion,
+                message.ValidationTrackingId,
+                Guid.NewGuid(),
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))
             {
-                // no package in DB yet. Might have received message a bit early, need to retry later
-                _logger.LogInformation("Did not find information in DB for package {PackageId} {PackageVersion}",
-                    message.PackageId,
-                    message.PackageVersion);
-                return false;
-            }
+                var package = _galleryPackageService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageVersion);
 
-            using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}", message.PackageId, message.PackageVersion, message.ValidationTrackingId))
-            {
+                if (package == null)
+                {
+                    // no package in DB yet. Might have received message a bit early, need to retry later
+                    _logger.LogInformation("Did not find information in DB for package {PackageId} {PackageVersion}",
+                        message.PackageId,
+                        message.PackageVersion);
+                    return false;
+                }
+
                 var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message.ValidationTrackingId, package);
 
                 if (validationSet == null)
