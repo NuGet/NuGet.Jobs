@@ -110,13 +110,13 @@ namespace Validation.PackageSigning.ValidateCertificate
                     case EndCertificateUse.CodeSigning:
                         result = _certificateVerifier.VerifyCodeSigningCertificate(
                                     certificates.EndCertificate,
-                                    certificates.ParentCertificates);
+                                    certificates.AncestorCertificates);
                         break;
 
                     case EndCertificateUse.Timestamping:
                         result = _certificateVerifier.VerifyTimestampingCertificate(
                                     certificates.EndCertificate,
-                                    certificates.ParentCertificates);
+                                    certificates.AncestorCertificates);
                         break;
 
                     default:
@@ -183,7 +183,8 @@ namespace Validation.PackageSigning.ValidateCertificate
 
         private async Task<LoadCertificatesResult> LoadCertificatesAsync(EndCertificateValidation validation)
         {
-            // Create a list of all the thumbprints that need to be downloaded. The first thumbprint is the end certificate.
+            // Create a list of all the thumbprints that need to be downloaded. The first thumbprint is the end certificate,
+            // the rest are the end certificate's ancestors.
             var thumbprints = new List<string>();
 
             thumbprints.Add(validation.EndCertificate.Thumbprint);
@@ -191,27 +192,31 @@ namespace Validation.PackageSigning.ValidateCertificate
 
             var certificates = await Task.WhenAll(thumbprints.Select(t => _certificateStore.LoadAsync(t, CancellationToken.None)));
 
-            return new LoadCertificatesResult(certificates.First(), certificates.Skip(1).ToArray());
+            return new LoadCertificatesResult(
+                endCertificate: certificates.First(),
+                ancestorCertificates: certificates.Skip(1).ToArray());
         }
 
         private class LoadCertificatesResult : IDisposable
         {
-            public LoadCertificatesResult(X509Certificate2 endCertificate, X509Certificate2[] parentCertificates)
+            public LoadCertificatesResult(
+                X509Certificate2 endCertificate,
+                IReadOnlyList<X509Certificate2> ancestorCertificates)
             {
                 EndCertificate = endCertificate ?? throw new ArgumentNullException(nameof(endCertificate));
-                ParentCertificates = parentCertificates ?? throw new ArgumentNullException(nameof(endCertificate));
+                AncestorCertificates = ancestorCertificates ?? throw new ArgumentNullException(nameof(ancestorCertificates));
             }
 
             public X509Certificate2 EndCertificate { get; }
-            public X509Certificate2[] ParentCertificates { get; }
+            public IReadOnlyList<X509Certificate2> AncestorCertificates { get; }
 
             public void Dispose()
             {
                 EndCertificate.Dispose();
 
-                foreach (var parentCertificate in ParentCertificates)
+                foreach (var ancestor in AncestorCertificates)
                 {
-                    parentCertificate.Dispose();
+                    ancestor.Dispose();
                 }
             }
         }
