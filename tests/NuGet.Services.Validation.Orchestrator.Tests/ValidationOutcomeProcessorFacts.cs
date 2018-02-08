@@ -370,6 +370,26 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReportsStorageDBInconsistency(bool validationFileExists)
+        {
+            Package.PackageStatusKey = PackageStatus.Available;
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesPackageFileExistAsync(Package))
+                .ReturnsAsync(false);
+            PackageFileServiceMock
+                .Setup(pfs => pfs.DoesValidationPackageFileExistAsync(Package))
+                .ReturnsAsync(validationFileExists);
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package);
+
+            TelemetryServiceMock
+                .Verify(ts => ts.TrackMissingNupkgForAvailablePackage(Package.PackageRegistration.Id, Package.NormalizedVersion), Times.Once());
+        }
+
         public ValidationOutcomeProcessorFacts()
         {
             PackageServiceMock = new Mock<ICorePackageService>();

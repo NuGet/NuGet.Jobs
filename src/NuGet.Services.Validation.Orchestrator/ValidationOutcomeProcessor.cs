@@ -122,6 +122,20 @@ namespace NuGet.Services.Validation.Orchestrator
                         package.PackageRegistration.Id,
                         package.NormalizedVersion,
                         validationSet.ValidationTrackingId);
+
+                    if (!await _packageFileService.DoesPackageFileExistAsync(package))
+                    {
+                        var validationPackageAvailable = await _packageFileService.DoesValidationPackageFileExistAsync(package);
+
+                        _logger.LogWarning("Package {PackageId} {PackageVersion} is marked as available, but does not exist " +
+                            "in public container. Exists in validation container: {ExistsInValidation}",
+                            package.PackageRegistration.Id,
+                            package.NormalizedVersion,
+                            validationPackageAvailable);
+
+                        // report missing package, don't try to fix up anything. This shouldn't happen and needs an investigation.
+                        TrackMissingNupkgForAvailablePackage(package);
+                    }
                 }
                 _logger.LogInformation("Done processing {PackageId} {PackageVersion} {ValidationSetId}",
                     package.PackageRegistration.Id,
@@ -137,6 +151,11 @@ namespace NuGet.Services.Validation.Orchestrator
                 var messageData = new PackageValidationMessageData(package.PackageRegistration.Id, package.Version, validationSet.ValidationTrackingId);
                 await _validationEnqueuer.StartValidationAsync(messageData, DateTimeOffset.UtcNow + _validationConfiguration.ValidationMessageRecheckPeriod);
             }
+        }
+
+        private void TrackMissingNupkgForAvailablePackage(Package package)
+        {
+            _telemetryService.TrackMissingNupkgForAvailablePackage(package.PackageRegistration.Id, package.NormalizedVersion);
         }
 
         private void TrackTotalValidationDuration(PackageValidationSet validationSet, bool isSuccess)
