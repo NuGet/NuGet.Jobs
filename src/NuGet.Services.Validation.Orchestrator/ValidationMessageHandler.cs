@@ -33,12 +33,10 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task<bool> HandleAsync(PackageValidationMessageData message)
         {
-            using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}, {CallGuid}, {StartTimestamp}",
+            using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}",
                 message.PackageId,
                 message.PackageVersion,
-                message.ValidationTrackingId,
-                Guid.NewGuid(),
-                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))
+                message.ValidationTrackingId))
             {
                 var package = _galleryPackageService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageVersion);
 
