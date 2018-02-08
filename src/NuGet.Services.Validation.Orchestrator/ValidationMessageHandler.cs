@@ -33,6 +33,11 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task<bool> HandleAsync(PackageValidationMessageData message)
         {
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
             using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}",
                 message.PackageId,
                 message.PackageVersion,
