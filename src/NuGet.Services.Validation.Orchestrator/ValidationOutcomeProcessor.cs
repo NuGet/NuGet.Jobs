@@ -155,17 +155,15 @@ namespace NuGet.Services.Validation.Orchestrator
             var packageStream = await _packageFileService.DownloadValidationPackageFileAsync(package);
             await _packageFileService.SavePackageFileAsync(package, packageStream);
 
+            _logger.LogInformation("Marking package {PackageId} {PackageVersion}, validation set {ValidationSetId} as {PackageStatus} in DB",
+                package.PackageRegistration.Id,
+                package.NormalizedVersion,
+                validationSet.ValidationTrackingId,
+                PackageStatus.Available);
+
             try
             {
-                _logger.LogInformation("Marking package {PackageId} {PackageVersion}, validation set {ValidationSetId} as {PackageStatus} in DB",
-                    package.PackageRegistration.Id,
-                    package.NormalizedVersion,
-                    validationSet.ValidationTrackingId,
-                    PackageStatus.Available);
-
                 await UpdatePackageStatusAsync(package, PackageStatus.Available);
-
-                _messageService.SendPackagePublishedMessage(package);
             }
             catch (Exception e)
             {
@@ -181,6 +179,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 throw;
             }
+
+            _messageService.SendPackagePublishedMessage(package);
 
             _logger.LogInformation("Deleting from the source for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 package.PackageRegistration.Id,
