@@ -137,7 +137,7 @@ namespace NuGet.Services.Validation.Orchestrator
                packageValidation.Type,
                isSuccess);
 
-            var issues = (packageValidation?.PackageValidationIssues ?? Enumerable.Empty<PackageValidationIssue>()).ToList();
+            var issues = (packageValidation.PackageValidationIssues ?? Enumerable.Empty<PackageValidationIssue>()).ToList();
             _telemetryService.TrackValidationIssueCount(
                 issues.Count,
                 packageValidation.Type,
