@@ -134,7 +134,7 @@ namespace NuGet.Services.Validation.Orchestrator
                             validationPackageAvailable);
 
                         // report missing package, don't try to fix up anything. This shouldn't happen and needs an investigation.
-                        TrackMissingNupkgForAvailablePackage(package);
+                        TrackMissingNupkgForAvailablePackage(validationSet);
                     }
                 }
                 _logger.LogInformation("Done processing {PackageId} {PackageVersion} {ValidationSetId}",
@@ -153,9 +153,12 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private void TrackMissingNupkgForAvailablePackage(Package package)
+        private void TrackMissingNupkgForAvailablePackage(PackageValidationSet validationSet)
         {
-            _telemetryService.TrackMissingNupkgForAvailablePackage(package.PackageRegistration.Id, package.NormalizedVersion);
+            _telemetryService.TrackMissingNupkgForAvailablePackage(
+                validationSet.PackageId,
+                validationSet.PackageNormalizedVersion,
+                validationSet.ValidationTrackingId.ToString());
         }
 
         private void TrackTotalValidationDuration(PackageValidationSet validationSet, bool isSuccess)

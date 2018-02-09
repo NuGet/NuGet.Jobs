@@ -83,6 +83,6 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// A metric for the case when orchestrator sees a package marked as available, but the blob is missing
         /// in the public container.
         /// </summary>
-        void TrackMissingNupkgForAvailablePackage(string packageId, string normalizedVersion);
+        void TrackMissingNupkgForAvailablePackage(string packageId, string normalizedVersion, string validationTrackingId);
     }
 }

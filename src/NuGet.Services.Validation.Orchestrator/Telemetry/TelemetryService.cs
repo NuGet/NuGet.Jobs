@@ -31,6 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string ClientCode = "ClientCode";
         private const string PackageId = "PackageId";
         private const string NormalizedVersion = "NormalizedVersion";
+        private const string ValidationTrackingId = "ValidationTrackingId";
 
         private readonly TelemetryClient _telemetryClient;
 
@@ -139,7 +140,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                 });
         }
 
-        public void TrackMissingNupkgForAvailablePackage(string packageId, string normalizedVersion)
+        public void TrackMissingNupkgForAvailablePackage(string packageId, string normalizedVersion, string validationTrackingId)
             => _telemetryClient.TrackMetric(
                     MissingNupkgForAvailablePackage,
                     1,
@@ -147,6 +148,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                     {
                         { PackageId, packageId },
                         { NormalizedVersion, normalizedVersion },
+                        { ValidationTrackingId, validationTrackingId },
                     });
     }
 }
