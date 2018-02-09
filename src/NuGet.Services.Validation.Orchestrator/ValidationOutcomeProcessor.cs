@@ -128,7 +128,7 @@ namespace NuGet.Services.Validation.Orchestrator
                         var validationPackageAvailable = await _packageFileService.DoesValidationPackageFileExistAsync(package);
 
                         _logger.LogWarning("Package {PackageId} {PackageVersion} is marked as available, but does not exist " +
-                            "in public container. Exists in validation container: {ExistsInValidation}",
+                            "in public container. Does package exist in validation container: {ExistsInValidation}",
                             package.PackageRegistration.Id,
                             package.NormalizedVersion,
                             validationPackageAvailable);
