@@ -6,8 +6,8 @@ using Xunit;
 namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 {
     [CollectionDefinition(Name)]
-    public class CertificateIntegrationTestCollection : ICollectionFixture<CertificateIntegrationTestFixture>
+    public class RevokedParentCertificateIntegrationTestCollection : ICollectionFixture<CertificateIntegrationTestFixture>
     {
-        public const string Name = "Certificate integration test collection";
+        public const string Name = "Revoked Parent Certificate integration test collection";
     }
 }
