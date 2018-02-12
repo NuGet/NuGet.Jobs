@@ -14,6 +14,8 @@ namespace Validation.PackageSigning.ValidateCertificate
         private const string PackageSignatureShouldBeInvalidated = "PackageSignatureShouldBeInvalidated";
         private const string UnableToValidateCertificate = "UnableToValidateCertificate";
 
+        private const string PackageId = "PackageId";
+        private const string PackageNormalizedVersion = "PackageNormalizedVersion";
         private const string PackageSignatureId = "PackageSignatureId";
         private const string CertificateId = "CertificateId";
         private const string CertificateThumbprint = "CertificateThumbprint";
@@ -32,6 +34,8 @@ namespace Validation.PackageSigning.ValidateCertificate
                 1,
                 new Dictionary<string, string>
                 {
+                    { PackageId, signature.PackageSigningState.PackageId },
+                    { PackageNormalizedVersion, signature.PackageSigningState.PackageNormalizedVersion },
                     { PackageSignatureId, signature.Key.ToString() }
                 });
         }
@@ -43,6 +47,8 @@ namespace Validation.PackageSigning.ValidateCertificate
                 1,
                 new Dictionary<string, string>
                 {
+                    { PackageId, signature.PackageSigningState.PackageId },
+                    { PackageNormalizedVersion, signature.PackageSigningState.PackageNormalizedVersion },
                     { PackageSignatureId, signature.Key.ToString() }
                 });
         }
