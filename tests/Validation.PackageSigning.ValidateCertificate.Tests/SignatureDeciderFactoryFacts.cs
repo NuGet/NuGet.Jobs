@@ -277,11 +277,30 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
 
             public static IEnumerable<object[]> InvalidCertificateInvalidatesSignaturesData()
             {
-                // NotTimeValid and HasWeakSignature only reject packages at ingestion (as these are time dependent).
+                // HasWeakSignature without NotSignatureValid is rejected at ingestion, but otherwise warned.
                 yield return new object[]
                 {
                     /* use: */ EndCertificateUse.CodeSigning,
-                    /* flags: */ X509ChainStatusFlags.NotTimeValid | X509ChainStatusFlags.HasWeakSignature,
+                    /* flags: */ X509ChainStatusFlags.HasWeakSignature,
+                    /* ingestionDecision: */ SignatureDecision.Reject,
+                    /* gracePeriodDecision: */ SignatureDecision.Warn,
+                    /* afterGracePeriodDecision: */ SignatureDecision.Warn,
+                };
+
+                yield return new object[]
+                {
+                    /* use: */ EndCertificateUse.Timestamping,
+                    /* flags: */ X509ChainStatusFlags.HasWeakSignature,
+                    /* ingestionDecision: */ SignatureDecision.Reject,
+                    /* gracePeriodDecision: */ SignatureDecision.Warn,
+                    /* afterGracePeriodDecision: */ SignatureDecision.Warn,
+                };
+
+                // HasWeakSignature with NotSignatureValid is rejected at ingestion, but otherwise ignored.
+                yield return new object[]
+                {
+                    /* use: */ EndCertificateUse.CodeSigning,
+                    /* flags: */ X509ChainStatusFlags.HasWeakSignature | X509ChainStatusFlags.NotSignatureValid,
                     /* ingestionDecision: */ SignatureDecision.Reject,
                     /* gracePeriodDecision: */ SignatureDecision.Ignore,
                     /* afterGracePeriodDecision: */ SignatureDecision.Ignore,
@@ -290,7 +309,45 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
                 yield return new object[]
                 {
                     /* use: */ EndCertificateUse.Timestamping,
-                    /* flags: */ X509ChainStatusFlags.NotTimeValid | X509ChainStatusFlags.HasWeakSignature,
+                    /* flags: */ X509ChainStatusFlags.HasWeakSignature | X509ChainStatusFlags.NotSignatureValid,
+                    /* ingestionDecision: */ SignatureDecision.Reject,
+                    /* gracePeriodDecision: */ SignatureDecision.Ignore,
+                    /* afterGracePeriodDecision: */ SignatureDecision.Ignore,
+                };
+
+                // NotTimeValid is rejected at ingestion, but otherwise ignored.
+                yield return new object[]
+                {
+                    /* use: */ EndCertificateUse.CodeSigning,
+                    /* flags: */ X509ChainStatusFlags.NotTimeValid,
+                    /* ingestionDecision: */ SignatureDecision.Reject,
+                    /* gracePeriodDecision: */ SignatureDecision.Ignore,
+                    /* afterGracePeriodDecision: */ SignatureDecision.Ignore,
+                };
+
+                yield return new object[]
+                {
+                    /* use: */ EndCertificateUse.Timestamping,
+                    /* flags: */ X509ChainStatusFlags.NotTimeValid,
+                    /* ingestionDecision: */ SignatureDecision.Reject,
+                    /* gracePeriodDecision: */ SignatureDecision.Ignore,
+                    /* afterGracePeriodDecision: */ SignatureDecision.Ignore,
+                };
+
+                // NotTimeValid, HasWeakSignature, and NotSignatureValid are rejected at ingestion, but otherwise ignored.
+                yield return new object[]
+                {
+                    /* use: */ EndCertificateUse.CodeSigning,
+                    /* flags: */ X509ChainStatusFlags.NotTimeValid | X509ChainStatusFlags.HasWeakSignature | X509ChainStatusFlags.NotSignatureValid,
+                    /* ingestionDecision: */ SignatureDecision.Reject,
+                    /* gracePeriodDecision: */ SignatureDecision.Ignore,
+                    /* afterGracePeriodDecision: */ SignatureDecision.Ignore,
+                };
+
+                yield return new object[]
+                {
+                    /* use: */ EndCertificateUse.Timestamping,
+                    /* flags: */ X509ChainStatusFlags.NotTimeValid | X509ChainStatusFlags.HasWeakSignature | X509ChainStatusFlags.NotSignatureValid,
                     /* ingestionDecision: */ SignatureDecision.Reject,
                     /* gracePeriodDecision: */ SignatureDecision.Ignore,
                     /* afterGracePeriodDecision: */ SignatureDecision.Ignore,

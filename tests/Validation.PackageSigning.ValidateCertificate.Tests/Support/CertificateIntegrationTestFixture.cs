@@ -5,14 +5,10 @@ using System;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
-using Org.BouncyCastle.X509.Extension;
 using Test.Utility.Signing;
+using Validation.PackageSigning.Core.Tests.Support;
 using BCCertificate = Org.BouncyCastle.X509.X509Certificate;
 
 namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
@@ -21,6 +17,16 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 
     public class CertificateIntegrationTestFixture : CoreCertificateIntegrationTestFixture
     {
+        public async Task<X509Certificate2> GetIntermediateCaCertificate()
+        {
+            var certificate = new X509Certificate2();
+            var encodedCert = (await GetCertificateAuthority()).Certificate.GetEncoded();
+
+            certificate.Import(encodedCert);
+
+            return certificate;
+        }
+
         public async Task RevokeCertificateAuthority()
         {
             var ca = await GetCertificateAuthority();
@@ -78,6 +84,21 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
             ca.Revoke(publicCertificate, reason: 0, revocationDate: revocationDate);
 
             return certificate;
+        }
+
+        public async Task<X509Certificate2> GetRevokedParentSigningCertificateAsync()
+        {
+            var testServer = await GetTestServerAsync();
+            var rootCa = await GetRootCertificateAuthority();
+            var intermediateCa = rootCa.CreateIntermediateCertificateAuthority();
+
+            var responders = GetResponders();
+
+            responders.AddRange(testServer.RegisterResponders(intermediateCa));
+
+            rootCa.Revoke(intermediateCa.Certificate, reason: 0, revocationDate: DateTimeOffset.UtcNow);
+
+            return CreateSigningCertificate(intermediateCa);
         }
 
         public async Task<X509Certificate2> GetPartialChainSigningCertificateAsync()
@@ -142,6 +163,74 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
             ca.Revoke(publicCertificate, reason: 0, revocationDate: DateTimeOffset.UtcNow);
 
             return certificate;
+        }
+
+        public async Task<X509Certificate2> GetWeakSignatureParentSigningCertificateAsync()
+        {
+            var testServer = await GetTestServerAsync();
+            var rootCa = await GetRootCertificateAuthority();
+
+            var keyPair = SigningTestUtility.GenerateKeyPair(publicKeyLength: 512);
+            var certificate = IssueCaCertificate(rootCa, keyPair.Public);
+            var responders = GetResponders();
+
+            var intermediateCa = NewCertificateAuthority(certificate, keyPair, rootCa.SharedUri, parentCa: rootCa);
+
+            responders.AddRange(testServer.RegisterResponders(intermediateCa));
+
+            return CreateSigningCertificate(intermediateCa);
+        }
+
+        private BCCertificate IssueCaCertificate(
+            CertificateAuthority ca,
+            AsymmetricKeyParameter publicKey,
+            Action<X509V3CertificateGenerator> customizeCertificate = null)
+        {
+            var method = typeof(CertificateAuthority).GetMethod("IssueCaCertificate", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (method == null)
+            {
+                throw new Exception($"Could not find method {nameof(CertificateAuthority)}.IssueCaCertificate");
+            }
+
+            var parameters = method.GetParameters();
+
+            if (parameters.Length != 2 ||
+                parameters[0].ParameterType != typeof(AsymmetricKeyParameter) ||
+                parameters[1].ParameterType != typeof(Action<X509V3CertificateGenerator>) ||
+                method.ReturnType != typeof(BCCertificate))
+            {
+                throw new Exception($"{nameof(CertificateAuthority)}'s IssueCaCertificate parameters or return type have changed");
+            }
+
+            return (BCCertificate)method.Invoke(ca, new object[] { publicKey, customizeCertificate });
+        }
+
+        private CertificateAuthority NewCertificateAuthority(
+            BCCertificate certificate,
+            AsymmetricCipherKeyPair keyPair,
+            Uri sharedUri,
+            CertificateAuthority parentCa)
+        {
+            var constructors = typeof(CertificateAuthority).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (constructors.Length != 1)
+            {
+                throw new Exception($"Constructors for {nameof(CertificateAuthority)} have changed");
+            }
+
+            var parameters = constructors[0].GetParameters();
+
+            if (parameters.Length != 4 ||
+                parameters[0].ParameterType != typeof(BCCertificate) ||
+                parameters[1].ParameterType != typeof(AsymmetricCipherKeyPair) ||
+                parameters[2].ParameterType != typeof(Uri)  ||
+                parameters[3].ParameterType != typeof(CertificateAuthority))
+            {
+                throw new Exception($"{nameof(CertificateAuthority)}'s constructor parameters have changed");
+            }
+
+            return (CertificateAuthority)constructors[0].Invoke(new object[] { certificate, keyPair, sharedUri, parentCa });
         }
     }
 }

@@ -57,6 +57,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
         protected Task<CertificateAuthority> GetRootCertificateAuthority() => _rootCertificateAuthority.Value;
         protected Task<CertificateAuthority> GetCertificateAuthority() => _certificateAuthority.Value;
+        protected DisposableList GetResponders() => _responders;
 
         public void Dispose()
         {

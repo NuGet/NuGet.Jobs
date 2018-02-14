@@ -119,6 +119,27 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
         }
 
         [Fact]
+        public async Task RevokedParentCertificate()
+        {
+            // Arrange
+            var certificate = await _fixture.GetRevokedParentSigningCertificateAsync();
+
+            // Act & assert
+            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[0]);
+
+            // The intermediary is revoked, thus the end certificate should have an unknown
+            // revocation status that is offline.
+            var flags = X509ChainStatusFlags.Revoked |
+                        X509ChainStatusFlags.RevocationStatusUnknown |
+                        X509ChainStatusFlags.OfflineRevocation;
+
+            Assert.Equal(EndCertificateStatus.Invalid, result.Status);
+            Assert.Equal(flags, result.StatusFlags);
+            Assert.Null(result.StatusUpdateTime);
+            Assert.Null(result.RevocationTime);
+        }
+
+        [Fact]
         public async Task PartialChainEndCertificate()
         {
             // Arrange
@@ -134,6 +155,22 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
             Assert.Equal(EndCertificateStatus.Invalid, result.Status);
             Assert.Equal(flags, result.StatusFlags);
             Assert.Null(result.StatusUpdateTime);
+            Assert.Null(result.RevocationTime);
+        }
+
+        [Fact]
+        public async Task PartialChainButIntermediateCertificateIsProvided()
+        {
+            // Arrange
+            var certificate = await _fixture.GetPartialChainSigningCertificateAsync();
+            var intermediateCertificate = await _fixture.GetIntermediateCaCertificate();
+
+            // Act & assert
+            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[] { intermediateCertificate });
+
+            Assert.Equal(EndCertificateStatus.Good, result.Status);
+            Assert.Equal(X509ChainStatusFlags.NoError, result.StatusFlags);
+            Assert.NotNull(result.StatusUpdateTime);
             Assert.Null(result.RevocationTime);
         }
 
@@ -186,6 +223,23 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
             Assert.Equal(flags, result.StatusFlags);
             Assert.NotNull(result.StatusUpdateTime);
             Assert.NotNull(result.RevocationTime);
+        }
+
+        [Fact]
+        public async Task WeakSignatureParentCertificate()
+        {
+            // Arrange
+            var certificate = await _fixture.GetWeakSignatureParentSigningCertificateAsync();
+
+            // Act & assert
+            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[0]);
+
+            var flags = X509ChainStatusFlags.HasWeakSignature | X509ChainStatusFlags.NotSignatureValid;
+
+            Assert.Equal(EndCertificateStatus.Invalid, result.Status);
+            Assert.Equal(flags, result.StatusFlags);
+            Assert.NotNull(result.StatusUpdateTime);
+            Assert.Null(result.RevocationTime);
         }
     }
 }
