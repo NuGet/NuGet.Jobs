@@ -10,6 +10,7 @@
       }
     ],
     "ValidationStorageConnectionString": "",
+    "MissingPackageRetryCount":  2,
     "ValidationMessageRecheckPeriod": "00:01:00",
     "NewValidationRequestDeduplicationWindow": "00:10:00"
   },

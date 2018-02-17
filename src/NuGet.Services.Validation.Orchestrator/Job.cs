@@ -177,7 +177,26 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
             services.AddTransient<IValidatorProvider, ValidatorProvider>();
             services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
-            services.AddTransient<IMessageHandler<PackageValidationMessageData>, ValidationMessageHandler>();
+            services.AddTransient<IMessageHandler<PackageValidationMessageData>>(serviceProvider =>
+            {
+                var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationConfiguration>>().Value;
+
+                int missingPackageRetryCount = configuration.MissingPackageRetryCount;
+
+                var galleryPackageService = serviceProvider.GetRequiredService<NuGetGallery.ICorePackageService>();
+                var validationSetProvider = serviceProvider.GetRequiredService<IValidationSetProvider>();
+                var validationSetProcessor = serviceProvider.GetRequiredService<IValidationSetProcessor>();
+                var validationOutcomeProcessor = serviceProvider.GetRequiredService<IValidationOutcomeProcessor>();
+                var logger = serviceProvider.GetRequiredService<ILogger<ValidationMessageHandler>>();
+
+                return new ValidationMessageHandler(
+                    missingPackageRetryCount,
+                    galleryPackageService,
+                    validationSetProvider,
+                    validationSetProcessor,
+                    validationOutcomeProcessor,
+                    logger);
+            });
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
             services.AddTransient<IPackageCriteriaEvaluator, PackageCriteriaEvaluator>();

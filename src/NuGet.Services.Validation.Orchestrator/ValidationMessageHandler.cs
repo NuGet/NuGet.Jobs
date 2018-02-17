@@ -11,6 +11,7 @@ namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidationMessageHandler : IMessageHandler<PackageValidationMessageData>
     {
+        private readonly int _missingPackageRetryCount;
         private readonly ICorePackageService _galleryPackageService;
         private readonly IValidationSetProvider _validationSetProvider;
         private readonly IValidationSetProcessor _validationSetProcessor;
@@ -18,12 +19,22 @@ namespace NuGet.Services.Validation.Orchestrator
         private readonly ILogger<ValidationMessageHandler> _logger;
 
         public ValidationMessageHandler(
+            int missingPackageRetryCount,
             ICorePackageService galleryPackageService,
             IValidationSetProvider validationSetProvider,
             IValidationSetProcessor validationSetProcessor,
             IValidationOutcomeProcessor validationOutcomeProcessor,
             ILogger<ValidationMessageHandler> logger)
         {
+            if (missingPackageRetryCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(missingPackageRetryCount),
+                    "Missing package retry count must be at least 1");
+            }
+
+            _missingPackageRetryCount = missingPackageRetryCount;
+
             _galleryPackageService = galleryPackageService ?? throw new ArgumentNullException(nameof(galleryPackageService));
             _validationSetProvider = validationSetProvider ?? throw new ArgumentNullException(nameof(validationSetProvider));
             _validationSetProcessor = validationSetProcessor ?? throw new ArgumentNullException(nameof(validationSetProcessor));
@@ -48,10 +59,23 @@ namespace NuGet.Services.Validation.Orchestrator
                 if (package == null)
                 {
                     // no package in DB yet. Might have received message a bit early, need to retry later
-                    _logger.LogInformation("Did not find information in DB for package {PackageId} {PackageVersion}",
-                        message.PackageId,
-                        message.PackageVersion);
-                    return false;
+                    if (message.DeliveryCount - 1 >= _missingPackageRetryCount)
+                    {
+                        _logger.LogWarning("Could not find package {PackageId} {PackageVersion} in DB after {DeliveryCount} tries, dropping message",
+                            message.PackageId,
+                            message.PackageVersion,
+                            message.DeliveryCount);
+
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Could not find package {PackageId} {PackageVersion} in DB, retrying",
+                            message.PackageId,
+                            message.PackageVersion);
+
+                        return false;
+                    }
                 }
 
                 var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message.ValidationTrackingId, package);

@@ -2,10 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using NuGet.Services.ServiceBus;
 using NuGetGallery;
 using Xunit;
 
@@ -37,6 +39,39 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Fact]
+        public async Task DropsMessageAfterMissingPackageRetryCountIsReached()
+        {
+            var validationTrackingId = Guid.NewGuid();
+            var messageData = new PackageValidationMessageData("packageId", "1.2.3", validationTrackingId);
+
+            CorePackageServiceMock
+                .Setup(ps => ps.FindPackageByIdAndVersionStrict("packageId", "1.2.3"))
+                .Returns<Package>(null)
+                .Verifiable();
+
+            var handler = CreateHandler();
+
+            Assert.False(await handler.HandleAsync(OverrideDeliveryCount(messageData, deliveryCount: 1)));
+            Assert.False(await handler.HandleAsync(OverrideDeliveryCount(messageData, deliveryCount: 2)));
+            Assert.True(await handler.HandleAsync(OverrideDeliveryCount(messageData, deliveryCount: 3)));
+
+            CorePackageServiceMock.Verify(ps => ps.FindPackageByIdAndVersionStrict("packageId", "1.2.3"), Times.Exactly(3));
+        }
+
+        private PackageValidationMessageData OverrideDeliveryCount(
+            PackageValidationMessageData messageData,
+            int deliveryCount)
+        {
+            var serializer = new ServiceBusMessageSerializer();
+
+            var realBrokeredMessage = serializer.SerializePackageValidationMessageData(messageData);
+
+            var fakedBrokeredMessage = new MessageWithCustomDeliveryCount(realBrokeredMessage, deliveryCount);
+
+            return serializer.DeserializePackageValidationMessageData(fakedBrokeredMessage);
+        }
+
+        [Fact]
         public async Task DropsMessageOnDuplicateValidationRequest()
         {
             var messageData = new PackageValidationMessageData("packageId", "1.2.3", Guid.NewGuid());
@@ -62,6 +97,28 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion), Times.Once());
             ValidationSetProviderMock
                 .Verify(vsp => vsp.TryGetOrCreateValidationSetAsync(messageData.ValidationTrackingId, package), Times.Once());
+        }
+
+        private class MessageWithCustomDeliveryCount : IBrokeredMessage
+        {
+            private readonly IBrokeredMessage _inner;
+
+            public MessageWithCustomDeliveryCount(IBrokeredMessage inner, int deliveryCount)
+            {
+                _inner = inner;
+                DeliveryCount = deliveryCount;
+            }
+
+            public int DeliveryCount { get; private set; }
+
+            public string GetBody() => _inner.GetBody();
+            public IDictionary<string, object> Properties => _inner.Properties;
+
+            public DateTimeOffset ScheduledEnqueueTimeUtc { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public Task AbandonAsync() => throw new NotImplementedException();
+            public IBrokeredMessage Clone() => throw new NotImplementedException();
+            public Task CompleteAsync() => throw new NotImplementedException();
+            public void Dispose() => throw new NotImplementedException();
         }
     }
 
@@ -120,6 +177,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
     public class ValidationMessageHandlerFactsBase
     {
+        protected const int MissingPackageRetryCount = 2;
+
         protected Mock<ICorePackageService> CorePackageServiceMock { get; }
         protected Mock<IValidationSetProvider> ValidationSetProviderMock { get; }
         protected Mock<IValidationSetProcessor> ValidationSetProcessorMock { get; }
@@ -138,6 +197,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public ValidationMessageHandler CreateHandler()
         {
             return new ValidationMessageHandler(
+                MissingPackageRetryCount,
                 CorePackageServiceMock.Object,
                 ValidationSetProviderMock.Object,
                 ValidationSetProcessorMock.Object,
