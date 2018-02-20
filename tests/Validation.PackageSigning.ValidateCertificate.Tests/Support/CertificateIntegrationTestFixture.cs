@@ -19,12 +19,7 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
     {
         public async Task<X509Certificate2> GetIntermediateCaCertificate()
         {
-            var certificate = new X509Certificate2();
-            var encodedCert = (await GetCertificateAuthority()).Certificate.GetEncoded();
-
-            certificate.Import(encodedCert);
-
-            return certificate;
+            return (await GetCertificateAuthority()).Certificate.ToX509Certificate2();
         }
 
         public async Task RevokeCertificateAuthority()
@@ -113,11 +108,8 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 
             var (publicCertificate, certificate) = IssueCertificate(ca2, "Revoked Signing", CustomizeAsSigningCertificate);
 
-            var caCert = new X509Certificate2();
-            var ca2Cert = new X509Certificate2();
-
-            caCert.Import(ca.Certificate.GetEncoded());
-            ca2Cert.Import(ca2.Certificate.GetEncoded());
+            var caCert = ca.Certificate.ToX509Certificate2();
+            var ca2Cert = ca2.Certificate.ToX509Certificate2();
 
             ca2.Revoke(publicCertificate, reason: RevocationReason.Unspecified, revocationDate: revocationDate);
 
@@ -177,11 +169,8 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 
             var (publicCertificate, certificate) = IssueCertificate(ca2, "Untrusted Signing", CustomizeAsPartialChainSigningCertificate);
 
-            var caCert = new X509Certificate2();
-            var ca2Cert = new X509Certificate2();
-
-            caCert.Import(ca.Certificate.GetEncoded());
-            ca2Cert.Import(ca2.Certificate.GetEncoded());
+            var caCert = ca.Certificate.ToX509Certificate2();
+            var ca2Cert = ca2.Certificate.ToX509Certificate2();
 
             return new CertificateWithCustomIntermediatesResult(
                         certificate,
