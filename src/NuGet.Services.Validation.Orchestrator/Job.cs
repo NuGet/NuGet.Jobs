@@ -179,10 +179,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
             services.AddTransient<IMessageHandler<PackageValidationMessageData>>(serviceProvider =>
             {
-                var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationConfiguration>>().Value;
-
-                int missingPackageRetryCount = configuration.MissingPackageRetryCount;
-
+                var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationConfiguration>>();
                 var galleryPackageService = serviceProvider.GetRequiredService<NuGetGallery.ICorePackageService>();
                 var validationSetProvider = serviceProvider.GetRequiredService<IValidationSetProvider>();
                 var validationSetProcessor = serviceProvider.GetRequiredService<IValidationSetProcessor>();
@@ -190,7 +187,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 var logger = serviceProvider.GetRequiredService<ILogger<ValidationMessageHandler>>();
 
                 return new ValidationMessageHandler(
-                    missingPackageRetryCount,
+                    configuration.Value,
                     galleryPackageService,
                     validationSetProvider,
                     validationSetProcessor,

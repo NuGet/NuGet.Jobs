@@ -177,7 +177,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
     public class ValidationMessageHandlerFactsBase
     {
-        protected const int MissingPackageRetryCount = 2;
+        protected static readonly ValidationConfiguration Configuration = new ValidationConfiguration
+        {
+            MissingPackageRetryCount = 2,
+        };
 
         protected Mock<ICorePackageService> CorePackageServiceMock { get; }
         protected Mock<IValidationSetProvider> ValidationSetProviderMock { get; }
@@ -197,7 +200,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public ValidationMessageHandler CreateHandler()
         {
             return new ValidationMessageHandler(
-                MissingPackageRetryCount,
+                Configuration,
                 CorePackageServiceMock.Object,
                 ValidationSetProviderMock.Object,
                 ValidationSetProcessorMock.Object,

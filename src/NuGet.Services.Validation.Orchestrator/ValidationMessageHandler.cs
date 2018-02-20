@@ -11,7 +11,7 @@ namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidationMessageHandler : IMessageHandler<PackageValidationMessageData>
     {
-        private readonly int _missingPackageRetryCount;
+        private readonly ValidationConfiguration _configs;
         private readonly ICorePackageService _galleryPackageService;
         private readonly IValidationSetProvider _validationSetProvider;
         private readonly IValidationSetProcessor _validationSetProcessor;
@@ -19,22 +19,26 @@ namespace NuGet.Services.Validation.Orchestrator
         private readonly ILogger<ValidationMessageHandler> _logger;
 
         public ValidationMessageHandler(
-            int missingPackageRetryCount,
+            ValidationConfiguration configs,
             ICorePackageService galleryPackageService,
             IValidationSetProvider validationSetProvider,
             IValidationSetProcessor validationSetProcessor,
             IValidationOutcomeProcessor validationOutcomeProcessor,
             ILogger<ValidationMessageHandler> logger)
         {
-            if (missingPackageRetryCount < 1)
+            if (configs == null)
             {
-                throw new ArgumentOutOfRangeException(
-                    nameof(missingPackageRetryCount),
-                    "Missing package retry count must be at least 1");
+                throw new ArgumentNullException(nameof(configs));
             }
 
-            _missingPackageRetryCount = missingPackageRetryCount;
+            if (configs.MissingPackageRetryCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(configs),
+                    $"{nameof(ValidationConfiguration)}.{nameof(ValidationConfiguration.MissingPackageRetryCount)} must be at least 1");
+            }
 
+            _configs = configs;
             _galleryPackageService = galleryPackageService ?? throw new ArgumentNullException(nameof(galleryPackageService));
             _validationSetProvider = validationSetProvider ?? throw new ArgumentNullException(nameof(validationSetProvider));
             _validationSetProcessor = validationSetProcessor ?? throw new ArgumentNullException(nameof(validationSetProcessor));
@@ -59,7 +63,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 if (package == null)
                 {
                     // no package in DB yet. Might have received message a bit early, need to retry later
-                    if (message.DeliveryCount - 1 >= _missingPackageRetryCount)
+                    if (message.DeliveryCount - 1 >= _configs.MissingPackageRetryCount)
                     {
                         _logger.LogWarning("Could not find package {PackageId} {PackageVersion} in DB after {DeliveryCount} tries, dropping message",
                             message.PackageId,
