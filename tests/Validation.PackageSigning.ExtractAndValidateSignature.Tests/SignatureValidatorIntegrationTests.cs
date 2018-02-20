@@ -22,6 +22,7 @@ using NuGet.Services.Validation;
 using NuGet.Services.Validation.Issues;
 using NuGetGallery;
 using Test.Utility.Signing;
+using Validation.PackageSigning.Core.Tests.Support;
 using Validation.PackageSigning.ExtractAndValidateSignature.Tests.Support;
 using Xunit;
 using Xunit.Abstractions;
