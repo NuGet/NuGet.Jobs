@@ -55,7 +55,8 @@ namespace Stats.ImportAzureCdnStatistics
                     resolutionOptions.Add(new PackageDefinition(packageIdContainer, packageVersionContainer));
                 }
             }
-            else
+
+            if (!resolutionOptions.Any())
             {
                 var nextDotIndex = fileName.IndexOf('.');
 
