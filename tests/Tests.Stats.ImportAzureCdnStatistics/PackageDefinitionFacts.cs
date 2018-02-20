@@ -1,7 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using NuGet.Versioning;
 using Stats.ImportAzureCdnStatistics;
 using Xunit;
 
@@ -21,6 +26,7 @@ namespace Tests.Stats.ImportAzureCdnStatistics
         [InlineData("microsoft.applicationinsights.dependencycollector", "2.4.1", "http://localhost/packages/microsoft.applicationinsights.dependencycollector%20.2.4.1.nupkg")]
         [InlineData("xunit", "2.4.0-beta.1.build3958", "http://localhost/packages/xunit.2.4.0-beta.1.build3958.nupkg")]
         [InlineData("5.0.0.0", "5.0.0", "http://localhost/packages/5.0.0.0.5.0.0.nupkg")]
+        [InlineData("xunit.1", "2.4.1", "https://api.nuget.org/v3-flatcontainer/xunit.1/2.4.1/xunit.1.2.4.1.nupkg")]
         public void ExtractsPackageIdAndVersionFromRequestUrl(string expectedPackageId, string expectedPackageVersion, string requestUrl)
         {
             var packageDefinitions = PackageDefinition.FromRequestUrl(requestUrl);
@@ -34,6 +40,58 @@ namespace Tests.Stats.ImportAzureCdnStatistics
         {
             var packageDefinition = PackageDefinition.FromRequestUrl("http://localhost/api/v3/index.json");
             Assert.Null(packageDefinition);
+        }
+
+        [Fact(Skip = "Use this to test performance of the parsing algorithm")]
+        public void TestParsingPerformanceOnFile()
+        {
+            var filePath = $"C:\\Users\\skofman\\Desktop\\allpackages.csv";
+            var ambiguousResultPath = "ambiguousresult.txt";
+            var wrongResult = "wrongresult.txt";
+
+            List<string> ambiguousPackages = new List<string>();
+            List<string> wrongPackages = new List<string>();
+
+            string[] lines = File.ReadAllLines(filePath);
+
+            Stopwatch watch = Stopwatch.StartNew();
+
+            foreach (var line in lines)
+            {
+                string[] components = line.Split(',');
+                if (components.Length != 2)
+                {
+                    continue;
+                }
+
+                string id = components[0];
+                string version = NuGetVersion.Parse(components[1]).ToNormalizedString();
+
+                string url = $"http://localhost/packages/{id}.{version}.nupkg";
+                var result = PackageDefinition.FromRequestUrl(url);
+
+                if (result.Count() > 1)
+                {
+                    ambiguousPackages.Add($"[{id}][{version}]");
+
+                    if (!(result[0].PackageId == id && result[0].PackageVersion == version))
+                    {
+                        wrongPackages.Add($"[{id}][{version}]");
+                    }
+                }
+
+                if (!result.Any())
+                {
+                    throw new ArgumentException($"[{id}][{version}]");
+                }
+            }
+
+            watch.Stop();
+
+            Console.WriteLine($"Pass took: {watch.Elapsed.TotalSeconds}");
+
+            File.WriteAllLines(ambiguousResultPath, ambiguousPackages);
+            File.WriteAllLines(wrongResult, wrongPackages);
         }
     }
 }

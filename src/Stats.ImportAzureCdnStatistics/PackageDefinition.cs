@@ -17,9 +17,19 @@ namespace Stats.ImportAzureCdnStatistics
         public string PackageId { get; set; }
         public string PackageVersion { get; set; }
 
+        public PackageDefinition()
+        {
+        }
+
+        private PackageDefinition(string packageId, string packageVersion)
+        {
+            PackageId = packageId.Trim();
+            PackageVersion = packageVersion.Trim();
+        }
+
         public static IList<PackageDefinition> FromRequestUrl(string requestUrl)
         {
-            if (string.IsNullOrWhiteSpace(requestUrl) || !requestUrl.EndsWith(_nupkgExtension))
+            if (string.IsNullOrWhiteSpace(requestUrl) || !requestUrl.EndsWith(_nupkgExtension, StringComparison.InvariantCultureIgnoreCase))
             {
                 return null;
             }
@@ -29,12 +39,24 @@ namespace Stats.ImportAzureCdnStatistics
             requestUrl = HttpUtility.UrlDecode(requestUrl);
 
             var urlSegments = requestUrl.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+          
             var fileName = urlSegments.Last();
+           
+            fileName = fileName.Remove(fileName.Length - _nupkgExtension.Length, _nupkgExtension.Length);
 
-            if (fileName.EndsWith(_nupkgExtension))
+            // Special handling for flat container
+            if (urlSegments.Length > 3)
             {
-                fileName = fileName.Remove(fileName.Length - _nupkgExtension.Length, _nupkgExtension.Length);
+                var packageIdContainer = urlSegments[urlSegments.Length - 3];
+                var packageVersionContainer = urlSegments[urlSegments.Length - 2];
 
+                if (string.Equals(fileName, $"{packageIdContainer}.{packageVersionContainer}", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    resolutionOptions.Add(new PackageDefinition(packageIdContainer, packageVersionContainer));
+                }
+            }
+            else
+            {
                 var nextDotIndex = fileName.IndexOf('.');
 
                 while (nextDotIndex != -1)
@@ -46,13 +68,9 @@ namespace Stats.ImportAzureCdnStatistics
                     {
                         var normalizedVersion = parsedVersion.ToNormalizedString();
 
-                        if (string.Compare(normalizedVersion, versionPart, ignoreCase: true) == 0)
+                        if (string.Equals(normalizedVersion, versionPart, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            resolutionOptions.Add(new PackageDefinition()
-                            {
-                                PackageId = packagePart.Trim(),
-                                PackageVersion = versionPart.Trim()
-                            });
+                            resolutionOptions.Add(new PackageDefinition(packagePart, versionPart));
                         }
                     }
 
@@ -66,11 +84,6 @@ namespace Stats.ImportAzureCdnStatistics
         public override string ToString()
         {
             return $"[{PackageId}, {PackageVersion}]";
-        }
-
-        private static bool IsNumeric(string segment)
-        {
-            return int.TryParse(segment, out _);
         }
     }
 }

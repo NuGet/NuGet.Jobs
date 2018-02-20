@@ -37,8 +37,10 @@ namespace Stats.ImportAzureCdnStatistics
 
             if (packageDefinitions.Count > 1)
             {
-                var message = $"Found multiple parse options for URL {cdnLogEntry.RequestUrl}: {string.Join(", ", packageDefinitions)}";
-                _logger.LogWarning(LogEvents.MultiplePackageIDVersionParseOptions, message);
+                _logger.LogWarning(LogEvents.MultiplePackageIDVersionParseOptions, 
+                                   "Found multiple parse options for URL {RequestUrl}: {PackageDefinitions}",
+                                   cdnLogEntry.RequestUrl,
+                                   string.Join(", ", packageDefinitions));
             }
 
             var packageDefinition = packageDefinitions.First();
@@ -50,7 +52,9 @@ namespace Stats.ImportAzureCdnStatistics
                 if (translateOccured)
                 {
                     _logger.LogInformation(LogEvents.TranslatedPackageIdVersion,
-                                           $"Translated package. Url: {cdnLogEntry.RequestUrl}, New definition: {packageDefinition}");
+                                           "Translated package. Url: {RequestUrl}, New definition: {PackageDefinition}",
+                                           cdnLogEntry.RequestUrl,
+                                           packageDefinition);
                 }
             }
 
