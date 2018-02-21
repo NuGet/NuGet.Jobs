@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
@@ -21,7 +22,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private readonly ILogger<ValidationMessageHandler> _logger;
 
         public ValidationMessageHandler(
-            ValidationConfiguration configs,
+            IOptionsSnapshot<ValidationConfiguration> validationConfigsAccessor,
             ICorePackageService galleryPackageService,
             IValidationSetProvider validationSetProvider,
             IValidationSetProcessor validationSetProcessor,
@@ -29,19 +30,26 @@ namespace NuGet.Services.Validation.Orchestrator
             ITelemetryService telemetryService,
             ILogger<ValidationMessageHandler> logger)
         {
-            if (configs == null)
+            if (validationConfigsAccessor == null)
             {
-                throw new ArgumentNullException(nameof(configs));
+                throw new ArgumentNullException(nameof(validationConfigsAccessor));
             }
 
-            if (configs.MissingPackageRetryCount < 1)
+            if (validationConfigsAccessor.Value == null)
+            {
+                throw new ArgumentException(
+                    $"The {nameof(IOptionsSnapshot<ValidationConfiguration>)}.{nameof(IOptionsSnapshot<ValidationConfiguration>.Value)} property cannot be null",
+                    nameof(validationConfigsAccessor));
+            }
+
+            if (validationConfigsAccessor.Value.MissingPackageRetryCount < 1)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(configs),
+                    nameof(validationConfigsAccessor),
                     $"{nameof(ValidationConfiguration)}.{nameof(ValidationConfiguration.MissingPackageRetryCount)} must be at least 1");
             }
 
-            _configs = configs;
+            _configs = validationConfigsAccessor.Value;
             _galleryPackageService = galleryPackageService ?? throw new ArgumentNullException(nameof(galleryPackageService));
             _validationSetProvider = validationSetProvider ?? throw new ArgumentNullException(nameof(validationSetProvider));
             _validationSetProcessor = validationSetProcessor ?? throw new ArgumentNullException(nameof(validationSetProcessor));

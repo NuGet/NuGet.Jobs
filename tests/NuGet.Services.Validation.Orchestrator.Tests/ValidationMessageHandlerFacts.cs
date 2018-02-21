@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
@@ -188,6 +189,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             MissingPackageRetryCount = 2,
         };
 
+        protected Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
         protected Mock<ICorePackageService> CorePackageServiceMock { get; }
         protected Mock<IValidationSetProvider> ValidationSetProviderMock { get; }
         protected Mock<IValidationSetProcessor> ValidationSetProcessorMock { get; }
@@ -197,18 +199,23 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
         public ValidationMessageHandlerFactsBase(MockBehavior mockBehavior)
         {
+            ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
             CorePackageServiceMock = new Mock<ICorePackageService>(mockBehavior);
             ValidationSetProviderMock = new Mock<IValidationSetProvider>(mockBehavior);
             ValidationSetProcessorMock = new Mock<IValidationSetProcessor>(mockBehavior);
             ValidationOutcomeProcessorMock = new Mock<IValidationOutcomeProcessor>(mockBehavior);
             TelemetryServiceMock = new Mock<ITelemetryService>(mockBehavior);
             LoggerMock = new Mock<ILogger<ValidationMessageHandler>>(); // we generally don't care about how logger is called, so it's loose all the time
+
+            ConfigurationAccessorMock
+                .SetupGet(ca => ca.Value)
+                .Returns(Configuration);
         }
 
         public ValidationMessageHandler CreateHandler()
         {
             return new ValidationMessageHandler(
-                Configuration,
+                ConfigurationAccessorMock.Object,
                 CorePackageServiceMock.Object,
                 ValidationSetProviderMock.Object,
                 ValidationSetProcessorMock.Object,
