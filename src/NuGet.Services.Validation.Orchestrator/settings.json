@@ -55,6 +55,13 @@
       "SubscriptionName": ""
     }
   },
+  "PackageCompatibility": {
+    "ServiceBus": {
+      "ConnectionString": "servicebus string",
+      "TopicPath": "validate-compatibility",
+      "SubscriptionName": "validate-compatibility"
+    }
+  },
   "RunnerConfiguration": {
     "ProcessRecycleInterval": "1:00:00:00",
     "ShutdownWaitInterval": "00:01:00"

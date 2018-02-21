@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27121.1
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Jobs.Common", "src\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj", "{4B4B1EFB-8F33-42E6-B79F-54E7F3293D31}"
 EndProject
@@ -112,6 +112,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.Common.Job", "src\Validation.Common.Job\Validation.Common.Job.csproj", "{FA87D075-A934-4443-8D0B-5DB32640B6D7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PackageHash", "src\PackageHash\PackageHash.csproj", "{40843020-6F0A-48F0-AC28-42FFE3A5C21E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.PackageCompatibility.PackageReferenceValidation", "src\Validation.PackageAuthoring.ValidatePackageReferenceCompatibility\Validation.PackageCompatibility.PackageReferenceValidation.csproj", "{1B16DF51-90BB-4AC3-B269-8ADE5FB4FB0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.PackageCompatibility.Core", "src\Validation.PackageCompatibility.Core\Validation.PackageCompatibility.Core.csproj", "{3958ECDD-DE42-401B-8BC6-553E49F2D42A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -289,6 +292,14 @@ Global
 		{40843020-6F0A-48F0-AC28-42FFE3A5C21E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{40843020-6F0A-48F0-AC28-42FFE3A5C21E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{40843020-6F0A-48F0-AC28-42FFE3A5C21E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B16DF51-90BB-4AC3-B269-8ADE5FB4FB0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B16DF51-90BB-4AC3-B269-8ADE5FB4FB0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B16DF51-90BB-4AC3-B269-8ADE5FB4FB0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B16DF51-90BB-4AC3-B269-8ADE5FB4FB0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3958ECDD-DE42-401B-8BC6-553E49F2D42A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3958ECDD-DE42-401B-8BC6-553E49F2D42A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3958ECDD-DE42-401B-8BC6-553E49F2D42A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3958ECDD-DE42-401B-8BC6-553E49F2D42A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -336,6 +347,8 @@ Global
 		{B4B7564A-965B-447B-927F-6749E2C08880} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{FA87D075-A934-4443-8D0B-5DB32640B6D7} = {678D7B14-F8BC-4193-99AF-2EE8AA390A02}
 		{40843020-6F0A-48F0-AC28-42FFE3A5C21E} = {FA5644B5-4F08-43F6-86B3-039374312A47}
+		{1B16DF51-90BB-4AC3-B269-8ADE5FB4FB0B} = {678D7B14-F8BC-4193-99AF-2EE8AA390A02}
+		{3958ECDD-DE42-401B-8BC6-553E49F2D42A} = {678D7B14-F8BC-4193-99AF-2EE8AA390A02}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {284A7AC3-FB43-4F1F-9C9C-2AF0E1F46C2B}

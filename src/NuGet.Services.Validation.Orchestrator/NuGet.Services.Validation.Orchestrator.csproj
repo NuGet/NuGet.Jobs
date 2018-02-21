@@ -60,11 +60,19 @@
     <Compile Include="Job.cs" />
     <Compile Include="MessageService.cs" />
     <Compile Include="OrchestrationRunner.cs" />
+<<<<<<< HEAD
     <Compile Include="Configuration\OrchestrationRunnerConfiguration.cs" />
+=======
+    <Compile Include="OrchestrationRunnerConfiguration.cs" />
+    <Compile Include="PackageCompatibility\IPackageCompatibilityVerificationEnqueuer.cs" />
+    <Compile Include="PackageCompatibility\PackageCompatibilityConfiguration.cs" />
+    <Compile Include="PackageCompatibility\PackageCompatibilityValidator.cs" />
+>>>>>>> add package compatibility skeleton
     <Compile Include="PackageCertificates\CertificateVerificationEnqueuer.cs" />
     <Compile Include="PackageCertificates\ICertificateVerificationEnqueuer.cs" />
     <Compile Include="PackageCertificates\PackageCertificatesConfiguration.cs" />
     <Compile Include="PackageCertificates\PackageCertificatesValidator.cs" />
+    <Compile Include="PackageCompatibility\PackageCompatibilityVerificationEnqueuer.cs" />
     <Compile Include="PackageSigning\IPackageSignatureVerificationEnqueuer.cs" />
     <Compile Include="PackageSigning\PackageSignatureVerificationEnqueuer.cs" />
     <Compile Include="PackageSigning\PackageSigningConfiguration.cs" />
@@ -120,11 +128,16 @@
       <Project>{2539ddf3-0cc5-4a03-b5f9-39b47744a7bd}</Project>
       <Name>Validation.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Validation.PackageCompatibility.Core\Validation.PackageCompatibility.Core.csproj">
+      <Project>{3958ECDD-DE42-401B-8BC6-553E49F2D42A}</Project>
+      <Name>Validation.PackageCompatibility.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Validation.PackageSigning.Core\Validation.PackageSigning.Core.csproj">
       <Project>{91C060DA-736F-4DA9-A57F-CB3AC0E6CB10}</Project>
       <Name>Validation.PackageSigning.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>

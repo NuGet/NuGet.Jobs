@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 using AnglicanGeek.MarkdownMailer;
 using Autofac;
@@ -25,11 +27,15 @@ using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Validation.Orchestrator.PackageCompatibility;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGet.Services.Validation.PackageCertificates;
+using NuGet.Services.Validation.PackageCompatibility;
 using NuGet.Services.Validation.PackageSigning;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery.Services;
+using Validation.PackageCompatibility.Core.Messages;
+using Validation.PackageCompatibility.Core.Storage;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -42,6 +48,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string VcsSectionName = "Vcs";
         private const string PackageSigningSectionName = "PackageSigning";
         private const string PackageCertificatesSectionName = "PackageCertificates";
+        private const string PackageCompatibilitySectionName = "PackageCompatibility";
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
@@ -53,6 +60,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
         private const string PackageSigningBindingKey = PackageSigningSectionName;
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
+        private const string PackageCompatibilityBindingKey = PackageCompatibilitySectionName;
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
 
@@ -87,6 +95,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
 
             var runner = GetRequiredService<OrchestrationRunner>();
+            
             await runner.RunOrchestrationAsync();
         }
 
@@ -142,6 +151,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
             services.Configure<PackageSigningConfiguration>(configurationRoot.GetSection(PackageSigningSectionName));
             services.Configure<PackageCertificatesConfiguration>(configurationRoot.GetSection(PackageCertificatesSectionName));
+            services.Configure<PackageCompatibilityConfiguration>(configurationRoot.GetSection(PackageCompatibilitySectionName));
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
@@ -182,8 +192,11 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
             services.AddTransient<IPackageCriteriaEvaluator, PackageCriteriaEvaluator>();
             services.AddTransient<VcsValidator>();
+            services.AddTransient<PackageCompatibilityValidator>();
             services.AddTransient<IPackageSignatureVerificationEnqueuer, PackageSignatureVerificationEnqueuer>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
+            services.AddTransient<IPackageCompatibilityVerificationEnqueuer, PackageCompatibilityVerificationEnqueuer>();
+            services.AddTransient<IBrokeredMessageSerializer<PackageCompatibilityValidationMessage>, PackageCompatibilityValidationMessageSerializer>(); 
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<PackageSigningValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
@@ -218,7 +231,6 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             var containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(services);
-
             /// Initialize dependencies for the <see cref="VcsValidator"/>. There is some additional complexity here
             /// because the implementations require ambiguous types (such as a <see cref="string"/> and a
             /// <see cref="CloudStorageAccount"/> which there may be more than one configuration of).
@@ -309,6 +321,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             ConfigurePackageSigningValidator(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
+            ConfigurePackageCompatibilityValidator(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -343,6 +356,56 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<PackageSigningValidator>()
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningBindingKey)
                 .As<PackageSigningValidator>();
+        }
+
+
+        private static void ConfigurePackageCompatibilityValidator(ContainerBuilder builder)
+        {
+
+            // Configure the validator state service for the package compatibility validator.
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(Type),
+                    (pi, ctx) => typeof(PackageCompatibilityValidator))
+                .Keyed<IValidatorStateService>(PackageCompatibilityBindingKey);
+
+            // Configure the package compatibility service
+            builder
+                .RegisterType<PackageCompatibilityService>()
+                .As<IPackageCompatibilityService>();
+
+            //builder
+            //    .Register(c =>
+            //    {
+            //        var configuration = c.Resolve<IOptionsSnapshot<PackageCompatibilityConfiguration>>().Value.ServiceBus;
+            //        return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+            //    })
+            //    .Keyed<ITopicClient>(PackageCompatibilityBindingKey);
+
+            //// Configure the package compatibility verification enqueuer.
+            //builder
+            //    .RegisterType<PackageCompatibilityVerificationEnqueuer>()
+            //    .WithParameter(new ResolvedParameter(
+            //        (pi, ctx) => pi.ParameterType == typeof(ITopicClient),
+            //        (pi, ctx) => ctx.ResolveKeyed<TopicClientWrapper>(PackageVerificationTopicClientBindingKey)))
+            //    .WithParameter(new ResolvedParameter(
+            //        (pi, ctx) => pi.ParameterType == typeof(IBrokeredMessageSerializer<PackageCompatibilityValidationMessage>),
+            //        (pi, ctx) => ctx.Resolve<PackageCompatibilityValidationMessageSerializer>()
+            //        ))
+            //    .As<IPackageCompatibilityVerificationEnqueuer>();
+
+            //builder
+            //    .RegisterType<PackageCompatibilityVerificationEnqueuer>()
+            //    .WithKeyedParameter(typeof(ITopicClient), PackageCompatibilityBindingKey)
+            //    .As<IPackageCompatibilityVerificationEnqueuer>();
+
+            // Configure the package compatibility validator
+            builder
+                .RegisterType<PackageCompatibilityValidator>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageCompatibilityBindingKey)
+                .As<PackageCompatibilityValidator>();
+
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)
