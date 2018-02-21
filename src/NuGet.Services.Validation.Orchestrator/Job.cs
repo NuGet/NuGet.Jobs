@@ -25,16 +25,13 @@ using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
-using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
-using NuGet.Services.Validation.Orchestrator.PackageCompatibility;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGet.Services.Validation.PackageCertificates;
 using NuGet.Services.Validation.PackageCompatibility;
 using NuGet.Services.Validation.PackageSigning;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery.Services;
-using Validation.PackageCompatibility.Core.Messages;
 using Validation.PackageCompatibility.Core.Storage;
 
 namespace NuGet.Services.Validation.Orchestrator
@@ -94,8 +91,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 return;
             }
 
-            var runner = GetRequiredService<OrchestrationRunner>();
-            
+            var runner = GetRequiredService<OrchestrationRunner>();            
             await runner.RunOrchestrationAsync();
         }
 
@@ -151,7 +147,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
             services.Configure<PackageSigningConfiguration>(configurationRoot.GetSection(PackageSigningSectionName));
             services.Configure<PackageCertificatesConfiguration>(configurationRoot.GetSection(PackageCertificatesSectionName));
-            services.Configure<PackageCompatibilityConfiguration>(configurationRoot.GetSection(PackageCompatibilitySectionName));
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
@@ -195,8 +190,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<PackageCompatibilityValidator>();
             services.AddTransient<IPackageSignatureVerificationEnqueuer, PackageSignatureVerificationEnqueuer>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
-            services.AddTransient<IPackageCompatibilityVerificationEnqueuer, PackageCompatibilityVerificationEnqueuer>();
-            services.AddTransient<IBrokeredMessageSerializer<PackageCompatibilityValidationMessage>, PackageCompatibilityValidationMessageSerializer>(); 
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<PackageSigningValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
@@ -374,31 +367,6 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<PackageCompatibilityService>()
                 .As<IPackageCompatibilityService>();
-
-            //builder
-            //    .Register(c =>
-            //    {
-            //        var configuration = c.Resolve<IOptionsSnapshot<PackageCompatibilityConfiguration>>().Value.ServiceBus;
-            //        return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
-            //    })
-            //    .Keyed<ITopicClient>(PackageCompatibilityBindingKey);
-
-            //// Configure the package compatibility verification enqueuer.
-            //builder
-            //    .RegisterType<PackageCompatibilityVerificationEnqueuer>()
-            //    .WithParameter(new ResolvedParameter(
-            //        (pi, ctx) => pi.ParameterType == typeof(ITopicClient),
-            //        (pi, ctx) => ctx.ResolveKeyed<TopicClientWrapper>(PackageVerificationTopicClientBindingKey)))
-            //    .WithParameter(new ResolvedParameter(
-            //        (pi, ctx) => pi.ParameterType == typeof(IBrokeredMessageSerializer<PackageCompatibilityValidationMessage>),
-            //        (pi, ctx) => ctx.Resolve<PackageCompatibilityValidationMessageSerializer>()
-            //        ))
-            //    .As<IPackageCompatibilityVerificationEnqueuer>();
-
-            //builder
-            //    .RegisterType<PackageCompatibilityVerificationEnqueuer>()
-            //    .WithKeyedParameter(typeof(ITopicClient), PackageCompatibilityBindingKey)
-            //    .As<IPackageCompatibilityVerificationEnqueuer>();
 
             // Configure the package compatibility validator
             builder

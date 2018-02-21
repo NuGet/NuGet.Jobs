@@ -64,15 +64,12 @@
     <Compile Include="Configuration\OrchestrationRunnerConfiguration.cs" />
 =======
     <Compile Include="OrchestrationRunnerConfiguration.cs" />
-    <Compile Include="PackageCompatibility\IPackageCompatibilityVerificationEnqueuer.cs" />
-    <Compile Include="PackageCompatibility\PackageCompatibilityConfiguration.cs" />
     <Compile Include="PackageCompatibility\PackageCompatibilityValidator.cs" />
 >>>>>>> add package compatibility skeleton
     <Compile Include="PackageCertificates\CertificateVerificationEnqueuer.cs" />
     <Compile Include="PackageCertificates\ICertificateVerificationEnqueuer.cs" />
     <Compile Include="PackageCertificates\PackageCertificatesConfiguration.cs" />
     <Compile Include="PackageCertificates\PackageCertificatesValidator.cs" />
-    <Compile Include="PackageCompatibility\PackageCompatibilityVerificationEnqueuer.cs" />
     <Compile Include="PackageSigning\IPackageSignatureVerificationEnqueuer.cs" />
     <Compile Include="PackageSigning\PackageSignatureVerificationEnqueuer.cs" />
     <Compile Include="PackageSigning\PackageSigningConfiguration.cs" />
@@ -137,7 +134,6 @@
       <Name>Validation.PackageSigning.Core</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>

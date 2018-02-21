@@ -5,8 +5,7 @@ using NuGet.Common;
 using NuGet.Services.Validation;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Data.Entity.Infrastructure;
 using System.Threading.Tasks;
 
 namespace Validation.PackageCompatibility.Core.Storage
@@ -39,9 +38,11 @@ namespace Validation.PackageCompatibility.Core.Storage
                               }
                           );
             }
-            try { 
-            await _validationContext.SaveChangesAsync(); // TODO - my savings needs to catch database consistency
-            } catch(Exception e)
+            try
+            {
+                await _validationContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException e)
             {
                 _logger.LogWarning("trouble saving changes async - {0}", e.Message);
             }
