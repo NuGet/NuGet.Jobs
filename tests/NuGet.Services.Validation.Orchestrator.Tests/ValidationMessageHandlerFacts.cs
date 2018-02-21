@@ -122,6 +122,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             public IDictionary<string, object> Properties => _inner.Properties;
 
             public DateTimeOffset ScheduledEnqueueTimeUtc { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public DateTimeOffset ExpiresAtUtc => throw new NotImplementedException();
+            public DateTimeOffset EnqueuedTimeUtc => throw new NotImplementedException();
+
             public Task AbandonAsync() => throw new NotImplementedException();
             public IBrokeredMessage Clone() => throw new NotImplementedException();
             public Task CompleteAsync() => throw new NotImplementedException();
