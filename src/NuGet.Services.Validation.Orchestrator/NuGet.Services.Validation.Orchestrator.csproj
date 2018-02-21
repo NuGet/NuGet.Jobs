@@ -60,12 +60,8 @@
     <Compile Include="Job.cs" />
     <Compile Include="MessageService.cs" />
     <Compile Include="OrchestrationRunner.cs" />
-<<<<<<< HEAD
     <Compile Include="Configuration\OrchestrationRunnerConfiguration.cs" />
-=======
-    <Compile Include="OrchestrationRunnerConfiguration.cs" />
     <Compile Include="PackageCompatibility\PackageCompatibilityValidator.cs" />
->>>>>>> add package compatibility skeleton
     <Compile Include="PackageCertificates\CertificateVerificationEnqueuer.cs" />
     <Compile Include="PackageCertificates\ICertificateVerificationEnqueuer.cs" />
     <Compile Include="PackageCertificates\PackageCertificatesConfiguration.cs" />
