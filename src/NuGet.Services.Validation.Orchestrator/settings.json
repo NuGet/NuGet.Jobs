@@ -2,14 +2,14 @@
   "Configuration": {
     "Validations": [
       {
-        "name": "",
+        "name": "PackageCompatibilityValidator",
         "failAfter": "1:00:00:00",
         "requiredValidations": [],
         "ShouldStart": true,
         "FailureBehavior": "MustSucceed"
       }
     ],
-    "ValidationStorageConnectionString": "",
+    "ValidationStorageConnectionString": "UseDevelopmentStorage=true",
     "ValidationMessageRecheckPeriod": "00:01:00",
     "NewValidationRequestDeduplicationWindow": "00:10:00"
   },
@@ -38,6 +38,13 @@
       "ConnectionString": "",
       "TopicPath": "",
       "SubscriptionName": ""
+    }
+  },
+  "PackageCompatibility": {
+    "ServiceBus": {
+      "ConnectionString": "servicebus string",
+      "TopicPath": "validate-compatibility",
+      "SubscriptionName": "validate-compatibility"
     }
   },
   "RunnerConfiguration": {

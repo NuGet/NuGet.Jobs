@@ -16,7 +16,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
     {
         public Task<PackageVerificationResult> GetTrustResultAsync(
             ISignedPackageReader package,
-            Signature signature,
+            PrimarySignature signature,
             SignedPackageVerifierSettings settings,
             CancellationToken token)
         {
