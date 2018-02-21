@@ -184,6 +184,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 var validationSetProvider = serviceProvider.GetRequiredService<IValidationSetProvider>();
                 var validationSetProcessor = serviceProvider.GetRequiredService<IValidationSetProcessor>();
                 var validationOutcomeProcessor = serviceProvider.GetRequiredService<IValidationOutcomeProcessor>();
+                var telemetryService = serviceProvider.GetRequiredService<ITelemetryService>();
                 var logger = serviceProvider.GetRequiredService<ILogger<ValidationMessageHandler>>();
 
                 return new ValidationMessageHandler(
@@ -192,6 +193,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSetProvider,
                     validationSetProcessor,
                     validationOutcomeProcessor,
+                    telemetryService,
                     logger);
             });
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();

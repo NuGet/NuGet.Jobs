@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
@@ -16,6 +17,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private readonly IValidationSetProvider _validationSetProvider;
         private readonly IValidationSetProcessor _validationSetProcessor;
         private readonly IValidationOutcomeProcessor _validationOutcomeProcessor;
+        private readonly ITelemetryService _telemetryService;
         private readonly ILogger<ValidationMessageHandler> _logger;
 
         public ValidationMessageHandler(
@@ -24,6 +26,7 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidationSetProvider validationSetProvider,
             IValidationSetProcessor validationSetProcessor,
             IValidationOutcomeProcessor validationOutcomeProcessor,
+            ITelemetryService telemetryService,
             ILogger<ValidationMessageHandler> logger)
         {
             if (configs == null)
@@ -43,6 +46,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _validationSetProvider = validationSetProvider ?? throw new ArgumentNullException(nameof(validationSetProvider));
             _validationSetProcessor = validationSetProcessor ?? throw new ArgumentNullException(nameof(validationSetProcessor));
             _validationOutcomeProcessor = validationOutcomeProcessor ?? throw new ArgumentNullException(nameof(validationOutcomeProcessor));
+            _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -69,6 +73,11 @@ namespace NuGet.Services.Validation.Orchestrator
                             message.PackageId,
                             message.PackageVersion,
                             message.DeliveryCount);
+
+                        _telemetryService.TrackMissingPackageForValidationMessage(
+                            message.PackageId,
+                            message.PackageVersion,
+                            message.ValidationTrackingId.ToString());
 
                         return true;
                     }

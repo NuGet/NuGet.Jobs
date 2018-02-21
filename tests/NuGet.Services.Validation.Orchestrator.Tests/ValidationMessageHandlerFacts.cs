@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
 using Xunit;
 
@@ -49,6 +50,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns<Package>(null)
                 .Verifiable();
 
+            TelemetryServiceMock
+                .Setup(t => t.TrackMissingPackageForValidationMessage("packageId", "1.2.3", validationTrackingId.ToString()))
+                .Verifiable();
+
             var handler = CreateHandler();
 
             Assert.False(await handler.HandleAsync(OverrideDeliveryCount(messageData, deliveryCount: 1)));
@@ -56,6 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.True(await handler.HandleAsync(OverrideDeliveryCount(messageData, deliveryCount: 3)));
 
             CorePackageServiceMock.Verify(ps => ps.FindPackageByIdAndVersionStrict("packageId", "1.2.3"), Times.Exactly(3));
+            TelemetryServiceMock.Verify(t => t.TrackMissingPackageForValidationMessage("packageId", "1.2.3", validationTrackingId.ToString()), Times.Once);
         }
 
         private PackageValidationMessageData OverrideDeliveryCount(
@@ -186,6 +192,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         protected Mock<IValidationSetProvider> ValidationSetProviderMock { get; }
         protected Mock<IValidationSetProcessor> ValidationSetProcessorMock { get; }
         protected Mock<IValidationOutcomeProcessor> ValidationOutcomeProcessorMock { get; }
+        protected Mock<ITelemetryService> TelemetryServiceMock { get; }
         protected Mock<ILogger<ValidationMessageHandler>> LoggerMock { get; }
 
         public ValidationMessageHandlerFactsBase(MockBehavior mockBehavior)
@@ -194,6 +201,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidationSetProviderMock = new Mock<IValidationSetProvider>(mockBehavior);
             ValidationSetProcessorMock = new Mock<IValidationSetProcessor>(mockBehavior);
             ValidationOutcomeProcessorMock = new Mock<IValidationOutcomeProcessor>(mockBehavior);
+            TelemetryServiceMock = new Mock<ITelemetryService>(mockBehavior);
             LoggerMock = new Mock<ILogger<ValidationMessageHandler>>(); // we generally don't care about how logger is called, so it's loose all the time
         }
 
@@ -205,6 +213,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSetProviderMock.Object,
                 ValidationSetProcessorMock.Object,
                 ValidationOutcomeProcessorMock.Object,
+                TelemetryServiceMock.Object,
                 LoggerMock.Object);
         }
     }
