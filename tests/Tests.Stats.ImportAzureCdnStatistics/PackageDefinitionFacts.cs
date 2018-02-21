@@ -27,6 +27,8 @@ namespace Tests.Stats.ImportAzureCdnStatistics
         [InlineData("xunit", "2.4.0-beta.1.build3958", "http://localhost/packages/xunit.2.4.0-beta.1.build3958.nupkg")]
         [InlineData("5.0.0.0", "5.0.0", "http://localhost/packages/5.0.0.0.5.0.0.nupkg")]
         [InlineData("xunit.1", "2.4.1", "https://api.nuget.org/v3-flatcontainer/xunit.1/2.4.1/xunit.1.2.4.1.nupkg")]
+        //[InlineData("ImisComplexIpart20.2.1.235-EA", "20.2.1.235-EA", "http://localhost/packages/ImisComplexIpart20.2.1.235-EA.20.2.1.235-EA.nupkg")]
+        //[InlineData("runtime.tizen.4.0.0-armel.Microsoft.NETCore.App", "2.0.0-preview1-002111-00", "http://localhost/packages/runtime.tizen.4.0.0-armel.Microsoft.NETCore.App.2.0.0-preview1-002111-00.nupkg")]
         public void ExtractsPackageIdAndVersionFromRequestUrl(string expectedPackageId, string expectedPackageVersion, string requestUrl)
         {
             var packageDefinitions = PackageDefinition.FromRequestUrl(requestUrl);
