@@ -10,9 +10,9 @@
       }
     ],
     "ValidationStorageConnectionString": "",
-    "MissingPackageRetryCount":  2,
+    "MissingPackageRetryCount":  15,
     "ValidationMessageRecheckPeriod": "00:01:00",
-    "NewValidationRequestDeduplicationWindow": "00:10:00"
+    "NewValidationRequestDeduplicationWindow": "00:20:00"
   },
   "Vcs": {
     "ContainerName": "validation",
