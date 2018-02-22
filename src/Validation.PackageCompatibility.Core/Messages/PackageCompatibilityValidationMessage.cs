@@ -9,10 +9,14 @@ namespace Validation.PackageCompatibility.Core.Messages
     {
         public PackageCompatibilityValidationMessage(string packageId, string packageVersion, Uri nupkgUri, Guid validationId)
         {
-            PackageId = packageId;
-            PackageVersion = packageVersion;
-            NupkgUri = nupkgUri;
+            if (validationId == Guid.Empty)
+            {
+                throw new ArgumentOutOfRangeException(nameof(validationId));
+            }
             ValidationId = validationId;
+            PackageId = packageId ?? throw new ArgumentNullException(nameof(packageId));
+            PackageVersion = packageVersion ?? throw new ArgumentNullException(nameof(packageVersion));
+            NupkgUri = nupkgUri ?? throw new ArgumentNullException(nameof(nupkgUri));
         }
 
         public string PackageId { get; }

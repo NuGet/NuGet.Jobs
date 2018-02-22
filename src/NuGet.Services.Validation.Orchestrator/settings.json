@@ -57,9 +57,9 @@
   },
   "PackageCompatibility": {
     "ServiceBus": {
-      "ConnectionString": "servicebus string",
-      "TopicPath": "validate-compatibility",
-      "SubscriptionName": "validate-compatibility"
+      "ConnectionString": "",
+      "TopicPath": "",
+      "SubscriptionName": ""
     }
   },
   "RunnerConfiguration": {
@@ -93,6 +93,7 @@
     "AnnouncementsUrl": "https://github.com/NuGet/Announcements/issues",
     "TwitterUrl": "https://twitter.com/nuget"
   },
+  "PackageDownloadTimeout": "10:00",
   "KeyVault_VaultName": "",
   "KeyVault_ClientId": "",
   "KeyVault_CertificateThumbprint": "",

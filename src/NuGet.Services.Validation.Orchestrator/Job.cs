@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -20,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
+using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
@@ -52,6 +52,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string ServiceBusConfigurationSectionName = "ServiceBus";
         private const string SmtpConfigurationSectionName = "Smtp";
         private const string EmailConfigurationSectionName = "Email";
+        private const string PackageDownloadTimeoutName = "PackageDownloadTimeout";
 
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
@@ -91,7 +92,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 return;
             }
 
-            var runner = GetRequiredService<OrchestrationRunner>();            
+            var runner = GetRequiredService<OrchestrationRunner>();
             await runner.RunOrchestrationAsync();
         }
 
@@ -213,10 +214,29 @@ namespace NuGet.Services.Validation.Orchestrator
                     ? (IMailSender)new DiskMailSender()
                     : (IMailSender)new MailSender(mailSenderConfiguration);
             });
+
+            services.AddSingleton(p =>
+            {
+                var assembly = Assembly.GetEntryAssembly();
+                var assemblyName = assembly.GetName().Name;
+                var assemblyVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
+
+                var client = new HttpClient(new WebRequestHandler
+                {
+                    AllowPipelining = true,
+                    AutomaticDecompression = (DecompressionMethods.GZip | DecompressionMethods.Deflate),
+                });
+
+                client.Timeout = configurationRoot.GetValue<TimeSpan>(PackageDownloadTimeoutName);
+                client.DefaultRequestHeaders.Add("User-Agent", $"{assemblyName}/{assemblyVersion}");
+
+                return client;
+            });
             services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
             services.AddTransient<ICoreMessageService, CoreMessageService>();
             services.AddTransient<IMessageService, MessageService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddTransient<IPackageDownloader, PackageDownloader>();
             services.AddSingleton(new TelemetryClient());
         }
 
@@ -354,7 +374,6 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static void ConfigurePackageCompatibilityValidator(ContainerBuilder builder)
         {
-
             // Configure the validator state service for the package compatibility validator.
             builder
                 .RegisterType<ValidatorStateService>()
@@ -373,7 +392,6 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<PackageCompatibilityValidator>()
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageCompatibilityBindingKey)
                 .As<PackageCompatibilityValidator>();
-
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)

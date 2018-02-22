@@ -46,7 +46,6 @@ namespace NuGet.Services.Validation.PackageCompatibility
 
         public async Task<IValidationResult> StartValidationAsync(IValidationRequest request)
         {
-            // Try check the whole thing
             try
             {
                 var validatorStatus = await _validatorStateService.GetStatusAsync(request);
@@ -62,34 +61,33 @@ namespace NuGet.Services.Validation.PackageCompatibility
                     return validatorStatus.ToValidationResult();
                 }
 
-                // Add the status, so subsequent calls don't try to reevaluate the same thing
-                await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
+                try
+                {
+                    await Validate(request, CancellationToken.None);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogWarning(0, e, "Validation failed in the validator for the following ValidationId {ValidationId}", request.ValidationId);
+                }
 
-                var message = new PackageCompatibilityValidationMessage(
-                    request.PackageId,
-                    request.PackageVersion,
-                    new Uri(request.NupkgUrl),
-                    request.ValidationId
-                    );
-
-                // Do validation
-                await Validate(message, CancellationToken.None);
-
+                // Treat every validation as succeeded, as we don't want to block 
                 validatorStatus.State = ValidationStatus.Succeeded;
 
                 await _validatorStateService.SaveStatusAsync(validatorStatus);
+
                 return validatorStatus.ToValidationResult();
             }
             catch (Exception e)
             {
-                _logger.LogWarning($"Validation failed for the validation request {0}.{Environment.NewLine}Exception: {1}", request.ToString(), e.ToString());
+                _logger.LogWarning(0, e, "Validation failed for the following ValidationId {ValidationId}", request.ValidationId);
             }
-            return null;
+
+            return new ValidationResult(ValidationStatus.Succeeded);
         }
 
-        private async Task Validate(PackageCompatibilityValidationMessage message, CancellationToken cancellationToken)
+        private async Task Validate(IValidationRequest request, CancellationToken cancellationToken)
         {
-            using (var packageStream = await _packageDownloader.DownloadAsync(message.NupkgUri, cancellationToken))
+            using (var packageStream = await _packageDownloader.DownloadAsync(new Uri(request.NupkgUrl), cancellationToken))
             using (var package = new Packaging.PackageArchiveReader(packageStream))
             {
                 var warnings = new List<PackLogMessage>();
@@ -99,7 +97,7 @@ namespace NuGet.Services.Validation.PackageCompatibility
                     warnings.AddRange(rule.Validate(package));
                 }
 
-                await _packageCompatibilityService.SetPackageCompatibilityState(message.ValidationId, warnings);
+                await _packageCompatibilityService.SetPackageCompatibilityState(request.ValidationId, warnings);
             }
         }
     }
