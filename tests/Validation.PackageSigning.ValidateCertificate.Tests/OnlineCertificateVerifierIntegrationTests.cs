@@ -104,18 +104,21 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
         public async Task RevokedEndCertificate()
         {
             // Arrange - create a revocation date with no milliseconds
+            var crlUpdateTime = DateTimeOffset.Parse("10/21/1995 4:05:06 PM");
             var revocationDate = DateTimeOffset.Parse("02/18/1994 1:02:03 PM");
 
-            var certificate = await _fixture.GetRevokedSigningCertificateAsync(revocationDate);
+            using (var revokedChain = await _fixture.GetRevokedSigningCertificateAsync(revocationDate, crlUpdateTime))
+            {
+                // Act & assert
+                var result = _target.VerifyCodeSigningCertificate(revokedChain.EndCertificate, new X509Certificate2[0]);
 
-            // Act & assert
-            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[0]);
-
-            Assert.Equal(EndCertificateStatus.Revoked, result.Status);
-            Assert.Equal(X509ChainStatusFlags.Revoked, result.StatusFlags);
-            Assert.NotNull(result.StatusUpdateTime);
-            Assert.NotNull(result.RevocationTime);
-            Assert.Equal(revocationDate, result.RevocationTime.Value);
+                Assert.Equal(EndCertificateStatus.Revoked, result.Status);
+                Assert.Equal(X509ChainStatusFlags.Revoked, result.StatusFlags);
+                Assert.NotNull(result.StatusUpdateTime);
+                Assert.NotNull(result.RevocationTime);
+                Assert.Equal(crlUpdateTime, result.StatusUpdateTime.Value);
+                Assert.Equal(revocationDate, result.RevocationTime.Value);
+            }
         }
 
         [Fact]
@@ -143,54 +146,62 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
         public async Task PartialChainEndCertificate()
         {
             // Arrange
-            var certificate = await _fixture.GetPartialChainSigningCertificateAsync();
+            using (var partialChainResult = await _fixture.GetPartialChainSigningCertificateAsync())
+            {
+                // Act & assert
+                var result = _target.VerifyCodeSigningCertificate(
+                                partialChainResult.EndCertificate,
+                                new X509Certificate2[0]);
 
-            // Act & assert
-            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[0]);
+                var flags = X509ChainStatusFlags.PartialChain |
+                            X509ChainStatusFlags.RevocationStatusUnknown |
+                            X509ChainStatusFlags.OfflineRevocation;
 
-            var flags = X509ChainStatusFlags.PartialChain |
-                        X509ChainStatusFlags.RevocationStatusUnknown |
-                        X509ChainStatusFlags.OfflineRevocation;
-
-            Assert.Equal(EndCertificateStatus.Invalid, result.Status);
-            Assert.Equal(flags, result.StatusFlags);
-            Assert.Null(result.StatusUpdateTime);
-            Assert.Null(result.RevocationTime);
+                Assert.Equal(EndCertificateStatus.Invalid, result.Status);
+                Assert.Equal(flags, result.StatusFlags);
+                Assert.Null(result.StatusUpdateTime);
+                Assert.Null(result.RevocationTime);
+            }
         }
 
         [Fact]
         public async Task PartialChainButIntermediateCertificateIsProvided()
         {
             // Arrange
-            var certificate = await _fixture.GetPartialChainSigningCertificateAsync();
-            var intermediateCertificate = await _fixture.GetIntermediateCaCertificate();
+            using (var partialChainResult = await _fixture.GetPartialChainSigningCertificateAsync())
+            {
+                // Act & assert
+                var result = _target.VerifyCodeSigningCertificate(
+                                partialChainResult.EndCertificate,
+                                partialChainResult.IntermediateCertificates);
 
-            // Act & assert
-            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[] { intermediateCertificate });
-
-            Assert.Equal(EndCertificateStatus.Good, result.Status);
-            Assert.Equal(X509ChainStatusFlags.NoError, result.StatusFlags);
-            Assert.NotNull(result.StatusUpdateTime);
-            Assert.Null(result.RevocationTime);
+                Assert.Equal(EndCertificateStatus.Good, result.Status);
+                Assert.Equal(X509ChainStatusFlags.NoError, result.StatusFlags);
+                Assert.NotNull(result.StatusUpdateTime);
+                Assert.Null(result.RevocationTime);
+            }
         }
 
         [Fact]
         public async Task PartialChainAndRevokedEndCertificate()
         {
             // Arrange
-            var certificate = await _fixture.GetPartialChainAndRevokedSigningCertificateAsync();
+            using (var partialChainResult = await _fixture.GetPartialChainAndRevokedSigningCertificateAsync())
+            {
+                // Act & assert
+                var result = _target.VerifyCodeSigningCertificate(
+                                partialChainResult.EndCertificate,
+                                new X509Certificate2[0]);
 
-            // Act & assert
-            var result = _target.VerifyCodeSigningCertificate(certificate, new X509Certificate2[0]);
+                var flags = X509ChainStatusFlags.PartialChain |
+                            X509ChainStatusFlags.RevocationStatusUnknown |
+                            X509ChainStatusFlags.OfflineRevocation;
 
-            var flags = X509ChainStatusFlags.PartialChain |
-                        X509ChainStatusFlags.RevocationStatusUnknown |
-                        X509ChainStatusFlags.OfflineRevocation;
-
-            Assert.Equal(EndCertificateStatus.Invalid, result.Status);
-            Assert.Equal(flags, result.StatusFlags);
-            Assert.Null(result.StatusUpdateTime);
-            Assert.Null(result.RevocationTime);
+                Assert.Equal(EndCertificateStatus.Invalid, result.Status);
+                Assert.Equal(flags, result.StatusFlags);
+                Assert.Null(result.StatusUpdateTime);
+                Assert.Null(result.RevocationTime);
+            }
         }
 
         [Fact]

@@ -19,12 +19,7 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
     {
         public async Task<X509Certificate2> GetIntermediateCaCertificate()
         {
-            var certificate = new X509Certificate2();
-            var encodedCert = (await GetCertificateAuthority()).Certificate.GetEncoded();
-
-            certificate.Import(encodedCert);
-
-            return certificate;
+            return (await GetCertificateAuthority()).Certificate.ToX509Certificate2();
         }
 
         public async Task RevokeCertificateAuthority()
@@ -32,7 +27,10 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
             var ca = await GetCertificateAuthority();
             var rootCa = await GetRootCertificateAuthority();
 
-            rootCa.Revoke(ca.Certificate, reason: 0, revocationDate: DateTimeOffset.UtcNow);
+            rootCa.Revoke(
+                ca.Certificate,
+                reason: RevocationReason.Unspecified,
+                revocationDate: DateTimeOffset.UtcNow);
         }
 
         public async Task<X509Certificate2> GetTimestampingCertificateAsync()
@@ -81,7 +79,59 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 
             var (publicCertificate, certificate) = IssueCertificate(ca, "Revoked Signing", CustomizeAsSigningCertificate);
 
-            ca.Revoke(publicCertificate, reason: 0, revocationDate: revocationDate);
+            ca.Revoke(publicCertificate, reason: RevocationReason.Unspecified, revocationDate: revocationDate);
+
+            return certificate;
+        }
+
+        public async Task<CertificateWithCustomIntermediatesResult> GetRevokedSigningCertificateAsync(DateTimeOffset revocationDate, DateTimeOffset crlUpdateTime)
+        {
+            var testServer = await GetTestServerAsync();
+
+            var ca = await GetCertificateAuthority();
+            var ca2 = ca.CreateIntermediateCertificateAuthority();
+            var responders = new DisposableList<IDisposable>();
+
+            var ca2Responder = OcspResponder.Create(ca2, new OcspResponderOptions
+            {
+                ThisUpdate = crlUpdateTime,
+            });
+
+            responders.Add(testServer.RegisterResponder(ca2));
+            responders.Add(testServer.RegisterResponder(ca2Responder));
+
+            void CustomizeAsSigningCertificate(X509V3CertificateGenerator generator)
+            {
+                generator.AddSigningEku();
+                generator.AddAuthorityInfoAccess(ca2, addOcsp: true, addCAIssuers: true);
+            }
+
+            var (publicCertificate, certificate) = IssueCertificate(ca2, "Revoked Signing", CustomizeAsSigningCertificate);
+
+            var caCert = ca.Certificate.ToX509Certificate2();
+            var ca2Cert = ca2.Certificate.ToX509Certificate2();
+
+            ca2.Revoke(publicCertificate, reason: RevocationReason.Unspecified, revocationDate: revocationDate);
+
+            return new CertificateWithCustomIntermediatesResult(
+                        certificate,
+                        new[] { caCert, ca2Cert },
+                        responders);
+        }
+
+        public async Task<X509Certificate2> GetRevokedTimestampingCertificateAsync(DateTimeOffset revocationDate)
+        {
+            var ca = await GetCertificateAuthority();
+
+            void CustomizeAsSigningCertificate(X509V3CertificateGenerator generator)
+            {
+                generator.AddTimestampingEku();
+                generator.AddAuthorityInfoAccess(ca, addOcsp: true, addCAIssuers: true);
+            }
+
+            var (publicCertificate, certificate) = IssueCertificate(ca, "Revoked Timestamping", CustomizeAsSigningCertificate);
+
+            ca.Revoke(publicCertificate, reason: RevocationReason.Unspecified, revocationDate: revocationDate);
 
             return certificate;
         }
@@ -96,41 +146,62 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 
             responders.AddRange(testServer.RegisterResponders(intermediateCa));
 
-            rootCa.Revoke(intermediateCa.Certificate, reason: 0, revocationDate: DateTimeOffset.UtcNow);
+            rootCa.Revoke(intermediateCa.Certificate, reason: RevocationReason.Unspecified, revocationDate: DateTimeOffset.UtcNow);
 
             return CreateSigningCertificate(intermediateCa);
         }
 
-        public async Task<X509Certificate2> GetPartialChainSigningCertificateAsync()
+        public async Task<CertificateWithCustomIntermediatesResult> GetPartialChainSigningCertificateAsync()
         {
+            var testServer = await GetTestServerAsync();
+
             var ca = await GetCertificateAuthority();
+            var ca2 = ca.CreateIntermediateCertificateAuthority();
+            var responders = new DisposableList<IDisposable>();
+
+            responders.Add(testServer.RegisterResponder(ca2.OcspResponder));
 
             void CustomizeAsPartialChainSigningCertificate(X509V3CertificateGenerator generator)
             {
                 generator.AddSigningEku();
-                generator.AddAuthorityInfoAccess(ca, addOcsp: true, addCAIssuers: false);
+                generator.AddAuthorityInfoAccess(ca2, addOcsp: true, addCAIssuers: true);
             }
 
-            var (publicCertificate, certificate) = IssueCertificate(ca, "Untrusted Signing", CustomizeAsPartialChainSigningCertificate);
+            var (publicCertificate, certificate) = IssueCertificate(ca2, "Untrusted Signing", CustomizeAsPartialChainSigningCertificate);
 
-            return certificate;
+            var caCert = ca.Certificate.ToX509Certificate2();
+            var ca2Cert = ca2.Certificate.ToX509Certificate2();
+
+            return new CertificateWithCustomIntermediatesResult(
+                        certificate,
+                        new[] { caCert, ca2Cert },
+                        responders);
         }
 
-        public async Task<X509Certificate2> GetPartialChainAndRevokedSigningCertificateAsync()
+        public async Task<CertificateWithCustomIntermediatesResult> GetPartialChainAndRevokedSigningCertificateAsync()
         {
+            var testServer = await GetTestServerAsync();
+
             var ca = await GetCertificateAuthority();
+            var ca2 = ca.CreateIntermediateCertificateAuthority();
+            var responders = new DisposableList<IDisposable>();
+
+            responders.Add(testServer.RegisterResponder(ca2.OcspResponder));
 
             void CustomizeAsPartialChainAndRevokedCertificate(X509V3CertificateGenerator generator)
             {
                 generator.AddSigningEku();
-                generator.AddAuthorityInfoAccess(ca, addOcsp: true, addCAIssuers: false);
+                generator.AddAuthorityInfoAccess(ca2, addOcsp: true, addCAIssuers: true);
             }
 
-            var (publicCertificate, certificate) = IssueCertificate(ca, "Untrusted and Revoked Signing", CustomizeAsPartialChainAndRevokedCertificate);
+            var (publicCertificate, certificate) = IssueCertificate(ca2, "Untrusted and Revoked Signing", CustomizeAsPartialChainAndRevokedCertificate);
 
-            ca.Revoke(publicCertificate, reason: 0, revocationDate: DateTimeOffset.UtcNow);
+            ca2.Revoke(publicCertificate, reason: RevocationReason.Unspecified, revocationDate: DateTimeOffset.UtcNow);
 
-            return certificate;
+            return new CertificateWithCustomIntermediatesResult(
+                        certificate,
+                        new X509Certificate2[0],
+                        responders);
         }
 
         public async Task<X509Certificate2> GetExpiredSigningCertificateAsync()
@@ -160,7 +231,7 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
 
             var (publicCertificate, certificate) = IssueCertificate(ca, "Expired Signing", CustomizeAsExpiredAndRevokedCertificate);
 
-            ca.Revoke(publicCertificate, reason: 0, revocationDate: DateTimeOffset.UtcNow);
+            ca.Revoke(publicCertificate, reason: RevocationReason.Unspecified, revocationDate: DateTimeOffset.UtcNow);
 
             return certificate;
         }
@@ -170,67 +241,37 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests.Support
             var testServer = await GetTestServerAsync();
             var rootCa = await GetRootCertificateAuthority();
 
+            var issueOptions = IssueCertificateOptions.CreateDefaultForIntermediateCertificateAuthority();
             var keyPair = SigningTestUtility.GenerateKeyPair(publicKeyLength: 512);
-            var certificate = IssueCaCertificate(rootCa, keyPair.Public);
-            var responders = GetResponders();
 
-            var intermediateCa = NewCertificateAuthority(certificate, keyPair, rootCa.SharedUri, parentCa: rootCa);
+            issueOptions.KeyPair = keyPair;
+
+            var intermediateCa = rootCa.CreateIntermediateCertificateAuthority(issueOptions);
+            var responders = GetResponders();
 
             responders.AddRange(testServer.RegisterResponders(intermediateCa));
 
             return CreateSigningCertificate(intermediateCa);
         }
 
-        private BCCertificate IssueCaCertificate(
-            CertificateAuthority ca,
-            AsymmetricKeyParameter publicKey,
-            Action<X509V3CertificateGenerator> customizeCertificate = null)
+        public class CertificateWithCustomIntermediatesResult : IDisposable
         {
-            var method = typeof(CertificateAuthority).GetMethod("IssueCaCertificate", BindingFlags.Instance | BindingFlags.NonPublic);
+            private IDisposable _responders;
 
-            if (method == null)
+            public CertificateWithCustomIntermediatesResult(
+                X509Certificate2 endCertificate,
+                X509Certificate2[] intermediateCertificates,
+                IDisposable responders)
             {
-                throw new Exception($"Could not find method {nameof(CertificateAuthority)}.IssueCaCertificate");
+                EndCertificate = endCertificate;
+                IntermediateCertificates = intermediateCertificates;
+                _responders = responders;
             }
 
-            var parameters = method.GetParameters();
+            public X509Certificate2 EndCertificate { get; }
+            public X509Certificate2[] IntermediateCertificates { get; }
 
-            if (parameters.Length != 2 ||
-                parameters[0].ParameterType != typeof(AsymmetricKeyParameter) ||
-                parameters[1].ParameterType != typeof(Action<X509V3CertificateGenerator>) ||
-                method.ReturnType != typeof(BCCertificate))
-            {
-                throw new Exception($"{nameof(CertificateAuthority)}'s IssueCaCertificate parameters or return type have changed");
-            }
-
-            return (BCCertificate)method.Invoke(ca, new object[] { publicKey, customizeCertificate });
-        }
-
-        private CertificateAuthority NewCertificateAuthority(
-            BCCertificate certificate,
-            AsymmetricCipherKeyPair keyPair,
-            Uri sharedUri,
-            CertificateAuthority parentCa)
-        {
-            var constructors = typeof(CertificateAuthority).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (constructors.Length != 1)
-            {
-                throw new Exception($"Constructors for {nameof(CertificateAuthority)} have changed");
-            }
-
-            var parameters = constructors[0].GetParameters();
-
-            if (parameters.Length != 4 ||
-                parameters[0].ParameterType != typeof(BCCertificate) ||
-                parameters[1].ParameterType != typeof(AsymmetricCipherKeyPair) ||
-                parameters[2].ParameterType != typeof(Uri)  ||
-                parameters[3].ParameterType != typeof(CertificateAuthority))
-            {
-                throw new Exception($"{nameof(CertificateAuthority)}'s constructor parameters have changed");
-            }
-
-            return (CertificateAuthority)constructors[0].Invoke(new object[] { certificate, keyPair, sharedUri, parentCa });
+            public void Dispose() => _responders.Dispose();
         }
     }
 }
