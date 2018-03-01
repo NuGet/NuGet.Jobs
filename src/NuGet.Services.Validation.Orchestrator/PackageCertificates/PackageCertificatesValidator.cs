@@ -296,15 +296,14 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// </summary>
         /// <param name="signature">The package's signature.</param>
         /// <param name="isRevalidationRequest">Whether this package has already been validated. If true, invalid certificates will not invalidate signatures.</param>
-        /// <returns>The signatures whose certificates' state invalidates the signatrure.</returns>
+        /// <returns>Whether the signature should be invalidated.</returns>
         private bool ShouldInvalidateSignature(PackageSignature signature, bool isRevalidationRequest)
         {
             // Revalidation requests do NOT revalidate certificates that are known to be revoked. Thus,
             // certificates that were revoked before the package was signed ALWAYS invalidate the signature.
-            if (signature.EndCertificate.Status == EndCertificateStatus.Revoked &&
-                signature.TrustedTimestamps.Any(t => signature.EndCertificate.RevocationTime.Value <= t.Value))
+            if (signature.EndCertificate.Status == EndCertificateStatus.Revoked)
             {
-                return true;
+                return signature.TrustedTimestamps.Any(t => signature.EndCertificate.RevocationTime.Value <= t.Value);
             }
 
             // Revalidation requests will revalidate invalid certificates. Therefore, invalid certificates
