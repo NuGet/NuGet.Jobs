@@ -74,45 +74,47 @@ namespace NuGet.Services.Validation.PackageCertificates
                 return status;
             }
 
-            // All of the requested certificate validations have finished. Fail the validation if any
-            // signatures have been invalidated.
-            var signatures = await FindSignaturesAsync(request);
+            // All of the requested certificate validations have finished. Fail the validation if the
+            // signature have been invalidated. At this point, the signature MUST have a state of either
+            // "Unknown" or "Invalid" as the PackageSigningValidator sets signatures to an "Unknown" status
+            // and the ValidateCertificate job may set signatures to the "Invalid" state.
+            var signature = await FindSignatureAsync(request);
 
-            foreach (var signature in signatures)
+            if (signature.Status == PackageSignatureStatus.Invalid)
             {
-                // Signatures at this point MUST have a state of either "Unknown" or "Invalid" at this point as the
-                // PackageSigningValidator will set all signatures to an "Unknown" status, and the ValidateCertificate
-                // job may set signatures to the "Invalid" state.
-                if (signature.Status == PackageSignatureStatus.Invalid)
-                {
-                    _logger.LogWarning(
-                        "Failing validation {ValidationId} ({PackageId} {PackageVersion}) due to invalidated signature: {SignatureKey}",
-                        request.ValidationId,
-                        request.PackageId,
-                        request.PackageVersion,
-                        signature.Key);
+                _logger.LogWarning(
+                    "Failing validation {ValidationId} ({PackageId} {PackageVersion}) due to invalidated signature: {SignatureKey}",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion,
+                    signature.Key);
 
-                    return await _validatorStateService.TryUpdateValidationStatusAsync(request, status, ValidationStatus.Failed);
-                }
-
-                if (signature.Status != PackageSignatureStatus.Unknown)
-                {
-                    _logger.LogError(
-                        Error.PackageCertificateValidationInvalidSignatureState,
-                        "Failing validation {ValidationId} ({PackageId} {PackageVersion}) due to invalid signature status: {SignatureStatus}",
-                        request.ValidationId,
-                        request.PackageId,
-                        request.PackageVersion,
-                        signature.Status);
-
-                    return await _validatorStateService.TryUpdateValidationStatusAsync(request, status, ValidationStatus.Failed);
-                }
+                return await _validatorStateService.TryUpdateValidationStatusAsync(request, status, ValidationStatus.Failed);
             }
+            else if (signature.Status != PackageSignatureStatus.Unknown)
+            {
+                _logger.LogError(
+                    Error.PackageCertificateValidationInvalidSignatureState,
+                    "Failing validation {ValidationId} ({PackageId} {PackageVersion}) due to invalid signature status: {SignatureStatus}",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion,
+                    signature.Status);
 
-            // All signatures are valid. Promote signatures out of the "Unknown" state to either "Valid" or "InGracePeriod".
-            PromoteSignatures(signatures);
+                return await _validatorStateService.TryUpdateValidationStatusAsync(request, status, ValidationStatus.Failed);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Successful validation {ValidationId} ({PackageId} {PackageVersion})",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion);
 
-            return await _validatorStateService.TryUpdateValidationStatusAsync(request, status, ValidationStatus.Succeeded);
+                PromoteSignature(request, signature);
+
+                return await _validatorStateService.TryUpdateValidationStatusAsync(request, status, ValidationStatus.Succeeded);
+            }
         }
 
         public async Task<IValidationResult> StartValidationAsync(IValidationRequest request)
@@ -167,19 +169,18 @@ namespace NuGet.Services.Validation.PackageCertificates
             // Find the signatures used to sign the package and see if any certificates known to be revoked
             // invalidate any of these signatures. Note that a revoked certificate is assumed to remain
             // revoked forever.
-            var signatures = await FindSignaturesAsync(request);
-            var invalidSignatures = FindSignaturesToInvalidate(signatures, isRevalidationRequest);
+            var signature = await FindSignatureAsync(request);
 
-            if (invalidSignatures.Any())
+            if (ShouldInvalidateSignature(signature, isRevalidationRequest))
             {
-                InvalidatePackageSignatures(request, package, invalidSignatures);
+                InvalidatePackageSignature(request, package, signature);
 
                 return await _validatorStateService.TryAddValidatorStatusAsync(request, status, ValidationStatus.Failed);
             }
 
             // Find the certificates that must be validated. A certificate must be validated if it has never been validated,
             // or, if it hasn't been validated in a while (and it hasn't been revoked).
-            var certificates = FindCertificatesToValidateAsync(signatures, isRevalidationRequest);
+            var certificates = FindCertificatesToValidateAsync(signature, isRevalidationRequest);
 
             if (certificates.Any())
             {
@@ -190,12 +191,12 @@ namespace NuGet.Services.Validation.PackageCertificates
             else
             {
                 _logger.LogInformation(
-                    "All certificates for package {PackageId} {PackageVersion} have already been validated, no additional validations necessary",
+                    "All certificates for package {PackageId} {PackageVersion} have already been validated, no additional validations necessary. " +
+                    "Promoting signature to status {SignatureStatus}",
                     request.PackageId,
                     request.PackageVersion);
 
-                // Promote signatures out of the "Unknown" state to either "Valid" or "InGracePeriod".
-                PromoteSignatures(signatures);
+                PromoteSignature(request, signature);
 
                 return await _validatorStateService.TryAddValidatorStatusAsync(request, status, ValidationStatus.Succeeded);
             }
@@ -233,28 +234,32 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// </summary>
         /// <param name="request">The validation request containing the package whose signatures should be fetched.</param>
         /// <returns>The package's signatures with their certificates.</returns>
-        private Task<List<PackageSignature>> FindSignaturesAsync(IValidationRequest request)
+        private Task<PackageSignature> FindSignatureAsync(IValidationRequest request)
         {
             return _validationContext
                         .PackageSignatures
-                        .Where(s => s.PackageKey == request.PackageKey)
                         .Include(s => s.TrustedTimestamps)
                         .Include(s => s.EndCertificate)
-                        .ToListAsync();
+                        .FirstAsync(s => s.PackageKey == request.PackageKey);
         }
 
         /// <summary>
         /// Promote valid signatures from "Unknown" status to either "Valid" or "InGracePeriod".
         /// </summary>
         /// <param name="signatures">The valid signatures that should be promoted.</param>
-        private void PromoteSignatures(IEnumerable<PackageSignature> signatures)
+        private void PromoteSignature(IValidationRequest request, PackageSignature signature)
         {
-            foreach (var signature in signatures)
-            {
-                signature.Status = IsValidSignatureOutOfGracePeriod(signature)
-                    ? PackageSignatureStatus.Valid
-                    : PackageSignatureStatus.InGracePeriod;
-            }
+            var newSignatureStatus = (IsValidSignatureOutOfGracePeriod(signature))
+                                        ? PackageSignatureStatus.Valid
+                                        : PackageSignatureStatus.InGracePeriod;
+
+            _logger.LogInformation(
+                "Promoting package {PackageId} {PackageVersion} signature to status {SignatureStatus}",
+                request.PackageId,
+                request.PackageVersion,
+                newSignatureStatus);
+
+            signature.Status = newSignatureStatus;
         }
 
         /// <summary>
@@ -287,33 +292,29 @@ namespace NuGet.Services.Validation.PackageCertificates
         }
 
         /// <summary>
-        /// Find the signatures that should be invalidated.
+        /// Decide whether the signature should be invalidated.
         /// </summary>
-        /// <param name="signatures">The package's signatures.</param>
+        /// <param name="signature">The package's signature.</param>
         /// <param name="isRevalidationRequest">Whether this package has already been validated. If true, invalid certificates will not invalidate signatures.</param>
         /// <returns>The signatures whose certificates' state invalidates the signatrure.</returns>
-        private IEnumerable<PackageSignature> FindSignaturesToInvalidate(IEnumerable<PackageSignature> signatures, bool isRevalidationRequest)
+        private bool ShouldInvalidateSignature(PackageSignature signature, bool isRevalidationRequest)
         {
-            return signatures
-                    .Where(s =>
-                    {
-                        // Revalidation requests do NOT revalidate certificates that are known to be revoked. Thus,
-                        // certificates that were revoked before the package was signed ALWAYS invalidate the signature.
-                        if (s.EndCertificate.Status == EndCertificateStatus.Revoked)
-                        {
-                            return s.TrustedTimestamps.Any(t => s.EndCertificate.RevocationTime.Value <= t.Value);
-                        }
+            // Revalidation requests do NOT revalidate certificates that are known to be revoked. Thus,
+            // certificates that were revoked before the package was signed ALWAYS invalidate the signature.
+            if (signature.EndCertificate.Status == EndCertificateStatus.Revoked &&
+                signature.TrustedTimestamps.Any(t => signature.EndCertificate.RevocationTime.Value <= t.Value))
+            {
+                return true;
+            }
 
-                        // Revalidation requests will revalidate invalid certificates. Therefore, invalid certificates
-                        // should invalidate the signature only if this is not a revalidation request.
-                        if (s.EndCertificate.Status == EndCertificateStatus.Invalid)
-                        {
-                            return !isRevalidationRequest;
-                        }
+            // Revalidation requests will revalidate invalid certificates. Therefore, invalid certificates
+            // should invalidate the signature only if this is not a revalidation request.
+            if (signature.EndCertificate.Status == EndCertificateStatus.Invalid)
+            {
+                return !isRevalidationRequest;
+            }
 
-                        return false;
-                    })
-                    .ToList();
+            return false;
         }
 
         /// <summary>
@@ -322,9 +323,9 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// </summary>
         /// <param name="request">The request to validate a package.</param>
         /// <param name="package">The package's overall signing state that should be invalidated.</param>
-        /// <param name="revokedSignatures">The package's signatures that should be invalidated.</param>
+        /// <param name="signature">The package's signatures that should be invalidated.</param>
         /// <returns>A task that completes when the entities have been updated.</returns>
-        private void InvalidatePackageSignatures(IValidationRequest request, PackageSigningState package, IEnumerable<PackageSignature> revokedSignatures)
+        private void InvalidatePackageSignature(IValidationRequest request, PackageSigningState package, PackageSignature signature)
         {
             _logger.LogWarning(
                 "Invalidating package {PackageId} {PackageVersion} due to revoked signatures.",
@@ -332,54 +333,45 @@ namespace NuGet.Services.Validation.PackageCertificates
                 request.PackageVersion);
 
             package.SigningStatus = PackageSigningStatus.Invalid;
-
-            foreach (var signature in revokedSignatures)
-            {
-                signature.Status = PackageSignatureStatus.Invalid;
-            }
+            signature.Status = PackageSignatureStatus.Invalid;
         }
 
         /// <summary>
-        /// Find all the certificates that should be validated from the given signatures.
+        /// Find all the certificates that should be validated from the given signature.
         /// </summary>
-        /// <param name="signatures">The signatures used to sign the package requested by the validation request.</param>
+        /// <param name="signature">The signature whose certificates should be found.</param>
         /// <param name="isRevalidationRequest">Whether this package has already been validated.</param>
         /// <returns>The certificates used to sign the package that should be validated.</returns>
-        private IEnumerable<EndCertificate> FindCertificatesToValidateAsync(IEnumerable<PackageSignature> signatures, bool isRevalidationRequest)
+        private IEnumerable<EndCertificate> FindCertificatesToValidateAsync(PackageSignature signature, bool isRevalidationRequest)
         {
-            // Get all the certificates used to sign the signatures. Note that revoked certificates
-            // should NEVER be revalidated as Certificate Authorities may, under certain conditions,
-            // drop a revoked certificate's revocation information. Revalidating such a revoked
-            // certificate would cause the certificate to be marked as "Good" when in reality it
-            // should remain revoked.
-            var certificates = signatures.Select(s => s.EndCertificate).Where(c => c.Status != EndCertificateStatus.Revoked);
+            var certificates = new List<EndCertificate>();
 
-            // Skip certificates that have been validated recently unless this is a revalidation request.
+            certificates.Add(signature.EndCertificate);
+            certificates.AddRange(signature.TrustedTimestamps.Select(t => t.EndCertificate));
+
+            // Revoked certificates should NEVER be revalidated as Certificate Authorities may,
+            // under certain conditions, drop a revoked certificate's revocation information.
+            // Revalidating such a revoked certificate would cause the certificate to be marked as
+            // "Good" when in reality it should remain revoked.
+            var result = certificates.Where(c => c.Status != EndCertificateStatus.Revoked);
+
+            // Allow normal validations to skip verifying certificates that have been recently validated.
             if (!isRevalidationRequest)
             {
-                certificates = certificates.Where(ShouldValidateCertificate);
+                result = result.Where(c =>
+                {
+                    if (c.LastVerificationTime.HasValue)
+                    {
+                        var timeAgo = DateTime.UtcNow - c.LastVerificationTime.Value;
+
+                        return timeAgo >= _certificateRevalidationThresholdTime;
+                    }
+
+                    return true;
+                });
             }
 
-            return certificates.ToList();
-        }
-
-        /// <summary>
-        /// Decide whether or not to revalidate the given certificate.
-        /// </summary>
-        /// <param name="certificate">The certificate that may be revalidated.</param>
-        /// <returns>Whether the certificate should be revalidated.</returns>
-        private bool ShouldValidateCertificate(EndCertificate certificate)
-        {
-            // Validate the certificate only if it has never been validated before, or, if
-            // its last validation time is past the maximum revalidation threshold.
-            if (certificate.LastVerificationTime.HasValue)
-            {
-                var timeAgo = DateTime.UtcNow - certificate.LastVerificationTime.Value;
-
-                return timeAgo >= _certificateRevalidationThresholdTime;
-            }
-
-            return true;
+            return result.ToList();
         }
 
         /// <summary>

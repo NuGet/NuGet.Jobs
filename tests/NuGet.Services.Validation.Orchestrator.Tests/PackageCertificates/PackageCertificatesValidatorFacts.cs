@@ -106,13 +106,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 yield return new object[]
                 {
                     ValidationStatus.Incomplete,
-                    new EndCertificateStatus?[] { null },
-                };
-
-                yield return new object[]
-                {
-                    ValidationStatus.Incomplete,
-                    new EndCertificateStatus?[] { EndCertificateStatus.Good, null, EndCertificateStatus.Revoked },
+                    null,
                 };
 
                 // If ALL certificate validations have a status of "Good" or "Unknown", the overall validation
@@ -120,75 +114,58 @@ namespace NuGet.Services.Validation.PackageSigning
                 yield return new object[]
                 {
                     ValidationStatus.Succeeded,
-                    new EndCertificateStatus?[] { EndCertificateStatus.Good },
+                    EndCertificateStatus.Good,
                 };
 
                 yield return new object[]
                 {
                     ValidationStatus.Succeeded,
-                    new EndCertificateStatus?[] { EndCertificateStatus.Unknown },
-                };
-
-                yield return new object[]
-                {
-                    ValidationStatus.Succeeded,
-                    new EndCertificateStatus?[] { EndCertificateStatus.Good, EndCertificateStatus.Unknown, EndCertificateStatus.Good },
-                };
-
-                // The validator should be resilient to no certificates. Since this tests packages that were marked as
-                // signed, this should NEVER happen.
-                yield return new object[]
-                {
-                    ValidationStatus.Succeeded,
-                    new EndCertificateStatus?[] { },
+                    EndCertificateStatus.Unknown,
                 };
             }
 
             [Theory]
             [MemberData(nameof(GetReturnsExpectedStatusForCertificateValidationsData))]
-            public async Task ReturnsExpectedStatusForCertificateValidations(ValidationStatus expectedStatus, IEnumerable<EndCertificateStatus?> certificateStatuses)
+            public async Task ReturnsExpectedStatusForCertificateValidations(ValidationStatus expectedStatus, EndCertificateStatus? certificateStatus)
             {
                 // Arrange
                 var certificates = new List<EndCertificate>();
                 var certificateValidations = new List<EndCertificateValidation>();
                 var packageSignatures = new List<PackageSignature>();
 
-                foreach (var certificateStatus in certificateStatuses)
+                var timestamp = new TrustedTimestamp
                 {
-                    var timestamp = new TrustedTimestamp
-                    {
-                        Value = DateTime.UtcNow
-                    };
+                    Value = DateTime.UtcNow
+                };
 
-                    var certificate = new EndCertificate
-                    {
-                        Status = certificateStatus ?? EndCertificateStatus.Unknown,
-                        RevocationTime = DateTime.MaxValue,
-                    };
+                var certificate = new EndCertificate
+                {
+                    Status = certificateStatus ?? EndCertificateStatus.Unknown,
+                    RevocationTime = DateTime.MaxValue,
+                };
 
-                    var certificateValidation = new EndCertificateValidation
-                    {
-                        ValidationId = ValidationId,
-                        Status = certificateStatus,
-                        EndCertificate = certificate
-                    };
+                var certificateValidation = new EndCertificateValidation
+                {
+                    ValidationId = ValidationId,
+                    Status = certificateStatus,
+                    EndCertificate = certificate
+                };
 
-                    var packageSignature = new PackageSignature
-                    {
-                        PackageKey = PackageKey,
-                        Status = PackageSignatureStatus.Unknown,
-                        EndCertificate = certificate,
-                    };
+                var packageSignature = new PackageSignature
+                {
+                    PackageKey = PackageKey,
+                    Status = PackageSignatureStatus.Unknown,
+                    EndCertificate = certificate,
+                };
 
-                    certificate.PackageSignatures = new[] { packageSignature };
-                    certificate.Validations = new[] { certificateValidation };
+                certificate.PackageSignatures = new[] { packageSignature };
+                certificate.Validations = new[] { certificateValidation };
 
-                    packageSignature.TrustedTimestamps = new[] { timestamp };
+                packageSignature.TrustedTimestamps = new[] { timestamp };
 
-                    certificates.Add(certificate);
-                    certificateValidations.Add(certificateValidation);
-                    packageSignatures.Add(packageSignature);
-                }
+                certificates.Add(certificate);
+                certificateValidations.Add(certificateValidation);
+                packageSignatures.Add(packageSignature);
 
                 _validationContext.Mock(
                     validatorStatuses: new ValidatorStatus[]
@@ -223,57 +200,37 @@ namespace NuGet.Services.Validation.PackageSigning
                 Assert.Equal(expectedStatus, result.Status);
             }
 
-            public static IEnumerable<object[]> InvalidSignaturesFailsValidationData()
+            public static IEnumerable<object[]> InvalidSignatureFailsValidationData()
             {
                 // Signatures SHOULD NOT have "Valid" and "InGracePeriod" Statuses before
                 // the CertificateValidator finishes. If the signatures somehow do, the
                 // validator should fail as this is an invalid state.
                 yield return new object[]
                 {
-                    ValidationStatus.Failed, new[] { PackageSignatureStatus.Valid }
+                    ValidationStatus.Failed, PackageSignatureStatus.Valid
                 };
 
                 yield return new object[]
                 {
-                    ValidationStatus.Failed, new[] { PackageSignatureStatus.InGracePeriod }
+                    ValidationStatus.Failed, PackageSignatureStatus.InGracePeriod
                 };
 
                 yield return new object[]
                 {
-                    ValidationStatus.Succeeded, new[] { PackageSignatureStatus.Unknown }
+                    ValidationStatus.Succeeded, PackageSignatureStatus.Unknown
                 };
 
                 yield return new object[]
                 {
-                    ValidationStatus.Failed, new[] { PackageSignatureStatus.Invalid }
-                };
-
-                yield return new object[]
-                {
-                    ValidationStatus.Failed,
-                    new[]
-                    {
-                        PackageSignatureStatus.Unknown,
-                        PackageSignatureStatus.InGracePeriod,
-                    }
-                };
-
-                yield return new object[]
-                {
-                    ValidationStatus.Failed,
-                    new[]
-                    {
-                        PackageSignatureStatus.Unknown,
-                        PackageSignatureStatus.Invalid,
-                    }
+                    ValidationStatus.Failed, PackageSignatureStatus.Invalid
                 };
             }
 
             [Theory]
-            [MemberData(nameof(InvalidSignaturesFailsValidationData))]
-            public async Task InvalidSignaturesFailsValidation(
+            [MemberData(nameof(InvalidSignatureFailsValidationData))]
+            public async Task InvalidSignatureFailsValidation(
                 ValidationStatus expectedStatus,
-                PackageSignatureStatus[] packageSignatureStatuses)
+                PackageSignatureStatus packageSignatureStatus)
             {
                 var validatorStatus = new ValidatorStatus
                 {
@@ -305,20 +262,16 @@ namespace NuGet.Services.Validation.PackageSigning
                     Status = EndCertificateStatus.Unknown,
                 };
 
-                foreach (var status in packageSignatureStatuses)
+                var signature = new PackageSignature
                 {
-                    var signature = new PackageSignature
-                    {
-                        PackageKey = PackageKey,
-                        Status = status,
-                        PackageSigningState = packageSigningState,
-                        EndCertificate = certificate,
-                    };
+                    PackageKey = PackageKey,
+                    Status = packageSignatureStatus,
+                    PackageSigningState = packageSigningState,
+                    EndCertificate = certificate,
+                };
 
-                    packageSigningState.PackageSignatures.Add(signature);
-                    certificate.PackageSignatures.Add(signature);
-                }
-
+                packageSigningState.PackageSignatures.Add(signature);
+                certificate.PackageSignatures.Add(signature);
                 certificate.Validations = new[] { certificateValidation };
 
                 _validationContext.Mock(
@@ -563,9 +516,20 @@ namespace NuGet.Services.Validation.PackageSigning
                     Value = DateTime.UtcNow.AddDays(-10)
                 };
 
-                var certificate = new EndCertificate
+                var signatureCertificate = new EndCertificate
                 {
                     Key = 123,
+                    Status = EndCertificateStatus.Good,
+                    StatusUpdateTime = DateTime.UtcNow.AddSeconds(-10),
+                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
+                    LastVerificationTime = DateTime.UtcNow.AddSeconds(-10),
+                    RevocationTime = null,
+                    ValidationFailures = 0,
+                };
+
+                var timestampCertificate = new EndCertificate
+                {
+                    Key = 456,
                     Status = EndCertificateStatus.Good,
                     StatusUpdateTime = DateTime.UtcNow.AddSeconds(-10),
                     NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
@@ -577,14 +541,17 @@ namespace NuGet.Services.Validation.PackageSigning
                 packageSigningState.PackageSignatures = new[] { packageSignature };
                 packageSignature.PackageSigningState = packageSigningState;
                 packageSignature.TrustedTimestamps = new[] { timestamp };
-                packageSignature.EndCertificate = certificate;
-                certificate.PackageSignatures = new[] { packageSignature };
+                packageSignature.EndCertificate = signatureCertificate;
+                timestamp.EndCertificate = timestampCertificate;
+                signatureCertificate.PackageSignatures = new[] { packageSignature };
+                timestampCertificate.TrustedTimestamps = new[] { timestamp };
 
                 _validationContext.Mock(
                     validatorStatuses: new[] { validatorStatus },
                     packageSigningStates: new[] { packageSigningState },
                     packageSignatures: new[] { packageSignature },
-                    endCertificates: new[] { certificate });
+                    trustedTimestamps: new[] { timestamp },
+                    endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 // Act & Assert
                 var actual = await _target.StartValidationAsync(_validationRequest.Object);
@@ -617,18 +584,18 @@ namespace NuGet.Services.Validation.PackageSigning
                     SigningStatus = PackageSigningStatus.Valid,
                 };
 
-                var packageSignature1 = new PackageSignature
+                var packageSignature = new PackageSignature
                 {
                     PackageKey = PackageKey,
                     Status = PackageSignatureStatus.Valid
                 };
 
-                var timestamp1 = new TrustedTimestamp
+                var timestamp = new TrustedTimestamp
                 {
                     Value = DateTime.UtcNow.AddDays(-10),
                 };
 
-                var certificate1 = new EndCertificate
+                var signatureCertificate = new EndCertificate
                 {
                     Key = 123,
                     Status = EndCertificateStatus.Good,
@@ -639,71 +606,31 @@ namespace NuGet.Services.Validation.PackageSigning
                     ValidationFailures = 0,
                 };
 
-                var packageSignature2 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp2 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate2 = new EndCertificate
+                var timestampCertificate = new EndCertificate
                 {
                     Key = 123,
                     Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
-                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
-                    LastVerificationTime = DateTime.UtcNow.AddDays(-20),
+                    StatusUpdateTime = null,
+                    NextStatusUpdateTime = null,
+                    LastVerificationTime = null,
                     RevocationTime = null,
                     ValidationFailures = 0,
                 };
 
-                var packageSignature3 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp3 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate3 = new EndCertificate
-                {
-                    Key = 123,
-                    Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = DateTime.UtcNow.AddSeconds(-10),
-                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
-                    LastVerificationTime = DateTime.UtcNow.AddSeconds(-10),
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                packageSigningState.PackageSignatures = new[] { packageSignature1 };
-                packageSignature1.PackageSigningState = packageSigningState;
-                packageSignature2.PackageSigningState = packageSigningState;
-                packageSignature3.PackageSigningState = packageSigningState;
-                packageSignature1.TrustedTimestamps = new[] { timestamp1 };
-                packageSignature2.TrustedTimestamps = new[] { timestamp2 };
-                packageSignature3.TrustedTimestamps = new[] { timestamp3 };
-                packageSignature1.EndCertificate = certificate1;
-                packageSignature2.EndCertificate = certificate2;
-                packageSignature3.EndCertificate = certificate3;
-                certificate1.PackageSignatures = new[] { packageSignature1 };
-                certificate2.PackageSignatures = new[] { packageSignature2 };
-                certificate3.PackageSignatures = new[] { packageSignature3 };
+                packageSigningState.PackageSignatures = new[] { packageSignature };
+                packageSignature.PackageSigningState = packageSigningState;
+                packageSignature.TrustedTimestamps = new[] { timestamp };
+                packageSignature.EndCertificate = signatureCertificate;
+                timestamp.EndCertificate = timestampCertificate;
+                signatureCertificate.PackageSignatures = new[] { packageSignature };
+                timestampCertificate.TrustedTimestamps = new[] { timestamp };
 
                 _validationContext.Mock(
                     validatorStatuses: new[] { validatorStatus },
                     packageSigningStates: new[] { packageSigningState },
-                    packageSignatures: new[] { packageSignature1, packageSignature2, packageSignature3 },
-                    endCertificates: new[] { certificate1, certificate2, certificate3 });
+                    packageSignatures: new[] { packageSignature },
+                    endCertificates: new[] { signatureCertificate, timestampCertificate });
 
-                // Act & Assert (NOTE: recently validated certificates are NOT verified again)
                 var actual = await _target.StartValidationAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Exactly(2));
@@ -714,7 +641,7 @@ namespace NuGet.Services.Validation.PackageSigning
             }
 
             [Fact]
-            public async Task CertificatesRevokedAfterPackageWasSignedDoesntInvalidateSignature()
+            public async Task CertificateRevokedAfterPackageWasSignedDoesntInvalidateSignature()
             {
                 // Arrange
                 var validatorStatus = new ValidatorStatus
@@ -734,42 +661,21 @@ namespace NuGet.Services.Validation.PackageSigning
                     SigningStatus = PackageSigningStatus.Valid,
                 };
 
-                var packageSignature1 = new PackageSignature
+                var packageSignature = new PackageSignature
                 {
                     PackageKey = PackageKey,
                     Status = PackageSignatureStatus.Valid
                 };
 
-                var timestamp1 = new TrustedTimestamp
+                var timestamp = new TrustedTimestamp
                 {
                     Value = DateTime.UtcNow.AddDays(-10),
                 };
 
-                var certificate1 = new EndCertificate
+                var signatureCertificate = new EndCertificate
                 {
                     Key = 123,
-                    Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = null,
-                    NextStatusUpdateTime = null,
-                    LastVerificationTime = null,
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                var packageSignature2 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp2 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate2 = new EndCertificate
-                {
-                    Key = 123,
+                    Use = EndCertificateUse.CodeSigning,
                     Status = EndCertificateStatus.Revoked,
                     StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
                     NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
@@ -778,21 +684,31 @@ namespace NuGet.Services.Validation.PackageSigning
                     ValidationFailures = 0,
                 };
 
-                packageSigningState.PackageSignatures = new[] { packageSignature1, packageSignature2 };
-                packageSignature1.PackageSigningState = packageSigningState;
-                packageSignature2.PackageSigningState = packageSigningState;
-                packageSignature1.EndCertificate = certificate1;
-                packageSignature2.EndCertificate = certificate2;
-                packageSignature1.TrustedTimestamps = new[] { timestamp1 };
-                packageSignature2.TrustedTimestamps = new[] { timestamp2 };
-                certificate1.PackageSignatures = new[] { packageSignature1 };
-                certificate2.PackageSignatures = new[] { packageSignature2 };
+                var timestampCertificate = new EndCertificate
+                {
+                    Key = 456,
+                    Use = EndCertificateUse.Timestamping,
+                    Status = EndCertificateStatus.Unknown,
+                    StatusUpdateTime = null,
+                    NextStatusUpdateTime = null,
+                    LastVerificationTime = null,
+                    RevocationTime = null,
+                    ValidationFailures = 0,
+                };
+
+                packageSigningState.PackageSignatures = new[] { packageSignature };
+                packageSignature.PackageSigningState = packageSigningState;
+                packageSignature.EndCertificate = signatureCertificate;
+                packageSignature.TrustedTimestamps = new[] { timestamp };
+                timestamp.EndCertificate = timestampCertificate;
+                signatureCertificate.PackageSignatures = new[] { packageSignature };
+                timestampCertificate.TrustedTimestamps = new[] { timestamp };
 
                 _validationContext.Mock(
                     validatorStatuses: new[] { validatorStatus },
                     packageSigningStates: new[] { packageSigningState },
-                    packageSignatures: new[] { packageSignature1, packageSignature2 },
-                    endCertificates: new[] { certificate1, certificate2 });
+                    packageSignatures: new[] { packageSignature },
+                    endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 // Act & Assert (NOTE: the "Revoked" certificate must NOT be verified!)
                 var actual = await _target.StartValidationAsync(_validationRequest.Object);
@@ -825,42 +741,21 @@ namespace NuGet.Services.Validation.PackageSigning
                     SigningStatus = PackageSigningStatus.Valid,
                 };
 
-                var packageSignature1 = new PackageSignature
+                var packageSignature = new PackageSignature
                 {
                     PackageKey = PackageKey,
                     Status = PackageSignatureStatus.Valid
                 };
 
-                var timestamp1 = new TrustedTimestamp
+                var timestamp = new TrustedTimestamp
                 {
                     Value = DateTime.UtcNow.AddDays(-10),
                 };
 
-                var certificate1 = new EndCertificate
+                var signatureCertificate = new EndCertificate
                 {
                     Key = 123,
-                    Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = null,
-                    NextStatusUpdateTime = null,
-                    LastVerificationTime = null,
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                var packageSignature2 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp2 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate2 = new EndCertificate
-                {
-                    Key = 123,
+                    Use = EndCertificateUse.CodeSigning,
                     Status = EndCertificateStatus.Invalid,
                     StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
                     NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
@@ -869,21 +764,30 @@ namespace NuGet.Services.Validation.PackageSigning
                     ValidationFailures = 0,
                 };
 
-                packageSigningState.PackageSignatures = new[] { packageSignature1, packageSignature2 };
-                packageSignature1.PackageSigningState = packageSigningState;
-                packageSignature2.PackageSigningState = packageSigningState;
-                packageSignature1.TrustedTimestamps = new[] { timestamp1 };
-                packageSignature2.TrustedTimestamps = new[] { timestamp2 };
-                packageSignature1.EndCertificate = certificate1;
-                packageSignature2.EndCertificate = certificate2;
-                certificate1.PackageSignatures = new[] { packageSignature1 };
-                certificate2.PackageSignatures = new[] { packageSignature2 };
+                var timestampCertificate = new EndCertificate
+                {
+                    Key = 456,
+                    Status = EndCertificateStatus.Invalid,
+                    StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
+                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
+                    LastVerificationTime = DateTime.UtcNow.AddDays(-20),
+                    RevocationTime = null,
+                    ValidationFailures = 0,
+                };
+
+                packageSigningState.PackageSignatures = new[] { packageSignature };
+                packageSignature.PackageSigningState = packageSigningState;
+                packageSignature.TrustedTimestamps = new[] { timestamp };
+                packageSignature.EndCertificate = signatureCertificate;
+                timestamp.EndCertificate = timestampCertificate;
+                signatureCertificate.PackageSignatures = new[] { packageSignature };
+                timestampCertificate.TrustedTimestamps = new[] { timestamp };
 
                 _validationContext.Mock(
                     validatorStatuses: new[] { validatorStatus },
                     packageSigningStates: new[] { packageSigningState },
-                    packageSignatures: new[] { packageSignature1, packageSignature2 },
-                    endCertificates: new[] { certificate1, certificate2 });
+                    packageSignatures: new[] { packageSignature },
+                    endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 var actual = await _target.StartValidationAsync(_validationRequest.Object);
 
@@ -894,8 +798,94 @@ namespace NuGet.Services.Validation.PackageSigning
                 Assert.Equal(ValidationStatus.Failed, validatorStatus.State);
             }
 
-            [Fact]
-            public async Task OnRevalidationAllNonRevokedCertificatesAreVerified()
+            public static IEnumerable<object[]> OnRevalidationAllNonRevokedCertificatesAreVerifiedData()
+            {
+                // Certificate that has never been validated
+                yield return new object[]
+                {
+                    new EndCertificate
+                    {
+                        Key = 123,
+                        Status = EndCertificateStatus.Unknown,
+                        StatusUpdateTime = null,
+                        NextStatusUpdateTime = null,
+                        LastVerificationTime = null,
+                        RevocationTime = null,
+                        ValidationFailures = 0,
+                    },
+                    2
+                };
+
+                // Certificate that was last validated a long time ago
+                yield return new object[]
+                {
+                    new EndCertificate
+                    {
+                        Key = 123,
+                        Status = EndCertificateStatus.Good,
+                        StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
+                        NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
+                        LastVerificationTime = DateTime.UtcNow.AddDays(-20),
+                        RevocationTime = null,
+                        ValidationFailures = 0,
+                    },
+                    2
+                };
+
+                // Certificate that was validated very recently
+                yield return new object[]
+                {
+                    new EndCertificate
+                    {
+                        Key = 123,
+                        Status = EndCertificateStatus.Good,
+                        StatusUpdateTime = DateTime.UtcNow.AddSeconds(-10),
+                        NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
+                        LastVerificationTime = DateTime.UtcNow.AddDays(-20),
+                        RevocationTime = null,
+                        ValidationFailures = 0,
+                    },
+                    2
+                };
+
+                // Certificate that was revoked (but after the package was signed)
+                yield return new object[]
+                {
+                    new EndCertificate
+                    {
+                        Key = 123,
+                        Status = EndCertificateStatus.Revoked,
+                        StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
+                        NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
+                        LastVerificationTime = DateTime.UtcNow.AddDays(-20),
+                        RevocationTime = DateTime.UtcNow.AddDays(-1),
+                        ValidationFailures = 0,
+                    },
+                    1
+                };
+
+                // Certificate that was found to be invalid
+                yield return new object[]
+                {
+                    new EndCertificate
+                    {
+                        Key = 123,
+                        Status = EndCertificateStatus.Invalid,
+                        StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
+                        NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
+                        LastVerificationTime = DateTime.UtcNow.AddDays(-20),
+                        RevocationTime = null,
+                        ValidationFailures = 0,
+                    },
+                    2
+                };
+            }
+
+            [Theory]
+            [MemberData(nameof(OnRevalidationAllNonRevokedCertificatesAreVerifiedData))]
+            public async Task OnRevalidationAllNonRevokedCertificatesAreVerified(
+                EndCertificate signatureCertificate,
+                int expectedCertificateValidations)
             {
                 // Arrange
                 var validatorStatus = new ValidatorStatus
@@ -924,153 +914,46 @@ namespace NuGet.Services.Validation.PackageSigning
                     SigningStatus = PackageSigningStatus.Valid,
                 };
 
-                // Certificate that has never been validated
-                var packageSignature1 = new PackageSignature
+                var packageSignature = new PackageSignature
                 {
                     PackageKey = PackageKey,
                     Status = PackageSignatureStatus.Valid
                 };
 
-                var timestamp1 = new TrustedTimestamp
+                var timestamp = new TrustedTimestamp
                 {
                     Value = DateTime.UtcNow.AddDays(-10),
                 };
 
-                var certificate1 = new EndCertificate
+                var timestampCertificate = new EndCertificate
                 {
                     Key = 123,
-                    Status = EndCertificateStatus.Good,
+                    Status = EndCertificateStatus.Unknown,
                     StatusUpdateTime = null,
                     NextStatusUpdateTime = null,
                     LastVerificationTime = null,
                     RevocationTime = null,
                     ValidationFailures = 0,
                 };
-
-                // Certificate that was last validated a long time ago
-                var packageSignature2 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp2 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate2 = new EndCertificate
-                {
-                    Key = 123,
-                    Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
-                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
-                    LastVerificationTime = DateTime.UtcNow.AddDays(-20),
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                // Certificate that was validated very recently
-                var packageSignature3 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp3 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate3 = new EndCertificate
-                {
-                    Key = 123,
-                    Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = DateTime.UtcNow.AddSeconds(-10),
-                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
-                    LastVerificationTime = DateTime.UtcNow.AddSeconds(-10),
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                // Certificate that was revoked (but after the package was signed)
-                var packageSignature4 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp4 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate4 = new EndCertificate
-                {
-                    Key = 123,
-                    Status = EndCertificateStatus.Revoked,
-                    StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
-                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
-                    LastVerificationTime = DateTime.UtcNow.AddDays(-20),
-                    RevocationTime = DateTime.UtcNow.AddDays(-1),
-                    ValidationFailures = 0,
-                };
-
-                // Certificate that was found to be invalid
-                var packageSignature5 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid
-                };
-
-                var timestamp5 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
-                var certificate5 = new EndCertificate
-                {
-                    Key = 123,
-                    Status = EndCertificateStatus.Invalid,
-                    StatusUpdateTime = DateTime.UtcNow.AddDays(-20),
-                    NextStatusUpdateTime = DateTime.UtcNow.AddDays(1),
-                    LastVerificationTime = DateTime.UtcNow.AddDays(-20),
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                packageSigningState.PackageSignatures = new[] { packageSignature1, packageSignature2, packageSignature3, packageSignature4 };
-                packageSignature1.PackageSigningState = packageSigningState;
-                packageSignature2.PackageSigningState = packageSigningState;
-                packageSignature3.PackageSigningState = packageSigningState;
-                packageSignature4.PackageSigningState = packageSigningState;
-                packageSignature5.PackageSigningState = packageSigningState;
-                packageSignature1.TrustedTimestamps = new[] { timestamp1 };
-                packageSignature2.TrustedTimestamps = new[] { timestamp2 };
-                packageSignature3.TrustedTimestamps = new[] { timestamp3 };
-                packageSignature4.TrustedTimestamps = new[] { timestamp4 };
-                packageSignature5.TrustedTimestamps = new[] { timestamp5 };
-                packageSignature1.EndCertificate = certificate1;
-                packageSignature2.EndCertificate = certificate2;
-                packageSignature3.EndCertificate = certificate3;
-                packageSignature4.EndCertificate = certificate4;
-                packageSignature5.EndCertificate = certificate5;
-                certificate1.PackageSignatures = new[] { packageSignature1 };
-                certificate2.PackageSignatures = new[] { packageSignature2 };
-                certificate3.PackageSignatures = new[] { packageSignature3 };
-                certificate4.PackageSignatures = new[] { packageSignature4 };
-                certificate5.PackageSignatures = new[] { packageSignature5 };
+                
+                packageSigningState.PackageSignatures = new[] { packageSignature };
+                packageSignature.PackageSigningState = packageSigningState;;
+                packageSignature.TrustedTimestamps = new[] { timestamp };
+                packageSignature.EndCertificate = signatureCertificate;
+                timestamp.EndCertificate = timestampCertificate;
+                signatureCertificate.PackageSignatures = new[] { packageSignature };
+                timestampCertificate.TrustedTimestamps = new[] { timestamp };
 
                 _validationContext.Mock(
-                    validatorStatuses: new[] { validatorStatus, otherValidatorStatus },
+                    validatorStatuses: new[] { validatorStatus , otherValidatorStatus },
                     packageSigningStates: new[] { packageSigningState },
-                    packageSignatures: new[] { packageSignature1, packageSignature2, packageSignature3, packageSignature4, packageSignature5 },
-                    endCertificates: new[] { certificate1, certificate2, certificate3, certificate4, certificate5 });
+                    packageSignatures: new[] { packageSignature },
+                    endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 // Act & Assert (NOTE: revoked certificates are NOT verified again but invalid certificates are)
                 var actual = await _target.StartValidationAsync(_validationRequest.Object);
 
-                _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Exactly(4));
+                _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Exactly(expectedCertificateValidations));
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
 
                 Assert.Equal(ValidationStatus.Incomplete, actual.Status);
