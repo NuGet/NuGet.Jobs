@@ -71,6 +71,7 @@
     "SubscriptionName": ""
   },
   "Smtp": {
+    "SmtpUri": "",
     "SmtpHost": "",
     "SmtpPort": "587",
     "EnableSsl": "true",
