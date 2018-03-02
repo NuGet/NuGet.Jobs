@@ -1051,29 +1051,18 @@ namespace NuGet.Services.Validation.PackageSigning
                     SigningStatus = PackageSigningStatus.Valid,
                 };
 
-                var packageSignature1 = new PackageSignature
+                var packageSignature = new PackageSignature
                 {
                     PackageKey = PackageKey,
                     Status = PackageSignatureStatus.Valid,
                 };
 
-                var timestamp1 = new TrustedTimestamp
+                var timestamp = new TrustedTimestamp
                 {
                     Value = DateTime.UtcNow.AddDays(-1),
                 };
 
-                var packageSignature2 = new PackageSignature
-                {
-                    PackageKey = PackageKey,
-                    Status = PackageSignatureStatus.Valid,
-                };
-
-                var timestamp2 = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-1),
-                };
-
-                var certificate1 = new EndCertificate
+                var certificate = new EndCertificate
                 {
                     Key = 123,
                     Status = EndCertificateStatus.Revoked,
@@ -1084,32 +1073,17 @@ namespace NuGet.Services.Validation.PackageSigning
                     ValidationFailures = 0,
                 };
 
-                var certificate2 = new EndCertificate
-                {
-                    Key = 123,
-                    Status = EndCertificateStatus.Good,
-                    StatusUpdateTime = null,
-                    NextStatusUpdateTime = null,
-                    LastVerificationTime = null,
-                    RevocationTime = null,
-                    ValidationFailures = 0,
-                };
-
-                packageSigningState.PackageSignatures = new[] { packageSignature1, packageSignature2 };
-                packageSignature1.PackageSigningState = packageSigningState;
-                packageSignature2.PackageSigningState = packageSigningState;
-                packageSignature1.TrustedTimestamps = new[] { timestamp1 };
-                packageSignature2.TrustedTimestamps = new[] { timestamp2 };
-                packageSignature1.EndCertificate = certificate1;
-                packageSignature2.EndCertificate = certificate2;
-                certificate1.PackageSignatures = new[] { packageSignature1 };
-                certificate2.PackageSignatures = new[] { packageSignature2 };
+                packageSigningState.PackageSignatures = new[] { packageSignature };
+                packageSignature.PackageSigningState = packageSigningState;
+                packageSignature.TrustedTimestamps = new[] { timestamp };
+                packageSignature.EndCertificate = certificate;
+                certificate.PackageSignatures = new[] { packageSignature };
 
                 _validationContext.Mock(
                     validatorStatuses: new[] { validatorStatus },
                     packageSigningStates: new[] { packageSigningState },
-                    packageSignatures: new[] { packageSignature1, packageSignature2 },
-                    endCertificates: new[] { certificate1, certificate2 });
+                    packageSignatures: new[] { packageSignature },
+                    endCertificates: new[] { certificate });
 
                 // Act & Assert
                 var actual = await _target.StartValidationAsync(_validationRequest.Object);
@@ -1119,8 +1093,7 @@ namespace NuGet.Services.Validation.PackageSigning
 
                 Assert.Equal(ValidationStatus.Failed, actual.Status);
                 Assert.Equal(ValidationStatus.Failed, validatorStatus.State);
-                Assert.Equal(PackageSignatureStatus.Invalid, packageSignature1.Status);
-                Assert.Equal(PackageSignatureStatus.Valid, packageSignature2.Status);
+                Assert.Equal(PackageSignatureStatus.Invalid, packageSignature.Status);
                 Assert.Equal(PackageSigningStatus.Invalid, packageSigningState.SigningStatus);
             }
 
