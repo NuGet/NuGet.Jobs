@@ -135,7 +135,8 @@ namespace NuGet.Services.Validation.PackageSigning
 
                 var timestamp = new TrustedTimestamp
                 {
-                    Value = DateTime.UtcNow
+                    Value = DateTime.UtcNow,
+                    EndCertificate = new EndCertificate()
                 };
 
                 var certificate = new EndCertificate
@@ -270,7 +271,14 @@ namespace NuGet.Services.Validation.PackageSigning
                     EndCertificate = certificate,
                 };
 
+                var timestamp = new TrustedTimestamp
+                {
+                    Value = DateTime.UtcNow,
+                    EndCertificate = certificate,
+                };
+
                 packageSigningState.PackageSignatures.Add(signature);
+                signature.TrustedTimestamps = new[] { timestamp };
                 certificate.PackageSignatures.Add(signature);
                 certificate.Validations = new[] { certificateValidation };
 
@@ -278,6 +286,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     validatorStatuses: new[] { validatorStatus },
                     packageSigningStates: new[] { packageSigningState },
                     packageSignatures: certificate.PackageSignatures,
+                    trustedTimestamps: new[] { timestamp },
                     endCertificates: new[] { certificate },
                     certificateValidations: new[] { certificateValidation });
 
@@ -289,16 +298,6 @@ namespace NuGet.Services.Validation.PackageSigning
 
             public static IEnumerable<object[]> ValidSignaturesArePromotedData()
             {
-                var timestamp1DayAgo = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-1),
-                };
-
-                var timestamp10YearsAgo = new TrustedTimestamp
-                {
-                    Value = DateTime.UtcNow.AddDays(-10),
-                };
-
                 var cert1SecondAgo = new EndCertificate
                 {
                     Status = EndCertificateStatus.Good,
@@ -318,19 +317,26 @@ namespace NuGet.Services.Validation.PackageSigning
                     StatusUpdateTime = DateTime.UtcNow.AddYears(-1),
                 };
 
-                // A signature whose timestamp is before the certificate's last update should be
-                // promoted to "Valid".
+                // A signature whose timestamp is BEFORE the signature's and timestamps' certificates
+                // last updates should be promoted to "Valid".
                 yield return new object[]
                 {
                     PackageSignatureStatus.Valid,
                     new PackageSignature
                     {
                         EndCertificate = cert1SecondAgo,
-                        TrustedTimestamps = new[] { timestamp1DayAgo },
+                        TrustedTimestamps = new[]
+                        {
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddDays(-1),
+                                EndCertificate = cert1SecondAgo,
+                            }
+                        },
                     },
                 };
 
-                // A signature whose timestamp is after the certificate's last update should be
+                // A signature whose timestamp is AFTER the signature's certificate last update should be
                 // promoted to "InGracePeriod"
                 yield return new object[]
                 {
@@ -338,22 +344,60 @@ namespace NuGet.Services.Validation.PackageSigning
                     new PackageSignature
                     {
                         EndCertificate = cert1YearAgo,
-                        TrustedTimestamps = new[] { timestamp1DayAgo },
+                        TrustedTimestamps = new[]
+                        {
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddDays(-1),
+                                EndCertificate = cert1SecondAgo,
+                            }
+                        },
                     },
                 };
 
-                // The oldest timestamp should be used for promotion decisions.
+                // A signature whose timestamp is AFTER the timestamp's certificate last update should be
+                // promoted to "InGracePeriod"
+                yield return new object[]
+                {
+                    PackageSignatureStatus.InGracePeriod,
+                    new PackageSignature
+                    {
+                        EndCertificate = cert1SecondAgo,
+                        TrustedTimestamps = new[]
+                        {
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddDays(-1),
+                                EndCertificate = cert1YearAgo,
+                            }
+                        },
+                    },
+                };
+
+                // The latest timestamp should be used for promotion decisions.
                 yield return new object[]
                 {
                     PackageSignatureStatus.InGracePeriod,
                     new PackageSignature
                     {
                         EndCertificate = cert1YearAgo,
-                        TrustedTimestamps = new[] { timestamp1DayAgo, timestamp10YearsAgo },
+                        TrustedTimestamps = new[]
+                        {
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddDays(-1),
+                                EndCertificate = cert1YearAgo,
+                            },
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddYears(-10),
+                                EndCertificate = cert1YearAgo,
+                            }
+                        },
                     },
                 };
 
-                // A signature whose certificate is revoked should be promoted as "Valid" as long as the revocation
+                // A signature whose signing certificate is revoked should be promoted to "Valid" as long as the revocation
                 // time begins after the package was signed.
                 yield return new object[]
                 {
@@ -361,8 +405,34 @@ namespace NuGet.Services.Validation.PackageSigning
                     new PackageSignature
                     {
                         EndCertificate = certRevoked1SecondAgo,
-                        TrustedTimestamps = new[] { timestamp1DayAgo }
-                    }
+                        TrustedTimestamps = new[]
+                        {
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddDays(-1),
+                                EndCertificate = cert1SecondAgo,
+                            }
+                        },
+                    },
+                };
+
+                // A signature whose timestamp's certificate is revoked should be promoted to "Valid" as long as the revocation
+                // time begins after the package was signed.
+                yield return new object[]
+                {
+                    PackageSignatureStatus.Valid,
+                    new PackageSignature
+                    {
+                        EndCertificate = cert1SecondAgo,
+                        TrustedTimestamps = new[]
+                        {
+                            new TrustedTimestamp
+                            {
+                                Value = DateTime.UtcNow.AddDays(-1),
+                                EndCertificate = certRevoked1SecondAgo,
+                            }
+                        },
+                    },
                 };
             }
 

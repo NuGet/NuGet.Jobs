@@ -269,26 +269,37 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// <returns>True if the signature should be "Valid", false if it should be "InGracePeriod".</returns>
         private bool IsValidSignatureOutOfGracePeriod(PackageSignature signature)
         {
-            var certificate = signature.EndCertificate;
+            bool IsCertificateStatusPastTime(EndCertificate certificate, DateTime time)
+            {
+                return (certificate.StatusUpdateTime.HasValue && certificate.StatusUpdateTime > time);
+            }
+
+            var signingTime = signature.TrustedTimestamps.Max(t => t.Value);
+
+            // Ensure the timestamps' certificate statuses are fresher than the signature.
+            foreach (var timestamp in signature.TrustedTimestamps)
+            {
+                if (!IsCertificateStatusPastTime(timestamp.EndCertificate, signingTime))
+                {
+                    return false;
+                }
+            }
 
             // A signature can be valid even if its certificate is revoked as long as the certificate
             // revocation date begins after the signature was created. The validation pipeline does
             // not revalidate revoked certificates, thus, a valid package signature with a revoked
-            // certificate should be "Valid" regardless of the certificate's status update time.
-            if (certificate.Status == EndCertificateStatus.Revoked)
+            // certificate is considered out of the grace period regardless of the certificate's
+            // status update time.
+            if (signature.EndCertificate.Status != EndCertificateStatus.Revoked)
             {
-                return true;
+                // Ensure the signature's certificate status is fresher than the signature.
+                if (!IsCertificateStatusPastTime(signature.EndCertificate, signingTime))
+                {
+                    return false;
+                }
             }
-            else if (certificate.StatusUpdateTime.HasValue)
-            {
-                var signatureTime = signature.TrustedTimestamps.Max(t => t.Value);
 
-                return certificate.StatusUpdateTime > signatureTime;
-            }
-            else
-            {
-                return false;
-            }
+            return true;
         }
 
         /// <summary>
