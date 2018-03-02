@@ -197,7 +197,9 @@ namespace NuGet.Services.Validation.Orchestrator
                     Port = smtpConfiguration.SmtpPort,
                     EnableSsl = smtpConfiguration.EnableSsl,
                     UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(smtpConfiguration.Username, smtpConfiguration.Password)
+                    Credentials = new NetworkCredential(
+                        WebUtility.UrlDecode(smtpConfiguration.Username),
+                        WebUtility.UrlDecode(smtpConfiguration.Password))
                 };
             });
             services.AddTransient<IMailSender>(serviceProvider =>
