@@ -240,7 +240,7 @@ namespace NuGet.Services.Validation.PackageCertificates
                         .PackageSignatures
                         .Include(s => s.TrustedTimestamps)
                         .Include(s => s.EndCertificate)
-                        .FirstAsync(s => s.PackageKey == request.PackageKey);
+                        .SingleAsync(s => s.PackageKey == request.PackageKey);
         }
 
         /// <summary>
