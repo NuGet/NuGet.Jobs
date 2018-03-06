@@ -75,7 +75,7 @@ namespace NuGet.Services.Validation.PackageCertificates
             }
 
             // All of the requested certificate validations have finished. Fail the validation if the
-            // signature have been invalidated. At this point, the signature MUST have a state of either
+            // signature has been invalidated. At this point, the signature MUST have a state of either
             // "Unknown" or "Invalid" as the PackageSigningValidator sets signatures to an "Unknown" status
             // and the ValidateCertificate job may set signatures to the "Invalid" state.
             var signature = await FindSignatureAsync(request);
