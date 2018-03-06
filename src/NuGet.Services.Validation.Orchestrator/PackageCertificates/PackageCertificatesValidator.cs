@@ -246,6 +246,7 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// <summary>
         /// Promote valid signatures from "Unknown" status to either "Valid" or "InGracePeriod".
         /// </summary>
+        /// <param name="request">The validation request containing the package whose signature should be promoted.</param>
         /// <param name="signatures">The valid signatures that should be promoted.</param>
         private void PromoteSignature(IValidationRequest request, PackageSignature signature)
         {
