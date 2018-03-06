@@ -246,11 +246,12 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// <summary>
         /// Promote valid signatures from "Unknown" status to either "Valid" or "InGracePeriod".
         /// </summary>
-        /// <param name="request">The validation request containing the package whose signature should be promoted.</param>
+        /// <param name="request">The validation request for the package whose signature should be promoted.</param>
         /// <param name="signatures">The valid signatures that should be promoted.</param>
         private void PromoteSignature(IValidationRequest request, PackageSignature signature)
         {
-            var newSignatureStatus = (IsValidSignatureOutOfGracePeriod(signature))
+
+            var newSignatureStatus = (IsValidSignatureOutOfGracePeriod(request, signature))
                                         ? PackageSignatureStatus.Valid
                                         : PackageSignatureStatus.InGracePeriod;
 
@@ -266,9 +267,10 @@ namespace NuGet.Services.Validation.PackageCertificates
         /// <summary>
         /// Decide whether the valid signature should be considered "Valid" or "InGracePeriod".
         /// </summary>
+        /// <param name="request">The validation request for the package whose signature should be inspected.</param>
         /// <param name="signature">The valid signature whose status should be decided.</param>
         /// <returns>True if the signature should be "Valid", false if it should be "InGracePeriod".</returns>
-        private bool IsValidSignatureOutOfGracePeriod(PackageSignature signature)
+        private bool IsValidSignatureOutOfGracePeriod(IValidationRequest request, PackageSignature signature)
         {
             bool IsCertificateStatusPastTime(EndCertificate certificate, DateTime time)
             {
@@ -280,6 +282,23 @@ namespace NuGet.Services.Validation.PackageCertificates
             // Ensure the timestamps' certificate statuses are fresher than the signature.
             foreach (var timestamp in signature.TrustedTimestamps)
             {
+                // A valid signature should NEVER have a timestamp whose end certificate is revoked.
+                // Note that it is possible for a valid signature to have an invalid certificate as
+                // certain certificate statuses, like "NotTimeNested", do not affect signatures.
+                if (timestamp.EndCertificate.Status == EndCertificateStatus.Revoked)
+                {
+                    _logger.LogError(
+                        0,
+                        "Valid signature cannot have a timestamp whose end certificate is revoked ({ValidationId}, {PackageId} {PackageVersion})",
+                        request.ValidationId,
+                        request.PackageId,
+                        request.PackageVersion,
+                        signature.Status);
+
+                    throw new InvalidOperationException(
+                        $"ValidationId {request.ValidationId} has valid signature with a timestamp whose end certificate is revoked");
+                }
+
                 if (!IsCertificateStatusPastTime(timestamp.EndCertificate, signingTime))
                 {
                     return false;

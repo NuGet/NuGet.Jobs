@@ -415,25 +415,6 @@ namespace NuGet.Services.Validation.PackageSigning
                         },
                     },
                 };
-
-                // A signature whose timestamp's certificate is revoked should be promoted to "Valid" as long as the revocation
-                // time begins after the package was signed.
-                yield return new object[]
-                {
-                    PackageSignatureStatus.Valid,
-                    new PackageSignature
-                    {
-                        EndCertificate = cert1SecondAgo,
-                        TrustedTimestamps = new[]
-                        {
-                            new TrustedTimestamp
-                            {
-                                Value = DateTime.UtcNow.AddDays(-1),
-                                EndCertificate = certRevoked1SecondAgo,
-                            }
-                        },
-                    },
-                };
             }
 
             [Theory]
@@ -481,6 +462,69 @@ namespace NuGet.Services.Validation.PackageSigning
                 Assert.Equal(ValidationStatus.Succeeded, result.Status);
 
                 Assert.Equal(expectedStatus, signature.Status);
+            }
+
+            [Fact]
+            public async Task ThrowsIfValidSignaturesHasTimestampWithRevokedCertificate()
+            {
+                var validatorStatus = new ValidatorStatus
+                {
+                    ValidationId = ValidationId,
+                    ValidatorName = nameof(PackageCertificatesValidator),
+                    PackageKey = PackageKey,
+                    State = ValidationStatus.Incomplete,
+                    ValidatorIssues = new List<ValidatorIssue>(),
+                };
+
+                var packageSigningState = new PackageSigningState
+                {
+                    PackageKey = PackageKey,
+                    PackageId = PackageId,
+                    PackageNormalizedVersion = PackageNormalizedVersion,
+                    SigningStatus = PackageSigningStatus.Valid
+                };
+
+                var signature = new PackageSignature
+                {
+                    PackageKey = PackageKey,
+                    Status = PackageSignatureStatus.Unknown
+                };
+
+                var timestamp = new TrustedTimestamp
+                {
+                    Value = DateTime.UtcNow.AddDays(-1)
+                };
+
+                var signingCertificate = new EndCertificate
+                {
+                    Status = EndCertificateStatus.Good,
+                    StatusUpdateTime = DateTime.UtcNow.AddSeconds(-1),
+                };
+
+                var timestampCertificate = new EndCertificate
+                {
+                    Status = EndCertificateStatus.Revoked,
+                    StatusUpdateTime = DateTime.UtcNow.AddSeconds(-1),
+                    RevocationTime = DateTime.UtcNow.AddSeconds(-1),
+                };
+
+                packageSigningState.PackageSignatures = new[] { signature };
+                signature.PackageSigningState = packageSigningState;
+                signature.EndCertificate = signingCertificate;
+                signature.TrustedTimestamps = new[] { timestamp };
+                timestamp.PackageSignature = signature;
+                timestamp.EndCertificate = timestampCertificate;
+
+                _validationContext.Mock(
+                    validatorStatuses: new[] { validatorStatus },
+                    packageSigningStates: new[] { packageSigningState },
+                    packageSignatures: new[] { signature },
+                    endCertificates: new[] { signature.EndCertificate, timestampCertificate });
+
+                // Act & Assert
+                var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+
+                Assert.Equal($"ValidationId {ValidationId} has valid signature with a timestamp whose end certificate is revoked", ex.Message);
             }
         }
 
