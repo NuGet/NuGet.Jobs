@@ -44,7 +44,7 @@ namespace NuGet.Services.Validation.PackageCompatibility
             return validatorStatus.ToValidationResult();
         }
 
-        public async Task<IValidationResult> StartValidationAsync(IValidationRequest request)
+        public async Task<IValidationResult> StartAsync(IValidationRequest request)
         {
             try
             {
@@ -99,6 +99,11 @@ namespace NuGet.Services.Validation.PackageCompatibility
 
                 await _packageCompatibilityService.SetPackageCompatibilityState(request.ValidationId, warnings);
             }
+        }
+
+        public Task CleanUpAsync(IValidationRequest request)
+        {
+            return Task.CompletedTask;
         }
     }
 }
