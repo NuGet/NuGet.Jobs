@@ -203,22 +203,21 @@ namespace NuGet.Services.Validation.PackageSigning
 
             public static IEnumerable<object[]> InvalidSignatureFailsValidationData()
             {
-                // Signatures SHOULD NOT have "Valid" and "InGracePeriod" Statuses before
-                // the CertificateValidator finishes. If the signatures somehow do, the
-                // validator should fail as this is an invalid state.
-                yield return new object[]
-                {
-                    ValidationStatus.Failed, PackageSignatureStatus.Valid
-                };
-
-                yield return new object[]
-                {
-                    ValidationStatus.Failed, PackageSignatureStatus.InGracePeriod
-                };
-
                 yield return new object[]
                 {
                     ValidationStatus.Succeeded, PackageSignatureStatus.Unknown
+                };
+
+                // Signatures may have "Valid" and "InGracePeriod" Statuses before
+                // the CertificateValidator finishes due to revalidations.
+                yield return new object[]
+                {
+                    ValidationStatus.Succeeded, PackageSignatureStatus.Valid
+                };
+
+                yield return new object[]
+                {
+                    ValidationStatus.Succeeded, PackageSignatureStatus.InGracePeriod
                 };
 
                 yield return new object[]
@@ -555,7 +554,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 });
 
                 // Act & Assert
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Never);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Never);
@@ -589,7 +588,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     packageSigningStates: new[] { packageSigningState });
 
                 // Act & Assert
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Never);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
@@ -668,7 +667,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 // Act & Assert
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Never);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
@@ -745,7 +744,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     packageSignatures: new[] { packageSignature },
                     endCertificates: new[] { signatureCertificate, timestampCertificate });
 
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Exactly(2));
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
@@ -825,7 +824,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 // Act & Assert (NOTE: the "Revoked" certificate must NOT be verified!)
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Once);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
@@ -903,7 +902,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     packageSignatures: new[] { packageSignature },
                     endCertificates: new[] { signatureCertificate, timestampCertificate });
 
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Never);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
@@ -1065,7 +1064,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     endCertificates: new[] { signatureCertificate, timestampCertificate });
 
                 // Act & Assert (NOTE: revoked certificates are NOT verified again but invalid certificates are)
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Exactly(expectedCertificateValidations));
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
@@ -1130,7 +1129,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     endCertificates: new[] { certificate });
 
                 // Act & Assert
-                var actual = await _target.StartValidationAsync(_validationRequest.Object);
+                var actual = await _target.StartAsync(_validationRequest.Object);
 
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Never);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
