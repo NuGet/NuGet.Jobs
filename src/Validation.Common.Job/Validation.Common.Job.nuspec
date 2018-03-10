@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>NuGet.Services.Validation.Common.Job.$branch$</id>
+    <version>$version$</version>
+    <title>NuGet.Services.Validation.Common.Job</title>
+    <authors>.NET Foundation</authors>
+    <owners>.NET Foundation</owners>
+    <description>NuGet.Services.Validation.Common.Job</description>
+    <copyright>Copyright .NET Foundation</copyright>
+    <dependencies>
+        <dependency id="NuGet.Jobs.Common" version="$version$" />
+    </dependencies>
+  </metadata>
+</package>
