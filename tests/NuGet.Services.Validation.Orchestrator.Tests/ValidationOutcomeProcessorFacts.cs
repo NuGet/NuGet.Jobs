@@ -117,6 +117,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             ValidationSet.Created = DateTime.UtcNow - TimeSpan.FromDays(1) - TimeSpan.FromHours(1);
 
+            ValidationStorageServiceMock
+                .Setup(s => s.UpdateValidationSetAsync(It.IsAny<PackageValidationSet>()))
+                .Callback<PackageValidationSet>(s => s.Updated = DateTime.UtcNow)
+                .Returns(Task.FromResult(0));
+
             var processor = CreateProcessor();
             await processor.ProcessValidationOutcomeAsync(ValidationSet, Package);
 
