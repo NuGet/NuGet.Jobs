@@ -59,6 +59,9 @@ namespace NuGet.Jobs
         public const string RetryCount = "RetryCount";
         public const string MaxManifestSize = "MaxManifestSize";
         public const string OutputDirectory = "OutputDirectory";
+
+        // Arguments specific to AggregateCdnDownloadsInGallery
+        public const string PackagesPerCommit = "PackagesPerCommit";
         
         //Arguments specific to UpdateLicenseReports
         public const string LicenseReportService = "LicenseReportService";
