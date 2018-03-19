@@ -93,11 +93,14 @@ namespace Stats.AggregateCdnDownloadsInGallery
                 var packageRegistrationGroupsRemaining = packageRegistrationGroups;
 
                 // Copy the new download data to the destination DB in batches
-                while (packageRegistrationGroupsRemaining.Any())
+                using (var destinationDatabase = await _destinationDatabase.ConnectTo())
                 {
-                    await CopyPackageDownloadDataToDB(packageRegistrationGroupsRemaining.Take(_packagesPerCommit).ToList());
+                    while (packageRegistrationGroupsRemaining.Any())
+                    {
+                        await CopyPackageDownloadDataToDB(destinationDatabase, packageRegistrationGroupsRemaining.Take(_packagesPerCommit).ToList());
 
-                    packageRegistrationGroupsRemaining = packageRegistrationGroupsRemaining.Skip(_packagesPerCommit).ToList();
+                        packageRegistrationGroupsRemaining = packageRegistrationGroupsRemaining.Skip(_packagesPerCommit).ToList();
+                    }
                 }
             }
         }
@@ -143,78 +146,75 @@ namespace Stats.AggregateCdnDownloadsInGallery
             return packageRegistrationDictionary;
         }
 
-        private async Task CopyPackageDownloadDataToDB(IEnumerable<IGrouping<string, DownloadCountData>> packageRegistrationGroups)
+        private async Task CopyPackageDownloadDataToDB(SqlConnection destinationDatabase, IEnumerable<IGrouping<string, DownloadCountData>> packageRegistrationGroups)
         {
-            using (var destinationDatabase = await _destinationDatabase.ConnectTo())
+            // Fetch package registrations so we can match
+            var packageRegistrationLookup = await GetPackageRegistrations(destinationDatabase);
+
+            // Create a temporary table
+            Logger.LogDebug("Creating temporary table...");
+            await destinationDatabase.ExecuteAsync(_createTempTable);
+
+            // Load temporary table
+            var aggregateCdnDownloadsInGalleryTable = new DataTable();
+            var command = new SqlCommand("SELECT * FROM " + _tempTableName, destinationDatabase);
+            command.CommandType = CommandType.Text;
+            command.CommandTimeout = (int)TimeSpan.FromMinutes(10).TotalSeconds;
+            var reader = await command.ExecuteReaderAsync();
+            aggregateCdnDownloadsInGalleryTable.Load(reader);
+            aggregateCdnDownloadsInGalleryTable.Rows.Clear();
+            aggregateCdnDownloadsInGalleryTable.TableName = $"dbo.{_tempTableName}";
+            Logger.LogInformation("Created temporary table.");
+
+            // Populate temporary table in memory
+            Logger.LogDebug("Populating temporary table in memory...");
+            foreach (var packageRegistrationGroup in packageRegistrationGroups)
             {
-                // Fetch package registrations so we can match
-                var packageRegistrationLookup = await GetPackageRegistrations(destinationDatabase);
-
-                // Create a temporary table
-                Logger.LogDebug("Creating temporary table...");
-                await destinationDatabase.ExecuteAsync(_createTempTable);
-
-                // Load temporary table
-                var aggregateCdnDownloadsInGalleryTable = new DataTable();
-                var command = new SqlCommand("SELECT * FROM " + _tempTableName, destinationDatabase);
-                command.CommandType = CommandType.Text;
-                command.CommandTimeout = (int)TimeSpan.FromMinutes(10).TotalSeconds;
-                var reader = await command.ExecuteReaderAsync();
-                aggregateCdnDownloadsInGalleryTable.Load(reader);
-                aggregateCdnDownloadsInGalleryTable.Rows.Clear();
-                aggregateCdnDownloadsInGalleryTable.TableName = $"dbo.{_tempTableName}";
-                Logger.LogInformation("Created temporary table.");
-
-                // Populate temporary table in memory
-                Logger.LogDebug("Populating temporary table in memory...");
-                foreach (var packageRegistrationGroup in packageRegistrationGroups)
+                // don't process empty package id's
+                if (string.IsNullOrEmpty(packageRegistrationGroup.First().PackageId))
                 {
-                    // don't process empty package id's
-                    if (string.IsNullOrEmpty(packageRegistrationGroup.First().PackageId))
-                    {
-                        continue;
-                    }
-
-                    var packageId = packageRegistrationGroup.First().PackageId.ToLowerInvariant();
-
-                    // Get package registration key
-                    if (!packageRegistrationLookup.ContainsKey(packageId))
-                    {
-                        continue;
-                    }
-                    var packageRegistrationKey = packageRegistrationLookup[packageId];
-
-                    // Set download count on individual packages
-                    foreach (var package in packageRegistrationGroup)
-                    {
-                        var row = aggregateCdnDownloadsInGalleryTable.NewRow();
-                        row["PackageRegistrationKey"] = packageRegistrationKey;
-                        row["PackageVersion"] = package.PackageVersion;
-                        row["DownloadCount"] = package.TotalDownloadCount;
-                        aggregateCdnDownloadsInGalleryTable.Rows.Add(row);
-                    }
+                    continue;
                 }
-                Logger.LogInformation("Populated temporary table in memory. ({RecordCount} rows).", aggregateCdnDownloadsInGalleryTable.Rows.Count);
 
-                // Transfer to SQL database
-                Logger.LogDebug("Populating temporary table in database...");
-                using (SqlBulkCopy bulkcopy = new SqlBulkCopy(destinationDatabase))
+                var packageId = packageRegistrationGroup.First().PackageId.ToLowerInvariant();
+
+                // Get package registration key
+                if (!packageRegistrationLookup.ContainsKey(packageId))
                 {
-                    bulkcopy.BulkCopyTimeout = (int)TimeSpan.FromMinutes(30).TotalSeconds;
-                    bulkcopy.DestinationTableName = _tempTableName;
-                    bulkcopy.WriteToServer(aggregateCdnDownloadsInGalleryTable);
-                    bulkcopy.Close();
+                    continue;
                 }
-                Logger.LogInformation("Populated temporary table in database.");
+                var packageRegistrationKey = packageRegistrationLookup[packageId];
 
-                // Update counts in destination database
-                Logger.LogDebug("Updating destination database Download Counts... ({RecordCount} package registrations to process).", packageRegistrationGroups.Count());
-
-                await destinationDatabase.ExecuteAsync(_updateFromTempTable,
-                    commandTimeout: TimeSpan.FromMinutes(30));
-
-                Logger.LogInformation("Updated destination database Download Counts.");
+                // Set download count on individual packages
+                foreach (var package in packageRegistrationGroup)
+                {
+                    var row = aggregateCdnDownloadsInGalleryTable.NewRow();
+                    row["PackageRegistrationKey"] = packageRegistrationKey;
+                    row["PackageVersion"] = package.PackageVersion;
+                    row["DownloadCount"] = package.TotalDownloadCount;
+                    aggregateCdnDownloadsInGalleryTable.Rows.Add(row);
+                }
             }
+            Logger.LogInformation("Populated temporary table in memory. ({RecordCount} rows).", aggregateCdnDownloadsInGalleryTable.Rows.Count);
+
+            // Transfer to SQL database
+            Logger.LogDebug("Populating temporary table in database...");
+            using (SqlBulkCopy bulkcopy = new SqlBulkCopy(destinationDatabase))
+            {
+                bulkcopy.BulkCopyTimeout = (int)TimeSpan.FromMinutes(30).TotalSeconds;
+                bulkcopy.DestinationTableName = _tempTableName;
+                bulkcopy.WriteToServer(aggregateCdnDownloadsInGalleryTable);
+                bulkcopy.Close();
+            }
+            Logger.LogInformation("Populated temporary table in database.");
+
+            // Update counts in destination database
+            Logger.LogDebug("Updating destination database Download Counts... ({RecordCount} package registrations to process).", packageRegistrationGroups.Count());
+
+            await destinationDatabase.ExecuteAsync(_updateFromTempTable,
+                commandTimeout: TimeSpan.FromMinutes(30));
+
+            Logger.LogInformation("Updated destination database Download Counts.");
         }
     }
 }
