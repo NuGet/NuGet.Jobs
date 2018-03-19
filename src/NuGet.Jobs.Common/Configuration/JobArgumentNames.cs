@@ -60,6 +60,9 @@ namespace NuGet.Jobs
         public const string MaxManifestSize = "MaxManifestSize";
         public const string OutputDirectory = "OutputDirectory";
 
+        // Arguments specific to AggregateCdnDownloadsInGallery
+        public const string PackagesPerCommit = "PackagesPerCommit";
+
         //Arguments specific to HandlePackageEdits
         public const string SourceStorage = "SourceStorage";
         public const string BackupStorage = "BackupStorage";
