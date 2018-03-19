@@ -50,7 +50,7 @@ namespace Validation.PackageSigning.ValidateCertificate
         /// <returns>Whether the validation completed. If false, the validation should be retried later.</returns>
         public async Task<bool> HandleAsync(CertificateValidationMessage message)
         {
-            using (_logger.BeginScope("Handling message for {CertificateKey} {ValidationId}",
+            using (_logger.BeginScope("Handling validate certificate message {CertificateKey} {ValidationId}",
                 message.CertificateKey,
                 message.ValidationId))
             {

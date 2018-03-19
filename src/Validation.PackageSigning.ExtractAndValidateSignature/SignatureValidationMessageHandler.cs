@@ -64,7 +64,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ExtractAndValidateSignature
 
         private async Task<bool> HandleAsync(SignatureValidationMessage message, CancellationToken cancellationToken)
         {
-            using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}",
+            using (_logger.BeginScope("Handling signature validation message for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 message.PackageId,
                 message.PackageVersion,
                 message.ValidationId))
