@@ -89,15 +89,15 @@ namespace Stats.AggregateCdnDownloadsInGallery
             if (downloadData.Any())
             {
                 // Group based on Package Id
-                var packageRegistrationGroups = downloadData.GroupBy(p => p.PackageId);
+                var packageRegistrationGroups = downloadData.GroupBy(p => p.PackageId).ToList();
                 var packageRegistrationGroupsRemaining = packageRegistrationGroups;
 
                 // Copy the new download data to the destination DB in batches
                 while (packageRegistrationGroupsRemaining.Any())
                 {
-                    await CopyPackageDownloadDataToDB(packageRegistrationGroupsRemaining.Take(_packagesPerCommit));
+                    await CopyPackageDownloadDataToDB(packageRegistrationGroupsRemaining.Take(_packagesPerCommit).ToList());
 
-                    packageRegistrationGroupsRemaining = packageRegistrationGroupsRemaining.Skip(_packagesPerCommit);
+                    packageRegistrationGroupsRemaining = packageRegistrationGroupsRemaining.Skip(_packagesPerCommit).ToList();
                 }
             }
         }
