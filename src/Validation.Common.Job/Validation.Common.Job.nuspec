@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>NuGet.Services.Validation.Common.Job.$branch$</id>
+    <id>NuGet.Services.Validation.Common.Job</id>
     <version>$version$</version>
     <title>NuGet.Services.Validation.Common.Job</title>
     <authors>.NET Foundation</authors>
