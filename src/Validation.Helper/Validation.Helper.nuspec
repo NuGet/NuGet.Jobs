@@ -12,6 +12,6 @@
   <files>
     <file src="bin\$configuration$\*.*" target="tools"/>
 	
-    <file src="Scripts\Validation.Helper.cmd" />
+    <file src="Validation.Helper.cmd" />
   </files>
 </package>

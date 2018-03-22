@@ -70,10 +70,10 @@
       <Version>2.3.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
-      <Version>1.0.0</Version>
+      <Version>1.1.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging">
-      <Version>1.0.0</Version>
+      <Version>1.1.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
       <Version>1.1.1</Version>
