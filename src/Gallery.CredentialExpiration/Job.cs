@@ -67,7 +67,7 @@ namespace Gallery.CredentialExpiration
             var storageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
 
             var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
-            var storageFactory = new AzureStorageFactory(storageAccount, storageContainerName, LoggerFactory);
+            var storageFactory = new AzureStorageFactory(storageAccount, storageContainerName, LoggerFactory.CreateLogger<AzureStorage>());
             _storage = storageFactory.Create();
         }
 
@@ -158,7 +158,7 @@ namespace Gallery.CredentialExpiration
                 // e-mail notifications.
                 string json = JsonConvert.SerializeObject(_contactedUsers);
                 var content = new StringStorageContent(json, "application/json");
-                await _storage.Save(_storage.ResolveUri(_cursorFile), content, CancellationToken.None);
+                await _storage.Save(_storage.ResolveUri(_cursorFile), content, overwrite: true, cancellationToken: CancellationToken.None);
             }
         }
 
