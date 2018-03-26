@@ -137,7 +137,10 @@ Invoke-BuildStep 'Prepare NuGetCDNRedirect Package' { Prepare-NuGetCDNRedirect }
     -ev +BuildErrors
 
 Invoke-BuildStep 'Creating artifacts' {
-        $CommonLibsProjects =
+        # We need a few projects to be published for sharing the common bits with other repos.
+        # We need symbols published for those, too. All other packages are deployment ones and
+        # don't need to be shared, hence no need for symbols for them
+        $ProjectsWithSymbols =
             "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
             "src/Validation.Common.Job/Validation.Common.Job.csproj"
 
@@ -166,7 +169,7 @@ Invoke-BuildStep 'Creating artifacts' {
             + $CommonLibsProjects
 
         Foreach ($Project in $Projects) {
-            $Symbols = $CommonLibsProjects -contains $Project;
+            $Symbols = $ProjectsWithSymbols -contains $Project;
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "$msBuildVersion" -Symbols:$Symbols
         }
     } `
