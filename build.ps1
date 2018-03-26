@@ -137,8 +137,9 @@ Invoke-BuildStep 'Prepare NuGetCDNRedirect Package' { Prepare-NuGetCDNRedirect }
     -ev +BuildErrors
 
 Invoke-BuildStep 'Creating artifacts' {
-        $CommonLibsProjects = @("src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
-            "src/Validation.Common.Job/Validation.Common.Job.csproj");
+        $CommonLibsProjects =
+            "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
+            "src/Validation.Common.Job/Validation.Common.Job.csproj"
 
         $Projects = `
             "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
@@ -162,7 +163,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Stats.CollectAzureChinaCDNLogs/Stats.CollectAzureChinaCDNLogs.csproj", `
             "src/Validation.PackageSigning.ProcessSignature/Validation.PackageSigning.ProcessSignature.csproj", `
             "src/Validation.PackageSigning.ValidateCertificate/Validation.PackageSigning.ValidateCertificate.csproj" `
-            + $CommonLibsProjects;
+            + $CommonLibsProjects
 
         Foreach ($Project in $Projects) {
         	$Symbols = $CommonLibsProjects -contains $Project;
