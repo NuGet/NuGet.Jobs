@@ -166,7 +166,7 @@ Invoke-BuildStep 'Creating artifacts' {
             + $CommonLibsProjects
 
         Foreach ($Project in $Projects) {
-        	$Symbols = $CommonLibsProjects -contains $Project;
+            $Symbols = $CommonLibsProjects -contains $Project;
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "$msBuildVersion" -Symbols:$Symbols
         }
     } `
