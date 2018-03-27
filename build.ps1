@@ -166,7 +166,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Stats.CollectAzureChinaCDNLogs/Stats.CollectAzureChinaCDNLogs.csproj", `
             "src/Validation.PackageSigning.ProcessSignature/Validation.PackageSigning.ProcessSignature.csproj", `
             "src/Validation.PackageSigning.ValidateCertificate/Validation.PackageSigning.ValidateCertificate.csproj" `
-            + $CommonLibsProjects
+            + $ProjectsWithSymbols
 
         Foreach ($Project in $Projects) {
             $Symbols = $ProjectsWithSymbols -contains $Project;
