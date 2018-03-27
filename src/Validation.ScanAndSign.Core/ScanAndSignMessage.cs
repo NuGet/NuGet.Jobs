@@ -7,7 +7,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
 {
     public class ScanAndSignMessage
     {
-        public ScanAndSignMessage(OperationRequestType operationRequestType, Guid packageValidationId, string blobUri)
+        public ScanAndSignMessage(OperationRequestType operationRequestType, Guid packageValidationId, Uri blobUri)
         {
             OperationRequestType = operationRequestType;
             PackageValidationId = packageValidationId;
@@ -16,6 +16,6 @@ namespace NuGet.Jobs.Validation.ScanAndSign
 
         public OperationRequestType OperationRequestType { get; }
         public Guid PackageValidationId { get; }
-        public string BlobUri { get; }
+        public Uri BlobUri { get; }
     }
 }
