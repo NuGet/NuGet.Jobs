@@ -29,6 +29,9 @@ namespace Validation.PackageSigning.RevalidateCertificate
 
         public override async Task Run()
         {
+            // Both of these methods only do a chunk of the possible promotion/revalidating work before
+            // completing. This "Run" method may need to run several times to promote all signatures
+            // and to revalidate all stale certificates.
             await _revalidator.PromoteSignaturesAsync();
             await _revalidator.RevalidateStaleCertificatesAsync();
         }
