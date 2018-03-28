@@ -23,7 +23,7 @@ namespace NuGet.Services.Validation
 
             if (signature.Status == PackageSignatureStatus.Invalid)
             {
-                throw new ArgumentException($"Package signature {signature.Key} is revoked and cannot be promoted", nameof(signature));
+                throw new ArgumentException($"Package signature {signature.Key} is invalid and cannot be promoted", nameof(signature));
             }
 
             var signingTime = signature.TrustedTimestamps.Max(t => t.Value);
