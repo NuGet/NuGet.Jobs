@@ -26,11 +26,6 @@ namespace NuGet.Services.Validation
                 throw new ArgumentException($"Package signature {signature.Key} is revoked and cannot be promoted", nameof(signature));
             }
 
-            bool IsCertificateStatusPastTime(EndCertificate certificate, DateTime time)
-            {
-                return (certificate.StatusUpdateTime.HasValue && certificate.StatusUpdateTime > time);
-            }
-
             var signingTime = signature.TrustedTimestamps.Max(t => t.Value);
 
             // Ensure the timestamps' certificate statuses are fresher than the signature.
@@ -67,6 +62,11 @@ namespace NuGet.Services.Validation
             }
 
             return true;
+        }
+
+        private static bool IsCertificateStatusPastTime(EndCertificate certificate, DateTime time)
+        {
+            return (certificate.StatusUpdateTime.HasValue && certificate.StatusUpdateTime > time);
         }
     }
 }
