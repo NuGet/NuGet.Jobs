@@ -170,7 +170,7 @@ namespace Validation.PackageSigning.RevalidateCertificate
         {
             _logger.LogInformation("Waiting until all certificate validations finish...");
 
-            while (true)
+            while (stopwatch.Elapsed < _config.CertificateRevalidationTimeout)
             {
                 await Task.Delay(_config.CertificateRevalidationPollTime);
 
@@ -182,17 +182,6 @@ namespace Validation.PackageSigning.RevalidateCertificate
                 if (validationsLeft == 0)
                 {
                     _logger.LogInformation("All certificate validations finished after {ElapsedTime}", stopwatch.Elapsed);
-
-                    return;
-                }
-                else if (stopwatch.Elapsed >= _config.CertificateRevalidationTimeout)
-                {
-                    _logger.LogError(
-                        "Reached certificate revalidation timeout after {ElapsedTime} with {ValidationsLeft} certificate validations left",
-                        stopwatch.Elapsed,
-                        validationsLeft);
-
-                    _telemetry.TrackCertificateRevalidationReachedTimeout();
 
                     return;
                 }
@@ -212,6 +201,12 @@ namespace Validation.PackageSigning.RevalidateCertificate
                         validationsLeft,
                         stopwatch.Elapsed);
                 }
+            }
+
+            if (stopwatch.Elapsed >= _config.CertificateRevalidationTimeout)
+            {
+                _logger.LogError("Reached certificate revalidation timeout after {ElapsedTime}", stopwatch.Elapsed);
+                _telemetry.TrackCertificateRevalidationReachedTimeout();
             }
         }
     }
