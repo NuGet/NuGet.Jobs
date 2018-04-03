@@ -9,7 +9,7 @@ namespace NuGet.Jobs.Validation
     /// <summary>
     /// Validator-related utility methods
     /// </summary>
-    public static class ValidatorUtil
+    public static class ValidatorUtility
     {
         /// <summary>
         /// Checks whether given type has <see cref="ValidatorAliasAttribute"/> attribute.

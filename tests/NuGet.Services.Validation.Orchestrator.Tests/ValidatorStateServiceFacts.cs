@@ -521,7 +521,7 @@ namespace NuGet.Services.Validation
                 _validationRequest.Setup(x => x.PackageVersion).Returns(PackageVersion);
                 _validationRequest.Setup(x => x.ValidationId).Returns(ValidationId);
 
-                _target = CreateValidatorStateService(ValidatorUtil.GetValidatorName(typeof(AValidator)));
+                _target = CreateValidatorStateService(ValidatorUtility.GetValidatorName(typeof(AValidator)));
             }
 
             protected ValidatorStateService CreateValidatorStateService(string validatorName)

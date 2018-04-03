@@ -62,7 +62,7 @@
     <Compile Include="Validation\IValidatorProvider.cs" />
     <Compile Include="Validation\ValidatorAlias.cs" />
     <Compile Include="Validation\ValidatorNameAttribute.cs" />
-    <Compile Include="Validation\ValidatorUtil.cs" />
+    <Compile Include="Validation\ValidatorUtility.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Autofac">

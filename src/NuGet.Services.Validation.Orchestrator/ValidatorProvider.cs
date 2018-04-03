@@ -57,13 +57,13 @@ namespace NuGet.Services.Validation.Orchestrator
                         .Where(type => typeof(IValidator).IsAssignableFrom(type)
                                && type != typeof(IValidator)
                                && type != typeof(IProcessor)
-                               && ValidatorUtil.HasValidatorNameAttribute(type))
-                        .ToDictionary(ValidatorUtil.GetValidatorName);
+                               && ValidatorUtility.HasValidatorNameAttribute(type))
+                        .ToDictionary(ValidatorUtility.GetValidatorName);
 
                     var processorTypes = validatorTypes
                         .Values
                         .Where(IsProcessorType)
-                        .ToDictionary(ValidatorUtil.GetValidatorName);
+                        .ToDictionary(ValidatorUtility.GetValidatorName);
 
                     _logger.LogTrace("After enumeration, got {NumImplementations} implementations: {TypeNames}",
                         validatorTypes.Count,

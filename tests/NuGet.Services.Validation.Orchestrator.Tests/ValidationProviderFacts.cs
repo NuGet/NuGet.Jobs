@@ -104,7 +104,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     .Setup(sp => sp.GetService(validatorType))
                     .Returns(() => validator);
 
-                var result = Target.GetValidator(ValidatorUtil.GetValidatorName(validatorType));
+                var result = Target.GetValidator(ValidatorUtility.GetValidatorName(validatorType));
 
                 ServiceProviderMock
                     .Verify(sp => sp.GetService(validatorType), Times.Once);
@@ -121,7 +121,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     .Setup(sp => sp.GetService(processorType))
                     .Returns(() => processor);
                 
-                var result = Target.GetValidator(ValidatorUtil.GetValidatorName(processorType));
+                var result = Target.GetValidator(ValidatorUtility.GetValidatorName(processorType));
 
                 ServiceProviderMock
                     .Verify(sp => sp.GetService(processorType), Times.Once);
