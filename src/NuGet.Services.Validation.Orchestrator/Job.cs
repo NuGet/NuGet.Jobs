@@ -23,13 +23,16 @@ using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
+using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
+using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
-using NuGet.Services.Validation.PackageCertificates;
-using NuGet.Services.Validation.PackageSigning;
+using NuGet.Services.Validation.PackageSigning.ProcessSignature;
+using NuGet.Services.Validation.PackageSigning.ValidateCertificate;
 using NuGet.Services.Validation.Vcs;
+using NuGetGallery.Diagnostics;
 using NuGetGallery.Services;
 
 namespace NuGet.Services.Validation.Orchestrator
@@ -142,8 +145,8 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
-            services.Configure<PackageSigningConfiguration>(configurationRoot.GetSection(PackageSigningSectionName));
-            services.Configure<PackageCertificatesConfiguration>(configurationRoot.GetSection(PackageCertificatesSectionName));
+            services.Configure<ProcessSignatureConfiguration>(configurationRoot.GetSection(PackageSigningSectionName));
+            services.Configure<ValidateCertificateConfiguration>(configurationRoot.GetSection(PackageCertificatesSectionName));
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
@@ -184,7 +187,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
             services.AddTransient<IPackageCriteriaEvaluator, PackageCriteriaEvaluator>();
             services.AddTransient<VcsValidator>();
-            services.AddTransient<IPackageSignatureVerificationEnqueuer, PackageSignatureVerificationEnqueuer>();
+            services.AddTransient<IProcessSignatureEnqueuer, ProcessSignatureEnqueuer>();
             services.AddTransient<NuGetGallery.ICloudBlobClient>(c =>
                 {
                     var configurationAccessor = c.GetRequiredService<IOptionsSnapshot<ValidationConfiguration>>();
@@ -199,7 +202,9 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
             services.AddTransient<IValidationSetProcessor, ValidationSetProcessor>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
+            services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
+            services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
             services.AddTransient<PackageSigningValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
             {
@@ -234,6 +239,8 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IMessageService, MessageService>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
+            services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
             services.AddSingleton(new TelemetryClient());
             services.AddTransient<IValidationOutcomeProcessor, ValidationOutcomeProcessor>();
             services.AddSingleton(p =>
@@ -297,7 +304,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .As<IPackageValidationAuditor>();
 
             containerBuilder
-                .RegisterType<PackageSignatureVerificationEnqueuer>()
+                .RegisterType<ProcessSignatureEnqueuer>()
                 .WithParameter(new ResolvedParameter(
                     (pi, ctx) => pi.ParameterType == typeof(ITopicClient),
                     (pi, ctx) => ctx.ResolveKeyed<TopicClientWrapper>(PackageVerificationTopicClientBindingKey)))
@@ -305,7 +312,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     (pi, ctx) => pi.ParameterType == typeof(IBrokeredMessageSerializer<SignatureValidationMessage>),
                     (pi, ctx) => ctx.Resolve<SignatureValidationMessageSerializer>()
                     ))
-                .As<IPackageSignatureVerificationEnqueuer>();
+                .As<IProcessSignatureEnqueuer>();
 
             containerBuilder
                 .RegisterType<ScopedMessageHandler<PackageValidationMessageData>>()
@@ -330,24 +337,24 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(Type),
-                    (pi, ctx) => typeof(PackageSigningValidator))
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.PackageSigning)
                 .Keyed<IValidatorStateService>(PackageSigningBindingKey);
 
             // Configure the package signature verification enqueuer.
             builder
                 .Register(c =>
                 {
-                    var configuration = c.Resolve<IOptionsSnapshot<PackageSigningConfiguration>>().Value.ServiceBus;
+                    var configuration = c.Resolve<IOptionsSnapshot<ProcessSignatureConfiguration>>().Value.ServiceBus;
 
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
                 .Keyed<ITopicClient>(PackageSigningBindingKey);
 
             builder
-                .RegisterType<PackageSignatureVerificationEnqueuer>()
+                .RegisterType<ProcessSignatureEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), PackageSigningBindingKey)
-                .As<IPackageSignatureVerificationEnqueuer>();
+                .As<IProcessSignatureEnqueuer>();
 
             // Configure the package signing validator.
             builder
@@ -362,24 +369,24 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(Type),
-                    (pi, ctx) => typeof(PackageCertificatesValidator))
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.PackageCertificate)
                 .Keyed<IValidatorStateService>(PackageCertificatesBindingKey);
 
             // Configure the certificate verification enqueuer.
             builder
                 .Register(c =>
                 {
-                    var configuration = c.Resolve<IOptionsSnapshot<PackageCertificatesConfiguration>>().Value.ServiceBus;
+                    var configuration = c.Resolve<IOptionsSnapshot<ValidateCertificateConfiguration>>().Value.ServiceBus;
 
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
                 .Keyed<ITopicClient>(PackageCertificatesBindingKey);
 
             builder
-                .RegisterType<CertificateVerificationEnqueuer>()
+                .RegisterType<ValidateCertificateEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), PackageCertificatesBindingKey)
-                .As<ICertificateVerificationEnqueuer>();
+                .As<IValidateCertificateEnqueuer>();
 
             // Configure the certificates validator.
             builder
@@ -387,7 +394,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageCertificatesBindingKey)
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(TimeSpan?),
-                    (pi, ctx) => ctx.Resolve<IOptionsSnapshot<PackageCertificatesConfiguration>>().Value.CertificateRevalidationThreshold)
+                    (pi, ctx) => ctx.Resolve<IOptionsSnapshot<ValidateCertificateConfiguration>>().Value.CertificateRevalidationThreshold)
                 .As<PackageCertificatesValidator>();
         }
 

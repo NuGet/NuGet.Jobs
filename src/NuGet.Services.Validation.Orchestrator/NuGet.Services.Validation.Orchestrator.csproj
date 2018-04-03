@@ -58,19 +58,18 @@
     <Compile Include="IValidationSetProcessor.cs" />
     <Compile Include="IValidationSetProvider.cs" />
     <Compile Include="IValidationStorageService.cs" />
-    <Compile Include="IValidatorProvider.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="MessageService.cs" />
     <Compile Include="OrchestrationRunner.cs" />
     <Compile Include="Configuration\OrchestrationRunnerConfiguration.cs" />
-    <Compile Include="PackageCertificates\CertificateVerificationEnqueuer.cs" />
-    <Compile Include="PackageCertificates\ICertificateVerificationEnqueuer.cs" />
-    <Compile Include="PackageCertificates\PackageCertificatesConfiguration.cs" />
-    <Compile Include="PackageCertificates\PackageCertificatesValidator.cs" />
-    <Compile Include="PackageSigning\IPackageSignatureVerificationEnqueuer.cs" />
-    <Compile Include="PackageSigning\PackageSignatureVerificationEnqueuer.cs" />
-    <Compile Include="PackageSigning\PackageSigningConfiguration.cs" />
-    <Compile Include="PackageSigning\PackageSigningValidator.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\IProcessSignatureEnqueuer.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\PackageSigningValidator.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\ProcessSignatureConfiguration.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\ProcessSignatureEnqueuer.cs" />
+    <Compile Include="PackageSigning\ValidateCertificate\IValidateCertificateEnqueuer.cs" />
+    <Compile Include="PackageSigning\ValidateCertificate\PackageCertificatesValidator.cs" />
+    <Compile Include="PackageSigning\ValidateCertificate\ValidateCertificateConfiguration.cs" />
+    <Compile Include="PackageSigning\ValidateCertificate\ValidateCertificateEnqueuer.cs" />
     <Compile Include="PackageStatusProcessor.cs" />
     <Compile Include="PackageValidationMessageDataSerializer.cs" />
     <Compile Include="Program.cs" />
@@ -108,7 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Services.Validation.Issues">
-      <Version>2.18.0</Version>
+      <Version>2.22.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

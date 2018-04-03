@@ -3,30 +3,32 @@
     "Validations": [
       {
         "name": "VcsValidator",
-        "failAfter": "1:00:00:00",
-        "requiredValidations": [],
+        "TrackAfter": "1:00:00:00",
+        "requiredValidations": [ "PackageSigningValidator" ],
         "ShouldStart": true,
         "FailureBehavior": "MustSucceed"
       },
       {
         "name": "PackageSigningValidator",
-        "failAfter": "1:00:00:00",
+        "TrackAfter": "00:10:00",
         "requiredValidations": [],
         "ShouldStart": true,
         "FailureBehavior": "MustSucceed"
       },
       {
         "name": "PackageCertificatesValidator",
-        "failAfter": "10:00",
+        "TrackAfter": "00:10:00",
         "requiredValidations": [ "PackageSigningValidator" ],
         "ShouldStart": true,
-        "FailureBehavior": "AllowedToFail"
+        "FailureBehavior": "MustSucceed"
       }
     ],
     "ValidationStorageConnectionString": "",
     "MissingPackageRetryCount": 15,
     "ValidationMessageRecheckPeriod": "00:01:00",
-    "NewValidationRequestDeduplicationWindow": "00:20:00"
+    "NewValidationRequestDeduplicationWindow": "00:20:00",
+    "ValidationSetNotificationTimeout": "00:50:00",
+    "TimeoutValidationSetAfter": "1:00:00:00"
   },
   "Vcs": {
     "ContainerName": "validation",
@@ -45,7 +47,8 @@
       "ConnectionString": "",
       "TopicPath": "",
       "SubscriptionName": ""
-    }
+    },
+    "MessageDelay": "00:00:05"
   },
   "PackageCertificates": {
     "CertificateRevalidationThreshold": "1:00:00:00",
@@ -53,7 +56,8 @@
       "ConnectionString": "",
       "TopicPath": "",
       "SubscriptionName": ""
-    }
+    },
+    "MessageDelay": "00:00:05"
   },
   "RunnerConfiguration": {
     "ProcessRecycleInterval": "1:00:00:00",
