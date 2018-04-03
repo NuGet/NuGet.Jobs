@@ -33,7 +33,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
             }
             if (!validatorProvider.IsValidator(validatorName))
             {
-                throw new ArgumentException($"\"{validatorName}\" is not proper validator alias", nameof(validatorName));
+                throw new ArgumentException($"\"{validatorName}\" is not a proper validator alias.", nameof(validatorName));
             }
             _validatorName = validatorName ?? throw new ArgumentNullException(nameof(validatorName));
         }
