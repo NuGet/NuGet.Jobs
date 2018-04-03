@@ -60,7 +60,7 @@
     <Compile Include="SubcriptionProcessorJob.cs" />
     <Compile Include="JsonConfigurationJob.cs" />
     <Compile Include="Validation\IValidatorProvider.cs" />
-    <Compile Include="Validation\ValidatorAlias.cs" />
+    <Compile Include="Validation\ValidatorName.cs" />
     <Compile Include="Validation\ValidatorNameAttribute.cs" />
     <Compile Include="Validation\ValidatorUtility.cs" />
   </ItemGroup>
