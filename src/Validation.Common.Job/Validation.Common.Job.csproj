@@ -63,6 +63,12 @@
     <Compile Include="Validation\ValidatorName.cs" />
     <Compile Include="Validation\ValidatorNameAttribute.cs" />
     <Compile Include="Validation\ValidatorUtility.cs" />
+    <Compile Include="TempFiles\DeleteOnCloseReadOnlyTempFile.cs" />
+    <Compile Include="TempFiles\ITempFile.cs" />
+    <Compile Include="TempFiles\ITempFileFactory.cs" />
+    <Compile Include="TempFiles\ITempReadOnlyFile.cs" />
+    <Compile Include="TempFiles\TempFile.cs" />
+    <Compile Include="TempFiles\TempFileFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Autofac">

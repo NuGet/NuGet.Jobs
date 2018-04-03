@@ -45,6 +45,9 @@
     <Compile Include="LoggerDiagnosticSourceFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Storage\ProcessorPackageFileServiceFacts.cs" />
+    <Compile Include="TempFiles\DeleteOnCloseReadOnlyTempFileFacts.cs" />
+    <Compile Include="TempFiles\PathUtility.cs" />
+    <Compile Include="TempFiles\TempFileFacts.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq">
