@@ -8,13 +8,16 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Services.Validation.Orchestrator;
 using NuGet.Versioning;
 using NuGetGallery;
+using Error = NuGet.Services.Validation.Orchestrator.Error;
 
 namespace NuGet.Services.Validation.Vcs
 {
+    [ValidatorAlias(ValidatorAlias.Vcs)]
     public class VcsValidator : BaseValidator, IValidator
     {
         private const string ValidatorName = Jobs.Validation.Common.Validators.Vcs.VcsValidator.ValidatorName;
