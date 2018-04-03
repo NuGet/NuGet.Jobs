@@ -12,7 +12,7 @@ using NuGet.Services.Validation.Orchestrator.Telemetry;
 
 namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
-    [ValidatorAlias(ValidatorAlias.PackageSigning)]
+    [ValidatorName(ValidatorName.PackageSigning)]
     public class PackageSigningValidator : IProcessor
     {
         private readonly IValidatorStateService _validatorStateService;

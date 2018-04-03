@@ -33,7 +33,7 @@ namespace NuGet.Services.Validation
             ValidationStatus.Failed,
         };
 
-        [ValidatorAlias("AValidator")]
+        [ValidatorName("AValidator")]
         class AValidator : IValidator
         {
             public Task CleanUpAsync(IValidationRequest request) => throw new NotImplementedException();
@@ -41,7 +41,7 @@ namespace NuGet.Services.Validation
             public Task<IValidationResult> StartAsync(IValidationRequest request) => throw new NotImplementedException();
         }
 
-        [ValidatorAlias("BValidator")]
+        [ValidatorName("BValidator")]
         class BValidator : IValidator
         {
             public Task CleanUpAsync(IValidationRequest request) => throw new NotImplementedException();

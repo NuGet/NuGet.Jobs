@@ -159,7 +159,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             public ValidatorProvider Target { get; }
         }
 
-        [ValidatorAlias("TestValidator")]
+        [ValidatorName("TestValidator")]
         public class TestValidator : IValidator
         {
             public Task CleanUpAsync(IValidationRequest request)
@@ -178,7 +178,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
         }
 
-        [ValidatorAlias("TestProcessor")]
+        [ValidatorName("TestProcessor")]
         public class TestProcessor : IProcessor
         {
             public Task CleanUpAsync(IValidationRequest request)

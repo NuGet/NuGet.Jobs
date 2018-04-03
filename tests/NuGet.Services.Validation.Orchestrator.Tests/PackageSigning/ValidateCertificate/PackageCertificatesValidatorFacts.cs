@@ -1202,7 +1202,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 var validatorStateService = new ValidatorStateService(
                     _validationContext.Object,
                     _validatorProvider.Object,
-                    ValidatorAlias.PackageCertificate,
+                    ValidatorName.PackageCertificate,
                     validatorStateServiceLogger.Object);
 
                 _target = new PackageCertificatesValidator(

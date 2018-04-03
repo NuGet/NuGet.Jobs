@@ -16,7 +16,7 @@ using Error = NuGet.Services.Validation.Orchestrator.Error;
 
 namespace NuGet.Services.Validation.PackageSigning.ValidateCertificate
 {
-    [ValidatorAlias(ValidatorAlias.PackageCertificate)]
+    [ValidatorName(ValidatorName.PackageCertificate)]
     public class PackageCertificatesValidator : BaseValidator, IValidator
     {
         private static readonly TimeSpan DefaultCertificateRevalidationThresholdTime = TimeSpan.FromDays(1);

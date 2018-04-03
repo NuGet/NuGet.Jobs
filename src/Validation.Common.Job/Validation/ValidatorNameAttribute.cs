@@ -10,11 +10,11 @@ namespace NuGet.Jobs.Validation
     /// to allow validator instantiation by that label
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public class ValidatorAliasAttribute: Attribute
+    public class ValidatorNameAttribute: Attribute
     {
         public string Name { get; }
 
-        public ValidatorAliasAttribute(string name)
+        public ValidatorNameAttribute(string name)
         {
             Name = name;
         }

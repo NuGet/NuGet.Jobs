@@ -3,7 +3,7 @@
 
 namespace NuGet.Jobs.Validation
 {
-    public static class ValidatorAlias
+    public static class ValidatorName
     {
         public const string Vcs = "VcsValidator";
         public const string PackageCertificate = "PackageCertificatesValidator";

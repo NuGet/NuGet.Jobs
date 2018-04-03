@@ -100,7 +100,7 @@ namespace Validation.Common.Job.Tests.Storage
             Assert.Equal(0, _stream.Position);
         }
 
-        [ValidatorAlias("TestProcessor")]
+        [ValidatorName("TestProcessor")]
         private class TestProcessor : IProcessor
         {
             public Task CleanUpAsync(IValidationRequest request) => throw new NotImplementedException();

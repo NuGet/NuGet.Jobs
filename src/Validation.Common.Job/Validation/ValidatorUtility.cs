@@ -12,17 +12,17 @@ namespace NuGet.Jobs.Validation
     public static class ValidatorUtility
     {
         /// <summary>
-        /// Checks whether given type has <see cref="ValidatorAliasAttribute"/> attribute.
+        /// Checks whether given type has <see cref="ValidatorNameAttribute"/> attribute.
         /// </summary>
         public static bool HasValidatorNameAttribute(Type type)
-            => type.CustomAttributes.Any(a => a.AttributeType == typeof(ValidatorAliasAttribute));
+            => type.CustomAttributes.Any(a => a.AttributeType == typeof(ValidatorNameAttribute));
 
         /// <summary>
-        /// Retrieves the value of the <see cref="ValidatorAliasAttribute.Name"/> property set 
-        /// for <see cref="ValidatorAliasAttribute"/> set on a specified class.
+        /// Retrieves the value of the <see cref="ValidatorNameAttribute.Name"/> property set 
+        /// for <see cref="ValidatorNameAttribute"/> set on a specified class.
         /// </summary>
         public static string GetValidatorName(Type type)
-            => GetCustomAttribute<ValidatorAliasAttribute>(type).Name;
+            => GetCustomAttribute<ValidatorNameAttribute>(type).Name;
 
         private static T GetCustomAttribute<T>(Type type)
             where T : Attribute
