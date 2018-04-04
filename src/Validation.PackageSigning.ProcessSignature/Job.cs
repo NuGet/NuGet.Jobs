@@ -75,7 +75,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
-                    (pi, ctx) => ValidatorName.PackageCertificate)
+                    (pi, ctx) => ValidatorName.PackageSigning)
                 .As<IValidatorStateService>();
 
             containerBuilder
