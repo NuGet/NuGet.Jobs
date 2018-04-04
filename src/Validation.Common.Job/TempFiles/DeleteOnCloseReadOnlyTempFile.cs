@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace NuGet.Jobs.Validation
 {
@@ -22,6 +24,14 @@ namespace NuGet.Jobs.Validation
                 FileShare.None,
                 BufferSize,
                 FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+        }
+
+        public async Task<string> ReadToEndAsync()
+        {
+            using (var streamReader = new StreamReader(ReadStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: BufferSize, leaveOpen: true))
+            {
+                return await streamReader.ReadToEndAsync();
+            }
         }
 
         public Stream ReadStream => _fileStream;

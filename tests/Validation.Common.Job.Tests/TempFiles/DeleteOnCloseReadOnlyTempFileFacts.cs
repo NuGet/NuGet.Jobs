@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using NuGet.Jobs.Validation;
 using Xunit;
 
@@ -44,12 +45,51 @@ namespace Validation.Common.Job.Tests.TempFiles
             Assert.Equal(content, readContent);
         }
 
-        private void WithTempFile(string content, Action<ITempReadOnlyFile> action)
+        [Fact]
+        public async Task ReadToEndReadsEverything()
         {
-            WithTempFile(action, content);
+            const string content = "SomeContent";
+
+            string readContent1 = null;
+            string readContent2 = null;
+
+            await WithTempFile(content, async tempFile =>
+            {
+                using (var sr = new StreamReader(tempFile.ReadStream))
+                {
+                    readContent1 = sr.ReadToEnd();
+                    tempFile.ReadStream.Seek(0, SeekOrigin.Begin);
+                    readContent2 = await tempFile.ReadToEndAsync();
+                }
+            });
+
+            Assert.Equal(content, readContent1);
+            Assert.Equal(content, readContent2);
         }
 
-        private void WithTempFile(Action<ITempReadOnlyFile> action, string content = null)
+        private void WithTempFile(Action<ITempReadOnlyFile> action)
+        {
+            WithTempFile(TempFileActionWrapper(action), null).GetAwaiter().GetResult();
+        }
+
+        private void WithTempFile(string content, Action<ITempReadOnlyFile> action)
+        {
+            WithTempFile(TempFileActionWrapper(action), content).GetAwaiter().GetResult();
+        }
+
+        private async Task WithTempFile(string content, Func<ITempReadOnlyFile, Task> action)
+        {
+            await WithTempFile(action, content);
+        }
+
+        private static Func<ITempReadOnlyFile, Task> TempFileActionWrapper(Action<ITempReadOnlyFile> action)
+            => tempFile =>
+                {
+                    action(tempFile);
+                    return Task.CompletedTask;
+                };
+
+        private async Task WithTempFile(Func<ITempReadOnlyFile, Task> action, string content)
         {
             var tempFileName = Path.GetTempFileName();
             if (content != null)
@@ -58,7 +98,7 @@ namespace Validation.Common.Job.Tests.TempFiles
             }
             using (var tempFile = new DeleteOnCloseReadOnlyTempFile(tempFileName))
             {
-                action(tempFile);
+                await action(tempFile);
             }
         }
     }

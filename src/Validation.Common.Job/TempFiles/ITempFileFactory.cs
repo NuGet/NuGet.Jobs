@@ -11,7 +11,8 @@ namespace NuGet.Jobs.Validation
         /// <summary>
         /// Creates empty temp file, returns object that contains path to it and controls its lifetime.
         /// </summary>
-        ITempFile CreateTempFile();
+        /// <param name="contents">The contents of the file to be created.</param>
+        ITempFile CreateTempFile(string contents);
 
         /// <summary>
         /// Opens existing file for reading and makes sure it is deleted on closing.
