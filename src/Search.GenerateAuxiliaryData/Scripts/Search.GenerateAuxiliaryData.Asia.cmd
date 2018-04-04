@@ -16,7 +16,8 @@ cd bin
 	-StatisticsDatabase "#{Jobs.search.generateauxiliarydata.StatisticsDatabase}" ^
 	-AzureCdnCloudStorageAccount "#{Jobs.stats.createazurecdnwarehousereports.AzureCdn.CloudStorageAccount}"
 	-AzureCdnCloudStorageContainerName "#{Jobs.stats.createazurecdnwarehousereports.AzureCdn.CloudStorageContainerName}"
-	-verbose true -Sleep #{Jobs.search.generateauxiliarydata.Sleep} ^
+	-verbose true ^
+	-Sleep #{Jobs.search.generateauxiliarydata.Sleep} ^
 	-InstrumentationKey "#{Jobs.search.generateauxiliarydata.ApplicationInsightsInstrumentationKey}"
 
 	echo "Finished #{Jobs.search.generateauxiliarydata.Title}"

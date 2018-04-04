@@ -37,7 +37,7 @@ namespace Search.GenerateAuxiliaryData
 
         public override async Task ExportAsync()
         {
-            _logger.LogInformation("Generating {ReportName} report from {ConnectionString}.", Name, TracableConnectionString(ConnectionString));
+            _logger.LogInformation("Generating {ReportName} report from {ConnectionString}.", _name, TracableConnectionString(ConnectionString));
 
             JContainer result;
             using (var connection = new SqlConnection(ConnectionString))
@@ -47,7 +47,7 @@ namespace Search.GenerateAuxiliaryData
                 result = GetResultOfQuery(connection);
             }
 
-            await WriteToBlobAsync(_logger, DestinationContainer, result.ToString(Formatting.None), Name);
+            await WriteToBlobAsync(_logger, _destinationContainer, result.ToString(Formatting.None), _name);
         }
 
         protected abstract JContainer GetResultOfQuery(SqlConnection connection);

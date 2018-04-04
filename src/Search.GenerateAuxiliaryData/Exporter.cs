@@ -12,16 +12,16 @@ namespace Search.GenerateAuxiliaryData
     public abstract class Exporter
     {
         protected ILogger<Exporter> _logger;
+        protected CloudBlobContainer _destinationContainer;
 
-        public CloudBlobContainer DestinationContainer { get; }
-        public string Name { get; }
+        protected string _name { get; }
 
         public Exporter(ILogger<Exporter> logger, CloudBlobContainer defaultDestinationContainer, string defaultName)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            DestinationContainer = defaultDestinationContainer ?? throw new ArgumentNullException(nameof(defaultDestinationContainer));
+            _destinationContainer = defaultDestinationContainer ?? throw new ArgumentNullException(nameof(defaultDestinationContainer));
 
-            Name = defaultName;
+            _name = defaultName;
         }
 
         public abstract Task ExportAsync();
