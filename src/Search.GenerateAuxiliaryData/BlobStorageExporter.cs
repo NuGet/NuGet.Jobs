@@ -30,10 +30,13 @@ namespace Search.GenerateAuxiliaryData
 
         public override async Task ExportAsync()
         {
-            _logger.LogInformation("Copying {ReportName} report from {ConnectionString}.", Name, "TODO");
+            _logger.LogInformation("Copying {ReportName} report from {ConnectionString}/{SourceName}", Name, _sourceContainer.Uri, _sourceName);
+
+            await DestinationContainer.CreateIfNotExistsAsync();
 
             var sourceCloudBlob = _sourceContainer.GetBlockBlobReference(_sourceName);
             var destinationCloudBlob = DestinationContainer.GetBlockBlobReference(Name);
+            
 
             await destinationCloudBlob.StartCopyAsync(sourceCloudBlob);
 
