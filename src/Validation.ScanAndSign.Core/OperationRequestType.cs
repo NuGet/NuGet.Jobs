@@ -9,6 +9,6 @@ namespace NuGet.Jobs.Validation.ScanAndSign
     public enum OperationRequestType
     {
         Scan,
-        Autodetect
+        Sign
     }
 }
