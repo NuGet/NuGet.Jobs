@@ -119,11 +119,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.PackageSigning.R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.PackageSigning.RevalidateCertificate.Tests", "tests\Validation.PackageSigning.RevalidateCertificate.Tests\Validation.PackageSigning.RevalidateCertificate.Tests.csproj", "{64095857-E9E3-4D9C-8769-7E558CD757CB}"
 EndProject
-<<<<<<< HEAD
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.ScanAndSign.Core", "src\Validation.ScanAndSign.Core\Validation.ScanAndSign.Core.csproj", "{DFAC2769-4B67-4FBC-AD60-D93A39DD45AE}"
-=======
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.Stats.AggregateCdnDownloadsInGallery", "tests\Tests.Stats.AggregateCdnDownloadsInGallery\Tests.Stats.AggregateCdnDownloadsInGallery.csproj", "{136411AF-B9FA-438D-B790-9FB78A5F7F54}"
->>>>>>> origin/dev
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
