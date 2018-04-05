@@ -17,13 +17,7 @@ namespace NuGet.Jobs.Validation
 
         public DeleteOnCloseReadOnlyTempFile(string fileName)
         {
-            _fileStream = new FileStream(
-                fileName,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.None,
-                BufferSize,
-                FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+            _fileStream = FileStreamUtility.OpenTemporaryFile(fileName);
         }
 
         public async Task<string> ReadToEndAsync()
