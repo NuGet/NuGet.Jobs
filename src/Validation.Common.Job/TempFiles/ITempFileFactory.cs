@@ -9,12 +9,14 @@ namespace NuGet.Jobs.Validation
     public interface ITempFileFactory
     {
         /// <summary>
-        /// Creates empty temp file, returns object that contains path to it and controls its lifetime.
+        /// Creates empty temp file under specified subdirectory of the temp directry,
+        /// returns object that contains path to it and controls its lifetime.
         /// </summary>
         ITempFile CreateTempFile(string directoryName);
 
         /// <summary>
-        /// Creates temp file with specified text, returns object that contains path to it and controls its lifetime.
+        /// Creates temp file with specified text in the specified subdirectory of the temp directory,
+        /// returns object that contains path to it and controls its lifetime.
         /// </summary>
         /// <param name="contents">The contents of the file to be created.</param>
         ITempFile CreateTempFile(string directoryName, string contents);
