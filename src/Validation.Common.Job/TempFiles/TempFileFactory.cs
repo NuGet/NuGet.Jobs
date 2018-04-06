@@ -8,9 +8,12 @@ namespace NuGet.Jobs.Validation
 {
     public class TempFileFactory : ITempFileFactory
     {
-        public ITempFile CreateTempFile(string contents)
+        public ITempFile CreateTempFile(string directoryName)
+            => TempFile.Create(directoryName);
+
+        public ITempFile CreateTempFile(string directoryName, string contents)
         {
-            var file = new TempFile();
+            var file = CreateTempFile(directoryName);
 
             File.WriteAllText(file.FullName, contents, Encoding.UTF8);
 

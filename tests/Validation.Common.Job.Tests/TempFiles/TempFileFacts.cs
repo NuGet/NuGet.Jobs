@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Validation.Common.Job.Tests
 {
-    public class TempFileFacts
+    public abstract class BaseTempFileFacts
     {
         [Fact]
         public void ProvidesFullFilePath()
@@ -52,12 +52,58 @@ namespace Validation.Common.Job.Tests
             Assert.Null(ex);
         }
 
-        private void WithTempFile(Action<ITempFile> action)
+        protected abstract void WithTempFile(Action<ITempFile> action);
+    }
+
+    public class TheTempFileConstructor : BaseTempFileFacts
+    {
+        protected override void WithTempFile(Action<ITempFile> action)
         {
             using (var tempFile = new TempFile())
             {
                 action(tempFile);
             }
+        }
+    }
+
+    public class TheTempFileCreateMethod : BaseTempFileFacts
+    {
+        private const string DirectoryName = "TheTempFileCreateMethod";
+
+        protected override void WithTempFile(Action<ITempFile> action)
+        {
+            WithTempFile(DirectoryName, action);
+        }
+
+        protected void WithTempFile(string directoryName, Action<ITempFile> action)
+        {
+            using (var tempFile = TempFile.Create(directoryName))
+            {
+                action(tempFile);
+            }
+        }
+
+        [Fact]
+        public void UsesDirectoryName()
+        {
+            var expectedDirectory = Path.Combine(Path.GetTempPath(), DirectoryName);
+            WithTempFile(tempFile =>
+            {
+                var fi = new FileInfo(tempFile.FullName);
+                Assert.Equal(expectedDirectory, fi.Directory.FullName);
+            });
+        }
+
+        [Fact]
+        public void OkWithNestingDirectories()
+        {
+            const string nestedDirectory = @"TempFileTest\Nested";
+            var expectedDirectory = Path.Combine(Path.GetTempPath(), nestedDirectory);
+            WithTempFile(nestedDirectory, tempFile =>
+            {
+                var fi = new FileInfo(tempFile.FullName);
+                Assert.Equal(expectedDirectory, fi.Directory.FullName);
+            });
         }
     }
 }
