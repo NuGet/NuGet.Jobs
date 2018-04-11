@@ -78,7 +78,6 @@ namespace NuGet.Jobs.Validation.Common.Validators.Vcs
             ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
-
             if (Services.Logging.ApplicationInsights.Initialized)
             {
                 app.Use<RequestTrackingMiddleware>();
