@@ -297,8 +297,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         {
             UseDefaultValidatorProvider();
             var validator = AddValidation("validation1", TimeSpan.FromDays(1));
-            var expectedEndOfAccessLower = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
-            var expectedEndOfAccessUpper = expectedEndOfAccessLower.AddSeconds(5);
+
 
             IValidationRequest validationRequest = null;
             validator
@@ -310,7 +309,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(ValidationResult.Incomplete);
 
             var processor = CreateProcessor();
+            var expectedEndOfAccessLower = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
+
             await processor.ProcessValidationsAsync(ValidationSet, Package);
+
+            var expectedEndOfAccessUpper = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
 
             validator
                 .Verify(v => v.GetResultAsync(It.IsAny<IValidationRequest>()), Times.AtLeastOnce());
