@@ -8,16 +8,6 @@ namespace Validation.PackageSigning.RevalidateCertificate
     public class RevalidationConfiguration
     {
         /// <summary>
-        /// How long this job should sleep between runs.
-        /// </summary>
-        public TimeSpan SleepDuration { get; set; }
-
-        /// <summary>
-        /// The time period after which the job is gracefully shut down and restarted.
-        /// </summary>
-        public TimeSpan RestartThreshold { get; set; }
-
-        /// <summary>
         /// The maximum number of package signatures that can be scanned for promotion.
         /// Each iteration of the job will scan signatures until it finds <see cref="SignaturePromotionBatchSize"/>
         /// signatures to promote.

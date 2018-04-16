@@ -10,7 +10,7 @@ title #{Jobs.validation.packagesigning.revalidatecertificate.Title}
 start /w Validation.PackageSigning.RevalidateCertificate.exe ^
     -Configuration #{Jobs.validation.packagesigning.revalidatecertificate.Configuration} ^
     -InstrumentationKey "#{Jobs.validation.packagesigning.revalidatecertificate.InstrumentationKey}" ^
-    -Once
+    -ReinitializeAfterSeconds 86400
 
 echo "Finished #{Jobs.validation.packagesigning.revalidatecertificate.Title}"
 

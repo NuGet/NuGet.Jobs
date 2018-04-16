@@ -1,7 +1,5 @@
 ﻿{
   "RevalidateJob": {
-    "SleepDuration": "00:00:01:00",
-    "RestartThreshold": "1:00:00:00",
     "SignaturePromotionScanSize": 50,
     "SignaturePromotionBatchSize": 10,
     "CertificateRevalidationBatchSize": 10,
