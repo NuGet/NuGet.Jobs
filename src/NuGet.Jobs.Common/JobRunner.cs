@@ -199,7 +199,7 @@ namespace NuGet.Jobs
                 return true;
             }
 
-            // A null time since last initialization indicates that the job should be initialized for the first time.
+            // A null time since last initialization indicates that the job hasn't been initialized yet.
             if (timeSinceInitialization == null)
             {
                 return true;
