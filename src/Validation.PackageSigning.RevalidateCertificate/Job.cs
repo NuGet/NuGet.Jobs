@@ -23,16 +23,12 @@ namespace Validation.PackageSigning.RevalidateCertificate
         private const string RevalidationConfigurationSectionName = "RevalidateJob";
 
         private ICertificateRevalidator _revalidator;
-        private RevalidationConfiguration _configuration;
-        private ILogger<Job> _logger;
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(jobArgsDictionary);
 
             _revalidator = _serviceProvider.GetRequiredService<ICertificateRevalidator>();
-            _configuration = _serviceProvider.GetRequiredService<RevalidationConfiguration>();
-            _logger = _serviceProvider.GetRequiredService<ILogger<Job>>();
         }
 
         public override async Task Run()
