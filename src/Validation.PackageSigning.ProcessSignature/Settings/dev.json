@@ -17,6 +17,12 @@
   "ValidationStorage": {
     "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=nugetdevlegacy;AccountKey=$$Dev-NuGetDevLegacyStorage-Key$$"
   },
+  "ProcessSignature": {
+    "AllowedRepositorySigningCertificates": [
+      "3f9001ea83c560d712c24cf213c3d312cb3bff51ee89435d3430bd06b5d0eece"
+    ],
+    "V3ServiceIndexUrl": "https://apidev.nugettest.org/v3/index.json"
+  },
 
   "PackageDownloadTimeout": "00:10:00",
 

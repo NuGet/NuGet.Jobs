@@ -14,7 +14,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
+using NuGet.Jobs.Validation.PackageSigning;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.ProcessSignature;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
@@ -46,8 +48,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         private readonly Uri _nupkgUri;
         private readonly Mock<IEntityRepository<Certificate>> _certificates;
         private readonly List<string> _trustedThumbprints;
-        private readonly IPackageSignatureVerifier _minimalPackageSignatureVerifier;
-        private readonly IPackageSignatureVerifier _fullPackageSignatureVerifier;
+        private readonly ProcessSignatureConfiguration _configuration;
+        private readonly Mock<IOptionsSnapshot<ProcessSignatureConfiguration>> _optionsSnapshot;
+        private readonly SignatureFormatValidator _formatValidator;
         private readonly Mock<ITelemetryClient> _telemetryClient;
         private readonly TelemetryService _telemetryService;
         private readonly RecordingLogger<SignatureValidator> _logger;
@@ -122,8 +125,14 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 .Returns(() => _trustedThumbprints.Select(x => new Certificate { Thumbprint = x }).AsQueryable());
 
             // These dependencies are concrete.
-            _minimalPackageSignatureVerifier = PackageSignatureVerifierFactory.CreateMinimal();
-            _fullPackageSignatureVerifier = PackageSignatureVerifierFactory.CreateFull();
+            _configuration = new ProcessSignatureConfiguration
+            {
+                AllowedRepositorySigningCertificates = new List<string>(),
+                V3ServiceIndexUrl = "https://example/v3/index.json",
+            };
+            _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
+            _optionsSnapshot.Setup(x => x.Value).Returns(() => _configuration);
+            _formatValidator = new SignatureFormatValidator(_optionsSnapshot.Object);
 
             _telemetryClient = new Mock<ITelemetryClient>();
             _telemetryService = new TelemetryService(_telemetryClient.Object);
@@ -142,11 +151,11 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             // Initialize the subject of testing.
             _target = new SignatureValidator(
                 _packageSigningStateService,
-                _minimalPackageSignatureVerifier,
-                _fullPackageSignatureVerifier,
+                _formatValidator,
                 _signaturePartsExtractor,
                 _packageFileService.Object,
                 _certificates.Object,
+                _optionsSnapshot.Object,
                 _telemetryService,
                 _logger);
         }
@@ -193,15 +202,17 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             VerifyPackageSigningStatus(result, ValidationStatus.Failed, PackageSigningStatus.Invalid);
             var issue = Assert.Single(result.Issues);
             var clientIssue = Assert.IsType<ClientSigningVerificationFailure>(issue);
-            Assert.Equal("NU3012", clientIssue.ClientCode);
+            Assert.Equal("NU3018", clientIssue.ClientCode);
             Assert.Equal(
-                "A certificate chain processed, but terminated in a root certificate which is not trusted by the trust provider.",
+                "The author primary signature found a chain building issue: A certificate chain processed, but " +
+                "terminated in a root certificate which is not trusted by the trust provider.",
                 clientIssue.ClientMessage);
         }
 
         [Fact]
         public async Task RejectsUntrustedTimestampingCertificate()
         {
+            // TODO: broken due to https://github.com/NuGet/Home/issues/6842, need new client bits
             // Arrange
             var testServer = await _fixture.GetTestServerAsync();
             var untrustedRootCa = CertificateAuthority.Create(testServer.Url);
@@ -240,7 +251,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 var clientIssue = Assert.IsType<ClientSigningVerificationFailure>(issue);
                 Assert.Equal("NU3028", clientIssue.ClientCode);
                 Assert.Equal(
-                    "A certificate chain processed, but terminated in a root certificate which is not trusted by the trust provider.",
+                    "A certificate chain processed, but terminated in a root certificate which is not trusted by " +
+                    "the trust provider.",
                     clientIssue.ClientMessage);
             }
         }
@@ -294,8 +306,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 Assert.Empty(result.Issues);
 
                 var allMessages = string.Join(Environment.NewLine, _logger.Messages);
-                Assert.Contains("NU3028: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
-                Assert.Contains("NU3028: The revocation function was unable to check revocation for the certificate.", allMessages);
+                Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
+                Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
             }
         }
 
@@ -349,8 +361,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 Assert.Empty(result.Issues);
 
                 var allMessages = string.Join(Environment.NewLine, _logger.Messages);
-                Assert.Contains("NU3018: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
-                Assert.Contains("NU3018: The revocation function was unable to check revocation for the certificate.", allMessages);
+                Assert.Contains("NU3018: The author primary signature found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
+                Assert.Contains("NU3018: The author primary signature found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
             }
         }
 
