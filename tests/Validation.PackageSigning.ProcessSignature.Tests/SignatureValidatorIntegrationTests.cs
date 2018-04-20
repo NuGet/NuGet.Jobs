@@ -251,8 +251,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 var clientIssue = Assert.IsType<ClientSigningVerificationFailure>(issue);
                 Assert.Equal("NU3028", clientIssue.ClientCode);
                 Assert.Equal(
-                    "A certificate chain processed, but terminated in a root certificate which is not trusted by " +
-                    "the trust provider.",
+                    "The author primary signature's timestamp found a chain building issue: A certificate chain " +
+                    "processed, but terminated in a root certificate which is not trusted by the trust provider.",
                     clientIssue.ClientMessage);
             }
         }
