@@ -159,7 +159,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.UnsignedPackage);
-                RequireSigning(TestResources.UnsignedPackageId);
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.UnsignedPackageId);
                 _message = new SignatureValidationMessage(
                     TestResources.UnsignedPackageId,
                     TestResources.UnsignedPackageVersion,
@@ -184,7 +184,10 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
-                AllowSigningCertificate(TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
+                TestUtility.RequireSignedPackage(
+                    _corePackageService,
+                    TestResources.SignedPackageLeafId,
+                    TestResources.Leaf1Thumbprint);
                 _message = new SignatureValidationMessage(
                     TestResources.SignedPackageLeafId,
                     TestResources.SignedPackageLeaf1Version,
@@ -275,7 +278,10 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
-                AllowSigningCertificate(TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
+                TestUtility.RequireSignedPackage(
+                    _corePackageService,
+                    TestResources.SignedPackageLeafId,
+                    TestResources.Leaf1Thumbprint);
                 _fullVerifyResult = new VerifySignaturesResult(valid: false);
                 _message = new SignatureValidationMessage(
                     TestResources.SignedPackageLeafId,
@@ -300,7 +306,10 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
-                AllowSigningCertificate(TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
+                TestUtility.RequireSignedPackage(
+                    _corePackageService,
+                    TestResources.SignedPackageLeafId,
+                    TestResources.Leaf1Thumbprint);
                 _fullVerifyResult = new VerifySignaturesResult(
                     valid: false,
                     results: new[]
@@ -352,7 +361,10 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
-                AllowSigningCertificate(TestResources.SignedPackageLeafId, TestResources.Leaf2Thumbprint);
+                TestUtility.RequireSignedPackage(
+                    _corePackageService,
+                    TestResources.SignedPackageLeafId,
+                    TestResources.Leaf2Thumbprint);
                 _message = new SignatureValidationMessage(
                    TestResources.SignedPackageLeafId,
                    TestResources.SignedPackageLeaf1Version,
@@ -377,8 +389,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.AuthorAndRepoSignedPackageLeaf1);
+                TestUtility.RequireUnsignedPackage(_corePackageService, _message.PackageId);
 
-                // Arrange & Act
+                // Act
                 var result = await _target.ValidateAsync(
                     _packageKey,
                     _packageStream,
@@ -416,7 +429,11 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageStream = TestResources.GetResourceStream(resourceName);
                 if (allowSignedPackage)
                 {
-                    AllowSigningCertificate(packageId, TestResources.Leaf1Thumbprint);
+                    TestUtility.RequireSignedPackage(_corePackageService, packageId, TestResources.Leaf1Thumbprint);
+                }
+                else
+                {
+                    TestUtility.RequireUnsignedPackage(_corePackageService, packageId);
                 }
                 _message = new SignatureValidationMessage(
                    packageId,
@@ -430,7 +447,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     .Returns(Task.CompletedTask)
                     .Callback<string, string, Guid, Stream>((_, __, ___, s) => uploadedStream = s);
 
-                // Arrange & Act
+                // Act
                 var result = await _target.ValidateAsync(
                     _packageKey,
                     _packageStream,
@@ -454,7 +471,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             public async Task StripsAndRejectsPackagesWithRepositorySignatureWhenPackageMustBeAuthorSigned()
             {
                 _packageStream = TestResources.GetResourceStream(TestResources.RepoSignedPackageLeaf1);
-                RequireSigning(TestResources.RepoSignedPackageLeafId);
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.RepoSignedPackageLeafId);
                 _message = new SignatureValidationMessage(
                    TestResources.RepoSignedPackageLeafId,
                    TestResources.RepoSignedPackageLeaf1Version,
@@ -483,7 +500,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             public async Task StripsAndRejectsPackagesWithRepositorySignatureWhenPackageIsAuthorSignedWithUnknownCertificate()
             {
                 _packageStream = TestResources.GetResourceStream(TestResources.AuthorAndRepoSignedPackageLeaf1);
-                AllowSigningCertificate(TestResources.AuthorAndRepoSignedPackageLeafId, TestResources.Leaf2Thumbprint);
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.AuthorAndRepoSignedPackageLeafId, TestResources.Leaf2Thumbprint);
                 _message = new SignatureValidationMessage(
                    TestResources.AuthorAndRepoSignedPackageLeafId,
                    TestResources.AuthorAndRepoSignedPackageLeaf1Version,
@@ -506,17 +523,50 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             public async Task WhenPackageSupportsButDoesNotRequireSigning_AcceptsUnsignedPackages()
             {
                 // Arrange
+                var user1 = new User()
+                {
+                    Key = 1
+                };
+                var user2 = new User()
+                {
+                    Key = 2
+                };
+                var packageRegistration = new PackageRegistration()
+                {
+                    Key = 3,
+                    Id = TestResources.UnsignedPackageId
+                };
+                var certificate = new Certificate()
+                {
+                    Key = 4,
+                    Thumbprint = TestResources.Leaf1Thumbprint
+                };
+                var userCertificate = new UserCertificate()
+                {
+                    Key = 5,
+                    CertificateKey = certificate.Key,
+                    Certificate = certificate,
+                    UserKey = user1.Key,
+                    User = user1
+                };
+
+                user1.UserCertificates.Add(userCertificate);
+                certificate.UserCertificates.Add(userCertificate);
+
+                packageRegistration.Owners.Add(user1);
+                packageRegistration.Owners.Add(user2);
+
                 _packageStream = TestResources.GetResourceStream(TestResources.UnsignedPackage);
                 _corePackageService
-                    .Setup(x => x.IsSigningRequired(It.IsAny<string>()))
-                    .Returns(false);
+                    .Setup(x => x.FindPackageRegistrationById(It.Is<string>(id => id == _message.PackageId)))
+                    .Returns(packageRegistration);
                 _message = new SignatureValidationMessage(
                     TestResources.UnsignedPackageId,
                     TestResources.UnsignedPackageVersion,
                     new Uri($"https://unit.test/{TestResources.UnsignedPackage.ToLowerInvariant()}"),
                     Guid.NewGuid());
 
-                // Arrange & Act
+                // Act
                 var result = await _target.ValidateAsync(
                     _packageKey,
                     _packageStream,
@@ -533,7 +583,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
-                AllowSigningCertificate(TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
                 _message = new SignatureValidationMessage(
                     TestResources.SignedPackageLeafId,
                     TestResources.SignedPackageLeaf1Version,
@@ -553,12 +603,18 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
 
             [Fact]
-            public async Task WhenPackageDoesNotRequireSigning_AcceptsUnsignedPackages()
+            public async Task WhenPackageRequiresUnsignedPackages_AcceptsUnsignedPackages()
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.UnsignedPackage);
+                TestUtility.RequireUnsignedPackage(_corePackageService, TestResources.UnsignedPackageId);
+                _message = new SignatureValidationMessage(
+                     TestResources.UnsignedPackageId,
+                     TestResources.UnsignedPackageVersion,
+                     new Uri($"https://unit.test/{TestResources.UnsignedPackage.ToLowerInvariant()}"),
+                     Guid.NewGuid());
 
-                // Arrange & Act
+                // Act
                 var result = await _target.ValidateAsync(
                     _packageKey,
                     _packageStream,
@@ -568,21 +624,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // Assert
                 Validate(result, ValidationStatus.Succeeded, PackageSigningStatus.Unsigned);
                 Assert.Empty(result.Issues);
-            }
-
-            private void RequireSigning(string packageId)
-            {
-                _corePackageService
-                    .Setup(x => x.IsSigningRequired(It.IsAny<string>()))
-                    .Returns((string actualPackageId) => actualPackageId == packageId);
-            }
-
-            private void AllowSigningCertificate(string packageId, string thumbprint)
-            {
-                _corePackageService
-                    .Setup(x => x.IsAcceptableSigningCertificate(It.IsAny<string>(), It.IsAny<string>()))
-                    .Returns((string actualPackageId, string actualThumbprint) =>
-                        actualPackageId == packageId && actualThumbprint == thumbprint);
             }
         }
     }

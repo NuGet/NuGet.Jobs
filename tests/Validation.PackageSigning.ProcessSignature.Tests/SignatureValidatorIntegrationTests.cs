@@ -147,7 +147,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
         public async Task<MemoryStream> GetSignedPackageStream1Async()
         {
-            AllowSigningCertificate(_message.PackageId, await _fixture.GetSigningCertificateThumbprintAsync());
+            TestUtility.RequireSignedPackage(_corePackageService, _message.PackageId, await _fixture.GetSigningCertificateThumbprintAsync());
             return await _fixture.GetSignedPackageStream1Async(_output);
         }
 
@@ -173,7 +173,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task RejectsUntrustedSigningCertificate()
         {
             // Arrange
-            AllowSigningCertificate(TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
+            TestUtility.RequireSignedPackage(_corePackageService, TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
             _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
 
             _message = new SignatureValidationMessage(
@@ -223,7 +223,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         _output);
                 }
 
-                AllowSigningCertificate(
+                TestUtility.RequireSignedPackage(_corePackageService, 
                     TestResources.SignedPackageLeafId,
                     await _fixture.GetSigningCertificateThumbprintAsync());
 
@@ -282,7 +282,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // https://github.com/NuGet/Home/issues/6508
                 await Task.Delay(TimeSpan.FromSeconds(1));
 
-                AllowSigningCertificate(
+                TestUtility.RequireSignedPackage(_corePackageService, 
                     TestResources.SignedPackageLeafId,
                     await _fixture.GetSigningCertificateThumbprintAsync());
 
@@ -345,7 +345,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // https://github.com/NuGet/Home/issues/6508
                 await Task.Delay(TimeSpan.FromSeconds(1));
 
-                AllowSigningCertificate(TestResources.SignedPackageLeafId, signingCertificate.ComputeSHA256Thumbprint());
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.SignedPackageLeafId, signingCertificate.ComputeSHA256Thumbprint());
 
                 _packageStream = new MemoryStream(packageBytes);
 
@@ -476,7 +476,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 {
                     using (var additionalCertificate = SigningTestUtility.GenerateCertificate(subjectName: null, modifyGenerator: null))
                     {
-                        AllowSigningCertificate(
+                        TestUtility.RequireSignedPackage(_corePackageService, 
                             TestResources.SignedPackageLeafId,
                             additionalCertificate.ComputeSHA256Thumbprint());
                         signedCms.ComputeSignature(new CmsSigner(additionalCertificate));
@@ -510,7 +510,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 {
                     using (var counterCertificate = SigningTestUtility.GenerateCertificate(subjectName: null, modifyGenerator: null))
                     {
-                        AllowSigningCertificate(_message.PackageId, counterCertificate.ComputeSHA256Thumbprint());
+                        TestUtility.RequireSignedPackage(_corePackageService, _message.PackageId, counterCertificate.ComputeSHA256Thumbprint());
 
                         var cmsSigner = new CmsSigner(counterCertificate);
                         cmsSigner.SignedAttributes.Add(AttributeUtility.CreateCommitmentTypeIndication(SignatureType.Author));
@@ -576,6 +576,11 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task StripsRepositorySignatures()
         {
             // Arrange
+            _message = new SignatureValidationMessage(
+                TestResources.UnsignedPackageId,
+                TestResources.UnsignedPackageVersion,
+                new Uri($"https://unit.test/validation/{TestResources.UnsignedPackage.ToLowerInvariant()}"),
+                Guid.NewGuid());
             var packageBytes = await _fixture.GenerateSignedPackageBytesAsync(
                 TestResources.GetResourceStream(TestResources.UnsignedPackage),
                 new RepositorySignPackageRequest(
@@ -587,6 +592,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 await _fixture.GetTimestampServiceUrlAsync(),
                 _output);
             var packageStream = new MemoryStream(packageBytes);
+            TestUtility.RequireUnsignedPackage(_corePackageService, TestResources.UnsignedPackageId);
 
             // Act
             var result = await _target.ValidateAsync(
@@ -622,7 +628,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 {
                     using (var counterCertificate = SigningTestUtility.GenerateCertificate(subjectName: null, modifyGenerator: null))
                     {
-                        AllowSigningCertificate(_message.PackageId, counterCertificate.ComputeSHA256Thumbprint());
+                        TestUtility.RequireSignedPackage(_corePackageService, _message.PackageId, counterCertificate.ComputeSHA256Thumbprint());
 
                         var cmsSigner = new CmsSigner(counterCertificate);
                         foreach (var type in counterSignatureTypes)
@@ -862,7 +868,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
             using (var certificate = SigningTestUtility.GenerateCertificate(subjectName: null, modifyGenerator: null))
             {
-                AllowSigningCertificate(packageId, certificate.ComputeSHA256Thumbprint());
+                TestUtility.RequireSignedPackage(_corePackageService, packageId, certificate.ComputeSHA256Thumbprint());
 
                 var contentInfo = new ContentInfo(signatureContent);
                 var signedCms = new SignedCms(contentInfo);
@@ -882,17 +888,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             SetSignatureContent(packageId, packageStream, signatureContent: Encoding.UTF8.GetBytes(signatureContent));
         }
 
-        private void AllowSigningCertificate(string packageId, string thumbprint)
-        {
-            _corePackageService
-                .Setup(x => x.IsSigningRequired(It.IsAny<string>()))
-                .Returns(false);
-
-            _corePackageService
-                .Setup(x => x.IsAcceptableSigningCertificate(It.IsAny<string>(), It.IsAny<string>()))
-                .Returns((string actualPackageId, string actualThumbprint) =>
-                    actualPackageId == packageId && actualThumbprint == thumbprint);
-        }
+      
 
         private void VerifyPackageSigningStatus(SignatureValidatorResult result, ValidationStatus validationStatus, PackageSigningStatus packageSigningStatus)
         {

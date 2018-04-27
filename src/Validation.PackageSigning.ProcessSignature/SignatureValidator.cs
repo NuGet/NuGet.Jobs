@@ -19,6 +19,7 @@ using NuGet.Packaging.Signing;
 using NuGet.Services.Validation;
 using NuGet.Services.Validation.Issues;
 using NuGetGallery;
+using NuGetGallery.Extensions;
 
 namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 {
@@ -82,9 +83,11 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 
         private async Task<SignatureValidatorResult> HandleUnsignedPackageAsync(Context context)
         {
-            if (_corePackageService.IsSigningRequired(context.Message.PackageId))
+            var packageRegistration = _corePackageService.FindPackageRegistrationById(context.Message.PackageId);
+
+            if (packageRegistration.IsSigningRequired())
             {
-                _logger.LogInformation(
+                _logger.LogWarning(
                     "Package {PackageId} {PackageVersion} for validation {ValidationId} must be signed but is unsigned.",
                     context.Message.PackageId,
                     context.Message.PackageVersion,
@@ -331,11 +334,12 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 .SignerInfo
                 .Certificate
                 .ComputeSHA256Thumbprint();
-            var isAcceptableCertificate = _corePackageService.IsAcceptableSigningCertificate(context.Message.PackageId, signingFingerprint);
 
-            if (!isAcceptableCertificate)
+            var packageRegistration = _corePackageService.FindPackageRegistrationById(context.Message.PackageId);
+
+            if (!packageRegistration.IsAcceptableSigningCertificate(signingFingerprint))
             {
-                _logger.LogInformation(
+                _logger.LogWarning(
                     "Signed package {PackageId} {PackageVersion} is blocked for validation {ValidationId} since it has an unknown certificate fingerprint: {UnknownFingerprint}",
                     context.Message.PackageId,
                     context.Message.PackageVersion,
