@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Validation.PackageSigning.RevalidateCertificate.Tests</RootNamespace>
     <AssemblyName>Validation.PackageSigning.RevalidateCertificate.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -40,7 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
-      <Version>1.1.2</Version>
+      <Version>2.0.1</Version>
     </PackageReference>
     <PackageReference Include="Moq">
       <Version>4.7.145</Version>
