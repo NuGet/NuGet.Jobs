@@ -128,7 +128,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             _configuration = new ProcessSignatureConfiguration
             {
                 AllowedRepositorySigningCertificates = new List<string>(),
-                V3ServiceIndexUrl = "https://example/v3/index.json",
+                V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl,
             };
             _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
             _optionsSnapshot.Setup(x => x.Value).Returns(() => _configuration);
@@ -212,7 +212,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         [Fact]
         public async Task RejectsUntrustedTimestampingCertificate()
         {
-            // TODO: broken due to https://github.com/NuGet/Home/issues/6842, need new client bits
             // Arrange
             var testServer = await _fixture.GetTestServerAsync();
             var untrustedRootCa = CertificateAuthority.Create(testServer.Url);
@@ -526,20 +525,13 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         }
 
         [Fact]
-        public async Task StripsRepositoryCounterSignatures()
+        public async Task StripsUnacceptableRepositoryCounterSignatures()
         {
             // Arrange
-            var packageBytes = await _fixture.GenerateSignedPackageBytesAsync(
-                await GetSignedPackageStream1Async(),
-                new RepositorySignPackageRequest(
-                    await _fixture.GetSigningCertificateAsync(),
-                    NuGetHashAlgorithmName.SHA256,
-                    NuGetHashAlgorithmName.SHA256,
-                    new Uri("https://example-source/v3/index.json"),
-                    new[] { "nuget", "microsoft" }),
-                await _fixture.GetTimestampServiceUrlAsync(),
-                _output);
-            var packageStream = new MemoryStream(packageBytes);
+            var signingCertificate = await _fixture.GetSigningCertificateAsync();
+            var packageStream = await _fixture.GenerateRepositoryCounterSignedPackageStreamAsync(signingCertificate, _output);
+
+            AllowCertificateThumbprint(signingCertificate.ComputeSHA256Thumbprint());
 
             // Act
             var result = await _target.ValidateAsync(
@@ -566,20 +558,11 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         }
 
         [Fact]
-        public async Task StripsRepositorySignatures()
+        public async Task StripsUnacceptableRepositorySignatures()
         {
             // Arrange
-            var packageBytes = await _fixture.GenerateSignedPackageBytesAsync(
-                TestResources.GetResourceStream(TestResources.UnsignedPackage),
-                new RepositorySignPackageRequest(
-                    await _fixture.GetSigningCertificateAsync(),
-                    NuGetHashAlgorithmName.SHA256,
-                    NuGetHashAlgorithmName.SHA256,
-                    new Uri("https://example-source/v3/index.json"),
-                    new[] { "nuget", "microsoft" }),
-                await _fixture.GetTimestampServiceUrlAsync(),
-                _output);
-            var packageStream = new MemoryStream(packageBytes);
+            var signingCertificate = await _fixture.GetSigningCertificateAsync();
+            var packageStream = await _fixture.GenerateRepositorySignedPackageStreamAsync(signingCertificate, _output);
 
             // Act
             var result = await _target.ValidateAsync(
@@ -600,6 +583,142 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 Assert.Equal("1.0.0", packageReader.NuspecReader.GetVersion().ToNormalizedString());
                 Assert.False(await packageReader.IsSignedAsync(CancellationToken.None), "The package should no longer be signed.");
             }
+        }
+
+        [Fact(Skip = "TODO: Engineering#1401")]
+        public async Task StripsUntrustedRepositorySignature()
+        {
+            // TODO: Make ProcessSignature strip untrusted repository signature.
+            // See: https://github.com/NuGet/Engineering/issues/1401
+            // Arrange
+            var testServer = await _fixture.GetTestServerAsync();
+            var untrustedRootCa = CertificateAuthority.Create(testServer.Url);
+            var untrustedRootCertficate = new X509Certificate2(untrustedRootCa.Certificate.GetEncoded());
+            var timestampService = TimestampService.Create(untrustedRootCa);
+            var signingCertificate = await _fixture.GetSigningCertificateAsync();
+            using (testServer.RegisterDefaultResponders(timestampService))
+            {
+                Stream packageStream;
+                using (var temporaryTrust = new TrustedTestCert<X509Certificate2>(
+                    untrustedRootCertficate,
+                    x => x,
+                    StoreName.Root,
+                    StoreLocation.LocalMachine))
+                {
+                    packageStream = await _fixture.GenerateRepositorySignedPackageStreamAsync(
+                        signingCertificate,
+                        timestampService.Url,
+                        _output);
+                }
+
+                AllowCertificateThumbprint(signingCertificate.ComputeSHA256Thumbprint());
+                _configuration.AllowedRepositorySigningCertificates.Add(signingCertificate.ComputeSHA256Thumbprint());
+
+                var formatValidator = new SignatureFormatValidator(_optionsSnapshot.Object);
+
+                // Initialize the subject of testing.
+                var target = new SignatureValidator(
+                    _packageSigningStateService,
+                    formatValidator,
+                    _signaturePartsExtractor,
+                    _packageFileService.Object,
+                    _certificates.Object,
+                    _optionsSnapshot.Object,
+                    _telemetryService,
+                    _logger);
+
+                // Act
+                var result = await target.ValidateAsync(
+                    _packageKey,
+                    packageStream,
+                    _message,
+                    _token);
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Unsigned);
+                Assert.Empty(result.Issues);
+                Assert.Equal(_nupkgUri, result.NupkgUri);
+                Assert.NotNull(_savedPackageBytes);
+                using (var savedPackageStream = new MemoryStream(_savedPackageBytes))
+                using (var packageReader = new SignedPackageArchive(savedPackageStream, Stream.Null))
+                {
+                    Assert.Equal("TestUnsigned", packageReader.NuspecReader.GetId());
+                    Assert.Equal("1.0.0", packageReader.NuspecReader.GetVersion().ToNormalizedString());
+                    Assert.False(await packageReader.IsSignedAsync(CancellationToken.None), "The package should no longer be signed.");
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AcceptsAcceptableRepositoryCounterSignatures()
+        {
+            // Arrange
+            var signingCertificate = await _fixture.GetSigningCertificateAsync();
+            var packageStream = await _fixture.GenerateRepositoryCounterSignedPackageStreamAsync(signingCertificate, _output);
+
+            AllowCertificateThumbprint(signingCertificate.ComputeSHA256Thumbprint());
+            _configuration.AllowedRepositorySigningCertificates.Add(signingCertificate.ComputeSHA256Thumbprint());
+
+            var formatValidator = new SignatureFormatValidator(_optionsSnapshot.Object);
+
+            // Initialize the subject of testing.
+            var target = new SignatureValidator(
+                _packageSigningStateService,
+                formatValidator,
+                _signaturePartsExtractor,
+                _packageFileService.Object,
+                _certificates.Object,
+                _optionsSnapshot.Object,
+                _telemetryService,
+                _logger);
+
+            // Act
+            var result = await target.ValidateAsync(
+                _packageKey,
+                packageStream,
+                _message,
+                _token);
+
+            // Assert
+            VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+            Assert.Empty(result.Issues);
+            Assert.Null(result.NupkgUri);
+        }
+
+        [Fact]
+        public async Task AcceptsAcceptableRepositorySignatures()
+        {
+            // Arrange
+            var signingCertificate = await _fixture.GetSigningCertificateAsync();
+            var packageStream = await _fixture.GenerateRepositorySignedPackageStreamAsync(signingCertificate, _output);
+
+            AllowCertificateThumbprint(signingCertificate.ComputeSHA256Thumbprint());
+            _configuration.AllowedRepositorySigningCertificates.Add(signingCertificate.ComputeSHA256Thumbprint());
+
+            var formatValidator = new SignatureFormatValidator(_optionsSnapshot.Object);
+
+            // Initialize the subject of testing.
+            var target = new SignatureValidator(
+                _packageSigningStateService,
+                formatValidator,
+                _signaturePartsExtractor,
+                _packageFileService.Object,
+                _certificates.Object,
+                _optionsSnapshot.Object,
+                _telemetryService,
+                _logger);
+
+            // Act
+            var result = await target.ValidateAsync(
+                _packageKey,
+                packageStream,
+                _message,
+                _token);
+
+            // Assert
+            VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+            Assert.Empty(result.Issues);
+            Assert.Null(result.NupkgUri);
         }
 
         [Theory]
@@ -809,7 +928,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 throw;
             }
         }
-
 
         private void ModifySignatureContent(Stream packageStream, Action<SignedCms> configuredSignedCms = null)
         {

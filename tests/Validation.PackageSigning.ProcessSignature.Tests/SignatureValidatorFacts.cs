@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -396,6 +398,28 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         x => x.ValidateFullAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                         Times.Never);
                 }
+            }
+
+            [Fact]
+            public async Task DoesntStripAcceptableRepositorySignatures()
+            {
+                // Arrange
+                _packageStream = TestResources.GetResourceStream(TestResources.RepoSignedPackageLeaf1);
+
+                _configuration.V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl;
+                _configuration.AllowedRepositorySigningCertificates.Add(TestResources.Leaf1Thumbprint);
+
+                // Arrange & Act
+                var result = await _target.ValidateAsync(
+                    _packageKey,
+                    _packageStream,
+                    _message,
+                    _cancellationToken);
+
+                // Assert
+                Validate(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+                Assert.Null(result.NupkgUri);
             }
 
             [Fact]
