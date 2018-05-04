@@ -132,7 +132,9 @@ namespace UpdateLicenseReports
                 nextLicenseReport = nextLicenseReport ?? _licenseReportService;
             }
 
-            Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from the Gallery database");
+            Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from {DataSource}/{InitialCatalog}",
+                (nextLicenseReport == null ? string.Empty : nextLicenseReport.AbsoluteUri),
+                _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
 
             return nextLicenseReport;
         }
