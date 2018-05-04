@@ -205,7 +205,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
-            services.AddTransient<PackageSigningValidator>();
+            services.AddTransient<PackageSigningProcessor>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
             {
                 var smtpConfigurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<SmtpConfiguration>>();
@@ -338,7 +338,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
-                    (pi, ctx) => ValidatorName.PackageSigning)
+                    (pi, ctx) => ValidatorName.PackageSigningProcessor)
                 .Keyed<IValidatorStateService>(PackageSigningBindingKey);
 
             // Configure the package signature verification enqueuer.
@@ -358,9 +358,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
             // Configure the package signing validator.
             builder
-                .RegisterType<PackageSigningValidator>()
+                .RegisterType<PackageSigningProcessor>()
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningBindingKey)
-                .As<PackageSigningValidator>();
+                .As<PackageSigningProcessor>();
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)
