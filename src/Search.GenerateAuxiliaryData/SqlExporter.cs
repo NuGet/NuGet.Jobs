@@ -38,7 +38,8 @@ namespace Search.GenerateAuxiliaryData
 
         public override async Task ExportAsync()
         {
-            _logger.LogInformation("Generating {ReportName} report from {DataSource}/{InitialCatalog}.", _name, "todo", "todo");
+            _logger.LogInformation("Generating {ReportName} report from {DataSource}/{InitialCatalog}.",
+                _name, ConnectionFactory.DataSource, ConnectionFactory.InitialCatalog);
 
             JContainer result;
             using (var connection = await ConnectionFactory.CreateAsync())
