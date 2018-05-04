@@ -1,28 +1,37 @@
-﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using NuGet.Jobs;
-using NuGet.Protocol.Catalog;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.ServiceBus;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using NuGet.Protocol.Catalog;
+using NuGet.Services.AzureManagement;
 
 namespace NuGet.Jobs.PackageLagMonitor
 {
     public class Job : JobBase
     {
-        const string ServiceBusConnectionString = "";
-        const string QueueName = "packagelagmessages";
+        /// <summary>
+        /// To be used for <see cref="IAzureManagementAPIWrapper"/> request
+        /// </summary>
+        private const string ProductionSlot = "production";
+
         private IQueueClient _queueClient;
         private HttpClient _httpClient;
         private ICatalogClient _catalogClient;
         private int _instancePortMinimum;
         private string _serviceIndexUrl;
+        private IAzureManagementAPIWrapper _azureManagementApiWrapper;
+        private string _resourceGroup;
+        private string _subscription;
+        private string _serviceName;
+        private string _region;
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
@@ -40,9 +49,19 @@ namespace NuGet.Jobs.PackageLagMonitor
 
             _httpClient = new HttpClient(handler);
             _catalogClient = new CatalogClient(_httpClient, LoggerFactory.CreateLogger<CatalogClient>());
-            _instancePortMinimum = 44301;// jobArgsDictionary["instancePortMinimum"];
-            _serviceIndexUrl = "https://api.nuget.org/v3/index.json"; // jobArgsDictionary["serviceIndexUrl"];
-            _queueClient = new QueueClient(ServiceBusConnectionString, QueueName);
+            _instancePortMinimum = Int32.TryParse(jobArgsDictionary["instancePortMinimum"], out _instancePortMinimum) ? _instancePortMinimum : 44301;
+            _serviceIndexUrl = jobArgsDictionary["serviceIndexUrl"];
+            _subscription = jobArgsDictionary["subscription"];
+            _serviceName = jobArgsDictionary["serviceName"];
+            _resourceGroup = jobArgsDictionary["resourceGroup"];
+            _region = jobArgsDictionary["region"];
+
+            var serviceBusConnectionString = jobArgsDictionary["serviceBusConnectionString"];
+            var queueName = jobArgsDictionary["queueName"];
+            _queueClient = new QueueClient(serviceBusConnectionString, queueName);
+
+            var azureManagementAPIWrapperConfiguration = new AzureManagementAPIWrapperConfiguration(jobArgsDictionary["azureClientId"], jobArgsDictionary["azureClientSecret"]);
+            _azureManagementApiWrapper = new AzureManagementAPIWrapper(azureManagementAPIWrapperConfiguration);
         }
 
         public async override Task Run()
@@ -77,9 +96,8 @@ namespace NuGet.Jobs.PackageLagMonitor
                         Logger.LogError("An exception was encountered so no HTTP response was returned. {0}", e);
                     }
                 }
-
-                // Get list of stuff from catalog
-                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _queueClient, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
+                
+                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _queueClient, _region, _subscription, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
 
                 var settings = new CatalogProcessorSettings
                 {
@@ -97,7 +115,7 @@ namespace NuGet.Jobs.PackageLagMonitor
                 do
                 {
                     success = await catalogProcessor.ProcessAsync();
-                    if (!success)
+                    if (!success || !await catalogLeafProcessor.WaitForProcessing())
                     {
                         Console.WriteLine("Processing the catalog leafs failed. Retrying.");
                     }
@@ -120,16 +138,16 @@ namespace NuGet.Jobs.PackageLagMonitor
 
         private async Task<List<Instance>> GetSearchEndpointsAsync(CancellationToken token)
         {
-            //string result = await _azureApiWrapper.GetCloudServicePropertiesAsync(
-            //                        _configuration.Subscription,
-            //                        _configuration.InstanceResourceGroup,
-            //                        _configuration.ServiceName,
-            //                        ProductionSlot,
-            //                        token);
+            string result = await _azureManagementApiWrapper.GetCloudServicePropertiesAsync(
+                                    _subscription,
+                                    _resourceGroup,
+                                    _serviceName,
+                                    ProductionSlot,
+                                    token);
 
-            //var cloudService = AzureHelper.ParseCloudServiceProperties(result);
+            var cloudService = AzureHelper.ParseCloudServiceProperties(result);
 
-            return GetInstances(new Uri("https://nuget-prod-usnc-search.cloudapp.net"), 2);
+            return GetInstances(cloudService.Uri, cloudService.InstanceCount);
         }
 
         private List<Instance> GetInstances(Uri endpointUri, int instanceCount)

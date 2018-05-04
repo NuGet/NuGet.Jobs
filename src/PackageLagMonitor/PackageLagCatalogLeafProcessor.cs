@@ -1,7 +1,6 @@
-﻿using Microsoft.Azure.ServiceBus;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using NuGet.Protocol.Catalog;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +8,10 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.ServiceBus;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using NuGet.Protocol.Catalog;
 
 namespace NuGet.Jobs.PackageLagMonitor
 {
@@ -20,31 +23,44 @@ namespace NuGet.Jobs.PackageLagMonitor
 
         private const int FailAfterCommitCount = 10;
         private readonly ILogger<PackageLagCatalogLeafProcessor> _logger;
-        private readonly int _maxCheckedPackageCount;
+
+        private List<Task> _packageProcessTasks;
 
         private int _currentCheckedPackageCount;
-        private DateTimeOffset? _lastCommitTimestamp;
+        private string _region;
+        private string _subscription;
         private List<Instance> _searchInstances;
         private HttpClient _client;
         private IQueueClient _queueClient;
 
-        public PackageLagCatalogLeafProcessor(List<Instance> searchInstances, HttpClient client, IQueueClient queueClient, ILogger<PackageLagCatalogLeafProcessor> logger)
+        public PackageLagCatalogLeafProcessor(List<Instance> searchInstances, HttpClient client, IQueueClient queueClient, string region, string subscrption, ILogger<PackageLagCatalogLeafProcessor> logger)
         {
             _logger = logger;
             _searchInstances = searchInstances;
             _client = client;
             _currentCheckedPackageCount = 0;
             _queueClient = queueClient;
+            _region = region;
+            _subscription = subscrption;
+            _packageProcessTasks = new List<Task>();
+        }
+
+        public async Task<bool> WaitForProcessing()
+        {
+            await Task.WhenAll(_packageProcessTasks);
+            return true;
         }
 
         public Task<bool> ProcessPackageDeleteAsync(PackageDeleteCatalogLeaf leaf)
         {
-            return ProcessPackageLagDetails(leaf, /*expectListed*/ false, leaf.Published, DateTimeOffset.MinValue);
+            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, /*expectListed*/ false, leaf.Published, DateTimeOffset.MinValue));
+            return Task.FromResult(true);
         }
 
         public Task<bool> ProcessPackageDetailsAsync(PackageDetailsCatalogLeaf leaf)
         {
-            return ProcessPackageLagDetails(leaf, leaf.IsListed(), leaf.Created, leaf.LastEdited);
+            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, leaf.IsListed(), leaf.Created, leaf.LastEdited));
+            return Task.FromResult(true);
         }
 
         private async Task<bool> ProcessPackageLagDetails(CatalogLeaf leaf, bool expectListed, DateTimeOffset created, DateTimeOffset lastEdited)
@@ -52,22 +68,14 @@ namespace NuGet.Jobs.PackageLagMonitor
             var packageId = leaf.PackageId;
             var packageVersion = leaf.PackageVersion;
 
-
             _logger.LogInformation("Computing Lag for {0} {1}", packageId, packageVersion);
             try
             {
                 var cancellationToken = new CancellationToken();
-                //if (_currentCheckedPackageCount < _maxCheckedPackageCount)
-                //{
                 var lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, created, lastEdited, cancellationToken);
                 ++_currentCheckedPackageCount;
 
                 _logger.LogInformation($"Logging {lag.TotalSeconds} seconds lag for {packageId} {packageVersion}.");
-                //}
-                //else
-                //{
-                //    _logger.LogInformation($"Skipping package {packageId} {packageVersion} due to hitting max checked package limit");
-                //}
             }
             catch
             {
@@ -175,7 +183,9 @@ namespace NuGet.Jobs.PackageLagMonitor
                 PackageVersion = packageVersion,
                 TimeStamp = timeStamp,
                 CreatedDelay = createdDelay,
-                V3Delay = v3Delay
+                V3Delay = v3Delay,
+                Region = _region,
+                Subscrption = _subscription
             };
 
             var stringMessage = JsonConvert.SerializeObject(newMessage, Formatting.None);
