@@ -78,7 +78,7 @@
       <Version>2.0.10</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Sql">
-      <Version>2.25.0-master-30263</Version>
+      <Version>2.25.0-master-30453</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

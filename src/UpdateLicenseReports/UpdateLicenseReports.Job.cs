@@ -41,7 +41,7 @@ namespace UpdateLicenseReports
         private Uri _licenseReportService;
         private string _licenseReportUser;
         private string _licenseReportPassword;
-        private ISqlConnectionFactory _packageDatabase;
+        private ISqlConnectionFactory _packageDbConnectionFactory;
         private int? _retryCount;
         private NetworkCredential _licenseReportCredentials;
 
@@ -63,7 +63,7 @@ namespace UpdateLicenseReports
         {
             var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
             var dbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase);
-            _packageDatabase = new AzureSqlConnectionFactory(dbConnectionString, secretInjector);
+            _packageDbConnectionFactory = new AzureSqlConnectionFactory(dbConnectionString, secretInjector);
 
             var retryCountString = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.RetryCount);
             if (string.IsNullOrEmpty(retryCountString))
@@ -111,10 +111,11 @@ namespace UpdateLicenseReports
 
         private async Task<Uri> FetchNextReportUrlAsync()
         {
-            Logger.LogInformation("Fetching next report URL from the Gallery database");
+            Logger.LogInformation("Fetching next report URL from {DataSource}/{InitialCatalog}",
+                _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
 
             Uri nextLicenseReport = null;
-            using (var connection = await _packageDatabase.CreateAsync())
+            using (var connection = await _packageDbConnectionFactory.CreateAsync())
             {
                 var nextReportUrl = (await connection.QueryAsync<string>(
                     @"SELECT TOP 1 NextLicenseReport FROM GallerySettings")).SingleOrDefault();
@@ -239,7 +240,7 @@ namespace UpdateLicenseReports
                         Logger.LogInformation("Storing next license report URL: {NextReportUrl}", nextLicenseReport.AbsoluteUri);
 
                         // Record the next report to the database so we can check it again if we get aborted before finishing.
-                        using (var connection = await _packageDatabase.CreateAsync())
+                        using (var connection = await _packageDbConnectionFactory.CreateAsync())
                         {
                             await connection.QueryAsync<int>(@"
                                         UPDATE GallerySettings
@@ -271,7 +272,7 @@ namespace UpdateLicenseReports
 
         private async Task<int> StoreReportAsync(PackageLicenseReport report)
         {
-            using (var connection = await _packageDatabase.CreateAsync())
+            using (var connection = await _packageDbConnectionFactory.CreateAsync())
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = "AddPackageLicenseReport2";
