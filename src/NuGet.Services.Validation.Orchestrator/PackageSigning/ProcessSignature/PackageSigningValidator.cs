@@ -80,6 +80,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             {
                 _logger.LogWarning(
                     "Ignoring {ValidationIssueCount} validation issues from result. Issues: {Issues}",
+                    result.Issues.Count,
                     result.Issues.Select(i => i.IssueCode));
 
                 return new ValidationResult(result.Status);
