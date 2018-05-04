@@ -62,14 +62,16 @@
     <Compile Include="MessageService.cs" />
     <Compile Include="OrchestrationRunner.cs" />
     <Compile Include="Configuration\OrchestrationRunnerConfiguration.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\BaseProcessSignature.cs" />
     <Compile Include="PackageSigning\ProcessSignature\IProcessSignatureEnqueuer.cs" />
-    <Compile Include="PackageSigning\ProcessSignature\PackageSigningValidator.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\PackageSigningProcessor.cs" />
     <Compile Include="PackageSigning\ProcessSignature\ProcessSignatureConfiguration.cs" />
     <Compile Include="PackageSigning\ProcessSignature\ProcessSignatureEnqueuer.cs" />
     <Compile Include="PackageSigning\ValidateCertificate\IValidateCertificateEnqueuer.cs" />
     <Compile Include="PackageSigning\ValidateCertificate\PackageCertificatesValidator.cs" />
     <Compile Include="PackageSigning\ValidateCertificate\ValidateCertificateConfiguration.cs" />
     <Compile Include="PackageSigning\ValidateCertificate\ValidateCertificateEnqueuer.cs" />
+    <Compile Include="PackageSigning\ProcessSignature\PackageSigningValidator.cs" />
     <Compile Include="PackageStatusProcessor.cs" />
     <Compile Include="PackageValidationMessageDataSerializer.cs" />
     <Compile Include="Program.cs" />
@@ -128,6 +130,7 @@
       <Name>Validation.PackageSigning.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>

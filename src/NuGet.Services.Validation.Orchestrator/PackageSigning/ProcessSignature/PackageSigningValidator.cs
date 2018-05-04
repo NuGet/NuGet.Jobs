@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Validation;
@@ -12,8 +12,11 @@ using NuGet.Services.Validation.Orchestrator.Telemetry;
 
 namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
-    [ValidatorName(ValidatorName.PackageSigning)]
-    public class PackageSigningValidator : IProcessor
+    /// <summary>
+    /// The validator that ensures the package's repository signature is valid.
+    /// </summary>
+    [ValidatorName(ValidatorName.PackageSigningValidator)]
+    public class PackageSigningValidator : BaseProcessSignature, IValidator
     {
         private readonly IValidatorStateService _validatorStateService;
         private readonly IProcessSignatureEnqueuer _signatureVerificationEnqueuer;
@@ -27,6 +30,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             ISimpleCloudBlobProvider blobProvider,
             ITelemetryService telemetryService,
             ILogger<PackageSigningValidator> logger)
+          : base(validatorStateService, signatureVerificationEnqueuer, blobProvider, telemetryService, logger)
         {
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _signatureVerificationEnqueuer = signatureVerificationEnqueuer ?? throw new ArgumentNullException(nameof(signatureVerificationEnqueuer));
@@ -35,64 +39,51 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<IValidationResult> GetResultAsync(IValidationRequest request)
-        {
-            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
+        protected override bool RequiresRepositorySignature => true;
 
-            return validatorStatus.ToValidationResult();
+        public override async Task<IValidationResult> GetResultAsync(IValidationRequest request)
+        {
+            var result = await base.GetResultAsync(request);
+
+            return Validate(result);
         }
 
-        public async Task<IValidationResult> StartAsync(IValidationRequest request)
+        public override async Task<IValidationResult> StartAsync(IValidationRequest request)
         {
-            var validatorStatus = await StartInternalAsync(request);
+            var result = await base.StartAsync(request);
 
-            return validatorStatus.ToValidationResult();
+            return Validate(result);
         }
 
-        public async Task CleanUpAsync(IValidationRequest request)
+        private IValidationResult Validate(IValidationResult result)
         {
-            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
-
-            if (validatorStatus.NupkgUrl == null)
+            /// The package signing validator runs after the <see cref="PackageSigningProcessor" />.
+            /// All author signing validation issues should have been caught by the processor, so a failed validation
+            /// should only happen if the repository signature is invalid. In addition, the Process Signature job
+            /// will only modify the package if the repository signature is unacceptable.
+            if (result.Status == ValidationStatus.Failed || result.NupkgUrl != null)
             {
-                return;
+                _logger.LogCritical(
+                    "Unexpected validation result in package signing validator. This may be caused by an invalid repository " +
+                    "signature. Status = {ValidationStatus}, Nupkg URL = {NupkgUrl}, validation issues = {Issues}",
+                    result.Status,
+                    result.NupkgUrl,
+                    result.Issues.Select(i => i.IssueCode));
+
+                throw new InvalidOperationException("Package signing validator has an unexpected validation result");
             }
 
-            _logger.LogInformation(
-                "Cleaning up the .nupkg URL for validation ID {ValidationId} ({PackageId} {PackageVersion}).",
-                request.ValidationId,
-                request.PackageId,
-                request.PackageVersion);
-
-            var blob = _blobProvider.GetBlobFromUrl(validatorStatus.NupkgUrl);
-            await blob.DeleteIfExistsAsync();
-        }
-
-        private async Task<ValidatorStatus> StartInternalAsync(IValidationRequest request)
-        {
-            // Check that this is the first validation for this specific request.
-            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
-
-            if (validatorStatus.State != ValidationStatus.NotStarted)
+            /// Suppress all validation issues. The <see cref="PackageSigningProcessor"/> should
+            /// have already reported any issues related to the author signature. Customers should
+            /// not be notified of validation issues due to the repository signature.
+            if (result.Issues.Count != 0)
             {
                 _logger.LogWarning(
-                    "Package Signing validation with validationId {ValidationId} ({PackageId} {PackageVersion}) has already started.",
-                    request.ValidationId,
-                    request.PackageId,
-                    request.PackageVersion);
+                    "Ignoring {ValidationIssueCount} validation issues from result. Issues: {Issues}",
+                    result.Issues.Select(i => i.IssueCode));
 
-                return validatorStatus;
+                return new ValidationResult(result.Status);
             }
-
-            // Kick off the verification process. Note that the jobs will not verify the package until the
-            // state of this validator has been persisted to the database.
-            var stopwatch = Stopwatch.StartNew();
-
-            await _signatureVerificationEnqueuer.EnqueueVerificationAsync(request);
-
-            var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
-
-            _telemetryService.TrackDurationToStartPackageSigningValidator(stopwatch.Elapsed);
 
             return result;
         }

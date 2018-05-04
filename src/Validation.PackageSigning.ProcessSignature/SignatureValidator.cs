@@ -98,6 +98,17 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 return await RejectAsync(context, ValidationIssue.PackageIsNotSigned);
             }
 
+            if (context.Message.RequireRepositorySignature)
+            {
+                _logger.LogCritical(
+                    "Package {PackageId} {PackageVersion} for validation {ValidationId} is expected to be repository signed but is unsigned.",
+                    context.Message.PackageId,
+                    context.Message.PackageVersion,
+                    context.Message.ValidationId);
+
+                return await RejectAsync(context);
+            }
+
             _logger.LogInformation(
                 "Package {PackageId} {PackageVersion} is unsigned, no additional validations necessary for " +
                 "{ValidationId}.",
