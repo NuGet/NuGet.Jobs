@@ -179,6 +179,7 @@
     <Compile Include="Instance.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="PackageLagCatalogLeafProcessor.cs" />
+    <Compile Include="PackageLagMessage.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchDiagnosticResponse.cs" />

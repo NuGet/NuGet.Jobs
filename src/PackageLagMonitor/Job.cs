@@ -122,6 +122,7 @@ namespace NuGet.Jobs.PackageLagMonitor
                 }
                 while (!success);
 
+                await _queueClient.CloseAsync();
                 return;
             }
             catch (Exception e)

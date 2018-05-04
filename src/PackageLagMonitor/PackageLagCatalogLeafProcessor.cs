@@ -177,7 +177,7 @@ namespace NuGet.Jobs.PackageLagMonitor
             v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
 
             var timeStamp = (isListOperation ? lastEdited : created);
-            var newMessage = new
+            var newMessage = new PackageLagMessage
             {
                 PackageId = packageId,
                 PackageVersion = packageVersion,
@@ -185,7 +185,7 @@ namespace NuGet.Jobs.PackageLagMonitor
                 CreatedDelay = createdDelay,
                 V3Delay = v3Delay,
                 Region = _region,
-                Subscrption = _subscription
+                Subscription = _subscription
             };
 
             var stringMessage = JsonConvert.SerializeObject(newMessage, Formatting.None);
