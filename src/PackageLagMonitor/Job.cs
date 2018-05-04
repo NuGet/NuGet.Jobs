@@ -10,11 +10,15 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.ServiceBus;
 
 namespace NuGet.Jobs.PackageLagMonitor
 {
     public class Job : JobBase
     {
+        const string ServiceBusConnectionString = "";
+        const string QueueName = "packagelagmessages";
+        private IQueueClient _queueClient;
         private HttpClient _httpClient;
         private ICatalogClient _catalogClient;
         private int _instancePortMinimum;
@@ -38,6 +42,7 @@ namespace NuGet.Jobs.PackageLagMonitor
             _catalogClient = new CatalogClient(_httpClient, LoggerFactory.CreateLogger<CatalogClient>());
             _instancePortMinimum = 44301;// jobArgsDictionary["instancePortMinimum"];
             _serviceIndexUrl = "https://api.nuget.org/v3/index.json"; // jobArgsDictionary["serviceIndexUrl"];
+            _queueClient = new QueueClient(ServiceBusConnectionString, QueueName);
         }
 
         public async override Task Run()
@@ -74,7 +79,7 @@ namespace NuGet.Jobs.PackageLagMonitor
                 }
 
                 // Get list of stuff from catalog
-                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, /*maxCheckedPackageCount*/ 1, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
+                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _queueClient, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
 
                 var settings = new CatalogProcessorSettings
                 {

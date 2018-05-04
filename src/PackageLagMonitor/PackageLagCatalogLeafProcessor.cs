@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Azure.ServiceBus;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NuGet.Protocol.Catalog;
 using System;
@@ -25,14 +26,15 @@ namespace NuGet.Jobs.PackageLagMonitor
         private DateTimeOffset? _lastCommitTimestamp;
         private List<Instance> _searchInstances;
         private HttpClient _client;
+        private IQueueClient _queueClient;
 
-        public PackageLagCatalogLeafProcessor(List<Instance> searchInstances, HttpClient client, int maxCheckedPackageCount, ILogger<PackageLagCatalogLeafProcessor> logger)
+        public PackageLagCatalogLeafProcessor(List<Instance> searchInstances, HttpClient client, IQueueClient queueClient, ILogger<PackageLagCatalogLeafProcessor> logger)
         {
             _logger = logger;
             _searchInstances = searchInstances;
             _client = client;
             _currentCheckedPackageCount = 0;
-            _maxCheckedPackageCount = maxCheckedPackageCount;
+            _queueClient = queueClient;
         }
 
         public Task<bool> ProcessPackageDeleteAsync(PackageDeleteCatalogLeaf leaf)
@@ -85,7 +87,7 @@ namespace NuGet.Jobs.PackageLagMonitor
                 try
                 {
                     _logger.LogInformation("Queueing {0}", query);
-                    Tasks.Add(ComputeLagForQueries(instance.Index, query, instance.DiagUrl, listed, created, lastEdited, token));
+                    Tasks.Add(ComputeLagForQueries(packageId, version, instance.Index, query, instance.DiagUrl, listed, created, lastEdited, token));
                 }
                 catch (Exception e)
                 {
@@ -100,7 +102,16 @@ namespace NuGet.Jobs.PackageLagMonitor
             return new TimeSpan(averageTicks);
         }
 
-        private async Task<TimeSpan> ComputeLagForQueries(int instanceNumber, string query, string diagUrl, bool listed, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
+        private async Task<TimeSpan> ComputeLagForQueries(
+            string packageId,
+            string packageVersion,
+            int instanceNumber,
+            string query,
+            string diagUrl,
+            bool listed,
+            DateTimeOffset created,
+            DateTimeOffset lastEdited,
+            CancellationToken token)
         {
             await Task.Yield();
 
@@ -158,8 +169,20 @@ namespace NuGet.Jobs.PackageLagMonitor
             v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
 
             var timeStamp = (isListOperation ? lastEdited : created);
+            var newMessage = new
+            {
+                PackageId = packageId,
+                PackageVersion = packageVersion,
+                TimeStamp = timeStamp,
+                CreatedDelay = createdDelay,
+                V3Delay = v3Delay
+            };
+
+            var stringMessage = JsonConvert.SerializeObject(newMessage, Formatting.None);
 
             _logger.LogInformation("{0}:{1}: Created: {1} V3: {2}", timeStamp, query, createdDelay, v3Delay);
+            _logger.LogDebug($"Sending {stringMessage} to queue");
+            await _queueClient.SendAsync(new Message(Encoding.UTF8.GetBytes(stringMessage)));
 
             return createdDelay;
         }
