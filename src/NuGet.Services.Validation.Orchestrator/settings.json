@@ -16,7 +16,7 @@
         "FailureBehavior": "MustSucceed"
       },
       {
-        "name": "PackageSigningValidator2",
+        "name": "PackageSignatureValidator",
         "TrackAfter": "00:10:00",
         "requiredValidations": [ "PackageSigningValidator" ],
         "ShouldStart": true,

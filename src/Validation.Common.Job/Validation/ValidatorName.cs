@@ -7,7 +7,7 @@ namespace NuGet.Jobs.Validation
     {
         public const string Vcs = "VcsValidator";
         public const string PackageCertificate = "PackageCertificatesValidator";
-        public const string PackageSigningProcessor = "PackageSigningValidator";
-        public const string PackageSigningValidator = "PackageSigningValidator2";
+        public const string PackageSignatureProcessor = "PackageSigningValidator";
+        public const string PackageSignatureValidator = "PackageSignatureValidator";
     }
 }
