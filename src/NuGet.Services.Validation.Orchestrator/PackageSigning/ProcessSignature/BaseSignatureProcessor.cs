@@ -10,20 +10,20 @@ using NuGet.Services.Validation.Orchestrator.Telemetry;
 
 namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
-    public abstract class BaseProcessSignature
+    public abstract class BaseSignatureProcessor
     {
         private readonly IValidatorStateService _validatorStateService;
         private readonly IProcessSignatureEnqueuer _signatureVerificationEnqueuer;
         private readonly ISimpleCloudBlobProvider _blobProvider;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<BaseProcessSignature> _logger;
+        private readonly ILogger<BaseSignatureProcessor> _logger;
 
-        public BaseProcessSignature(
+        public BaseSignatureProcessor(
             IValidatorStateService validatorStateService,
             IProcessSignatureEnqueuer signatureVerificationEnqueuer,
             ISimpleCloudBlobProvider blobProvider,
             ITelemetryService telemetryService,
-            ILogger<BaseProcessSignature> logger)
+            ILogger<BaseSignatureProcessor> logger)
         {
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _signatureVerificationEnqueuer = signatureVerificationEnqueuer ?? throw new ArgumentNullException(nameof(signatureVerificationEnqueuer));

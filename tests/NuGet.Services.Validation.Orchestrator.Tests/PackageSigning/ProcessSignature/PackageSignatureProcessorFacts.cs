@@ -17,7 +17,7 @@ using Xunit.Abstractions;
 
 namespace NuGet.Services.Validation.PackageSigning
 {
-    public class PackageSigningValidatorFacts
+    public class PackageSignatureProcessorFacts
     {
         private const int PackageKey = 1001;
         private const string PackageId = "NuGet.Versioning";
@@ -29,6 +29,7 @@ namespace NuGet.Services.Validation.PackageSigning
         {
             private static readonly ValidationStatus[] possibleValidationStatuses = new ValidationStatus[]
             {
+                ValidationStatus.Failed,
                 ValidationStatus.Incomplete,
                 ValidationStatus.NotStarted,
                 ValidationStatus.Succeeded,
@@ -49,7 +50,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
+                        ValidatorName = nameof(PackageSignatureProcessor),
                         State = status,
                         ValidatorIssues = new List<ValidatorIssue>(),
                     });
@@ -61,7 +62,7 @@ namespace NuGet.Services.Validation.PackageSigning
             }
 
             [Fact]
-            public async Task DoesNotReturnValidatorIssues()
+            public async Task ReturnsValidatorIssues()
             {
                 // Arrange
                 _validatorStateService
@@ -70,8 +71,8 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
-                        State = ValidationStatus.Succeeded,
+                        ValidatorName = nameof(PackageSignatureProcessor),
+                        State = ValidationStatus.Failed,
                         ValidatorIssues = new List<ValidatorIssue>
                         {
                             new ValidatorIssue
@@ -91,47 +92,14 @@ namespace NuGet.Services.Validation.PackageSigning
                 var actual = await _target.GetResultAsync(_validationRequest.Object);
 
                 // Assert
-                Assert.Equal(ValidationStatus.Succeeded, actual.Status);
-                Assert.Equal(0, actual.Issues.Count);
-            }
+                Assert.Equal(ValidationStatus.Failed, actual.Status);
+                Assert.Equal(2, actual.Issues.Count);
 
-            [Fact]
-            public async Task ThrowsExceptionIfValidationFails()
-            {
-                // Arrange
-                _validatorStateService
-                    .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
-                    .ReturnsAsync(new ValidatorStatus
-                    {
-                        ValidationId = ValidationId,
-                        PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
-                        State = ValidationStatus.Failed,
-                        ValidatorIssues = new List<ValidatorIssue>(),
-                    });
+                Assert.Equal((ValidationIssueCode)987, actual.Issues[0].IssueCode);
+                Assert.Equal("{}", actual.Issues[0].Serialize());
 
-                // Act
-                await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
-            }
-
-            [Fact]
-            public async Task ThrowsExceptionIfPackageIsModified()
-            {
-                // Arrange
-                _validatorStateService
-                    .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
-                    .ReturnsAsync(new ValidatorStatus
-                    {
-                        ValidationId = ValidationId,
-                        PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
-                        State = ValidationStatus.Succeeded,
-                        ValidatorIssues = new List<ValidatorIssue>(),
-                        NupkgUrl = "https://nuget.org/a.nupkg"
-                    });
-
-                // Act
-                await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+                Assert.Equal(ValidationIssueCode.ClientSigningVerificationFailure, actual.Issues[1].IssueCode);
+                Assert.Equal("unknown contract", actual.Issues[1].Serialize());
             }
 
             public static IEnumerable<object[]> PossibleValidationStatuses => possibleValidationStatuses.Select(s => new object[] { s });
@@ -141,6 +109,7 @@ namespace NuGet.Services.Validation.PackageSigning
         {
             private static readonly ValidationStatus[] startedValidationStatuses = new ValidationStatus[]
             {
+                ValidationStatus.Failed,
                 ValidationStatus.Incomplete,
                 ValidationStatus.Succeeded,
             };
@@ -160,7 +129,7 @@ namespace NuGet.Services.Validation.PackageSigning
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
-                         ValidatorName = nameof(PackageSigningProcessor),
+                         ValidatorName = nameof(PackageSignatureProcessor),
                          State = status,
                          ValidatorIssues = new List<ValidatorIssue>(),
                      });
@@ -193,13 +162,13 @@ namespace NuGet.Services.Validation.PackageSigning
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
-                         ValidatorName = nameof(PackageSigningProcessor),
+                         ValidatorName = nameof(PackageSignatureProcessor),
                          State = ValidationStatus.NotStarted,
                          ValidatorIssues = new List<ValidatorIssue>(),
                      });
 
                 _packageSignatureVerifier
-                    .Setup(x => x.EnqueueProcessSignatureAsync(It.IsAny<IValidationRequest>(), true))
+                    .Setup(x => x.EnqueueProcessSignatureAsync(It.IsAny<IValidationRequest>(), false))
                     .Callback(() =>
                     {
                         verificationQueuedBeforeStatePersisted = !statePersisted;
@@ -226,7 +195,7 @@ namespace NuGet.Services.Validation.PackageSigning
 
                 // Assert
                 _packageSignatureVerifier
-                    .Verify(x => x.EnqueueProcessSignatureAsync(It.IsAny<IValidationRequest>(), true), Times.Once);
+                    .Verify(x => x.EnqueueProcessSignatureAsync(It.IsAny<IValidationRequest>(), false), Times.Once);
 
                 _validatorStateService
                     .Verify(
@@ -241,80 +210,6 @@ namespace NuGet.Services.Validation.PackageSigning
                     Times.Once);
 
                 Assert.True(verificationQueuedBeforeStatePersisted);
-            }
-
-            [Fact]
-            public async Task DoesNotReturnValidatorIssues()
-            {
-                // Arrange
-                _validatorStateService
-                    .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
-                    .ReturnsAsync(new ValidatorStatus
-                    {
-                        ValidationId = ValidationId,
-                        PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
-                        State = ValidationStatus.Succeeded,
-                        ValidatorIssues = new List<ValidatorIssue>
-                        {
-                            new ValidatorIssue
-                            {
-                                IssueCode = (ValidationIssueCode)987,
-                                Data = "{}",
-                            },
-                            new ValidatorIssue
-                            {
-                                IssueCode = ValidationIssueCode.ClientSigningVerificationFailure,
-                                Data = "unknown contract",
-                            },
-                        },
-                    });
-
-                // Act
-                var actual = await _target.StartAsync(_validationRequest.Object);
-
-                // Assert
-                Assert.Equal(ValidationStatus.Succeeded, actual.Status);
-                Assert.Equal(0, actual.Issues.Count);
-            }
-
-            [Fact]
-            public async Task ThrowsExceptionIfValidationFails()
-            {
-                // Arrange
-                _validatorStateService
-                    .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
-                    .ReturnsAsync(new ValidatorStatus
-                    {
-                        ValidationId = ValidationId,
-                        PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
-                        State = ValidationStatus.Failed,
-                        ValidatorIssues = new List<ValidatorIssue>(),
-                    });
-
-                // Act
-                await Assert.ThrowsAsync<InvalidOperationException>(() => _target.StartAsync(_validationRequest.Object));
-            }
-
-            [Fact]
-            public async Task ThrowsExceptionIfPackageIsModified()
-            {
-                // Arrange
-                _validatorStateService
-                    .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
-                    .ReturnsAsync(new ValidatorStatus
-                    {
-                        ValidationId = ValidationId,
-                        PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSigningProcessor),
-                        State = ValidationStatus.Succeeded,
-                        ValidatorIssues = new List<ValidatorIssue>(),
-                        NupkgUrl = "https://nuget.org/a.nupkg"
-                    });
-
-                // Act
-                await Assert.ThrowsAsync<InvalidOperationException>(() => _target.StartAsync(_validationRequest.Object));
             }
 
             public static IEnumerable<object[]> StartedValidationStatuses => startedValidationStatuses.Select(s => new object[] { s });
@@ -344,7 +239,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 await _target.CleanUpAsync(_validationRequest.Object);
 
                 _validatorStateService.Verify(x => x.GetStatusAsync(_validationRequest.Object), Times.Once);
-                _blobProvider.Verify(x => x.GetBlobFromUrl(It.IsAny<string>()), Times.Never);
+                _blobProvider.Verify(x => x.GetBlobFromUrl (It.IsAny<string>()), Times.Never);
             }
 
             [Fact]
@@ -370,9 +265,9 @@ namespace NuGet.Services.Validation.PackageSigning
             protected readonly Mock<IProcessSignatureEnqueuer> _packageSignatureVerifier;
             protected readonly Mock<ISimpleCloudBlobProvider> _blobProvider;
             protected readonly Mock<ITelemetryService> _telemetryService;
-            protected readonly ILogger<PackageSigningValidator> _logger;
+            protected readonly ILogger<PackageSignatureProcessor> _logger;
             protected readonly Mock<IValidationRequest> _validationRequest;
-            protected readonly PackageSigningValidator _target;
+            protected readonly PackageSignatureProcessor _target;
 
             public FactsBase(ITestOutputHelper output)
             {
@@ -381,7 +276,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 _blobProvider = new Mock<ISimpleCloudBlobProvider>();
                 _telemetryService = new Mock<ITelemetryService>();
                 var loggerFactory = new LoggerFactory().AddXunit(output);
-                _logger = loggerFactory.CreateLogger<PackageSigningValidator>();
+                _logger = loggerFactory.CreateLogger<PackageSignatureProcessor>();
 
                 _validationRequest = new Mock<IValidationRequest>();
                 _validationRequest.Setup(x => x.NupkgUrl).Returns(NupkgUrl);
@@ -390,7 +285,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 _validationRequest.Setup(x => x.PackageVersion).Returns(PackageVersion);
                 _validationRequest.Setup(x => x.ValidationId).Returns(ValidationId);
 
-                _target = new PackageSigningValidator(
+                _target = new PackageSignatureProcessor(
                     _validatorStateService.Object,
                     _packageSignatureVerifier.Object,
                     _blobProvider.Object,

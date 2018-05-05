@@ -13,23 +13,24 @@ using NuGet.Services.Validation.Orchestrator.Telemetry;
 namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
     /// <summary>
-    /// The validator that ensures the package's repository signature is valid.
+    /// The validator that ensures the package's repository signature is valid. This does the
+    /// final signature validation after a package has been repository signed.
     /// </summary>
-    [ValidatorName(ValidatorName.PackageSigningValidator)]
-    public class PackageSigningValidator : BaseProcessSignature, IValidator
+    [ValidatorName(ValidatorName.PackageSignatureValidator)]
+    public class PackageSignatureValidator : BaseSignatureProcessor, IValidator
     {
         private readonly IValidatorStateService _validatorStateService;
         private readonly IProcessSignatureEnqueuer _signatureVerificationEnqueuer;
         private readonly ISimpleCloudBlobProvider _blobProvider;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<PackageSigningValidator> _logger;
+        private readonly ILogger<PackageSignatureValidator> _logger;
 
-        public PackageSigningValidator(
+        public PackageSignatureValidator(
             IValidatorStateService validatorStateService,
             IProcessSignatureEnqueuer signatureVerificationEnqueuer,
             ISimpleCloudBlobProvider blobProvider,
             ITelemetryService telemetryService,
-            ILogger<PackageSigningValidator> logger)
+            ILogger<PackageSignatureValidator> logger)
           : base(validatorStateService, signatureVerificationEnqueuer, blobProvider, telemetryService, logger)
         {
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
@@ -57,7 +58,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 
         private IValidationResult Validate(IValidationResult result)
         {
-            /// The package signing validator runs after the <see cref="PackageSigningProcessor" />.
+            /// The package signing validator runs after the <see cref="PackageSignatureProcessor" />.
             /// All author signing validation issues should have been caught by the processor, so a failed validation
             /// should only happen if the repository signature is invalid. In addition, the Process Signature job
             /// will only modify the package if the repository signature is unacceptable.
@@ -73,7 +74,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
                 throw new InvalidOperationException("Package signing validator has an unexpected validation result");
             }
 
-            /// Suppress all validation issues. The <see cref="PackageSigningProcessor"/> should
+            /// Suppress all validation issues. The <see cref="PackageSignatureProcessor"/> should
             /// have already reported any issues related to the author signature. Customers should
             /// not be notified of validation issues due to the repository signature.
             if (result.Issues.Count != 0)

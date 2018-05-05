@@ -7,7 +7,7 @@ using NuGet.Jobs.Configuration;
 namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
     /// <summary>
-    /// Configuration for initializing the <see cref="PackageSigningProcessor"/>.
+    /// Configuration for initializing the <see cref="PackageSignatureProcessor"/>.
     /// </summary>
     public class ProcessSignatureConfiguration
     {

@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
@@ -13,22 +12,23 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
     /// <summary>
     /// The processor that strips unacceptable repository signatures and then validates signed packages.
+    /// This runs before a package is repository signed.
     /// </summary>
-    [ValidatorName(ValidatorName.PackageSigningProcessor)]
-    public class PackageSigningProcessor : BaseProcessSignature, IProcessor
+    [ValidatorName(ValidatorName.PackageSignatureProcessor)]
+    public class PackageSignatureProcessor : BaseSignatureProcessor, IProcessor
     {
         private readonly IValidatorStateService _validatorStateService;
         private readonly IProcessSignatureEnqueuer _signatureVerificationEnqueuer;
         private readonly ISimpleCloudBlobProvider _blobProvider;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<PackageSigningProcessor> _logger;
+        private readonly ILogger<PackageSignatureProcessor> _logger;
 
-        public PackageSigningProcessor(
+        public PackageSignatureProcessor(
             IValidatorStateService validatorStateService,
             IProcessSignatureEnqueuer signatureVerificationEnqueuer,
             ISimpleCloudBlobProvider blobProvider,
             ITelemetryService telemetryService,
-            ILogger<PackageSigningProcessor> logger)
+            ILogger<PackageSignatureProcessor> logger)
           : base(validatorStateService, signatureVerificationEnqueuer, blobProvider, telemetryService, logger)
         {
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
