@@ -67,6 +67,8 @@
     <None Include="Scripts\PostDeploy.ps1" />
     <None Include="Scripts\PreDeploy.ps1" />
     <None Include="Scripts\PackageLagMonitor.cmd" />
+    <None Include="Settings\prod.json" />
+    <None Include="Settings\int.json" />
     <None Include="Settings\dev.json" />
   </ItemGroup>
   <ItemGroup>

@@ -8,5 +8,6 @@ namespace NuGet.Jobs.Montoring.PackageLag
         public int Index { get; set; }
         public string DiagUrl { get; set; }
         public string BaseQueryUrl { get; set; }
+        public string Region { get; set; }
     }
 }

@@ -1,5 +1,6 @@
-﻿using Microsoft.ApplicationInsights.DataContracts;
-using Microsoft.Extensions.Options;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using NuGet.Services.Logging;
 using System;
 using System.Collections.Generic;
@@ -14,39 +15,40 @@ namespace NuGet.Jobs.Montoring.PackageLag.Telemetry
         private const string PackageVersion = "Version";
         private const string Region = "Region";
         private const string Subscrption = "Subscription";
+        private const string InstanceIndex = "InstanceIndex";
 
         private const string CreatedLagName = "PackageCreationLagInSeconds";
         private const string V3LagName = "V3LagInSeconds";
-
-        private readonly string _region;
+        
         private readonly string _subscription;
 
         public TelemetryService(ITelemetryClient telemetryClient, PackageLagMonitorConfiguration configuration)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
-            _region = configuration.Region ?? "";
             _subscription = configuration.Subscription ?? "";
         }
 
-        public void TrackPackageCreationLag(DateTimeOffset eventTime, string packageId, string packageVersion, TimeSpan createdDelay)
+        public void TrackPackageCreationLag(DateTimeOffset eventTime, Instance instance, string packageId, string packageVersion, TimeSpan createdDelay)
         {
             _telemetryClient.TrackMetric(CreatedLagName, createdDelay.TotalSeconds, new Dictionary<string, string>
             {
                 { PackageId, packageId },
                 { PackageVersion, packageVersion },
-                { Region, _region },
-                { Subscrption, _subscription }
+                { Region, instance.Region },
+                { Subscrption, _subscription },
+                { InstanceIndex, instance.Index.ToString() }
             });
         }
 
-        public void TrackV3Lag(DateTimeOffset eventTime, string packageId, string packageVersion, TimeSpan v3Delay)
+        public void TrackV3Lag(DateTimeOffset eventTime, Instance instance, string packageId, string packageVersion, TimeSpan v3Delay)
         {
-            _telemetryClient.TrackMetric(CreatedLagName, v3Delay.TotalSeconds, new Dictionary<string, string>
+            _telemetryClient.TrackMetric(V3LagName, v3Delay.TotalSeconds, new Dictionary<string, string>
             {
                 { PackageId, packageId },
                 { PackageVersion, packageVersion },
-                { Region, _region },
-                { Subscrption, _subscription }
+                { Region,  instance.Region },
+                { Subscrption, _subscription },
+                { InstanceIndex, instance.Index.ToString() }
             });
         }
     }

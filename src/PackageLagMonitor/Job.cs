@@ -209,19 +209,28 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
         private async Task<List<Instance>> GetSearchEndpointsAsync(CancellationToken token)
         {
-            string result = await _azureManagementApiWrapper.GetCloudServicePropertiesAsync(
-                                    _configuration.Subscription,
-                                    _configuration.ResourceGroup,
-                                    _configuration.ServiceName,
-                                    ProductionSlot,
-                                    token);
+            var regionInformations = _configuration.RegionInformations;
+            var subscription = _configuration.Subscription;
+            var instances = new List<Instance>();
 
-            var cloudService = AzureHelper.ParseCloudServiceProperties(result);
+            foreach (var regionInformation in regionInformations)
+            {
+                string result = await _azureManagementApiWrapper.GetCloudServicePropertiesAsync(
+                                        subscription,
+                                        regionInformation.ResourceGroup,
+                                        regionInformation.ServiceName,
+                                        ProductionSlot,
+                                        token);
 
-            return GetInstances(cloudService.Uri, cloudService.InstanceCount);
+                var cloudService = AzureHelper.ParseCloudServiceProperties(result);
+
+                instances.AddRange(GetInstances(cloudService.Uri, cloudService.InstanceCount, regionInformation.Region));
+            }
+
+            return instances;
         }
 
-        private List<Instance> GetInstances(Uri endpointUri, int instanceCount)
+        private List<Instance> GetInstances(Uri endpointUri, int instanceCount, string region)
         {
             var instancePortMinimum = _configuration.InstancePortMinimum;
 
@@ -247,7 +256,8 @@ namespace NuGet.Jobs.Montoring.PackageLag
                     {
                         Index = i,
                         DiagUrl = diagUriBuilder.Uri.ToString(),
-                        BaseQueryUrl = queryBaseUriBuilder.Uri.ToString()
+                        BaseQueryUrl = queryBaseUriBuilder.Uri.ToString(),
+                        Region = region
                     };
                 })
                 .ToList();

@@ -94,7 +94,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 try
                 {
                     _logger.LogInformation("Queueing {0}", query);
-                    Tasks.Add(ComputeLagForQueries(packageId, version, instance.Index, query, instance.DiagUrl, listed, created, lastEdited, token));
+                    Tasks.Add(ComputeLagForQueries(instance, packageId, version, query, listed, created, lastEdited, token));
                 }
                 catch (Exception e)
                 {
@@ -110,11 +110,10 @@ namespace NuGet.Jobs.Montoring.PackageLag
         }
 
         private async Task<TimeSpan> ComputeLagForQueries(
+            Instance instance,
             string packageId,
             string packageVersion,
-            int instanceNumber,
             string query,
-            string diagUrl,
             bool listed,
             DateTimeOffset created,
             DateTimeOffset lastEdited,
@@ -161,7 +160,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
 
             using (var diagResponse = await _client.GetAsync(
-                diagUrl,
+                instance.DiagUrl,
                 HttpCompletionOption.ResponseContentRead,
                 token))
             {
@@ -177,10 +176,9 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
             var timeStamp = (isListOperation ? lastEdited : created);
 
-
             _logger.LogInformation("{0}:{1}: Created: {1} V3: {2}", timeStamp, query, createdDelay, v3Delay);
-            _telemetryService.TrackPackageCreationLag(timeStamp, packageId, packageVersion, createdDelay);
-            _telemetryService.TrackV3Lag(timeStamp, packageId, packageVersion, v3Delay);
+            _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
+            _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
 
             return createdDelay;
         }
