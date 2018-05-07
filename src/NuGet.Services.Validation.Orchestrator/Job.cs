@@ -206,6 +206,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
             services.AddTransient<PackageSignatureProcessor>();
+            services.AddTransient<PackageSignatureValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
             {
                 var smtpConfigurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<SmtpConfiguration>>();
