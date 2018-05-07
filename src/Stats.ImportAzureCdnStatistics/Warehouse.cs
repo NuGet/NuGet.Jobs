@@ -65,9 +65,9 @@ namespace Stats.ImportAzureCdnStatistics
                         bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
                     }
 
-                    //await bulkCopy.WriteToServerAsync(downloadFactsDataTable);
+                    await bulkCopy.WriteToServerAsync(downloadFactsDataTable);
 
-                    //transaction.Commit();
+                    transaction.Commit();
 
                     stopwatch.Stop();
                     ApplicationInsightsHelper.TrackMetric("Insert facts duration (ms)", stopwatch.ElapsedMilliseconds, logFileName);
@@ -355,7 +355,7 @@ namespace Stats.ImportAzureCdnStatistics
                     parameter.SqlDbType = SqlDbType.Structured;
                     parameter.TypeName = "[dbo].[LogFileAggregatesPackageDownloadsByDateTableType]";
 
-                    //await command.ExecuteNonQueryAsync();
+                    await command.ExecuteNonQueryAsync();
                 }
                 catch (Exception exception)
                 {
