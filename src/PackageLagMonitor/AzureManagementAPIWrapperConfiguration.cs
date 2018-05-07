@@ -3,18 +3,12 @@
 
 using NuGet.Services.AzureManagement;
 
-namespace NuGet.Jobs.PackageLagMonitor
+namespace NuGet.Jobs.Montoring.PackageLag
 {
     public class AzureManagementAPIWrapperConfiguration : IAzureManagementAPIWrapperConfiguration
     {
-        public AzureManagementAPIWrapperConfiguration(string clientId, string clientSecret)
-        {
-            ClientId = clientId;
-            ClientSecret = clientSecret;
-        }
+        public string ClientId { get; set; }
 
-        public string ClientId { get; }
-
-        public string ClientSecret { get; }
+        public string ClientSecret { get; set; }
     }
 }

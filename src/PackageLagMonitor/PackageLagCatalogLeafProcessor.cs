@@ -5,15 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using NuGet.Jobs.Montoring.PackageLag.Telemetry;
 using NuGet.Protocol.Catalog;
 
-namespace NuGet.Jobs.PackageLagMonitor
+namespace NuGet.Jobs.Montoring.PackageLag
 {
     public class PackageLagCatalogLeafProcessor : ICatalogLeafProcessor
     {
@@ -27,21 +26,21 @@ namespace NuGet.Jobs.PackageLagMonitor
         private List<Task> _packageProcessTasks;
 
         private int _currentCheckedPackageCount;
-        private string _region;
-        private string _subscription;
         private List<Instance> _searchInstances;
         private HttpClient _client;
-        private IQueueClient _queueClient;
+        private ITelemetryService _telemetryService;
 
-        public PackageLagCatalogLeafProcessor(List<Instance> searchInstances, HttpClient client, IQueueClient queueClient, string region, string subscrption, ILogger<PackageLagCatalogLeafProcessor> logger)
+        public PackageLagCatalogLeafProcessor(
+            List<Instance> searchInstances,
+            HttpClient client,
+            ITelemetryService telemetryService,
+            ILogger<PackageLagCatalogLeafProcessor> logger)
         {
             _logger = logger;
             _searchInstances = searchInstances;
             _client = client;
             _currentCheckedPackageCount = 0;
-            _queueClient = queueClient;
-            _region = region;
-            _subscription = subscrption;
+            _telemetryService = telemetryService;
             _packageProcessTasks = new List<Task>();
         }
 
@@ -177,22 +176,11 @@ namespace NuGet.Jobs.PackageLagMonitor
             v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
 
             var timeStamp = (isListOperation ? lastEdited : created);
-            var newMessage = new PackageLagMessage
-            {
-                PackageId = packageId,
-                PackageVersion = packageVersion,
-                TimeStamp = timeStamp,
-                CreatedDelay = createdDelay,
-                V3Delay = v3Delay,
-                Region = _region,
-                Subscription = _subscription
-            };
 
-            var stringMessage = JsonConvert.SerializeObject(newMessage, Formatting.None);
 
             _logger.LogInformation("{0}:{1}: Created: {1} V3: {2}", timeStamp, query, createdDelay, v3Delay);
-            _logger.LogDebug($"Sending {stringMessage} to queue");
-            await _queueClient.SendAsync(new Message(Encoding.UTF8.GetBytes(stringMessage)));
+            _telemetryService.TrackPackageCreationLag(timeStamp, packageId, packageVersion, createdDelay);
+            _telemetryService.TrackV3Lag(timeStamp, packageId, packageVersion, v3Delay);
 
             return createdDelay;
         }

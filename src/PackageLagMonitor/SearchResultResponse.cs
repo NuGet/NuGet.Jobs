@@ -3,7 +3,7 @@
 
 using System;
 
-namespace NuGet.Jobs.PackageLagMonitor
+namespace NuGet.Jobs.Montoring.PackageLag
 {
     public class SearchResultResponse
     {

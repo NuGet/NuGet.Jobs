@@ -7,61 +7,132 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
+using Microsoft.ApplicationInsights;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using NuGet.Services.Configuration;
+using NuGet.Jobs.Montoring.PackageLag.Telemetry;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureManagement;
+using NuGet.Services.Logging;
+using NuGet.Services.KeyVault;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 
-namespace NuGet.Jobs.PackageLagMonitor
+namespace NuGet.Jobs.Montoring.PackageLag
 {
     public class Job : JobBase
     {
+        private const string ConfigurationArgument = "Configuration";
+
+        private const string AzureManagementSectionName = "AzureManagement";
+        private const string MonitorConfigurationSectionName = "MonitorConfiguration";
+
         /// <summary>
         /// To be used for <see cref="IAzureManagementAPIWrapper"/> request
         /// </summary>
         private const string ProductionSlot = "production";
 
-        private IQueueClient _queueClient;
+        private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
+
+        private IAzureManagementAPIWrapper _azureManagementApiWrapper;
+        private ITelemetryService _telemetryService;
         private HttpClient _httpClient;
         private ICatalogClient _catalogClient;
-        private int _instancePortMinimum;
-        private string _serviceIndexUrl;
-        private IAzureManagementAPIWrapper _azureManagementApiWrapper;
-        private string _resourceGroup;
-        private string _subscription;
-        private string _serviceName;
-        private string _region;
+        private IServiceProvider _serviceProvider;
+        private PackageLagMonitorConfiguration _configuration;
 
         public override void Init(IDictionary<string, string> jobArgsDictionary)
         {
-            var handler = new HttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback =
-                (httpRequestMessage, cert, cetChain, policyErrors) =>
-                {
-                    if (policyErrors == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch || policyErrors == System.Net.Security.SslPolicyErrors.None)
+            var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
+            _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename));
+
+            _configuration = _serviceProvider.GetService<PackageLagMonitorConfiguration>();
+            _azureManagementApiWrapper = _serviceProvider.GetService<AzureManagementAPIWrapper>();
+            _catalogClient = _serviceProvider.GetService<CatalogClient>();
+            _httpClient = _serviceProvider.GetService<HttpClient>();
+
+            _telemetryService = _serviceProvider.GetService<ITelemetryService>();
+        }
+
+        private IConfigurationRoot GetConfigurationRoot(string configurationFilename)
+        {
+            Logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddJsonFile(configurationFilename, optional: false, reloadOnChange: true);
+
+            var uninjectedConfiguration = builder.Build();
+
+            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(uninjectedConfiguration);
+            var cachingSecretReaderFactory = new CachingSecretReaderFactory(secretReaderFactory, KeyVaultSecretCachingTimeout);
+            var secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
+
+            builder = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddInjectedJsonFile(configurationFilename, secretInjector);
+
+            return builder.Build();
+        }
+
+        private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot)
+        {
+            var services = new ServiceCollection();
+            ConfigureLibraries(services);
+            ConfigureJobServices(services, configurationRoot);
+
+            return CreateProvider(services);
+        }
+
+        private void ConfigureLibraries(IServiceCollection services)
+        {
+            // we do not call services.AddOptions here, because we want our own custom version of IOptionsSnapshot 
+            // to be present in the service collection for KeyVault secret injection to work properly
+            services.Add(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(NonCachingOptionsSnapshot<>)));
+            services.AddSingleton(LoggerFactory);
+            services.AddLogging();
+        }
+
+        private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
+        {
+            services.Configure<PackageLagMonitorConfiguration>(configurationRoot.GetSection(MonitorConfigurationSectionName));
+            services.Configure<AzureManagementAPIWrapperConfiguration>(configurationRoot.GetSection(AzureManagementSectionName));
+
+            services.AddSingleton(p =>
+            {
+                var handler = new HttpClientHandler();
+                handler.ServerCertificateCustomValidationCallback =
+                    (httpRequestMessage, cert, cetChain, policyErrors) =>
                     {
-                        return true;
-                    }
+                        if (policyErrors == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch || policyErrors == System.Net.Security.SslPolicyErrors.None)
+                        {
+                            return true;
+                        }
 
-                    return false;
-                };
+                        return false;
+                    };
+                return handler;
+            });
 
-            _httpClient = new HttpClient(handler);
-            _catalogClient = new CatalogClient(_httpClient, LoggerFactory.CreateLogger<CatalogClient>());
-            _instancePortMinimum = Int32.TryParse(jobArgsDictionary["instancePortMinimum"], out _instancePortMinimum) ? _instancePortMinimum : 44301;
-            _serviceIndexUrl = jobArgsDictionary["serviceIndexUrl"];
-            _subscription = jobArgsDictionary["subscription"];
-            _serviceName = jobArgsDictionary["serviceName"];
-            _resourceGroup = jobArgsDictionary["resourceGroup"];
-            _region = jobArgsDictionary["region"];
+            services.AddSingleton(p => new HttpClient(p.GetService<HttpClientHandler>()));
+            services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddSingleton(new TelemetryClient());
+            services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
+            services.AddTransient<IAzureManagementAPIWrapperConfiguration>(p => p.GetService<IOptionsSnapshot<AzureManagementAPIWrapperConfiguration>>().Value);
+            services.AddTransient<PackageLagMonitorConfiguration>(p => p.GetService<IOptionsSnapshot<PackageLagMonitorConfiguration>>().Value);
+            services.AddSingleton<CatalogClient>();
+            services.AddSingleton<AzureManagementAPIWrapper>();
+        }
 
-            var serviceBusConnectionString = jobArgsDictionary["serviceBusConnectionString"];
-            var queueName = jobArgsDictionary["queueName"];
-            _queueClient = new QueueClient(serviceBusConnectionString, queueName);
+        private static IServiceProvider CreateProvider(IServiceCollection services)
+        {
+            var containerBuilder = new ContainerBuilder();
+            containerBuilder.Populate(services);
 
-            var azureManagementAPIWrapperConfiguration = new AzureManagementAPIWrapperConfiguration(jobArgsDictionary["azureClientId"], jobArgsDictionary["azureClientSecret"]);
-            _azureManagementApiWrapper = new AzureManagementAPIWrapper(azureManagementAPIWrapperConfiguration);
+            return new AutofacServiceProvider(containerBuilder.Build());
         }
 
         public async override Task Run()
@@ -97,11 +168,11 @@ namespace NuGet.Jobs.PackageLagMonitor
                     }
                 }
                 
-                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _queueClient, _region, _subscription, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
+                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _telemetryService, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
 
                 var settings = new CatalogProcessorSettings
                 {
-                    ServiceIndexUrl = _serviceIndexUrl,
+                    ServiceIndexUrl = _configuration.ServiceIndexUrl,
                     DefaultMinCommitTimestamp = maxCommit,
                     ExcludeRedundantLeaves = false
                 };
@@ -122,7 +193,6 @@ namespace NuGet.Jobs.PackageLagMonitor
                 }
                 while (!success);
 
-                await _queueClient.CloseAsync();
                 return;
             }
             catch (Exception e)
@@ -140,9 +210,9 @@ namespace NuGet.Jobs.PackageLagMonitor
         private async Task<List<Instance>> GetSearchEndpointsAsync(CancellationToken token)
         {
             string result = await _azureManagementApiWrapper.GetCloudServicePropertiesAsync(
-                                    _subscription,
-                                    _resourceGroup,
-                                    _serviceName,
+                                    _configuration.Subscription,
+                                    _configuration.ResourceGroup,
+                                    _configuration.ServiceName,
                                     ProductionSlot,
                                     token);
 
@@ -153,7 +223,7 @@ namespace NuGet.Jobs.PackageLagMonitor
 
         private List<Instance> GetInstances(Uri endpointUri, int instanceCount)
         {
-            var instancePortMinimum = _instancePortMinimum;
+            var instancePortMinimum = _configuration.InstancePortMinimum;
 
             Logger.LogInformation("Testing {InstanceCount} instances, starting at port {InstancePortMinimum}.", instanceCount, instancePortMinimum);
 
