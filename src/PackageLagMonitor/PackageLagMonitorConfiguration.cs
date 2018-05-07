@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NuGet.Jobs.PackageLagMonitor
+namespace NuGet.Jobs.Montoring.PackageLag
 {
     public class PackageLagMonitorConfiguration
     {
