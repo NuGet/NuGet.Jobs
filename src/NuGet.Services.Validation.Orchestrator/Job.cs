@@ -56,7 +56,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
-        private const string PackageSigningBindingKey = PackageSigningSectionName;
+        private const string PackageSigningProcessorBindingKey = PackageSigningSectionName;
+        private const string PackageSigningValidatorBindingKey = "PackageSigningValidator";
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
@@ -326,13 +327,14 @@ namespace NuGet.Services.Validation.Orchestrator
                     IMessageHandler<PackageValidationMessageData>>(
                         OrchestratorBindingKey);
 
+            ConfigurePackageSigningProcessor(containerBuilder);
             ConfigurePackageSigningValidator(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
 
-        private static void ConfigurePackageSigningValidator(ContainerBuilder builder)
+        private static void ConfigurePackageSigningProcessor(ContainerBuilder builder)
         {
             // Configure the validator state service for the package certificates validator.
             builder
@@ -340,7 +342,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
                     (pi, ctx) => ValidatorName.PackageSignatureProcessor)
-                .Keyed<IValidatorStateService>(PackageSigningBindingKey);
+                .Keyed<IValidatorStateService>(PackageSigningProcessorBindingKey);
 
             // Configure the package signature verification enqueuer.
             builder
@@ -350,17 +352,35 @@ namespace NuGet.Services.Validation.Orchestrator
 
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
-                .Keyed<ITopicClient>(PackageSigningBindingKey);
+                .Keyed<ITopicClient>(PackageSigningProcessorBindingKey);
 
             builder
                 .RegisterType<ProcessSignatureEnqueuer>()
-                .WithKeyedParameter(typeof(ITopicClient), PackageSigningBindingKey)
+                .WithKeyedParameter(typeof(ITopicClient), PackageSigningProcessorBindingKey)
                 .As<IProcessSignatureEnqueuer>();
 
-            // Configure the package signing validator.
+            // Configure the package signing processor.
             builder
                 .RegisterType<PackageSignatureProcessor>()
-                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningBindingKey)
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningProcessorBindingKey)
+                .As<PackageSignatureProcessor>();
+        }
+
+        private static void ConfigurePackageSigningValidator(ContainerBuilder builder)
+        {
+            // Configure the validator state service for the package certificates validator.
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.PackageSignatureValidator)
+                .Keyed<IValidatorStateService>(PackageSigningValidatorBindingKey);
+
+            // Configure the package signing valdiator.
+            builder
+                .RegisterType<PackageSignatureProcessor>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningValidatorBindingKey)
+                .WithKeyedParameter(typeof(IProcessSignatureEnqueuer), PackageSigningProcessorBindingKey)
                 .As<PackageSignatureProcessor>();
         }
 
