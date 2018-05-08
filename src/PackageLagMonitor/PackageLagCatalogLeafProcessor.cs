@@ -24,8 +24,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
         private readonly ILogger<PackageLagCatalogLeafProcessor> _logger;
 
         private List<Task> _packageProcessTasks;
-
-        private int _currentCheckedPackageCount;
+        
         private List<Instance> _searchInstances;
         private HttpClient _client;
         private ITelemetryService _telemetryService;
@@ -39,7 +38,6 @@ namespace NuGet.Jobs.Montoring.PackageLag
             _logger = logger;
             _searchInstances = searchInstances;
             _client = client;
-            _currentCheckedPackageCount = 0;
             _telemetryService = telemetryService;
             _packageProcessTasks = new List<Task>();
         }
@@ -72,7 +70,6 @@ namespace NuGet.Jobs.Montoring.PackageLag
             {
                 var cancellationToken = new CancellationToken();
                 var lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, created, lastEdited, cancellationToken);
-                ++_currentCheckedPackageCount;
 
                 _logger.LogInformation($"Logging {lag.TotalSeconds} seconds lag for {packageId} {packageVersion}.");
             }
