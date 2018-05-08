@@ -717,7 +717,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 _certificateVerifier.Verify(v => v.EnqueueVerificationAsync(It.IsAny<IValidationRequest>(), It.IsAny<EndCertificate>()), Times.Never);
                 _validationContext.Verify(c => c.SaveChangesAsync(), Times.Once);
                 _telemetryService.Verify(
-                    x => x.TrackDurationToStartPackageCertificatesValidator(It.IsAny<TimeSpan>()),
+                    x => x.TrackDurationToStartPackageCertificatesValidator(),
                     Times.Never);
 
                 Assert.Equal(ValidationStatus.Succeeded, actual.Status);
