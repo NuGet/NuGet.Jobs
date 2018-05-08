@@ -378,10 +378,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
             // Configure the package signing valdiator.
             builder
-                .RegisterType<PackageSignatureProcessor>()
+                .RegisterType<PackageSignatureValidator>()
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningValidatorBindingKey)
-                .WithKeyedParameter(typeof(IProcessSignatureEnqueuer), PackageSigningProcessorBindingKey)
-                .As<PackageSignatureProcessor>();
+                .As<PackageSignatureValidator>();
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)
