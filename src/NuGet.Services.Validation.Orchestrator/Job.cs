@@ -210,7 +210,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<ScanAndSignMessage>, ScanAndSignMessageSerializer>();
-            services.AddTransient<ScanAndSignProcessor>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
             services.AddTransient<PackageSigningValidator>();
@@ -418,9 +417,21 @@ namespace NuGet.Services.Validation.Orchestrator
                 .Keyed<ITopicClient>(ScanAndSignBindingKey);
 
             builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.ScanAndSign)
+                .Keyed<IValidatorStateService>(ScanAndSignBindingKey);
+
+            builder
                 .RegisterType<ScanAndSignEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), ScanAndSignBindingKey)
                 .As<IScanAndSignEnqueuer>();
+
+            builder
+                .RegisterType<ScanAndSignProcessor>()
+                .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
+                .AsSelf();
         }
 
         private T GetRequiredService<T>()
