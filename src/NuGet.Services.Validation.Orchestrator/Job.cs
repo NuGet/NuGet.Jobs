@@ -57,7 +57,6 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
         private const string PackageSigningProcessorBindingKey = PackageSigningSectionName;
-        private const string PackageSigningValidatorBindingKey = "PackageSigningValidator";
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
@@ -328,7 +327,6 @@ namespace NuGet.Services.Validation.Orchestrator
                         OrchestratorBindingKey);
 
             ConfigurePackageSigningProcessor(containerBuilder);
-            ConfigurePackageSigningValidator(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
@@ -364,22 +362,10 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<PackageSignatureProcessor>()
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningProcessorBindingKey)
                 .As<PackageSignatureProcessor>();
-        }
 
-        private static void ConfigurePackageSigningValidator(ContainerBuilder builder)
-        {
-            // Configure the validator state service for the package certificates validator.
-            builder
-                .RegisterType<ValidatorStateService>()
-                .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(string),
-                    (pi, ctx) => ValidatorName.PackageSignatureValidator)
-                .Keyed<IValidatorStateService>(PackageSigningValidatorBindingKey);
-
-            // Configure the package signing valdiator.
             builder
                 .RegisterType<PackageSignatureValidator>()
-                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningValidatorBindingKey)
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningProcessorBindingKey)
                 .As<PackageSignatureValidator>();
         }
 
