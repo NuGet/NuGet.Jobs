@@ -7,20 +7,20 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Microsoft.ApplicationInsights;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using NuGet.Services.Configuration;
 using NuGet.Jobs.Montoring.PackageLag.Telemetry;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureManagement;
-using NuGet.Services.Logging;
+using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
+using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Montoring.PackageLag
 {
@@ -39,7 +39,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
         private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
         private IAzureManagementAPIWrapper _azureManagementApiWrapper;
-        private ITelemetryService _telemetryService;
+        private IPackageLagTelemetryService _telemetryService;
         private HttpClient _httpClient;
         private ICatalogClient _catalogClient;
         private IServiceProvider _serviceProvider;
@@ -55,7 +55,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
             _catalogClient = _serviceProvider.GetService<CatalogClient>();
             _httpClient = _serviceProvider.GetService<HttpClient>();
 
-            _telemetryService = _serviceProvider.GetService<ITelemetryService>();
+            _telemetryService = _serviceProvider.GetService<IPackageLagTelemetryService>();
         }
 
         private IConfigurationRoot GetConfigurationRoot(string configurationFilename)
@@ -118,7 +118,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
             });
 
             services.AddSingleton(p => new HttpClient(p.GetService<HttpClientHandler>()));
-            services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddTransient<IPackageLagTelemetryService, PackageLagTelemetryService>();
             services.AddSingleton(new TelemetryClient());
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
             services.AddTransient<IAzureManagementAPIWrapperConfiguration>(p => p.GetService<IOptionsSnapshot<AzureManagementAPIWrapperConfiguration>>().Value);
@@ -164,7 +164,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                     }
                     catch (Exception e)
                     {
-                        Logger.LogError("An exception was encountered so no HTTP response was returned. {0}", e);
+                        Logger.LogError("An exception was encountered so no HTTP response was returned. {Exception}", e);
                     }
                 }
                 
@@ -201,7 +201,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 output.Add(e.Message);
                 output.Add(e.StackTrace);
 
-                Logger.LogError("Exception Occured. {0}", e);
+                Logger.LogError("Exception Occured. {Exception}", e);
 
                 return;
             }

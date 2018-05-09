@@ -56,8 +56,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchDiagnosticResponse.cs" />
     <Compile Include="SearchResultResponse.cs" />
-    <Compile Include="Telemetry\ITelemetryService.cs" />
-    <Compile Include="Telemetry\TelemetryService.cs" />
+    <Compile Include="Telemetry\IPackageLagTelemetryService.cs" />
+    <Compile Include="Telemetry\PackageLagTelemetryService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

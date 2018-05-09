@@ -7,14 +7,14 @@ using System.Collections.Generic;
 
 namespace NuGet.Jobs.Montoring.PackageLag.Telemetry
 {
-    public class TelemetryService : ITelemetryService
+    public class PackageLagTelemetryService : IPackageLagTelemetryService
     {
         private readonly ITelemetryClient _telemetryClient;
 
         private const string PackageId = "PackageId";
         private const string PackageVersion = "Version";
         private const string Region = "Region";
-        private const string Subscrption = "Subscription";
+        private const string Subscription = "Subscription";
         private const string InstanceIndex = "InstanceIndex";
 
         private const string CreatedLagName = "PackageCreationLagInSeconds";
@@ -22,7 +22,7 @@ namespace NuGet.Jobs.Montoring.PackageLag.Telemetry
         
         private readonly string _subscription;
 
-        public TelemetryService(ITelemetryClient telemetryClient, PackageLagMonitorConfiguration configuration)
+        public PackageLagTelemetryService(ITelemetryClient telemetryClient, PackageLagMonitorConfiguration configuration)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
             _subscription = configuration.Subscription ?? "";
@@ -35,7 +35,7 @@ namespace NuGet.Jobs.Montoring.PackageLag.Telemetry
                 { PackageId, packageId },
                 { PackageVersion, packageVersion },
                 { Region, instance.Region },
-                { Subscrption, _subscription },
+                { Subscription, _subscription },
                 { InstanceIndex, instance.Index.ToString() }
             });
         }
@@ -47,7 +47,7 @@ namespace NuGet.Jobs.Montoring.PackageLag.Telemetry
                 { PackageId, packageId },
                 { PackageVersion, packageVersion },
                 { Region,  instance.Region },
-                { Subscrption, _subscription },
+                { Subscription, _subscription },
                 { InstanceIndex, instance.Index.ToString() }
             });
         }

@@ -17,6 +17,8 @@ namespace NuGet.Jobs.Montoring.PackageLag
     {
         public DateTimeOffset Created { get; set; }
 
+        public DateTimeOffset LastEdited { get; set; }
+
         public bool Listed { get; set; }
     }
 }

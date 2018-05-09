@@ -19,20 +19,21 @@ namespace NuGet.Jobs.Montoring.PackageLag
         private const string SearchQueryTemplate = "?q=packageid:{0} version:{1}&ignorefilter=true&semverlevel=2.0.0";
 
         private const int WaitInMsBetweenPolls = 120000; // 2 minute
+        private const int MAX_RETRY_COUNT = 15;
 
         private const int FailAfterCommitCount = 10;
         private readonly ILogger<PackageLagCatalogLeafProcessor> _logger;
 
         private List<Task> _packageProcessTasks;
-        
+
         private List<Instance> _searchInstances;
         private HttpClient _client;
-        private ITelemetryService _telemetryService;
+        private IPackageLagTelemetryService _telemetryService;
 
         public PackageLagCatalogLeafProcessor(
             List<Instance> searchInstances,
             HttpClient client,
-            ITelemetryService telemetryService,
+            IPackageLagTelemetryService telemetryService,
             ILogger<PackageLagCatalogLeafProcessor> logger)
         {
             _logger = logger;
@@ -50,28 +51,35 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
         public Task<bool> ProcessPackageDeleteAsync(PackageDeleteCatalogLeaf leaf)
         {
-            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, /*expectListed*/ false, leaf.Published, DateTimeOffset.MinValue));
+            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, leaf.Published, DateTimeOffset.MinValue, expectListed: false));
             return Task.FromResult(true);
         }
 
         public Task<bool> ProcessPackageDetailsAsync(PackageDetailsCatalogLeaf leaf)
         {
-            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, leaf.IsListed(), leaf.Created, leaf.LastEdited));
+            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, leaf.Created, leaf.LastEdited, leaf.IsListed()));
             return Task.FromResult(true);
         }
 
-        private async Task<bool> ProcessPackageLagDetails(CatalogLeaf leaf, bool expectListed, DateTimeOffset created, DateTimeOffset lastEdited)
+        private async Task<bool> ProcessPackageLagDetails(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed)
         {
             var packageId = leaf.PackageId;
             var packageVersion = leaf.PackageVersion;
 
-            _logger.LogInformation("Computing Lag for {0} {1}", packageId, packageVersion);
+            _logger.LogInformation("Computing Lag for {PackageId} {PackageVersion}", packageId, packageVersion);
             try
             {
                 var cancellationToken = new CancellationToken();
                 var lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, created, lastEdited, cancellationToken);
 
-                _logger.LogInformation($"Logging {lag.TotalSeconds} seconds lag for {packageId} {packageVersion}.");
+                if (lag.Ticks > 0)
+                {
+                    _logger.LogInformation("Logging {LagInSeconds} seconds lag for {PackageId} {PackageVersion}.", lag.TotalSeconds, packageId, packageVersion);
+                }
+                else
+                {
+                    _logger.LogInformation("Stopped checking lag for {PackageId} {PackageVersion} after {RetryCount} retries.", packageId, packageVersion, MAX_RETRY_COUNT);
+                }
             }
             catch
             {
@@ -87,16 +95,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
             var Tasks = new List<Task<TimeSpan>>();
             foreach (Instance instance in searchInstances)
             {
-                var query = instance.BaseQueryUrl + String.Format(SearchQueryTemplate, packageId, version);
-                try
-                {
-                    _logger.LogInformation("Queueing {0}", query);
-                    Tasks.Add(ComputeLagForQueries(instance, packageId, version, query, listed, created, lastEdited, token));
-                }
-                catch (Exception e)
-                {
-                    _logger.LogError("An exception was encountered so no HTTP response was returned. {0}", e);
-                }
+                Tasks.Add(ComputeLagForQueries(instance, packageId, version, listed, created, lastEdited, token));
             }
 
             var results = await Task.WhenAll(Tasks);
@@ -110,74 +109,100 @@ namespace NuGet.Jobs.Montoring.PackageLag
             Instance instance,
             string packageId,
             string packageVersion,
-            string query,
             bool listed,
             DateTimeOffset created,
             DateTimeOffset lastEdited,
             CancellationToken token)
         {
             await Task.Yield();
-
-            var resultCount = (long)0;
-            var retryCount = (long)0;
-            var isListOperation = false;
-            TimeSpan createdDelay, v3Delay;
-            DateTimeOffset lastReloadTime;
-            do
+            
+            try
             {
-                using (var response = await _client.GetAsync(
-                    query,
-                    HttpCompletionOption.ResponseContentRead,
-                    token))
+                var query = instance.BaseQueryUrl + String.Format(SearchQueryTemplate, packageId, packageVersion);
+                var resultCount = (long)0;
+                var retryCount = (long)0;
+                var isListOperation = false;
+                var shouldRetry = false;
+                TimeSpan createdDelay, v3Delay;
+                DateTimeOffset lastReloadTime;
+
+
+                _logger.LogInformation("Queueing {Query}", query);
+                do
                 {
-                    var content = response.Content;
-                    var searchResultRaw = await content.ReadAsStringAsync();
-                    var searchResultObject = JsonConvert.DeserializeObject<SearchResultResponse>(searchResultRaw);
-
-                    resultCount = searchResultObject.TotalHits;
-
-                    if (resultCount > 0)
+                    using (var response = await _client.GetAsync(
+                        query,
+                        HttpCompletionOption.ResponseContentRead,
+                        token))
                     {
-                        if (retryCount == 0)
+                        var content = response.Content;
+                        var searchResultRaw = await content.ReadAsStringAsync();
+                        var searchResultObject = JsonConvert.DeserializeObject<SearchResultResponse>(searchResultRaw);
+
+                        resultCount = searchResultObject.TotalHits;
+
+                        shouldRetry = false;
+                        if (resultCount > 0)
                         {
-                            isListOperation = true;
+                            if (lastEdited == DateTime.MinValue)
+                            {
+                                shouldRetry = true;
+                            }
+                            else
+                            {
+                                if (retryCount == 0)
+                                {
+                                    isListOperation = true;
+                                }
+
+                                shouldRetry = searchResultObject.Data[0].LastEdited < lastEdited;
+                            }
                         }
-
-                        resultCount = searchResultObject.Data[0].Listed == listed ? resultCount : 0;
                     }
-                }
 
-                ++retryCount;
-                if (resultCount < 1)
+                    ++retryCount;
+                    if (shouldRetry)
+                    {
+                        _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {Query}", WaitInMsBetweenPolls / 1000, query);
+                        await Task.Delay(WaitInMsBetweenPolls);
+                    }
+                } while (shouldRetry && retryCount < MAX_RETRY_COUNT);
+
+
+                if (retryCount < MAX_RETRY_COUNT)
                 {
-                    _logger.LogInformation("Waiting for {0} seconds before retrying", WaitInMsBetweenPolls / 1000);
-                    await Task.Delay(WaitInMsBetweenPolls);
+                    using (var diagResponse = await _client.GetAsync(
+                        instance.DiagUrl,
+                        HttpCompletionOption.ResponseContentRead,
+                        token))
+                    {
+                        var diagContent = diagResponse.Content;
+                        var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
+                        var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
+
+                        lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
+                    }
+
+                    createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
+                    v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
+
+                    var timeStamp = (isListOperation ? lastEdited : created);
+
+
+                    // We log both of these values here as they will differ if a package went through validation pipline.
+                    _logger.LogInformation("{Timestamp}:{Query}: Created: {CreatedLag} V3: {V3Lag}", timeStamp, query, createdDelay, v3Delay);
+                    _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
+                    _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
+
+                    return createdDelay;
                 }
-            } while (resultCount < 1);
-
-
-            using (var diagResponse = await _client.GetAsync(
-                instance.DiagUrl,
-                HttpCompletionOption.ResponseContentRead,
-                token))
+            }
+            catch (Exception e)
             {
-                var diagContent = diagResponse.Content;
-                var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
-                var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
-
-                lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
+                _logger.LogError("An exception was encountered so no HTTP response was returned. {Exception}", e);
             }
 
-            createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
-            v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
-
-            var timeStamp = (isListOperation ? lastEdited : created);
-
-            _logger.LogInformation("{0}:{1}: Created: {1} V3: {2}", timeStamp, query, createdDelay, v3Delay);
-            _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
-            _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
-
-            return createdDelay;
+            return new TimeSpan(0);
         }
     }
 }
