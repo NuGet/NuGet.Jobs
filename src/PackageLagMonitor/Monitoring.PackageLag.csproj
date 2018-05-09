@@ -63,19 +63,14 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Monitoring.PackageLag.nuspec" />
     <None Include="Scripts\Functions.ps1" />
     <None Include="Scripts\PostDeploy.ps1" />
     <None Include="Scripts\PreDeploy.ps1" />
     <None Include="Scripts\Monitoring.PackageLag.cmd" />
-    <Content Include="Settings\prod.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Settings\int.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Settings\dev.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <None Include="Settings\prod.json" />
+    <None Include="Settings\int.json" />
+    <None Include="Settings\dev.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">
