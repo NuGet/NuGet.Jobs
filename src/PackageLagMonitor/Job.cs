@@ -178,7 +178,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 };
 
                 var start = new FileCursor("cursor.json", LoggerFactory.CreateLogger<FileCursor>());
-                await start.SetAsync(maxCommit.AddTicks(1).AddHours(-7));
+                await start.SetAsync(maxCommit.AddTicks(1));
 
                 var catalogProcessor = new CatalogProcessor(start, _catalogClient, catalogLeafProcessor, settings, LoggerFactory.CreateLogger<CatalogProcessor>());
 
