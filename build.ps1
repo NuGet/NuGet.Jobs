@@ -111,7 +111,7 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "$PSScriptRoot\src\Validation.PackageSigning.ValidateCertificate\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.PackageSigning.RevalidateCertificate\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\NuGet.Jobs.Common\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.Common.Job\Properties\AssemblyInfo.g.cs"
+            "$PSScriptRoot\src\Validation.Common.Job\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {

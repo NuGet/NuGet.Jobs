@@ -35,6 +35,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
         /// To be used for <see cref="IAzureManagementAPIWrapper"/> request
         /// </summary>
         private const string ProductionSlot = "production";
+        private const int MAX_CATALOG_RETRY_COUNT = 5;
 
         private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
@@ -167,6 +168,12 @@ namespace NuGet.Jobs.Montoring.PackageLag
                         Logger.LogError("An exception was encountered so no HTTP response was returned. {Exception}", e);
                     }
                 }
+
+                if (maxCommit == DateTimeOffset.MinValue)
+                {
+                    Logger.LogError("Failed to retrieve a proper starting commit. Abandoning the current run.");
+                    return;
+                }
                 
                 var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _telemetryService, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
 
@@ -183,26 +190,23 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 var catalogProcessor = new CatalogProcessor(start, _catalogClient, catalogLeafProcessor, settings, LoggerFactory.CreateLogger<CatalogProcessor>());
 
                 bool success;
+                int retryCount = 0;
                 do
                 {
                     success = await catalogProcessor.ProcessAsync();
                     if (!success || !await catalogLeafProcessor.WaitForProcessing())
                     {
-                        Console.WriteLine("Processing the catalog leafs failed. Retrying.");
+                        retryCount++;
+                        Logger.LogError("Processing the catalog leafs failed. Retry Count {CatalogProcessRetryCount}", retryCount);
                     }
                 }
-                while (!success);
+                while (!success && retryCount < MAX_CATALOG_RETRY_COUNT);
 
                 return;
             }
             catch (Exception e)
             {
-                var output = new List<string>();
-                output.Add(e.Message);
-                output.Add(e.StackTrace);
-
                 Logger.LogError("Exception Occured. {Exception}", e);
-
                 return;
             }
         }

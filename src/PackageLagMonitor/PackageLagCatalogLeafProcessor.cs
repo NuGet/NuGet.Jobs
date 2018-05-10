@@ -18,7 +18,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
     {
         private const string SearchQueryTemplate = "?q=packageid:{0} version:{1}&ignorefilter=true&semverlevel=2.0.0";
 
-        private const int WaitBetweenPollsInMs = 120000; // 2 minute
+        private TimeSpan WaitBetweenPolls = TimeSpan.FromMinutes(2);
         private const int MAX_RETRY_COUNT = 15;
 
         private const int FailAfterCommitCount = 10;
@@ -78,7 +78,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 }
                 else
                 {
-                    _logger.LogInformation("Stopped checking lag for {PackageId} {PackageVersion} after {RetryCount} retries.", packageId, packageVersion, MAX_RETRY_COUNT);
+                    _logger.LogInformation("Lag check for {PackageId} {PackageVersion} was abandoned.", packageId, packageVersion);
                 }
             }
             catch
@@ -127,7 +127,6 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 TimeSpan createdDelay, v3Delay;
                 DateTimeOffset lastReloadTime;
 
-
                 _logger.LogInformation("Queueing {Query}", query);
                 do
                 {
@@ -163,8 +162,8 @@ namespace NuGet.Jobs.Montoring.PackageLag
                     if (shouldRetry)
                     {
                         ++retryCount;
-                        _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {Query}", WaitBetweenPollsInMs / 1000, query);
-                        await Task.Delay(WaitBetweenPollsInMs);
+                        _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} Query:{Query}", WaitBetweenPolls.TotalSeconds, packageId, packageVersion, query);
+                        await Task.Delay(WaitBetweenPolls);
                     }
                 } while (shouldRetry && retryCount < MAX_RETRY_COUNT);
 
@@ -190,7 +189,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
 
                     // We log both of these values here as they will differ if a package went through validation pipline.
-                    _logger.LogInformation("{Timestamp}:{Query}: Created: {CreatedLag} V3: {V3Lag}", timeStamp, query, createdDelay, v3Delay);
+                    _logger.LogInformation("{Timestamp}:{PackageId} {PackageVersion} Query: {Query} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, query, createdDelay, v3Delay);
                     _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
                     _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
 
@@ -199,7 +198,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
             }
             catch (Exception e)
             {
-                _logger.LogError("Failed to compute lag for {Query}. {Exception}", query, e);
+                _logger.LogError("Failed to compute lag for {PackageId} {PackageVersion} with query: {Query}. {Exception}", packageId, packageVersion, query, e);
             }
 
             return new TimeSpan(0);
