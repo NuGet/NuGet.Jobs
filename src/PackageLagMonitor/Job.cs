@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -46,7 +47,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
         private IServiceProvider _serviceProvider;
         private PackageLagMonitorConfiguration _configuration;
 
-        public override void Init(IDictionary<string, string> jobArgsDictionary)
+        public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
             _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename));
