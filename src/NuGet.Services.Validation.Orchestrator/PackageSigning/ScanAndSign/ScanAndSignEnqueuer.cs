@@ -33,10 +33,15 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             _configuration = configurationAccessor.Value;
         }
 
-        public Task EnqueueVerificationAsync(IValidationRequest request, OperationRequestType requestType)
+        public Task EnqueueScanAsync(IValidationRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             var message = new ScanAndSignMessage(
-                requestType,
+                OperationRequestType.Scan,
                 request.ValidationId,
                 new Uri(request.NupkgUrl));
             var brokeredMessage = _serializer.Serialize(message);

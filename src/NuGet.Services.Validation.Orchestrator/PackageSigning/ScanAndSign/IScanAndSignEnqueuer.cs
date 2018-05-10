@@ -5,6 +5,10 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 {
     public interface IScanAndSignEnqueuer
     {
-        Task EnqueueVerificationAsync(IValidationRequest request, OperationRequestType requestType);
+        /// <summary>
+        /// Enqueues Scan operation.
+        /// </summary>
+        /// <param name="request">Request data</param>
+        Task EnqueueScanAsync(IValidationRequest request);
     }
 }

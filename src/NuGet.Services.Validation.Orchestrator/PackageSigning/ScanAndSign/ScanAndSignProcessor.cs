@@ -29,12 +29,22 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
         public Task CleanUpAsync(IValidationRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             // scan only for now does not require cleanup
             return Task.CompletedTask;
         }
 
         public async Task<IValidationResult> GetResultAsync(IValidationRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             var validatorStatus = await _validatorStateService.GetStatusAsync(request);
 
             return validatorStatus.ToValidationResult();
@@ -42,6 +52,11 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
         public async Task<IValidationResult> StartAsync(IValidationRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             var validatorStatus = await _validatorStateService.GetStatusAsync(request);
 
             if (validatorStatus.State != ValidationStatus.NotStarted)
@@ -55,7 +70,10 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 return validatorStatus.ToValidationResult();
             }
 
-            await _scanAndSignEnqueuer.EnqueueVerificationAsync(request, OperationRequestType.Scan);
+            // here we need to determine whether we do scan only or scan and repo sign.
+            // Right now we only support scan only
+
+            await _scanAndSignEnqueuer.EnqueueScanAsync(request);
             var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
 
             return result.ToValidationResult();
