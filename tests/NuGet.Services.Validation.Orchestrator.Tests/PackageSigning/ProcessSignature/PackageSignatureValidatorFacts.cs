@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
@@ -49,7 +50,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = status,
                         ValidatorIssues = new List<ValidatorIssue>(),
                     });
@@ -70,7 +71,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = ValidationStatus.Succeeded,
                         ValidatorIssues = new List<ValidatorIssue>
                         {
@@ -105,7 +106,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = ValidationStatus.Failed,
                         ValidatorIssues = new List<ValidatorIssue>(),
                     });
@@ -124,7 +125,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = ValidationStatus.Succeeded,
                         ValidatorIssues = new List<ValidatorIssue>(),
                         NupkgUrl = "https://nuget.org/a.nupkg"
@@ -160,7 +161,7 @@ namespace NuGet.Services.Validation.PackageSigning
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
-                         ValidatorName = nameof(PackageSignatureProcessor),
+                         ValidatorName = ValidatorName.PackageSignatureProcessor,
                          State = status,
                          ValidatorIssues = new List<ValidatorIssue>(),
                      });
@@ -193,7 +194,7 @@ namespace NuGet.Services.Validation.PackageSigning
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
-                         ValidatorName = nameof(PackageSignatureProcessor),
+                         ValidatorName = ValidatorName.PackageSignatureProcessor,
                          State = ValidationStatus.NotStarted,
                          ValidatorIssues = new List<ValidatorIssue>(),
                      });
@@ -253,7 +254,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = ValidationStatus.Succeeded,
                         ValidatorIssues = new List<ValidatorIssue>
                         {
@@ -288,7 +289,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = ValidationStatus.Failed,
                         ValidatorIssues = new List<ValidatorIssue>(),
                     });
@@ -307,7 +308,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = nameof(PackageSignatureProcessor),
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
                         State = ValidationStatus.Succeeded,
                         ValidatorIssues = new List<ValidatorIssue>(),
                         NupkgUrl = "https://nuget.org/a.nupkg"
