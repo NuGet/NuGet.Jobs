@@ -139,7 +139,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 await _target.StartAsync(_validationRequest.Object);
 
                 _packageSignatureVerifier
-                    .Verify(x => x.EnqueueProcessSignatureAsync(It.IsAny<IValidationRequest>(), false), Times.Never);
+                    .Verify(x => x.EnqueueProcessSignatureAsync(It.IsAny<IValidationRequest>(), It.IsAny<bool>()), Times.Never);
 
                 _validatorStateService
                     .Verify(x => x.AddStatusAsync(It.IsAny<ValidatorStatus>()), Times.Never);
