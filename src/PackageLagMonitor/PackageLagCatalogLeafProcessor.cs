@@ -124,6 +124,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 var retryCount = (long)0;
                 var isListOperation = false;
                 var shouldRetry = false;
+                var pageAlreadyLoaded = false;
                 TimeSpan createdDelay, v3Delay;
                 DateTimeOffset lastReloadTime;
 
@@ -152,6 +153,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                             {
                                 if (retryCount == 0)
                                 {
+                                    pageAlreadyLoaded = searchResultObject.Data[0].LastEdited >= lastEdited;
                                     isListOperation = true;
                                 }
 
@@ -165,10 +167,10 @@ namespace NuGet.Jobs.Montoring.PackageLag
                         _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} Query:{Query}", WaitBetweenPolls.TotalSeconds, packageId, packageVersion, query);
                         await Task.Delay(WaitBetweenPolls);
                     }
-                } while (shouldRetry && retryCount < MAX_RETRY_COUNT);
+                } while (shouldRetry && retryCount < MAX_RETRY_COUNT && !pageAlreadyLoaded);
 
 
-                if (retryCount < MAX_RETRY_COUNT)
+                if (retryCount < MAX_RETRY_COUNT && !pageAlreadyLoaded)
                 {
                     using (var diagResponse = await _client.GetAsync(
                         instance.DiagUrl,
@@ -183,10 +185,9 @@ namespace NuGet.Jobs.Montoring.PackageLag
                     }
 
                     createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
-                    v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
+                    v3Delay = lastReloadTime - lastEdited;
 
                     var timeStamp = (isListOperation ? lastEdited : created);
-
 
                     // We log both of these values here as they will differ if a package went through validation pipline.
                     _logger.LogInformation("{Timestamp}:{PackageId} {PackageVersion} Query: {Query} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, query, createdDelay, v3Delay);
@@ -194,6 +195,9 @@ namespace NuGet.Jobs.Montoring.PackageLag
                     _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
 
                     return createdDelay;
+                } else
+                {
+                    _logger.LogError("Lag Not Logged for {PackageId} {PackageVersion}. {Message}", packageId, packageVersion, (pageAlreadyLoaded ? "Page was already Loaded! " : "") + (retryCount < MAX_RETRY_COUNT ? "" : "Retry limit reached."));
                 }
             }
             catch (Exception e)
