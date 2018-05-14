@@ -43,12 +43,9 @@ namespace Validation.PackageSigning.Core.Tests.Support
             _testServer = new Lazy<Task<SigningTestServer>>(SigningTestServer.CreateAsync);
             _rootCertificateAuthority = new Lazy<Task<CertificateAuthority>>(CreateDefaultTrustedRootCertificateAuthorityAsync);
             _certificateAuthority = new Lazy<Task<CertificateAuthority>>(CreateDefaultTrustedCertificateAuthorityAsync);
-            _untrustedRootCertificateAuthority = new Lazy<Task<CertificateAuthority>>(CreateDefaultUntrustedRootCertificateAuthorityAsync);
-            _untrustedCertificateAuthority = new Lazy<Task<CertificateAuthority>>(CreateDefaultUntrustedCertificateAuthorityAsync);
             _timestampService = new Lazy<Task<TimestampService>>(CreateDefaultTrustedTimestampServiceAsync);
             _timestampServiceUrl = new Lazy<Task<Uri>>(CreateDefaultTrustedTimestampServiceUrlAsync);
             _signingCertificate = new Lazy<Task<X509Certificate2>>(CreateDefaultTrustedSigningCertificateAsync);
-            _untrustedSigningCertificate = new Lazy<Task<X509Certificate2>>(CreateDefaultUntrustedSigningCertificateAsync);
             _signingCertificateThumbprint = new Lazy<Task<string>>(GetDefaultTrustedSigningCertificateThumbprintAsync);
             _responders = new DisposableList<IDisposable>();
         }
@@ -61,24 +58,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
             return new X509Certificate2(await _signingCertificate.Value);
         }
 
-        public async Task<X509Certificate2> GetUntrustedSigningCertificateAsync()
-        {
-            return new X509Certificate2(await _untrustedSigningCertificate.Value);
-        }
-
         public Task<string> GetSigningCertificateThumbprintAsync() => _signingCertificateThumbprint.Value;
-
-        public async Task<IDisposable> TrustUntrustedRootCertificateAuthorityAsync()
-        {
-            var rootCa = await _untrustedRootCertificateAuthority.Value;
-            var rootCertificate = new X509Certificate2(rootCa.Certificate.GetEncoded());;
-
-            return new TrustedTestCert<X509Certificate2>(
-                rootCertificate,
-                x => x,
-                StoreName.Root,
-                StoreLocation.LocalMachine);
-        }
 
         protected Task<CertificateAuthority> GetRootCertificateAuthority() => _rootCertificateAuthority.Value;
         protected Task<CertificateAuthority> GetCertificateAuthority() => _certificateAuthority.Value;
@@ -179,6 +159,20 @@ namespace Validation.PackageSigning.Core.Tests.Support
             return IssueCertificate(ca, "Signing", CustomizeAsSigningCertificate).certificate;
         }
 
+        public async Task<UntrustedCertificate> CreateUntrustedSigningCertificateAsync()
+        {
+            var testServer = await GetTestServerAsync();
+            var rootCa = CertificateAuthority.Create(testServer.Url);
+            var rootCertificate = new X509Certificate2(rootCa.Certificate.GetEncoded());
+
+            var intermediateCa = rootCa.CreateIntermediateCertificateAuthority();
+            var disposable = testServer.RegisterResponders(intermediateCa);
+
+            var certificate = CreateSigningCertificate(intermediateCa);
+
+            return new UntrustedCertificate(rootCertificate, certificate, disposable);
+        }
+
         public async Task<RevokableCertificate> CreateRevokableSigningCertificateAsync()
         {
             var ca = await _certificateAuthority.Value;
@@ -276,6 +270,33 @@ namespace Validation.PackageSigning.Core.Tests.Support
             var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);
             return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        public class UntrustedCertificate
+        {
+            private readonly X509Certificate2 _root;
+            private readonly IDisposable _disposable;
+
+            public UntrustedCertificate(X509Certificate2 root, X509Certificate2 certificate, IDisposable disposable)
+            {
+                _root = root ?? throw new ArgumentNullException(nameof(root));
+                _disposable = disposable ?? throw new ArgumentNullException(nameof(disposable));
+
+                Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
+            }
+
+            public X509Certificate2 Certificate { get; }
+
+            public IDisposable TemporarilyTrust()
+            {
+                return new TrustedTestCert<X509Certificate2>(
+                    _root,
+                    x => x,
+                    StoreName.Root,
+                    StoreLocation.LocalMachine);
+            }
+
+            public void Dispose() => _disposable.Dispose();
         }
 
         public class RevokableCertificate

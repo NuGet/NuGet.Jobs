@@ -618,14 +618,14 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task StripsRepositorySignatureWithUntrustedSigningCertificate()
         {
             // Arrange
-            var certificate = await _fixture.GetUntrustedSigningCertificateAsync();
+            var untrustedCertificate = await _fixture.CreateUntrustedSigningCertificateAsync();
             Stream packageStream;
 
-            using (await _fixture.TrustUntrustedRootCertificateAuthorityAsync())
+            using (untrustedCertificate.TemporarilyTrust())
             {
                 packageStream = await _fixture.RepositorySignPackageStreamAsync(
                     TestResources.GetResourceStream(TestResources.UnsignedPackage),
-                    certificate,
+                    untrustedCertificate.Certificate,
                     _output);
             }
 
@@ -634,7 +634,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             _message = _unsignedPackageMessage;
 
             var target = CreateSignatureValidator(
-                allowedRepositorySigningCertificates: new[] { certificate });
+                allowedRepositorySigningCertificates: new[] { untrustedCertificate.Certificate });
 
             // Act
             var result = await target.ValidateAsync(
@@ -1038,20 +1038,20 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task StripsRepositoryCounterSignatureWithUntrustedSigningCertificate()
         {
             // Arrange
-            var certificate = await _fixture.GetUntrustedSigningCertificateAsync();
+            var untrustedCertificate = await _fixture.CreateUntrustedSigningCertificateAsync();
             Stream packageStream;
 
-            using (await _fixture.TrustUntrustedRootCertificateAuthorityAsync())
+            using (untrustedCertificate.TemporarilyTrust())
             {
                 packageStream = await _fixture.RepositorySignPackageStreamAsync(
                     await GetAuthorSignedPackageStream1Async(),
-                    certificate,
+                    untrustedCertificate.Certificate,
                     _output);
             }
 
             // Initialize the subject of testing.
             var target = CreateSignatureValidator(
-                allowedRepositorySigningCertificates: new[] { certificate });
+                allowedRepositorySigningCertificates: new[] { untrustedCertificate.Certificate });
 
             // Act
             var result = await target.ValidateAsync(
