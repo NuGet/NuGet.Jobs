@@ -101,24 +101,6 @@ namespace Validation.PackageSigning.Core.Tests.Support
             return intermediateCa;
         }
 
-        private async Task<CertificateAuthority> CreateDefaultUntrustedRootCertificateAuthorityAsync()
-        {
-            var testServer = await GetTestServerAsync();
-
-            return CertificateAuthority.Create(testServer.Url);
-        }
-
-        private async Task<CertificateAuthority> CreateDefaultUntrustedCertificateAuthorityAsync()
-        {
-            var testServer = await GetTestServerAsync();
-            var rootCa = await _untrustedRootCertificateAuthority.Value;
-            var intermediateCa = rootCa.CreateIntermediateCertificateAuthority();
-
-            _responders.AddRange(testServer.RegisterResponders(intermediateCa));
-
-            return intermediateCa;
-        }
-
         private async Task<TimestampService> CreateDefaultTrustedTimestampServiceAsync()
         {
             var testServer = await GetTestServerAsync();
