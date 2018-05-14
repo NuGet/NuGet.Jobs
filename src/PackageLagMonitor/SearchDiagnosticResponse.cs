@@ -17,7 +17,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
     public class CommitUserData
     {
-        public string CommitTimeStamp { get; set; }
+        public DateTimeOffset CommitTimeStamp { get; set; }
         public string Description { get; set; }
         public string Count { get; set; }
         public string Trace { get; set; }

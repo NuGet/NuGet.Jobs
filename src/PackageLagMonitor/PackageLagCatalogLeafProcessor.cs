@@ -172,6 +172,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
                 if (retryCount < MAX_RETRY_COUNT && !pageAlreadyLoaded)
                 {
+                    DateTimeOffset foundCommitTimestamp;
                     using (var diagResponse = await _client.GetAsync(
                         instance.DiagUrl,
                         HttpCompletionOption.ResponseContentRead,
@@ -182,9 +183,10 @@ namespace NuGet.Jobs.Montoring.PackageLag
                         var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
 
                         lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
+                        foundCommitTimestamp = searchDiagResultObject.CommitUserData.CommitTimeStamp;
                     }
 
-                    _logger.LogInformation("Found on reload at {LastReload}, using Created Stamp {CreatedTime} and Last Edited stamp {LastEdited}", lastReloadTime, created, lastEdited);
+                    _logger.LogInformation("Found {PackageId} {PackageVersion} on reload {LastReload} commit {CommitTimestamp}, Created Stamp {CreatedTime} Last Edited stamp {LastEdited}", packageId, packageVersion, lastReloadTime, foundCommitTimestamp, created, lastEdited);
 
                     createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
                     v3Delay = lastReloadTime - lastEdited;

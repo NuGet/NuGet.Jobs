@@ -159,7 +159,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                             var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
                             var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
 
-                            var commitDateTime = DateTimeOffset.Parse(searchDiagResultObject.CommitUserData.CommitTimeStamp);
+                            var commitDateTime = searchDiagResultObject.CommitUserData.CommitTimeStamp;
 
                             maxCommit = commitDateTime > maxCommit ? commitDateTime : maxCommit;
                         }
