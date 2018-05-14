@@ -184,7 +184,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                         lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
                     }
 
-                    _logger.LogInformation("Found on reload at {LastReload}, using Created Stamp {CreatedTime} and Last Edited stamp {LastEdited}");
+                    _logger.LogInformation("Found on reload at {LastReload}, using Created Stamp {CreatedTime} and Last Edited stamp {LastEdited}", lastReloadTime, created, lastEdited);
 
                     createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
                     v3Delay = lastReloadTime - lastEdited;
