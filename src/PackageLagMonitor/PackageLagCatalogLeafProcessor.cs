@@ -100,7 +100,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
             var results = await Task.WhenAll(Tasks);
 
-            var averageTicks = (long)results.Average<TimeSpan>(t => t.Ticks);
+            var averageTicks = (long)results.Where<TimeSpan>(t => t > TimeSpan.Zero).Average<TimeSpan>(t => t.Ticks);
 
             return new TimeSpan(averageTicks);
         }
@@ -185,20 +185,38 @@ namespace NuGet.Jobs.Montoring.PackageLag
                         lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
                         foundCommitTimestamp = searchDiagResultObject.CommitUserData.CommitTimeStamp;
                     }
-
-                    _logger.LogInformation("Found {PackageId} {PackageVersion} on reload {LastReload} commit {CommitTimestamp}, Created Stamp {CreatedTime} Last Edited stamp {LastEdited}", packageId, packageVersion, lastReloadTime, foundCommitTimestamp, created, lastEdited);
-
                     createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
                     v3Delay = lastReloadTime - lastEdited;
 
                     var timeStamp = (isListOperation ? lastEdited : created);
 
+                    var logTimestamps = false;
                     // We log both of these values here as they will differ if a package went through validation pipline.
                     _logger.LogInformation("{Timestamp}:{PackageId} {PackageVersion} Query: {Query} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, query, createdDelay, v3Delay);
-                    _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
-                    _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
+                    if (createdDelay >= TimeSpan.Zero)
+                    {
+                        _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
+                    }
+                    else
+                    {
+                        logTimestamps = true;
+                    }
 
-                    return createdDelay;
+                    if (v3Delay >= TimeSpan.Zero)
+                    {
+                        _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
+                    }
+                    else
+                    {
+                        logTimestamps = true;
+                    }
+
+                    if(logTimestamps)
+                    {
+                        _logger.LogInformation("Found {PackageId} {PackageVersion} on reload {LastReload} commit {CommitTimestamp}, Created Stamp {CreatedTime} Last Edited stamp {LastEdited}", packageId, packageVersion, lastReloadTime, foundCommitTimestamp, created, lastEdited);
+                    }
+
+                    return createdDelay >= TimeSpan.Zero ? createdDelay : TimeSpan.Zero;
                 } else
                 {
                     _logger.LogError("Lag Not Logged for {PackageId} {PackageVersion}. {Message}", packageId, packageVersion, (pageAlreadyLoaded ? "Page was already Loaded! " : "") + (retryCount < MAX_RETRY_COUNT ? "" : "Retry limit reached."));
