@@ -17,7 +17,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         /// <param name="validationSet">Validation set to work with. Any validation updates would be reflected in that object upon return.</param>
         /// <param name="package">Gallery DB package information</param>
-        /// <returns>true if there were validations that were found suceeded during the call, false otherwise</returns>
-        Task<bool> ProcessValidationsAsync(PackageValidationSet validationSet, Package package);
+        /// <returns>Information about what happened during processing of the message.</returns>
+        Task<ValidationSetProcessorStats> ProcessValidationsAsync(PackageValidationSet validationSet, Package package);
     }
 }

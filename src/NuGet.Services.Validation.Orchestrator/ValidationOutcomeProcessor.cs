@@ -52,7 +52,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _validationConfigurationsByName = _validationConfiguration.Validations.ToDictionary(v => v.Name);
         }
 
-        public async Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, bool hadSucceededValidations)
+        public async Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats processorStats)
         {
             var failedValidations = GetFailedValidations(validationSet);
 
@@ -127,7 +127,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     _messageService.SendPackagePublishedMessage(package);
                 }
 
-                if (hadSucceededValidations)
+                if (processorStats.AnyRequiredValidationSucceeded)
                 {
                     TrackValidationSetCompletion(package, validationSet, isSuccess: true);
                 }
