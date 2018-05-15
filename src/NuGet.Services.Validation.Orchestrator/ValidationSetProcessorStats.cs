@@ -11,12 +11,12 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <summary>
         /// true if there were any validation that succeeded (regardless of its settings)
         /// </summary>
-        public bool AnyValidationSucceeded;
+        public bool AnyValidationSucceeded { get; set; } = false;
 
         /// <summary>
         /// true if any validation succeeded that had <see cref="ValidationConfigurationItem.FailureBehavior"/> 
         /// set to <see cref="ValidationFailureBehavior.MustSucceed"/>
         /// </summary>
-        public bool AnyRequiredValidationSucceeded;
+        public bool AnyRequiredValidationSucceeded { get; set; } = false;
     }
 }
