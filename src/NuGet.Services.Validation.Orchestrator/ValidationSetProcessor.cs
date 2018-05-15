@@ -42,15 +42,16 @@ namespace NuGet.Services.Validation.Orchestrator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task ProcessValidationsAsync(PackageValidationSet validationSet, Package package)
+        public async Task<bool> ProcessValidationsAsync(PackageValidationSet validationSet, Package package)
         {
             _logger.LogInformation("Starting processing validation request for {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 package.PackageRegistration.Id,
                 package.NormalizedVersion,
                 validationSet.ValidationTrackingId);
             bool tryMoreValidations = true;
+            bool hadSucceededValidations = false;
             int loopLimit = MaxProcessAttempts;
-            await ProcessIncompleteValidations(validationSet, package);
+            hadSucceededValidations = await ProcessIncompleteValidations(validationSet, package);
             do
             {
                 // we will try to start more validations in case previous validation start attempts
@@ -60,6 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 // loopLimit is there to prevent looping here infinitely if there are any bugs that
                 // cause ProcessNotStartedValidations to always return true.
                 tryMoreValidations = await ProcessNotStartedValidations(validationSet, package);
+                hadSucceededValidations = hadSucceededValidations || tryMoreValidations;
             } while (tryMoreValidations && loopLimit-- > 0);
             if (loopLimit <= 0)
             {
@@ -69,6 +71,8 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.PackageNormalizedVersion,
                     validationSet.ValidationTrackingId);
             }
+
+            return hadSucceededValidations;
         }
 
         private async Task<bool> ProcessIncompleteValidations(PackageValidationSet validationSet, Package package)
