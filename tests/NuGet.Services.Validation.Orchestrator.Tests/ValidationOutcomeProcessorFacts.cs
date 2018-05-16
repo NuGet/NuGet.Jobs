@@ -417,8 +417,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         public static IEnumerable<object[]> TwoValidationStatusAndBoolCombinations =>
-            from s1 in new[] { ValidationStatus.Failed, ValidationStatus.Incomplete, ValidationStatus.NotStarted, ValidationStatus.Succeeded }
-            from s2 in new[] { ValidationStatus.Failed, ValidationStatus.Incomplete, ValidationStatus.NotStarted, ValidationStatus.Succeeded }
+            from s1 in (ValidationStatus[])Enum.GetValues(typeof(ValidationStatus))
+            from s2 in (ValidationStatus[])Enum.GetValues(typeof(ValidationStatus))
             from b1 in new[] { false, true }
             select new object[] { s1, s2, b1 };
 
