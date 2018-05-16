@@ -70,7 +70,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
             try
             {
                 var cancellationToken = new CancellationToken();
-                var lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, isDelete, created, lastEdited, cancellationToken);
+                var lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, isDelete, created, lastEdited, leaf.CommitTimestamp, cancellationToken);
 
                 if (lag.Ticks > 0)
                 {
@@ -90,12 +90,12 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
         }
 
-        private async Task<TimeSpan> GetLagForPackageState(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
+        private async Task<TimeSpan> GetLagForPackageState(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, DateTimeOffset commitTimestamp, CancellationToken token)
         {
             var Tasks = new List<Task<TimeSpan>>();
             foreach (Instance instance in searchInstances)
             {
-                Tasks.Add(ComputeLagForQueries(instance, packageId, version, listed, created, lastEdited, isDelete, token));
+                Tasks.Add(ComputeLagForQueries(instance, packageId, version, listed, created, lastEdited, commitTimestamp, isDelete, token));
             }
 
             var results = await Task.WhenAll(Tasks);
@@ -112,6 +112,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
             bool listed,
             DateTimeOffset created,
             DateTimeOffset lastEdited,
+            DateTimeOffset commitTimestamp,
             bool deleted,
             CancellationToken token)
         {
@@ -120,7 +121,6 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
             try
             {
-                var resultCount = (long)0;
                 var retryCount = (long)0;
                 var isListOperation = false;
                 var shouldRetry = false;
@@ -132,37 +132,26 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 do
                 {
                     using (var response = await _client.GetAsync(
-                        query,
+                        instance.DiagUrl,
                         HttpCompletionOption.ResponseContentRead,
                         token))
                     {
                         var content = response.Content;
                         var searchResultRaw = await content.ReadAsStringAsync();
-                        var searchResultObject = JsonConvert.DeserializeObject<SearchResultResponse>(searchResultRaw);
+                        var searchResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchResultRaw);
 
-                        resultCount = searchResultObject.TotalHits;
+                        var lastLoadedCommit = searchResultObject.CommitUserData.CommitTimeStamp;
 
-                        shouldRetry = false;
-                        if (resultCount > 0)
-                        {
-                            if (deleted)
-                            {
-                                shouldRetry = true;
-                            }
-                            else
-                            {
-                                if (retryCount == 0)
-                                {
-                                    pageAlreadyLoaded = searchResultObject.Data[0].LastEdited >= lastEdited;
-                                    isListOperation = true;
-                                }
-
-                                shouldRetry = searchResultObject.Data[0].LastEdited < lastEdited;
-                            }
-                        }
+                        lastReloadTime = searchResultObject.LastIndexReloadTime;
+                        shouldRetry = lastLoadedCommit >= commitTimestamp;
                     }
                     if (shouldRetry)
                     {
+                        if (retryCount == 0)
+                        {
+                            pageAlreadyLoaded = true;
+                        }
+
                         ++retryCount;
                         _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} Query:{Query}", WaitBetweenPolls.TotalSeconds, packageId, packageVersion, query);
                         await Task.Delay(WaitBetweenPolls);
@@ -172,19 +161,21 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
                 if (retryCount < MAX_RETRY_COUNT && !pageAlreadyLoaded)
                 {
-                    DateTimeOffset foundCommitTimestamp;
-                    using (var diagResponse = await _client.GetAsync(
-                        instance.DiagUrl,
-                        HttpCompletionOption.ResponseContentRead,
-                        token))
-                    {
-                        var diagContent = diagResponse.Content;
-                        var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
-                        var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
+                    //DateTimeOffset foundCommitTimestamp;
+                    //using (var diagResponse = await _client.GetAsync(
+                    //    instance.DiagUrl,
+                    //    HttpCompletionOption.ResponseContentRead,
+                    //    token))
+                    //{
+                    //    var diagContent = diagResponse.Content;
+                    //    var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
+                    //    var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
 
-                        lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
-                        foundCommitTimestamp = searchDiagResultObject.CommitUserData.CommitTimeStamp;
-                    }
+                    //    lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
+                    //    foundCommitTimestamp = searchDiagResultObject.CommitUserData.CommitTimeStamp;
+                    //}
+
+                    isListOperation = lastEdited - created > TimeSpan.FromHours(12);
                     createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
                     v3Delay = lastReloadTime - lastEdited;
 
@@ -213,7 +204,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
                     if(logTimestamps)
                     {
-                        _logger.LogInformation("Found {PackageId} {PackageVersion} on reload {LastReload} commit {CommitTimestamp}, Created Stamp {CreatedTime} Last Edited stamp {LastEdited}", packageId, packageVersion, lastReloadTime, foundCommitTimestamp, created, lastEdited);
+                        _logger.LogInformation("Found {PackageId} {PackageVersion} on reload {LastReload} commit {CommitTimestamp}, Created Stamp {CreatedTime} Last Edited stamp {LastEdited}", packageId, packageVersion, lastReloadTime, commitTimestamp, created, lastEdited);
                     }
 
                     return createdDelay >= TimeSpan.Zero ? createdDelay : TimeSpan.Zero;
