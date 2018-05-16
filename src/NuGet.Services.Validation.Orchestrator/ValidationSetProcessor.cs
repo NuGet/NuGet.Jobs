@@ -42,13 +42,13 @@ namespace NuGet.Services.Validation.Orchestrator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<ValidationSetProcessorStats> ProcessValidationsAsync(PackageValidationSet validationSet, Package package)
+        public async Task<ValidationSetProcessorResult> ProcessValidationsAsync(PackageValidationSet validationSet, Package package)
         {
             _logger.LogInformation("Starting processing validation request for {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 package.PackageRegistration.Id,
                 package.NormalizedVersion,
                 validationSet.ValidationTrackingId);
-            var processorStats = new ValidationSetProcessorStats();
+            var processorStats = new ValidationSetProcessorResult();
             int loopLimit = MaxProcessAttempts;
             await ProcessIncompleteValidations(validationSet, package, processorStats);
             bool hadSucceededValidations = false;
@@ -61,7 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 // loopLimit is there to prevent looping here infinitely if there are any bugs that
                 // cause ProcessNotStartedValidations to always return true.
                 hadSucceededValidations = await ProcessNotStartedValidations(validationSet, package, processorStats);
-            } while (processorStats.AnyValidationSucceeded && loopLimit-- > 0);
+            } while (hadSucceededValidations && loopLimit-- > 0);
             if (loopLimit <= 0)
             {
                 _logger.LogWarning("Too many processing attempts ({NumAttempts}) for {PackageId} {PackageVersion}, validation set {ValidationSetId}",
@@ -74,7 +74,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return processorStats;
         }
 
-        private async Task ProcessIncompleteValidations(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats processorStats)
+        private async Task ProcessIncompleteValidations(PackageValidationSet validationSet, Package package, ValidationSetProcessorResult processorStats)
         {
             foreach (var packageValidation in validationSet.PackageValidations.Where(v => v.ValidationStatus == ValidationStatus.Incomplete))
             {
@@ -147,7 +147,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private async Task<bool> ProcessNotStartedValidations(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats processorStats)
+        private async Task<bool> ProcessNotStartedValidations(PackageValidationSet validationSet, Package package, ValidationSetProcessorResult processorStats)
         {
             bool tryMoreValidations = false;
             foreach (var packageValidation in validationSet.PackageValidations.Where(v => v.ValidationStatus == ValidationStatus.NotStarted))
@@ -238,7 +238,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return tryMoreValidations;
         }
 
-        private void UpdateStatsForValidationSuccess(ValidationSetProcessorStats processorStats, ValidationConfigurationItem validationConfiguration)
+        private void UpdateStatsForValidationSuccess(ValidationSetProcessorResult processorStats, ValidationConfigurationItem validationConfiguration)
         {
             processorStats.AnyValidationSucceeded = true;
             if (validationConfiguration.FailureBehavior == ValidationFailureBehavior.MustSucceed)

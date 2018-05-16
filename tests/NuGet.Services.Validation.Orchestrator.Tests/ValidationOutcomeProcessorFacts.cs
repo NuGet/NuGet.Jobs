@@ -602,7 +602,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidationSet.Created = DateTime.UtcNow - TimeSpan.FromHours(3);
             ValidationSet.Updated = ValidationSet.Created + TimeSpan.FromHours(1);
 
-            ProcessorStats = new ValidationSetProcessorStats();
+            ProcessorStats = new ValidationSetProcessorResult();
 
             ConfigurationAccessorMock
                 .SetupGet(ca => ca.Value)
@@ -633,7 +633,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         protected ValidationConfiguration Configuration { get; }
         protected PackageValidationSet ValidationSet { get; }
         protected Package Package { get; }
-        protected ValidationSetProcessorStats ProcessorStats { get; }
+        protected ValidationSetProcessorResult ProcessorStats { get; }
 
         private void AddValidation(
             string validationName,

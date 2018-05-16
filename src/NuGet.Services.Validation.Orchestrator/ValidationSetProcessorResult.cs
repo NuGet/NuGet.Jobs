@@ -4,9 +4,10 @@
 namespace NuGet.Services.Validation.Orchestrator
 {
     /// <summary>
-    /// Contains useful information about current message processing call.
+    /// Contains useful information about what happened inside of <see cref="ValidationSetProcessor"/>
+    /// during processing of the current message
     /// </summary>
-    public class ValidationSetProcessorStats
+    public class ValidationSetProcessorResult
     {
         /// <summary>
         /// true if there were any validation that succeeded (regardless of its settings)

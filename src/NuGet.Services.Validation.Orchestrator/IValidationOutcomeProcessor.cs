@@ -22,6 +22,6 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="currentCallStats">Contains information about what happened during current message processing in
         /// the validation set processor.</param>
         /// <returns>A task that completes when the outcome has been processed</returns>
-        Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats currentCallStats);
+        Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorResult currentCallStats);
     }
 }

@@ -52,7 +52,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _validationConfigurationsByName = _validationConfiguration.Validations.ToDictionary(v => v.Name);
         }
 
-        public async Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats currentCallStats)
+        public async Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorResult currentCallStats)
         {
             var failedValidations = GetFailedValidations(validationSet);
 
@@ -285,6 +285,13 @@ namespace NuGet.Services.Validation.Orchestrator
             }
             else
             {
+                _logger.LogWarning("Abandoning checking status of validation set {ValidationTrackingId} for " +
+                    "package {PackageId} {PackageVersion} because it took too long (Duration: {Duration}, CutOffDuration: {CutOffDuration})",
+                    validationSet.ValidationTrackingId,
+                    validationSet.PackageId,
+                    validationSet.PackageNormalizedVersion,
+                    validationSetDuration,
+                    _validationConfiguration.TimeoutValidationSetAfter);
                 _telemetryService.TrackValidationSetTimeout(package.PackageRegistration.Id, package.NormalizedVersion, validationSet.ValidationTrackingId);
             }
         }
