@@ -52,7 +52,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _validationConfigurationsByName = _validationConfiguration.Validations.ToDictionary(v => v.Name);
         }
 
-        public async Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats processorStats)
+        public async Task ProcessValidationOutcomeAsync(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats currentCallStats)
         {
             var failedValidations = GetFailedValidations(validationSet);
 
@@ -127,14 +127,14 @@ namespace NuGet.Services.Validation.Orchestrator
                     _messageService.SendPackagePublishedMessage(package);
                 }
 
-                if (processorStats.AnyRequiredValidationSucceeded)
+                if (currentCallStats.AnyRequiredValidationSucceeded)
                 {
                     TrackValidationSetCompletion(package, validationSet, isSuccess: true);
                 }
 
                 if (AreOptionalValidationsRunning(validationSet))
                 {
-                    await ScheduleCheckIfNotTimedOut(validationSet, package);
+                    await ScheduleCheckIfNotTimedOut(validationSet, package, tooLongNotificationAllowed: false);
                 }
                 else
                 {
@@ -143,7 +143,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
             else
             {
-                await ScheduleCheckIfNotTimedOut(validationSet, package);
+                await ScheduleCheckIfNotTimedOut(validationSet, package, tooLongNotificationAllowed: true);
             }
         }
 
@@ -219,7 +219,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .ToList();
         }
 
-        private async Task<TimeSpan> UpdateValidationDuratinoAsync(PackageValidationSet validationSet, Package package)
+        private async Task<TimeSpan> UpdateValidationDurationAsync(PackageValidationSet validationSet, Package package, bool tooLongNotificationAllowed)
         {
             // There are no failed validations and some validations are still in progress. Update
             // the validation set's Updated field and send a notice if the validation set is taking
@@ -235,7 +235,8 @@ namespace NuGet.Services.Validation.Orchestrator
             // the package's first validation set and that this is the first time the validation set duration
             // is greater than the configured threshold. Service Bus message duplication for a single validation
             // set will not cause multiple notices to be sent due to the row version on PackageValidationSet.
-            if (validationSetDuration > _validationConfiguration.ValidationSetNotificationTimeout &&
+            if (tooLongNotificationAllowed &&
+                validationSetDuration > _validationConfiguration.ValidationSetNotificationTimeout &&
                 previousDuration <= _validationConfiguration.ValidationSetNotificationTimeout &&
                 await _validationStorageService.GetValidationSetCountAsync(package.Key) == 1)
             {
@@ -270,9 +271,9 @@ namespace NuGet.Services.Validation.Orchestrator
             return validationSetDuration;
         }
 
-        private async Task ScheduleCheckIfNotTimedOut(PackageValidationSet validationSet, Package package)
+        private async Task ScheduleCheckIfNotTimedOut(PackageValidationSet validationSet, Package package, bool tooLongNotificationAllowed)
         {
-            var validationSetDuration = await UpdateValidationDuratinoAsync(validationSet, package);
+            var validationSetDuration = await UpdateValidationDurationAsync(validationSet, package, tooLongNotificationAllowed);
 
             // Schedule another check if we haven't reached the validation set timeout yet.
             if (validationSetDuration <= _validationConfiguration.TimeoutValidationSetAfter)

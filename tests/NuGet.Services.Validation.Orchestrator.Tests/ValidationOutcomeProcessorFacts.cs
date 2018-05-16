@@ -169,15 +169,19 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             PackageFileServiceMock
                 .Verify(x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Never);
 
+            TelemetryServiceMock.ResetCalls();
+            MessageServiceMock.ResetCalls();
+            ValidationEnqueuerMock.ResetCalls();
+
             // Process the outcome again - the "too long to validate" message should NOT be sent.
             await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
 
             TelemetryServiceMock
-                .Verify(t => t.TrackSentValidationTakingTooLongMessage(Package.PackageRegistration.Id, Package.NormalizedVersion, ValidationSet.ValidationTrackingId), Times.Once);
+                .Verify(t => t.TrackSentValidationTakingTooLongMessage(Package.PackageRegistration.Id, Package.NormalizedVersion, ValidationSet.ValidationTrackingId), Times.Never);
             MessageServiceMock
-                .Verify(m => m.SendPackageValidationTakingTooLongMessage(Package), Times.Once);
+                .Verify(m => m.SendPackageValidationTakingTooLongMessage(Package), Times.Never);
             ValidationEnqueuerMock
-                .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Exactly(2));
+                .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Once);
             PackageFileServiceMock
                 .Verify(x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Never);
         }
@@ -307,7 +311,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidationStatus validation,
             PackageStatus fromStatus,
             PackageStatus toStatus,
-            bool setPackageStatus)
+            bool expectedSetPackageStatusCall)
         {
             AddValidation("validation1", validation);
             Package.PackageStatusKey = fromStatus;
@@ -326,7 +330,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
             var after = DateTime.UtcNow;
 
-            if (setPackageStatus)
+            if (expectedSetPackageStatusCall)
             {
                 PackageStateProcessorMock.Verify(
                     x => x.SetPackageStatusAsync(Package, ValidationSet, toStatus),
@@ -348,6 +352,117 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             TelemetryServiceMock
                 .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
             Assert.InRange(duration, before - ValidationSet.Created, after - ValidationSet.Created);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public async Task TracksSuccessOnAllRequiredValidatorsFinished(bool requiredValidationSucceeded, bool expectedCompletionTracking)
+        {
+            AddValidation("requiredValidation", ValidationStatus.Succeeded, ValidationFailureBehavior.MustSucceed);
+            AddValidation("optionalValidaiton", ValidationStatus.Incomplete, ValidationFailureBehavior.AllowedToFail);
+            ProcessorStats.AnyRequiredValidationSucceeded = requiredValidationSucceeded;
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+
+            if (expectedCompletionTracking)
+            {
+                TelemetryServiceMock
+                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), true), Times.Once());
+                TelemetryServiceMock
+                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
+            }
+            else
+            {
+                TelemetryServiceMock
+                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Never());
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ContinuesCheckingStatusIfOptionalValidationsAreRunning(bool requiredValidationSucceeded)
+        {
+            AddValidation("requiredValidation", ValidationStatus.Succeeded, ValidationFailureBehavior.MustSucceed);
+            AddValidation("optionalValidaiton", ValidationStatus.Incomplete, ValidationFailureBehavior.AllowedToFail);
+            ProcessorStats.AnyRequiredValidationSucceeded = requiredValidationSucceeded;
+            Configuration.TimeoutValidationSetAfter = TimeSpan.FromDays(1);
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+
+            ValidationEnqueuerMock
+                .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Once());
+        }
+
+        [Theory]
+        [InlineData(true, ValidationStatus.Succeeded)]
+        [InlineData(true, ValidationStatus.Failed)]
+        [InlineData(false, ValidationStatus.Succeeded)]
+        [InlineData(false, ValidationStatus.Failed)]
+        public async Task StopsCheckingStatusWhenOptionalValidationsFinish(bool requiredValidationSucceeded, ValidationStatus finalState)
+        {
+            AddValidation("requiredValidation", ValidationStatus.Succeeded, ValidationFailureBehavior.MustSucceed);
+            AddValidation("optionalValidaiton", finalState, ValidationFailureBehavior.AllowedToFail);
+            ProcessorStats.AnyRequiredValidationSucceeded = requiredValidationSucceeded;
+            Configuration.TimeoutValidationSetAfter = TimeSpan.FromDays(1);
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+
+            ValidationEnqueuerMock
+                .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Never());
+        }
+
+        public static IEnumerable<object[]> TwoValidationStatusAndBoolCombinations =>
+            from s1 in new[] { ValidationStatus.Failed, ValidationStatus.Incomplete, ValidationStatus.NotStarted, ValidationStatus.Succeeded }
+            from s2 in new[] { ValidationStatus.Failed, ValidationStatus.Incomplete, ValidationStatus.NotStarted, ValidationStatus.Succeeded }
+            from b1 in new[] { false, true }
+            select new object[] { s1, s2, b1 };
+
+        [Theory]
+        [MemberData(nameof(TwoValidationStatusAndBoolCombinations))]
+        public async Task SendsTooLongNotificationOnlyWhenItConcernsRequiredValidation(
+            ValidationStatus requiredValidationState,
+            ValidationStatus optionalValidationState,
+            bool requiredValidationSucceeded)
+        {
+            bool expectedNotification = requiredValidationState == ValidationStatus.Incomplete || requiredValidationState == ValidationStatus.NotStarted;
+
+            AddValidation("requiredValidation", requiredValidationState, ValidationFailureBehavior.MustSucceed);
+            AddValidation("optionalValidaiton", optionalValidationState, ValidationFailureBehavior.AllowedToFail);
+            ProcessorStats.AnyRequiredValidationSucceeded = requiredValidationSucceeded;
+            Configuration.TimeoutValidationSetAfter = TimeSpan.FromDays(1);
+            Configuration.ValidationSetNotificationTimeout = TimeSpan.FromMinutes(20);
+            Configuration.ValidationMessageRecheckPeriod = TimeSpan.FromMinutes(1);
+
+            ValidationSet.Created = DateTime.UtcNow - Configuration.ValidationSetNotificationTimeout - TimeSpan.FromMinutes(1);
+            ValidationSet.Updated = DateTime.UtcNow - TimeSpan.FromMinutes(15);
+
+            ValidationStorageServiceMock
+                .Setup(s => s.UpdateValidationSetAsync(It.IsAny<PackageValidationSet>()))
+                .Callback<PackageValidationSet>(s => s.Updated = DateTime.UtcNow)
+                .Returns(Task.CompletedTask);
+
+            ValidationStorageServiceMock
+                .Setup(s => s.GetValidationSetCountAsync(Package.Key))
+                .Returns(Task.FromResult(1));
+
+            var processor = CreateProcessor();
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+
+            if (expectedNotification)
+            {
+                MessageServiceMock
+                    .Verify(m => m.SendPackageValidationTakingTooLongMessage(Package), Times.Once());
+            }
+            else
+            {
+                MessageServiceMock
+                    .Verify(m => m.SendPackageValidationTakingTooLongMessage(Package), Times.Never());
+            }
         }
 
         [Fact]

@@ -51,6 +51,7 @@ namespace NuGet.Services.Validation.Orchestrator
             var processorStats = new ValidationSetProcessorStats();
             int loopLimit = MaxProcessAttempts;
             await ProcessIncompleteValidations(validationSet, package, processorStats);
+            bool hadSucceededValidations = false;
             do
             {
                 // we will try to start more validations in case previous validation start attempts
@@ -59,7 +60,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 // returns false) we move on and will check on progress later.
                 // loopLimit is there to prevent looping here infinitely if there are any bugs that
                 // cause ProcessNotStartedValidations to always return true.
-                await ProcessNotStartedValidations(validationSet, package, processorStats);
+                hadSucceededValidations = await ProcessNotStartedValidations(validationSet, package, processorStats);
             } while (processorStats.AnyValidationSucceeded && loopLimit-- > 0);
             if (loopLimit <= 0)
             {
@@ -146,8 +147,9 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private async Task ProcessNotStartedValidations(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats processorStats)
+        private async Task<bool> ProcessNotStartedValidations(PackageValidationSet validationSet, Package package, ValidationSetProcessorStats processorStats)
         {
+            bool tryMoreValidations = false;
             foreach (var packageValidation in validationSet.PackageValidations.Where(v => v.ValidationStatus == ValidationStatus.NotStarted))
             {
                 using (_logger.BeginScope("Not started {ValidationType} Key {ValidationId}", packageValidation.Type, packageValidation.Key))
@@ -227,10 +229,13 @@ namespace NuGet.Services.Validation.Orchestrator
                         if (validationResult.Status == ValidationStatus.Succeeded)
                         {
                             UpdateStatsForValidationSuccess(processorStats, validationConfiguration);
+                            tryMoreValidations = true;
                         }
                     }
                 }
             }
+
+            return tryMoreValidations;
         }
 
         private void UpdateStatsForValidationSuccess(ValidationSetProcessorStats processorStats, ValidationConfigurationItem validationConfiguration)
