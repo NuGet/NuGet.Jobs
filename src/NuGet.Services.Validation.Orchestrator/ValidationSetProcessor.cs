@@ -201,24 +201,17 @@ namespace NuGet.Services.Validation.Orchestrator
                         {
                             validationResult = await validator.StartAsync(validationRequest);
                         }
-                        catch (Exception e)
+                        catch (Exception e) when (validationConfiguration.FailureBehavior != ValidationFailureBehavior.MustSucceed)
                         {
-                            if (validationConfiguration.FailureBehavior == ValidationFailureBehavior.MustSucceed)
-                            {
-                                throw;
-                            }
-                            else
-                            {
-                                // ignore exceptions for optional validators
-                                _logger.LogWarning(0, e, "Got exception while running optional validation {ValidationType} for " +
-                                    "{PackageId} {PackageVersion}, validation set {ValidationSetId}, {ValidationId}, {NupkgUrl}",
-                                    packageValidation.Type,
-                                    package.PackageRegistration.Id,
-                                    package.NormalizedVersion,
-                                    validationSet.ValidationTrackingId,
-                                    packageValidation.Key,
-                                    validationRequest.NupkgUrl);
-                            }
+                            // ignore exceptions for optional validators
+                            _logger.LogWarning(0, e, "Got exception while running optional validation {ValidationType} for " +
+                                "{PackageId} {PackageVersion}, validation set {ValidationSetId}, {ValidationId}, {NupkgUrl}",
+                                packageValidation.Type,
+                                package.PackageRegistration.Id,
+                                package.NormalizedVersion,
+                                validationSet.ValidationTrackingId,
+                                packageValidation.Key,
+                                validationRequest.NupkgUrl);
                         }
                         _logger.LogInformation("Got validationStatus = {ValidationStatus} for validation {ValidationType} for {PackageId} {PackageVersion}, validation set {ValidationSetId}, {ValidationId}",
                             validationResult.Status,
