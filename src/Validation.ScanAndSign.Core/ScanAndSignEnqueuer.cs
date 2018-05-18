@@ -4,21 +4,21 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Validation;
 
-namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
+namespace NuGet.Jobs.Validation.ScanAndSign
 {
     public class ScanAndSignEnqueuer : IScanAndSignEnqueuer
     {
         private readonly ITopicClient _topicClient;
         private readonly IBrokeredMessageSerializer<ScanAndSignMessage> _serializer;
-        private readonly ScanAndSignConfiguration _configuration;
+        private readonly ScanAndSignEnqueuerConfiguration _configuration;
 
         public ScanAndSignEnqueuer(
             ITopicClient topicClient,
             IBrokeredMessageSerializer<ScanAndSignMessage> serializer,
-            IOptionsSnapshot<ScanAndSignConfiguration> configurationAccessor)
+            IOptionsSnapshot<ScanAndSignEnqueuerConfiguration> configurationAccessor)
         {
             _topicClient = topicClient ?? throw new ArgumentNullException(nameof(topicClient));
             _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));

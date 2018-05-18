@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Threading.Tasks;
-using NuGet.Jobs.Validation.ScanAndSign;
+using NuGet.Services.Validation;
 
-namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
+namespace NuGet.Jobs.Validation.ScanAndSign
 {
     public interface IScanAndSignEnqueuer
     {

@@ -53,7 +53,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         {
             _configurationAccessorMock
                 .SetupGet(ca => ca.Value)
-                .Returns((ScanAndSignConfiguration)null);
+                .Returns((ScanAndSignEnqueuerConfiguration)null);
 
 
             var ex = Assert.Throws<ArgumentException>(() => new ScanAndSignEnqueuer(
@@ -133,17 +133,17 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
     {
         protected Mock<ITopicClient> _topicClientMock;
         protected Mock<IBrokeredMessageSerializer<ScanAndSignMessage>> _serializerMock;
-        protected Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _configurationAccessorMock;
-        protected ScanAndSignConfiguration _configuration;
+        protected Mock<IOptionsSnapshot<ScanAndSignEnqueuerConfiguration>> _configurationAccessorMock;
+        protected ScanAndSignEnqueuerConfiguration _configuration;
         protected ScanAndSignEnqueuer _target;
 
         public ScanAndSignEnqueuerFactsBase()
         {
             _topicClientMock = new Mock<ITopicClient>();
             _serializerMock = new Mock<IBrokeredMessageSerializer<ScanAndSignMessage>>();
-            _configurationAccessorMock = new Mock<IOptionsSnapshot<ScanAndSignConfiguration>>();
+            _configurationAccessorMock = new Mock<IOptionsSnapshot<ScanAndSignEnqueuerConfiguration>>();
 
-            _configuration = new ScanAndSignConfiguration();
+            _configuration = new ScanAndSignEnqueuerConfiguration();
             _configurationAccessorMock
                 .SetupGet(ca => ca.Value)
                 .Returns(_configuration);
