@@ -105,7 +105,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             // here we need to determine whether we do scan only or scan and repo sign.
             // Right now we only support scan only.
 
-            await _scanAndSignEnqueuer.EnqueueScanAsync(request);
+            await _scanAndSignEnqueuer.EnqueueScanAsync(request.ValidationId, request.NupkgUrl);
             var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
 
             return result.ToValidationResult();

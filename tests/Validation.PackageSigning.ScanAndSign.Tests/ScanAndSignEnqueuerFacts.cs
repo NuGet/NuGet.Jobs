@@ -8,7 +8,6 @@ using Moq;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Orchestrator;
-using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using Xunit;
 
 namespace Validation.PackageSigning.ScanAndSign.Tests
@@ -68,9 +67,9 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
     public class TheEnqueueScanAsyncMethod : ScanAndSignEnqueuerFactsBase
     {
         [Fact]
-        public async Task ThrowsWhenRequestIsNull()
+        public async Task ThrowsWhenUrlIsNull()
         {
-            var ex = await Assert.ThrowsAsync<ArgumentNullException>(() => _target.EnqueueScanAsync(null));
+            var ex = await Assert.ThrowsAsync<ArgumentNullException>(() => _target.EnqueueScanAsync(Guid.NewGuid(), null));
             Assert.Equal("request", ex.ParamName);
         }
 
@@ -79,7 +78,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         {
             var request = new ValidationRequest(Guid.NewGuid(), 42, "somepackage", "someversion", "https://example.com/testpackage.nupkg");
 
-            await _target.EnqueueScanAsync(request);
+            await _target.EnqueueScanAsync(request.ValidationId, request.NupkgUrl);
 
             _serializerMock
                 .Verify(s => s.Serialize(It.IsAny<ScanAndSignMessage>()), Times.Once);
@@ -95,7 +94,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _configuration.MessageDelay = TimeSpan.FromDays(messageDelayDays);
             var request = new ValidationRequest(Guid.NewGuid(), 42, "somepackage", "someversion", "https://example.com/testpackage.nupkg");
 
-            await _target.EnqueueScanAsync(request);
+            await _target.EnqueueScanAsync(request.ValidationId, request.NupkgUrl);
 
             Assert.Equal(messageDelayDays, (_serializedMessage.ScheduledEnqueueTimeUtc - DateTimeOffset.UtcNow).TotalDays, 0);
         }
@@ -104,7 +103,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         public async Task SendsMessage()
         {
             var request = new ValidationRequest(Guid.NewGuid(), 42, "somepackage", "someversion", "https://example.com/testpackage.nupkg");
-            await _target.EnqueueScanAsync(request);
+            await _target.EnqueueScanAsync(request.ValidationId, request.NupkgUrl);
 
             Assert.Same(_serializedMessage, _capturedBrokeredMessage);
         }

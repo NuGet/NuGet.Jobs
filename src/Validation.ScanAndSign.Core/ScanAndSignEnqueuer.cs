@@ -5,7 +5,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using NuGet.Services.ServiceBus;
-using NuGet.Services.Validation;
 
 namespace NuGet.Jobs.Validation.ScanAndSign
 {
@@ -33,17 +32,17 @@ namespace NuGet.Jobs.Validation.ScanAndSign
             _configuration = configurationAccessor.Value;
         }
 
-        public Task EnqueueScanAsync(IValidationRequest request)
+        public Task EnqueueScanAsync(Guid validationId, string nupkgUrl)
         {
-            if (request == null)
+            if (nupkgUrl == null)
             {
-                throw new ArgumentNullException(nameof(request));
+                throw new ArgumentNullException(nameof(nupkgUrl));
             }
 
             var message = new ScanAndSignMessage(
                 OperationRequestType.Scan,
-                request.ValidationId,
-                new Uri(request.NupkgUrl));
+                validationId,
+                new Uri(nupkgUrl));
             var brokeredMessage = _serializer.Serialize(message);
 
             var visibleAt = DateTimeOffset.UtcNow + (_configuration.MessageDelay ?? TimeSpan.Zero);

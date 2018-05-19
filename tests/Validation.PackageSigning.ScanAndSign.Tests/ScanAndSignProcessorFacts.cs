@@ -210,7 +210,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             var result = await _target.StartAsync(_request);
 
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(It.IsAny<IValidationRequest>()), Times.Never);
+                .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
             _validatorStateServiceMock
                 .Verify(vss => vss.AddStatusAsync(It.IsAny<ValidatorStatus>()), Times.Never);
             _validatorStateServiceMock
@@ -229,9 +229,9 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         {
             var result = await _target.StartAsync(_request);
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(_request), Times.Once);
+                .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(It.IsAny<IValidationRequest>()), Times.Once);
+                .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
 
             _validatorStateServiceMock
                 .Verify(vss => vss.TryAddValidatorStatusAsync(_request, _status, ValidationStatus.Incomplete), Times.Once);
@@ -255,7 +255,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _validatorStateServiceMock
                 .Verify(vss => vss.GetStatusAsync(It.IsAny<Guid>()), Times.Never);
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(It.IsAny<IValidationRequest>()), Times.Never);
+                .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
             _validatorStateServiceMock
                 .Verify(vss => vss.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Never);
         }
