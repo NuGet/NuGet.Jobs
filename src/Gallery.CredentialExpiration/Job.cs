@@ -39,7 +39,7 @@ namespace Gallery.CredentialExpiration
         private string _mailFrom;
         private SmtpClient _smtpClient;
 
-        private int _allowEmailResendAfterDays = 7;
+        private int _allowEmailResendAfterDays = 2;
         private int _warnDaysBeforeExpiration = 10;
 
         private Storage _storage;
@@ -150,8 +150,7 @@ namespace Gallery.CredentialExpiration
                     }
                     else
                     {
-                        Logger.LogDebug("Skipping expired credential for user {Username} - already handled at {JobRuntime}.",
-                            username, userContactTime);
+                        Logger.LogDebug("Skipping expired credential - already handled at {JobRuntime}.", userContactTime);
                     }
                 }
             }
@@ -172,9 +171,8 @@ namespace Gallery.CredentialExpiration
                 return;
             }
 
-            Logger.LogInformation("Handling {Expired} credential(s) for user {Username} (Keys: {Descriptions})...",
+            Logger.LogInformation("Handling {Expired} credential(s) (Keys: {Descriptions})...",
                 expired ? "expired" : "expiring",
-                username,
                 string.Join(", ", credentialList.Select(x => x.Description).ToList()));
 
             // Build message
@@ -206,21 +204,20 @@ namespace Gallery.CredentialExpiration
                     await _smtpClient.SendMailAsync(mailMessage);
                 }
 
-                Logger.LogInformation("Handled {Expired} credential for user {Username}.",
-                    expired ? "expired" : "expiring",
-                    username);
+                Logger.LogInformation("Handled {Expired} credential .",
+                    expired ? "expired" : "expiring");
 
                 _contactedUsers.AddOrUpdate(username, jobRunTime, (s, offset) => jobRunTime);
             }
             catch (SmtpFailedRecipientException ex)
             {
-                var logMessage = "Failed to handle credential for user {Username} - recipient failed!";
-                Logger.LogWarning(LogEvents.FailedToSendMail, ex, logMessage, username);
+                var logMessage = "Failed to handle credential - recipient failed!";
+                Logger.LogWarning(LogEvents.FailedToSendMail, ex, logMessage);
             }
             catch (Exception ex)
             {
-                var logMessage = "Failed to handle credential for user {Username}.";
-                Logger.LogCritical(LogEvents.FailedToHandleExpiredCredential, ex, logMessage, username);
+                var logMessage = "Failed to handle credential .";
+                Logger.LogCritical(LogEvents.FailedToHandleExpiredCredential, ex, logMessage);
 
                 throw;
             }
