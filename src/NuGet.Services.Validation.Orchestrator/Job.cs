@@ -24,11 +24,13 @@ using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
+using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGet.Services.Validation.PackageSigning.ProcessSignature;
 using NuGet.Services.Validation.PackageSigning.ValidateCertificate;
@@ -47,6 +49,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string VcsSectionName = "Vcs";
         private const string PackageSigningSectionName = "PackageSigning";
         private const string PackageCertificatesSectionName = "PackageCertificates";
+        private const string ScanAndSignSectionName = "ScanAndSign";
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
@@ -57,8 +60,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
-        private const string PackageSigningBindingKey = PackageSigningSectionName;
+        private const string PackageSignatureBindingKey = PackageSigningSectionName;
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
+        private const string ScanAndSignBindingKey = ScanAndSignSectionName;
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
 
@@ -154,6 +158,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
             services.Configure<SmtpConfiguration>(configurationRoot.GetSection(SmtpConfigurationSectionName));
             services.Configure<EmailConfiguration>(configurationRoot.GetSection(EmailConfigurationSectionName));
+            services.Configure<ScanAndSignConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
 
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
@@ -204,9 +209,11 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IValidationSetProcessor, ValidationSetProcessor>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
+            services.AddTransient<IBrokeredMessageSerializer<ScanAndSignMessage>, ScanAndSignMessageSerializer>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
-            services.AddTransient<PackageSigningValidator>();
+            services.AddTransient<PackageSignatureProcessor>();
+            services.AddTransient<PackageSignatureValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
             {
                 var smtpConfigurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<SmtpConfiguration>>();
@@ -326,21 +333,22 @@ namespace NuGet.Services.Validation.Orchestrator
                     IMessageHandler<PackageValidationMessageData>>(
                         OrchestratorBindingKey);
 
-            ConfigurePackageSigningValidator(containerBuilder);
+            ConfigurePackageSigningValidators(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
+            ConfigureScanAndSignProcessor(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
 
-        private static void ConfigurePackageSigningValidator(ContainerBuilder builder)
+        private static void ConfigurePackageSigningValidators(ContainerBuilder builder)
         {
             // Configure the validator state service for the package certificates validator.
             builder
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
-                    (pi, ctx) => ValidatorName.PackageSigning)
-                .Keyed<IValidatorStateService>(PackageSigningBindingKey);
+                    (pi, ctx) => ValidatorName.PackageSignatureProcessor)
+                .Keyed<IValidatorStateService>(PackageSignatureBindingKey);
 
             // Configure the package signature verification enqueuer.
             builder
@@ -350,18 +358,25 @@ namespace NuGet.Services.Validation.Orchestrator
 
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
-                .Keyed<ITopicClient>(PackageSigningBindingKey);
+                .Keyed<ITopicClient>(PackageSignatureBindingKey);
 
             builder
                 .RegisterType<ProcessSignatureEnqueuer>()
-                .WithKeyedParameter(typeof(ITopicClient), PackageSigningBindingKey)
+                .WithKeyedParameter(typeof(ITopicClient), PackageSignatureBindingKey)
                 .As<IProcessSignatureEnqueuer>();
 
-            // Configure the package signing validator.
+            // Configure the package signature validators. The processor runs before packages are
+            // repository signed and can strip unacceptable repository signatures. The validator
+            // runs after packages are repository signed.
             builder
-                .RegisterType<PackageSigningValidator>()
-                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningBindingKey)
-                .As<PackageSigningValidator>();
+                .RegisterType<PackageSignatureProcessor>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSignatureBindingKey)
+                .As<PackageSignatureProcessor>();
+
+            builder
+                .RegisterType<PackageSignatureValidator>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSignatureBindingKey)
+                .As<PackageSignatureValidator>();
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)
@@ -397,6 +412,34 @@ namespace NuGet.Services.Validation.Orchestrator
                     (pi, ctx) => pi.ParameterType == typeof(TimeSpan?),
                     (pi, ctx) => ctx.Resolve<IOptionsSnapshot<ValidateCertificateConfiguration>>().Value.CertificateRevalidationThreshold)
                 .As<PackageCertificatesValidator>();
+        }
+
+        private static void ConfigureScanAndSignProcessor(ContainerBuilder builder)
+        {
+            builder
+                .Register(c =>
+                {
+                    var configuration = c.Resolve<IOptionsSnapshot<ScanAndSignConfiguration>>().Value.ServiceBus;
+                    return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+                })
+                .Keyed<ITopicClient>(ScanAndSignBindingKey);
+
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.ScanAndSign)
+                .Keyed<IValidatorStateService>(ScanAndSignBindingKey);
+
+            builder
+                .RegisterType<ScanAndSignEnqueuer>()
+                .WithKeyedParameter(typeof(ITopicClient), ScanAndSignBindingKey)
+                .As<IScanAndSignEnqueuer>();
+
+            builder
+                .RegisterType<ScanAndSignProcessor>()
+                .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
+                .AsSelf();
         }
 
         private T GetRequiredService<T>()
