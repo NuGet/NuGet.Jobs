@@ -78,7 +78,7 @@ namespace Gallery.CredentialExpiration
 
             try
             {
-                List<ExpiredCredentialData> expiredCredentials = null;
+                List<ExpiredCredentialData> credentialsInRange = null;
 
                 // Get the most recent date for the emails being sent 
                 if (_storage.Exists(_cursorFile))
@@ -86,34 +86,25 @@ namespace Gallery.CredentialExpiration
                     string content = await _storage.LoadString(_storage.ResolveUri(_cursorFile), CancellationToken.None);
                     // Load from cursor
                     JObject obj = JObject.Parse(content);
-                    lastDateForEmailsBeingSent = obj["value"].ToObject<DateTimeOffset>();
+                    lastDateForEmailsBeingSent = obj["Value"].ToObject<DateTimeOffset>().ToUniversalTime();
                 }
+
+                var galleryCredentialExpiration = new GalleryCredentialExpiration(new ExpiredCredentialJobMetadata(jobRunTime, lastDateForEmailsBeingSent, _warnDaysBeforeExpiration), _galleryDatabase);
 
                 // Connect to database
-                using (var galleryConnection = await _galleryDatabase.CreateAsync())
-                {
-                    // Fetch credentials that expire in _warnDaysBeforeExpiration days 
-                    // + the user's e-mail address
-                    Logger.LogInformation("Retrieving expired credentials from Gallery database...");
-
-                    expiredCredentials = (await galleryConnection.QueryWithRetryAsync<ExpiredCredentialData>(
-                        Strings.GetExpiredCredentialsQuery,
-                        param: new { DaysBeforeExpiration = _warnDaysBeforeExpiration },
-                        maxRetries: 3,
-                        commandTimeout: _defaultCommandTimeout)).ToList();
-
-                    Logger.LogInformation("Retrieved {ExpiredCredentials} expired credentials.",
-                        expiredCredentials.Count);
-                }
+                Logger.LogInformation("Retrieving expired credentials from Gallery database...");
+                credentialsInRange = await galleryCredentialExpiration.GetCredentialsAsync(_defaultCommandTimeout);
+                Logger.LogInformation("Retrieved {ExpiredCredentials} expired credentials.",
+                       credentialsInRange.Count);
 
                 // Add default description for non-scoped API keys
-                expiredCredentials
+                credentialsInRange
                     .Where(cred => string.IsNullOrEmpty(cred.Description))
                     .ToList()
                     .ForEach(ecd => ecd.Description = Constants.NonScopedApiKeyDescription);
 
                 // Group credentials for each user
-                var userToExpiredCredsMapping = expiredCredentials
+                var userToExpiredCredsMapping = credentialsInRange
                     .GroupBy(x => x.Username)
                     .ToDictionary(user => user.Key, value => value.ToList());
 
@@ -123,12 +114,8 @@ namespace Gallery.CredentialExpiration
                     var credentialList = userCredMapping.Value;
 
                     // Split credentials into two lists: Expired and Expiring to aggregate messages
-                    var expiringCredentialList = credentialList
-                        .Where(x => (x.Expires - lastDateForEmailsBeingSent).TotalDays > _warnDaysBeforeExpiration)
-                        .ToList();
-                    var expiredCredentialList = credentialList
-                        .Where(x => (x.Expires - jobRunTime).TotalDays <= 0 && (lastDateForEmailsBeingSent - x.Expires).TotalDays <= 0)
-                        .ToList();
+                    var expiringCredentialList = galleryCredentialExpiration.ExpiringCredentials(credentialList);
+                    var expiredCredentialList = galleryCredentialExpiration.ExpiredCredentials(credentialList);
 
                     await HandleExpiredCredentialEmail(username, expiringCredentialList, jobRunTime, expired: false);
 
@@ -138,9 +125,8 @@ namespace Gallery.CredentialExpiration
             }
             finally
             {
-                // Make sure we know who has been contacted today, so they do not get double
-                // e-mail notifications.
-                string json = $"{{\"value\": \"{jobRunTime}\"}}";
+                JobRunTimeCursor cursor = new JobRunTimeCursor(jobRunTime);
+                string json = JsonConvert.SerializeObject(cursor);
                 var content = new StringStorageContent(json, "application/json");
                 await _storage.Save(_storage.ResolveUri(_cursorFile), content, CancellationToken.None);
             }
