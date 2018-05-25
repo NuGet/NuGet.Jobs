@@ -15,6 +15,7 @@ using Gallery.CredentialExpiration.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
@@ -26,8 +27,7 @@ namespace Gallery.CredentialExpiration
     {
         private readonly TimeSpan _defaultCommandTimeout = TimeSpan.FromMinutes(30);
 
-        private readonly ConcurrentDictionary<string, DateTimeOffset> _contactedUsers = new ConcurrentDictionary<string, DateTimeOffset>();
-        private readonly string _cursorFile = "cursor.json";
+        private readonly string _cursorFile = "cursorv2.json";
 
         private bool _whatIf = false;
 
@@ -39,7 +39,6 @@ namespace Gallery.CredentialExpiration
         private string _mailFrom;
         private SmtpClient _smtpClient;
 
-        private int _allowEmailResendAfterDays = 2;
         private int _warnDaysBeforeExpiration = 10;
 
         private Storage _storage;
@@ -64,9 +63,6 @@ namespace Gallery.CredentialExpiration
             _warnDaysBeforeExpiration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.WarnDaysBeforeExpiration)
                 ?? _warnDaysBeforeExpiration;
 
-            _allowEmailResendAfterDays = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, MyJobArgumentNames.AllowEmailResendAfterDays)
-                ?? _allowEmailResendAfterDays;
-
             var storageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.DataStorageAccount);
             var storageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.ContainerName);
 
@@ -77,23 +73,20 @@ namespace Gallery.CredentialExpiration
 
         public override async Task Run()
         {
+            var jobRunTime = DateTimeOffset.UtcNow;
+            var lastDateForEmailsBeingSent = jobRunTime;
+
             try
             {
                 List<ExpiredCredentialData> expiredCredentials = null;
 
-                // Who did we contact before?
+                // Get the most recent date for the emails being sent 
                 if (_storage.Exists(_cursorFile))
                 {
                     string content = await _storage.LoadString(_storage.ResolveUri(_cursorFile), CancellationToken.None);
                     // Load from cursor
-                    var contactedUsers = JsonConvert.DeserializeObject<Dictionary<string, DateTimeOffset>>(content);
-
-                    // Clean older entries (contacted in last _allowEmailResendAfterDays)
-                    var referenceDate = DateTimeOffset.UtcNow.AddDays(-1 * _allowEmailResendAfterDays);
-                    foreach (var kvp in contactedUsers.Where(kvp => kvp.Value >= referenceDate))
-                    {
-                        _contactedUsers.AddOrUpdate(kvp.Key, kvp.Value, (s, offset) => kvp.Value);
-                    }
+                    JObject obj = JObject.Parse(content);
+                    lastDateForEmailsBeingSent = obj["value"].ToObject<DateTimeOffset>();
                 }
 
                 // Connect to database
@@ -124,8 +117,6 @@ namespace Gallery.CredentialExpiration
                     .GroupBy(x => x.Username)
                     .ToDictionary(user => user.Key, value => value.ToList());
 
-                // Handle expiring credentials
-                var jobRunTime = DateTimeOffset.UtcNow;
                 foreach (var userCredMapping in userToExpiredCredsMapping)
                 {
                     var username = userCredMapping.Key;
@@ -133,32 +124,23 @@ namespace Gallery.CredentialExpiration
 
                     // Split credentials into two lists: Expired and Expiring to aggregate messages
                     var expiringCredentialList = credentialList
-                        .Where(x => (x.Expires - jobRunTime).TotalDays > 0)
+                        .Where(x => (x.Expires - lastDateForEmailsBeingSent).TotalDays > _warnDaysBeforeExpiration)
                         .ToList();
                     var expiredCredentialList = credentialList
-                        .Where(x => (x.Expires - jobRunTime).TotalDays <= 0)
+                        .Where(x => (x.Expires - jobRunTime).TotalDays <= 0 && (lastDateForEmailsBeingSent - x.Expires).TotalDays <= 0)
                         .ToList();
 
-                    DateTimeOffset userContactTime;
-                    if (!_contactedUsers.TryGetValue(username, out userContactTime))
-                    {
-                        // send expiring API keys email notification
-                        await HandleExpiredCredentialEmail(username, expiringCredentialList, jobRunTime, expired: false);
+                    await HandleExpiredCredentialEmail(username, expiringCredentialList, jobRunTime, expired: false);
 
-                        // send expired API keys email notification
-                        await HandleExpiredCredentialEmail(username, expiredCredentialList, jobRunTime, expired: true);
-                    }
-                    else
-                    {
-                        Logger.LogDebug("Skipping expired credential - already handled at {JobRuntime}.", userContactTime);
-                    }
+                    // send expired API keys email notification
+                    await HandleExpiredCredentialEmail(username, expiredCredentialList, jobRunTime, expired: true);
                 }
             }
             finally
             {
                 // Make sure we know who has been contacted today, so they do not get double
                 // e-mail notifications.
-                string json = JsonConvert.SerializeObject(_contactedUsers);
+                string json = $"{{\"value\": \"{jobRunTime}\"}}";
                 var content = new StringStorageContent(json, "application/json");
                 await _storage.Save(_storage.ResolveUri(_cursorFile), content, CancellationToken.None);
             }
@@ -206,8 +188,6 @@ namespace Gallery.CredentialExpiration
 
                 Logger.LogInformation("Handled {Expired} credential .",
                     expired ? "expired" : "expiring");
-
-                _contactedUsers.AddOrUpdate(username, jobRunTime, (s, offset) => jobRunTime);
             }
             catch (SmtpFailedRecipientException ex)
             {
