@@ -132,7 +132,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                     _configuration.V3ServiceIndexUrl,
                     owners);
 
-                await _scanAndSignEnqueuer.EnqueueScanAndSignAsync(request, _configuration.V3ServiceIndexUrl, owners);
+                await _scanAndSignEnqueuer.EnqueueScanAndSignAsync(request.ValidationId, request.NupkgUrl, _configuration.V3ServiceIndexUrl, owners);
             }
             else
             {

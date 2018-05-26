@@ -53,9 +53,13 @@ namespace NuGet.Jobs.Validation.ScanAndSign
                     new Uri(nupkgUrl)));
         }
 
-        public Task EnqueueScanAndSignAsync(IValidationRequest request, string v3ServiceIndexUrl, List<string> owners)
+        public Task EnqueueScanAndSignAsync(Guid validationId, string nupkgUrl, string v3ServiceIndexUrl, List<string> owners)
         {
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (nupkgUrl == null)
+            {
+                throw new ArgumentNullException(nameof(nupkgUrl));
+            }
+
             if (owners == null) throw new ArgumentNullException(nameof(owners));
 
             if (string.IsNullOrEmpty(v3ServiceIndexUrl))
@@ -64,17 +68,17 @@ namespace NuGet.Jobs.Validation.ScanAndSign
             }
 
             _logger.LogInformation(
-                "Requested scan and sign for package {PackageId} {PackageVersion} using service index {ServiceIndex} and owners {Owners}",
-                request.PackageId,
-                request.PackageVersion,
+                "Requested scan and sign for validation {ValidationId} {BlobUrl} using service index {ServiceIndex} and owners {Owners}",
+                validationId,
+                nupkgUrl,
                 v3ServiceIndexUrl,
                 owners);
 
             return SendScanAndSignMessageAsync(
                 new ScanAndSignMessage(
                     OperationRequestType.Sign,
-                    request.ValidationId,
-                    new Uri(request.NupkgUrl),
+                    validationId,
+                    new Uri(nupkgUrl),
                     v3ServiceIndexUrl,
                     owners));
         }

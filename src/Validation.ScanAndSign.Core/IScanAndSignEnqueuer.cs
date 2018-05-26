@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NuGet.Services.Validation;
 
 namespace NuGet.Jobs.Validation.ScanAndSign
 {
@@ -13,14 +12,17 @@ namespace NuGet.Jobs.Validation.ScanAndSign
         /// <summary>
         /// Enqueues Scan operation.
         /// </summary>
+        /// <param name="validationId">Validation ID for which scan is requested.</param>
+        /// <param name="nupkgUrl">Url of the package to scan.</param>
         Task EnqueueScanAsync(Guid validationId, string nupkgUrl);
 
         /// <summary>
         /// Enqueues Scan And Sign operation.
         /// </summary>
-        /// <param name="request">The requested package validation.</param>
+        /// <param name="validationId">Validation ID for which scan and sign is requested.</param>
+        /// <param name="nupkgUrl">Url of the package to scan and sign.</param>
         /// <param name="v3ServiceIndexUrl">The service index URL that should be put on the package's repository signature.</param>
         /// <param name="owners">The list of owners that should be put on the package's repository signature.</param>
-        Task EnqueueScanAndSignAsync(IValidationRequest request, string v3ServiceIndexUrl, List<string> owners);
+        Task EnqueueScanAndSignAsync(Guid validationId, string nupkgUrl, string v3ServiceIndexUrl, List<string> owners);
     }
 }

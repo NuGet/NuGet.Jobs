@@ -134,11 +134,14 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         [Fact]
         public async Task ThrowsWhenParametersAreMissing()
         {
-            var ex1 = await Assert.ThrowsAsync<ArgumentNullException>(() => _target.EnqueueScanAndSignAsync(null, V3ServiceIndexUrl, _owners));
-            var ex2 = await Assert.ThrowsAsync<ArgumentException>(() => _target.EnqueueScanAndSignAsync(_validationRequest, null, _owners));
-            var ex3 = await Assert.ThrowsAsync<ArgumentNullException>(() => _target.EnqueueScanAndSignAsync(_validationRequest, V3ServiceIndexUrl, null));
+            var ex1 = await Assert.ThrowsAsync<ArgumentNullException>(()
+                => _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, null, V3ServiceIndexUrl, _owners));
+            var ex2 = await Assert.ThrowsAsync<ArgumentException>(()
+                => _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, null, _owners));
+            var ex3 = await Assert.ThrowsAsync<ArgumentNullException>(()
+                => _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, V3ServiceIndexUrl, null));
 
-            Assert.Equal("request", ex1.ParamName);
+            Assert.Equal("nupkgUrl", ex1.ParamName);
             Assert.Equal("v3ServiceIndexUrl", ex2.ParamName);
             Assert.Equal("owners", ex3.ParamName);
         }
@@ -146,7 +149,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         [Fact]
         public async Task PassesDataToSerializedMessage()
         {
-            await _target.EnqueueScanAndSignAsync(_validationRequest, V3ServiceIndexUrl, _owners);
+            await _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, V3ServiceIndexUrl, _owners);
 
             _serializerMock
                 .Verify(s => s.Serialize(It.IsAny<ScanAndSignMessage>()), Times.Once);
@@ -164,7 +167,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             const int messageDelayDays = 137;
             _configuration.MessageDelay = TimeSpan.FromDays(messageDelayDays);
 
-            await _target.EnqueueScanAndSignAsync(_validationRequest, V3ServiceIndexUrl, _owners);
+            await _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, V3ServiceIndexUrl, _owners);
 
             Assert.Equal(messageDelayDays, (_serializedMessage.ScheduledEnqueueTimeUtc - DateTimeOffset.UtcNow).TotalDays, 0);
         }
@@ -172,7 +175,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         [Fact]
         public async Task SendsMessage()
         {
-            await _target.EnqueueScanAndSignAsync(_validationRequest, V3ServiceIndexUrl, _owners);
+            await _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, V3ServiceIndexUrl, _owners);
 
             Assert.Same(_serializedMessage, _capturedBrokeredMessage);
         }

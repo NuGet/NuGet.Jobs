@@ -205,7 +205,8 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _enqueuerMock
                 .Verify(e =>
                     e.EnqueueScanAndSignAsync(
-                        _request,
+                        _request.ValidationId,
+                        _request.NupkgUrl,
                         _config.V3ServiceIndexUrl,
                         It.Is<List<string>>(l =>
                             l.Count() == 2 &&
@@ -258,7 +259,8 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _enqueuerMock
                 .Verify(e =>
                     e.EnqueueScanAndSignAsync(
-                        It.IsAny<IValidationRequest>(),
+                        It.IsAny<Guid>(),
+                        It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<List<string>>()),
                     Times.Never);
@@ -336,7 +338,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             await _target.StartAsync(_request);
 
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAndSignAsync(_request, _config.V3ServiceIndexUrl, It.IsAny<List<string>>()), Times.Once);
+                .Verify(e => e.EnqueueScanAndSignAsync(_request.ValidationId, _request.NupkgUrl, _config.V3ServiceIndexUrl, It.IsAny<List<string>>()), Times.Once);
 
             _validatorStateServiceMock
                 .Verify(v =>
