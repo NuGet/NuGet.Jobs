@@ -17,5 +17,15 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
         /// The criteria used to determine if a package should be submitted scanning.
         /// </summary>
         public PackageCriteria PackageCriteria { get; set; } = new PackageCriteria();
+
+        /// <summary>
+        /// If true, packages with no repository signatures will be repository signed.
+        /// </summary>
+        public bool RepositorySigningEnabled { get; set; }
+
+        /// <summary>
+        /// The service index URL that should be stamped on repository signatures.
+        /// </summary>
+        public string V3ServiceIndexUrl { get; set; }
     }
 }
