@@ -13,8 +13,8 @@ namespace Gallery.CredentialExpiration
 {
     public class GalleryCredentialExpiration : ICredentialExpirationExporter
     {
-        private CredentialExpirationJobMetadata _jobMetadata;
-        private ISqlConnectionFactory _galleryDatabase;
+        private readonly CredentialExpirationJobMetadata _jobMetadata;
+        private readonly ISqlConnectionFactory _galleryDatabase;
 
         public GalleryCredentialExpiration(CredentialExpirationJobMetadata jobMetadata, ISqlConnectionFactory galleryDatabase)
         {
