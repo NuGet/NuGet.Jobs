@@ -8,7 +8,7 @@ using Gallery.CredentialExpiration.Models;
 
 namespace Gallery.CredentialExpiration
 {
-    public interface ICredentialExpiration
+    public interface ICredentialExpirationExporter
     {
         /// <summary>
         /// Returns the entire credential set to work with.
@@ -22,13 +22,13 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="credentialSet"></param>
         /// <returns></returns>
-        List<ExpiredCredentialData> ExpiredCredentials(List<ExpiredCredentialData> credentialSet);
+        List<ExpiredCredentialData> GetExpiredCredentials(List<ExpiredCredentialData> credentialSet);
 
         /// <summary>
         /// Returns the set of expiring credentials that will have notification emails sent.
         /// </summary>
         /// <param name="credentialSet"></param>
         /// <returns></returns>
-        List<ExpiredCredentialData> ExpiringCredentials(List<ExpiredCredentialData> credentialSet);
+        List<ExpiredCredentialData> GetExpiringCredentials(List<ExpiredCredentialData> credentialSet);
     }
 }

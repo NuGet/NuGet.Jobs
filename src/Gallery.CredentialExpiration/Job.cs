@@ -89,7 +89,7 @@ namespace Gallery.CredentialExpiration
                     lastDateForEmailsBeingSent = obj["Value"].ToObject<DateTimeOffset>().ToUniversalTime();
                 }
 
-                var galleryCredentialExpiration = new GalleryCredentialExpiration(new ExpiredCredentialJobMetadata(jobRunTime, lastDateForEmailsBeingSent, _warnDaysBeforeExpiration), _galleryDatabase);
+                var galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, lastDateForEmailsBeingSent, _warnDaysBeforeExpiration), _galleryDatabase);
 
                 // Connect to database
                 Logger.LogInformation("Retrieving expired credentials from Gallery database...");
@@ -114,8 +114,8 @@ namespace Gallery.CredentialExpiration
                     var credentialList = userCredMapping.Value;
 
                     // Split credentials into two lists: Expired and Expiring to aggregate messages
-                    var expiringCredentialList = galleryCredentialExpiration.ExpiringCredentials(credentialList);
-                    var expiredCredentialList = galleryCredentialExpiration.ExpiredCredentials(credentialList);
+                    var expiringCredentialList = galleryCredentialExpiration.GetExpiringCredentials(credentialList);
+                    var expiredCredentialList = galleryCredentialExpiration.GetExpiredCredentials(credentialList);
 
                     await HandleExpiredCredentialEmail(username, expiringCredentialList, jobRunTime, expired: false);
 

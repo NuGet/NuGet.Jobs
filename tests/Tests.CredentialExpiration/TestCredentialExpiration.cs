@@ -9,16 +9,16 @@ using Gallery.CredentialExpiration.Models;
 
 namespace Tests.CredentialExpiration
 {
-    public class TestCredentialExpiration : ICredentialExpiration
+    public class TestCredentialExpiration : ICredentialExpirationExporter
     {
-        private ExpiredCredentialJobMetadata _jobMetadata;
+        private CredentialExpirationJobMetadata _jobMetadata;
         private DateTimeOffset _maxNotificationDate;
         private DateTimeOffset _minNotificationDate;
 
         private TimeSpan _skipHours;
         private GalleryCredentialExpiration _galleryCredentialsExpiration;
 
-        public TestCredentialExpiration(ExpiredCredentialJobMetadata jobMetadata, TimeSpan skipHours)
+        public TestCredentialExpiration(CredentialExpirationJobMetadata jobMetadata, TimeSpan skipHours)
         {
             _jobMetadata = jobMetadata;
             _skipHours = skipHours;
@@ -27,14 +27,14 @@ namespace Tests.CredentialExpiration
             _minNotificationDate = _galleryCredentialsExpiration.GetMinNotificationDate(jobMetadata);
         }
 
-        public List<ExpiredCredentialData> ExpiredCredentials(List<ExpiredCredentialData> credentialSet)
+        public List<ExpiredCredentialData> GetExpiredCredentials(List<ExpiredCredentialData> credentialSet)
         {
-            return _galleryCredentialsExpiration.ExpiredCredentials(credentialSet);
+            return _galleryCredentialsExpiration.GetExpiredCredentials(credentialSet);
         }
 
-        public List<ExpiredCredentialData> ExpiringCredentials(List<ExpiredCredentialData> credentialSet)
+        public List<ExpiredCredentialData> GetExpiringCredentials(List<ExpiredCredentialData> credentialSet)
         {
-            return _galleryCredentialsExpiration.ExpiringCredentials(credentialSet);
+            return _galleryCredentialsExpiration.GetExpiringCredentials(credentialSet);
         }
 
         public async Task<List<ExpiredCredentialData>> GetCredentialsAsync(TimeSpan timeout)

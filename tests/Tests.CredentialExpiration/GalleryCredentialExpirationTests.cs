@@ -15,12 +15,12 @@ namespace Tests.CredentialExpiration
         [MemberData(nameof(Data))]
         public async void TransformRawLogLine(DateTimeOffset jobRunTime, DateTimeOffset cursorTime, int warnDaysBeforeExpiration, TimeSpan skipHours, int expectExpired, int expectExpiring)
         {
-            ExpiredCredentialJobMetadata jobMetadata = new ExpiredCredentialJobMetadata(jobRunTime, cursorTime, warnDaysBeforeExpiration);
+            CredentialExpirationJobMetadata jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, cursorTime, warnDaysBeforeExpiration);
             var credExp = new TestCredentialExpiration(jobMetadata, skipHours);
             var credentialSet = await credExp.GetCredentialsAsync(default(TimeSpan));
 
-            var expired = credExp.ExpiredCredentials(credentialSet);
-            var expiring = credExp.ExpiringCredentials(credentialSet);
+            var expired = credExp.GetExpiredCredentials(credentialSet);
+            var expiring = credExp.GetExpiringCredentials(credentialSet);
 
             Assert.Equal(expectExpired, expired.Count);
             Assert.Equal(expectExpiring, expiring.Count);

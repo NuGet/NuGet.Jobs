@@ -11,12 +11,12 @@ using Gallery.CredentialExpiration.Models;
 
 namespace Gallery.CredentialExpiration
 {
-    public class GalleryCredentialExpiration : ICredentialExpiration
+    public class GalleryCredentialExpiration : ICredentialExpirationExporter
     {
-        private ExpiredCredentialJobMetadata _jobMetadata;
+        private CredentialExpirationJobMetadata _jobMetadata;
         private ISqlConnectionFactory _galleryDatabase;
 
-        public GalleryCredentialExpiration(ExpiredCredentialJobMetadata jobMetadata, ISqlConnectionFactory galleryDatabase)
+        public GalleryCredentialExpiration(CredentialExpirationJobMetadata jobMetadata, ISqlConnectionFactory galleryDatabase)
         {
             _jobMetadata = jobMetadata;
             _galleryDatabase = galleryDatabase;
@@ -27,7 +27,7 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="jobMetadata"></param>
         /// <returns></returns>
-        public DateTimeOffset GetMaxNotificationDate(ExpiredCredentialJobMetadata jobMetadata)
+        public DateTimeOffset GetMaxNotificationDate(CredentialExpirationJobMetadata jobMetadata)
         {
             return jobMetadata.JobRunTime.AddDays(_jobMetadata.WarnDaysBeforeExpiration);
         }
@@ -37,7 +37,7 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="jobMetadata"></param>
         /// <returns></returns>
-        public DateTimeOffset GetMinNotificationDate(ExpiredCredentialJobMetadata jobMetadata)
+        public DateTimeOffset GetMinNotificationDate(CredentialExpirationJobMetadata jobMetadata)
         {
             // In case that the job failed to run for more than 1 day, go back more than the WarnDaysBeforeExpiration value 
             // with the number of days that the job did not run
@@ -47,9 +47,8 @@ namespace Gallery.CredentialExpiration
         public async Task<List<ExpiredCredentialData>> GetCredentialsAsync(TimeSpan timeout)
         {
             // Set the day interval for the accounts that will be queried for expiring /expired credentials.
-            // Converts the DateTimeOffset object to UTC and outputs it using the format yyyy-MM-dd HH:mm:ssZ. (https://msdn.microsoft.com/en-us/library/bb346136(v=vs.110).aspx)
-            var maxNotificationDate = GetMaxNotificationDate(_jobMetadata).ToString("yyyy-MM-dd HH:mm:ss");
-            var minNotificationDate = GetMinNotificationDate(_jobMetadata).ToString("yyyy-MM-dd HH:mm:ss");
+            var maxNotificationDate = ConvertToString(GetMaxNotificationDate(_jobMetadata));
+            var minNotificationDate = ConvertToString(GetMinNotificationDate(_jobMetadata));
 
             // Connect to database
             using (var galleryConnection = await _galleryDatabase.CreateAsync())
@@ -69,7 +68,7 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="credentialSet"></param>
         /// <returns></returns>
-        public List<ExpiredCredentialData> ExpiredCredentials(List<ExpiredCredentialData> credentialSet)
+        public List<ExpiredCredentialData> GetExpiredCredentials(List<ExpiredCredentialData> credentialSet)
         {
             // Send email to the accounts that had credentials expired from the last execution.
             return credentialSet
@@ -82,12 +81,22 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="credentialSet"></param>
         /// <returns></returns>
-        public List<ExpiredCredentialData> ExpiringCredentials(List<ExpiredCredentialData> credentialSet)
+        public List<ExpiredCredentialData> GetExpiringCredentials(List<ExpiredCredentialData> credentialSet)
         {
             // Send email to the accounts that will have credentials expiring in the next _warnDaysBeforeExpiration days and did not have any warning email sent yet.
             return credentialSet
                 .Where(x => (x.Expires - _jobMetadata.CursorTime).TotalDays > _jobMetadata.WarnDaysBeforeExpiration)
                 .ToList();
+        }
+
+        /// <summary>
+        /// Converts a <see cref="DateTimeOffset"/> string with the "yyyy-MM-dd HH:mm:ss" format.
+        /// </summary>
+        /// <param name="value">The <see cref="DateTimeOffset"/> to be converterd.</param>
+        /// <returns></returns>
+        private string ConvertToString(DateTimeOffset value)
+        {
+            return value.ToString("yyyy-MM-dd HH:mm:ss");
         }
     }
 }

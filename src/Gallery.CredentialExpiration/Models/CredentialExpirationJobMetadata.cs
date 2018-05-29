@@ -4,15 +4,18 @@
 using System;
 namespace Gallery.CredentialExpiration.Models
 {
-    public class ExpiredCredentialJobMetadata
+    public class CredentialExpirationJobMetadata
     {
         public DateTimeOffset JobRunTime { get; }
 
+        /// <summary>
+        /// The cursor time. It will reflect the last job execution time.
+        /// </summary>
         public DateTimeOffset CursorTime { get; }
 
         public int WarnDaysBeforeExpiration { get ; }
 
-        public ExpiredCredentialJobMetadata(DateTimeOffset jobRunTime, DateTimeOffset cursorTime, int warnDaysBeforeExpiration)
+        public CredentialExpirationJobMetadata(DateTimeOffset jobRunTime, DateTimeOffset cursorTime, int warnDaysBeforeExpiration)
         {
             JobRunTime = jobRunTime;
             CursorTime = cursorTime;
