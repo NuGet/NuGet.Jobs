@@ -1,0 +1,20 @@
+﻿{
+  "RepositorySignJob": {
+  },
+
+  "ValidationDb": {
+    "ConnectionString": "Data Source=tcp:#{Jobs.validation.DatabaseAddress};Initial Catalog=nuget-prod-validation;Integrated Security=False;User ID=$$Prod-ValidationDBWriter-UserName$$;Password=$$Prod-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
+  },
+  "ServiceBus": {
+    "ConnectionString": "Endpoint=sb://nugetprod.servicebus.windows.net/;SharedAccessKeyName=package-certificates-validator;SharedAccessKey=$$Prod-ServiceBus-SharedAccessKey-Validation-CertificatesValidator$$",
+    "TopicPath": "validate-certificate",
+    "SubscriptionName": "validate-certificate"
+  },
+
+  "KeyVault_VaultName": "#{Deployment.Azure.KeyVault.VaultName}",
+  "KeyVault_ClientId": "#{Deployment.Azure.KeyVault.ClientId}",
+  "KeyVault_CertificateThumbprint": "#{Deployment.Azure.KeyVault.CertificateThumbprint}",
+  "KeyVault_ValidateCertificate": true,
+  "KeyVault_StoreName": "My",
+  "KeyVault_StoreLocation": "LocalMachine"
+}
