@@ -74,7 +74,9 @@ namespace Gallery.CredentialExpiration
         public override async Task Run()
         {
             var jobRunTime = DateTimeOffset.UtcNow;
-            var lastDateForEmailsBeingSent = jobRunTime;
+            // Default values
+            var jobCursor = new JobRunTimeCursor( jobCursorTime: jobRunTime, maxProcessedCredentialsTime: jobRunTime );
+            var galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, _warnDaysBeforeExpiration, jobCursor), _galleryDatabase);
 
             try
             {
@@ -85,11 +87,10 @@ namespace Gallery.CredentialExpiration
                 {
                     string content = await _storage.LoadString(_storage.ResolveUri(_cursorFile), CancellationToken.None);
                     // Load from cursor
-                    JObject obj = JObject.Parse(content);
-                    lastDateForEmailsBeingSent = obj["Value"].ToObject<DateTimeOffset>().ToUniversalTime();
+                    // Throw if the schema is not correct to ensure that not-intended emails are sent.
+                    jobCursor = JsonConvert.DeserializeObject<JobRunTimeCursor>(content, new JsonSerializerSettings() { MissingMemberHandling = MissingMemberHandling.Error });
+                    galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, _warnDaysBeforeExpiration, jobCursor), _galleryDatabase);
                 }
-
-                var galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, lastDateForEmailsBeingSent, _warnDaysBeforeExpiration), _galleryDatabase);
 
                 // Connect to database
                 Logger.LogInformation("Retrieving expired credentials from Gallery database...");
@@ -125,8 +126,8 @@ namespace Gallery.CredentialExpiration
             }
             finally
             {
-                JobRunTimeCursor cursor = new JobRunTimeCursor(jobRunTime);
-                string json = JsonConvert.SerializeObject(cursor);
+                JobRunTimeCursor newCursor = new JobRunTimeCursor( jobCursorTime: jobRunTime, maxProcessedCredentialsTime: galleryCredentialExpiration.GetMaxNotificationDate());
+                string json = JsonConvert.SerializeObject(newCursor);
                 var content = new StringStorageContent(json, "application/json");
                 await _storage.Save(_storage.ResolveUri(_cursorFile), content, CancellationToken.None);
             }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Gallery.CredentialExpiration;
 using Gallery.CredentialExpiration.Models;
@@ -17,16 +18,16 @@ namespace Tests.CredentialExpiration
 
         private TimeSpan _skipHours;
         private GalleryCredentialExpiration _galleryCredentialsExpiration;
+        List<ExpiredCredentialData> _credentialSet;
 
-        public TestCredentialExpiration(CredentialExpirationJobMetadata jobMetadata, TimeSpan skipHours)
+        public TestCredentialExpiration(CredentialExpirationJobMetadata jobMetadata, List<ExpiredCredentialData> credentialSet)
         {
             _jobMetadata = jobMetadata;
-            _skipHours = skipHours;
+            _credentialSet = credentialSet;
             _galleryCredentialsExpiration = new GalleryCredentialExpiration(jobMetadata, null);
-            _maxNotificationDate = _galleryCredentialsExpiration.GetMaxNotificationDate(jobMetadata);
-            _minNotificationDate = _galleryCredentialsExpiration.GetMinNotificationDate(jobMetadata);
+            _maxNotificationDate = _galleryCredentialsExpiration.GetMaxNotificationDate();
+            _minNotificationDate = _galleryCredentialsExpiration.GetMinNotificationDate();
         }
-
         public List<ExpiredCredentialData> GetExpiredCredentials(List<ExpiredCredentialData> credentialSet)
         {
             return _galleryCredentialsExpiration.GetExpiredCredentials(credentialSet);
@@ -39,20 +40,17 @@ namespace Tests.CredentialExpiration
 
         public async Task<List<ExpiredCredentialData>> GetCredentialsAsync(TimeSpan timeout)
         {
-            List<ExpiredCredentialData> data = new List<ExpiredCredentialData>();
-            DateTimeOffset indexDate = _minNotificationDate;
-            int index = 0;
-            while(indexDate <= _maxNotificationDate)
-            {
-                data.Add(new ExpiredCredentialData()
-                {
-                    Expires = indexDate,
-                    Username = $"{index++}"
-                });
-                indexDate = indexDate.Add(_skipHours);
-            }
+            return await Task.FromResult(_credentialSet.Where( c => c.Expires >= GetMinNotificationDate() && c.Expires <= GetMaxNotificationDate()).ToList());
+        }
 
-            return await Task.FromResult(data);
+        public DateTimeOffset GetMaxNotificationDate()
+        {
+            return _galleryCredentialsExpiration.GetMaxNotificationDate();
+        }
+
+        public DateTimeOffset GetMinNotificationDate()
+        {
+            return _galleryCredentialsExpiration.GetMinNotificationDate();
         }
     }
 }

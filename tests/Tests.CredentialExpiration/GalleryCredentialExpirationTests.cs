@@ -2,7 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
+using Gallery.CredentialExpiration;
 using Gallery.CredentialExpiration.Models;
 using Xunit;
 
@@ -11,51 +13,155 @@ namespace Tests.CredentialExpiration
 {
     public class GalleryCredentialExpirationTests
     {
-        [Theory]
-        [MemberData(nameof(Data))]
-        public async void TransformRawLogLine(DateTimeOffset jobRunTime, DateTimeOffset cursorTime, int warnDaysBeforeExpiration, TimeSpan skipHours, int expectExpired, int expectExpiring)
+
+        [Fact]
+        public void ExpiringCredentialsAreCorrectReturned()
         {
-            CredentialExpirationJobMetadata jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, cursorTime, warnDaysBeforeExpiration);
-            var credExp = new TestCredentialExpiration(jobMetadata, skipHours);
-            var credentialSet = await credExp.GetCredentialsAsync(default(TimeSpan));
+            // Arange
+            var cursorTime = new DateTimeOffset(year: 2018, month: 4, day: 10, hour: 8, minute: 2, second: 2, offset: TimeSpan.FromSeconds(0));
+            var jobRunTime = cursorTime.AddDays(2);
+            var maxProcessedCredentialTime = cursorTime.AddDays(1);
+            int warnDaysBeforeExpiration = 2;
+            var jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, warnDaysBeforeExpiration, new JobRunTimeCursor(cursorTime, cursorTime.AddDays(1)));
+            var expiringCred1 = new ExpiredCredentialData()
+            {
+                Expires = jobRunTime.AddDays(warnDaysBeforeExpiration).AddHours(-1)
+            };
+            var expiringCred2 = new ExpiredCredentialData()
+            {
+                Expires = jobRunTime.AddDays(warnDaysBeforeExpiration)
+            };
+            var expiringOldCred = new ExpiredCredentialData()
+            {
+                // Time is smaller than the max of the credentials' time in the cursor
+                Expires = maxProcessedCredentialTime.AddHours(-1)
+            };
+            var credentialSet = new List<ExpiredCredentialData> { expiringCred1, expiringCred2, expiringOldCred};
+            var testCredentials = new TestCredentialExpiration(jobMetadata, credentialSet);
 
-            var expired = credExp.GetExpiredCredentials(credentialSet);
-            var expiring = credExp.GetExpiringCredentials(credentialSet);
+            // Act
+            var expiringCred = testCredentials.GetExpiringCredentials(credentialSet).OrderBy(c => c.Expires).ToList();
 
-            Assert.Equal(expectExpired, expired.Count);
-            Assert.Equal(expectExpiring, expiring.Count);
+            // Assert
+            Assert.Equal(2, testCredentials.GetExpiringCredentials(credentialSet).Count);
+            Assert.Equal(expiringCred1.Expires, expiringCred[0].Expires);
+            Assert.Equal(expiringCred2.Expires, expiringCred[1].Expires);
         }
 
-        public static IEnumerable<object[]> Data =>
-        new List<object[]>
+
+        [Fact]
+        public void ExpiredCredentialsAreCorrectReturned()
         {
-            new object[]
+            // Arange
+            var cursorTime = new DateTimeOffset(year: 2018, month: 4, day: 10, hour: 8, minute: 2, second: 2, offset: TimeSpan.FromSeconds(0));
+            var jobRunTime = cursorTime.AddDays(2);
+            var maxProcessedCredentialTime = cursorTime.AddDays(1);
+            int warnDaysBeforeExpiration = 2;
+            var jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, warnDaysBeforeExpiration, new JobRunTimeCursor(cursorTime, cursorTime.AddDays(1)));
+            var expiredCredential = new ExpiredCredentialData()
             {
-                new DateTimeOffset(year: 2018 , month: 4 , day: 6 , hour: 0 , minute: 10, second: 0, offset: TimeSpan.FromSeconds(0)), // jobRunTime
-                new DateTimeOffset(year: 2018 , month: 4 , day: 5 , hour: 0 , minute: 10, second: 0, offset: TimeSpan.FromSeconds(0)), // cursorTime
-                3, // warnDaysBeforeExpiration
-                TimeSpan.FromHours(24), // skip number of hours when build the collection set of expirationCredentials
-                1,
-                1
-            },
-            new object[]
+                Expires = jobRunTime.AddHours(-1)
+            };
+            var notExpiredCredential1 = new ExpiredCredentialData()
             {
-                new DateTimeOffset(year: 2018 , month: 4 , day: 7 , hour: 0 , minute: 10, second: 0, offset: TimeSpan.FromSeconds(0)), // jobRunTime
-                new DateTimeOffset(year: 2018 , month: 4 , day: 5 , hour: 0 , minute: 10, second: 0, offset: TimeSpan.FromSeconds(0)), // cursorTime
-                3, // warnDaysBeforeExpiration
-                TimeSpan.FromHours(24), // skip number of hours when build the collection set of expirationCredentials
-                2,
-                2
-            },
-            new object[]
+                Expires = jobRunTime
+            };
+            var notExpiredCredenatial2 = new ExpiredCredentialData()
             {
-                new DateTimeOffset(year: 2018 , month: 4 , day: 7 , hour: 0 , minute: 10, second: 0, offset: TimeSpan.FromSeconds(0)), // jobRunTime
-                new DateTimeOffset(year: 2018 , month: 4 , day: 6 , hour: 0 , minute: 10, second: 0, offset: TimeSpan.FromSeconds(0)), // cursorTime
-                3, // warnDaysBeforeExpiration
-                TimeSpan.FromHours(12), // set multiple expiration cred per day
-                2,
-                2
-            },
-        };
+                Expires = jobRunTime.AddHours(1)
+            };
+            var credentialSet = new List<ExpiredCredentialData> { expiredCredential, notExpiredCredential1, notExpiredCredenatial2 };
+            var testCredentials = new TestCredentialExpiration(jobMetadata, credentialSet);
+
+            // Act
+            var expiredCredentials = testCredentials.GetExpiredCredentials(credentialSet).OrderBy(c => c.Expires).ToList();
+
+            // Assert 
+            Assert.Single(expiredCredentials);
+            Assert.Equal(expiredCredential.Expires, expiredCredentials[0].Expires);
+        }
+
+
+        [Fact]
+        public void TwoJobsInSameDayShouldNotSendDuplicateExpiringEmails()
+        {
+            // Arange
+            var cursorTime = new DateTimeOffset(year: 2018, month: 4, day: 10, hour: 8, minute: 2, second: 2, offset: TimeSpan.FromSeconds(0));
+            var jobRunTime = cursorTime.AddHours(1);
+            int warnDaysBeforeExpiration = 2;
+            var maxProcessedCredentialTime = cursorTime.AddDays(warnDaysBeforeExpiration);
+            var jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, warnDaysBeforeExpiration, new JobRunTimeCursor(cursorTime, maxProcessedCredentialTime));
+            var previouslyProcessedCred = new ExpiredCredentialData()
+            {
+                Expires = maxProcessedCredentialTime
+            };
+            var expiringCred = new ExpiredCredentialData()
+            {
+                // A datetime <= jobRunTime.AddDays(warnDaysBeforeExpiration) and larger than maxProcessedCredentialTime
+                Expires = jobRunTime.AddDays(warnDaysBeforeExpiration).AddMinutes(-1)
+            };
+            var credentialSet = new List<ExpiredCredentialData> { previouslyProcessedCred, expiringCred };
+            var testCredentials = new TestCredentialExpiration(jobMetadata, credentialSet);
+
+            // Act
+            var expiringCredentials = testCredentials.GetExpiringCredentials(credentialSet).OrderBy(c => c.Expires).ToList();
+
+            // Assert
+            Assert.Single(expiringCredentials);
+            Assert.Equal(expiringCred.Expires, expiringCredentials[0].Expires);
+        }
+
+        [Fact]
+        public void OutdatedCursorShouldNotSendExiringToExpiredEmails()
+        {
+            // Arange
+            var cursorTime = new DateTimeOffset(year: 2018, month: 4, day: 10, hour: 8, minute: 2, second: 2, offset: TimeSpan.FromSeconds(0));
+            var jobRunTime = cursorTime.AddDays(2);
+            int warnDaysBeforeExpiration = 2;
+            var maxProcessedCredentialTime = jobRunTime.AddDays(-1);
+            var jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, warnDaysBeforeExpiration, new JobRunTimeCursor(cursorTime, maxProcessedCredentialTime));
+
+            var expiredCred = new ExpiredCredentialData()
+            {
+                Expires = maxProcessedCredentialTime.AddHours(1)
+            };
+            var expiringCred = new ExpiredCredentialData()
+            {
+                // A datetime <= jobRunTime.AddDays(warnDaysBeforeExpiration) and larger than maxProcessedCredentialTime
+                Expires = jobRunTime.AddDays(warnDaysBeforeExpiration).AddMinutes(-1)
+            };
+            var credentialSet = new List<ExpiredCredentialData> { expiredCred, expiringCred };
+            var testCredentials = new TestCredentialExpiration(jobMetadata, credentialSet);
+
+            // Act
+            var expiringCredentials = testCredentials.GetExpiringCredentials(credentialSet).OrderBy(c => c.Expires).ToList();
+            var expiredCredentials = testCredentials.GetExpiredCredentials(credentialSet).OrderBy(c => c.Expires).ToList();
+
+            // Assert
+            Assert.Single(expiringCredentials);
+            Assert.Equal(expiringCred.Expires, expiringCredentials[0].Expires);
+            Assert.Single(expiredCredentials);
+            Assert.Equal(expiredCred.Expires, expiredCredentials[0].Expires);
+        }
+
+        [Fact]
+        public void GetMaxandGetMinAreAsExpected()
+        {
+            // Arange
+            var cursorTime = new DateTimeOffset(year: 2018, month: 4, day: 10, hour: 8, minute: 2, second: 2, offset: TimeSpan.FromSeconds(0));
+            var jobRunTime = cursorTime.AddHours(1);
+            int warnDaysBeforeExpiration = 2;
+            var maxProcessedCredentialTime = cursorTime.AddDays(warnDaysBeforeExpiration);
+            var jobMetadata = new CredentialExpirationJobMetadata(jobRunTime, warnDaysBeforeExpiration, new JobRunTimeCursor(cursorTime, maxProcessedCredentialTime));
+            var testCredentials = new TestCredentialExpiration(jobMetadata, null);
+
+            // Act
+            var minValue = testCredentials.GetMinNotificationDate();
+            var maxValue = testCredentials.GetMaxNotificationDate();
+
+            // Assert
+            Assert.Equal(cursorTime, minValue);
+            Assert.Equal(jobRunTime.AddDays(warnDaysBeforeExpiration), maxValue);
+        }
     }
 }

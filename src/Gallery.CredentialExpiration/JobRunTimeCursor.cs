@@ -7,10 +7,14 @@ namespace Gallery.CredentialExpiration
 {
     public class JobRunTimeCursor
     {
-        public JobRunTimeCursor(DateTimeOffset value)
+        public JobRunTimeCursor(DateTimeOffset jobCursorTime, DateTimeOffset maxProcessedCredentialsTime)
         {
-            Value = value;
+            JobCursorTime = jobCursorTime;
+            MaxProcessedCredentialsTime = maxProcessedCredentialsTime;
         }
-        public DateTimeOffset Value { get; }
+
+        public DateTimeOffset JobCursorTime { get; }
+
+        public DateTimeOffset MaxProcessedCredentialsTime { get; }
     }
 }

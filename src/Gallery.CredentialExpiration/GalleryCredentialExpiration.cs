@@ -27,9 +27,9 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="jobMetadata"></param>
         /// <returns></returns>
-        public DateTimeOffset GetMaxNotificationDate(CredentialExpirationJobMetadata jobMetadata)
+        public DateTimeOffset GetMaxNotificationDate()
         {
-            return jobMetadata.JobRunTime.AddDays(_jobMetadata.WarnDaysBeforeExpiration);
+            return _jobMetadata.JobRunTime.AddDays(_jobMetadata.WarnDaysBeforeExpiration);
         }
 
         /// <summary>
@@ -37,18 +37,18 @@ namespace Gallery.CredentialExpiration
         /// </summary>
         /// <param name="jobMetadata"></param>
         /// <returns></returns>
-        public DateTimeOffset GetMinNotificationDate(CredentialExpirationJobMetadata jobMetadata)
+        public DateTimeOffset GetMinNotificationDate()
         {
             // In case that the job failed to run for more than 1 day, go back more than the WarnDaysBeforeExpiration value 
             // with the number of days that the job did not run
-            return  _jobMetadata.CursorTime;
+            return  _jobMetadata.JobCursor.JobCursorTime;
         }
 
         public async Task<List<ExpiredCredentialData>> GetCredentialsAsync(TimeSpan timeout)
         {
             // Set the day interval for the accounts that will be queried for expiring /expired credentials.
-            var maxNotificationDate = ConvertToString(GetMaxNotificationDate(_jobMetadata));
-            var minNotificationDate = ConvertToString(GetMinNotificationDate(_jobMetadata));
+            var maxNotificationDate = ConvertToString(GetMaxNotificationDate());
+            var minNotificationDate = ConvertToString(GetMinNotificationDate());
 
             // Connect to database
             using (var galleryConnection = await _galleryDatabase.CreateAsync())
@@ -71,9 +71,7 @@ namespace Gallery.CredentialExpiration
         public List<ExpiredCredentialData> GetExpiredCredentials(List<ExpiredCredentialData> credentialSet)
         {
             // Send email to the accounts that had credentials expired from the last execution.
-            return credentialSet
-                          .Where(x => (x.Expires < _jobMetadata.JobRunTime))
-                          .ToList();
+            return credentialSet.Where(x => (x.Expires < _jobMetadata.JobRunTime)).ToList();
         }
 
         /// <summary>
@@ -84,9 +82,9 @@ namespace Gallery.CredentialExpiration
         public List<ExpiredCredentialData> GetExpiringCredentials(List<ExpiredCredentialData> credentialSet)
         {
             // Send email to the accounts that will have credentials expiring in the next _warnDaysBeforeExpiration days and did not have any warning email sent yet.
-            return credentialSet
-                .Where(x => (x.Expires - _jobMetadata.CursorTime).TotalDays > _jobMetadata.WarnDaysBeforeExpiration)
-                .ToList();
+            // Avoid cases when the cursor is out of date and MaxProcessedCredentialsTime < JobRuntime
+            var sendEmailsDateLeftBoundary = (_jobMetadata.JobCursor.MaxProcessedCredentialsTime > _jobMetadata.JobRunTime) ? _jobMetadata.JobCursor.MaxProcessedCredentialsTime : _jobMetadata.JobRunTime;
+            return credentialSet.Where( x => x.Expires > sendEmailsDateLeftBoundary).ToList();
         }
 
         /// <summary>
