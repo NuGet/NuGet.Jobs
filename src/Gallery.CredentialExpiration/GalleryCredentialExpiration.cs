@@ -71,7 +71,8 @@ namespace Gallery.CredentialExpiration
         public List<ExpiredCredentialData> GetExpiredCredentials(List<ExpiredCredentialData> credentialSet)
         {
             // Send email to the accounts that had credentials expired from the last execution.
-            return credentialSet.Where(x => (x.Expires < _jobMetadata.JobRunTime)).ToList();
+            // The second condition is meant only for far cases that the SQL query for data filtering was modified by mistake and more credentials were included.
+            return credentialSet.Where(x => (x.Expires < _jobMetadata.JobRunTime) && (x.Expires >= _jobMetadata.JobCursor.JobCursorTime)).ToList();
         }
 
         /// <summary>
