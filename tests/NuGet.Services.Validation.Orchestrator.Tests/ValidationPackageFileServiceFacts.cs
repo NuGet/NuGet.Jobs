@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NuGet.Jobs.Validation;
+using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
 using Xunit;
 
@@ -31,6 +33,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         private readonly DateTimeOffset _endOfAccess;
         private readonly Mock<ICoreFileStorageService> _fileStorageService;
         private readonly Mock<IPackageDownloader> _packageDownloader;
+        private readonly Mock<ITelemetryService> _telemetryService;
         private readonly Mock<ILogger<ValidationPackageFileService>> _logger;
         private readonly ValidationPackageFileService _target;
 
@@ -66,11 +69,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             _fileStorageService = new Mock<ICoreFileStorageService>(MockBehavior.Strict);
             _packageDownloader = new Mock<IPackageDownloader>(MockBehavior.Strict);
+            _telemetryService = new Mock<ITelemetryService>(MockBehavior.Strict);
             _logger = new Mock<ILogger<ValidationPackageFileService>>();
 
             _target = new ValidationPackageFileService(
                 _fileStorageService.Object,
                 _packageDownloader.Object,
+                _telemetryService.Object,
                 _logger.Object);
         }
 
@@ -123,7 +128,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     null))
                 .ReturnsAsync(_testUri)
                 .Verifiable();
-            
+
             _packageDownloader
                 .Setup(x => x.DownloadAsync(_testUri, CancellationToken.None))
                 .ReturnsAsync(_packageStream)
@@ -222,7 +227,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             await _target.CopyValidationSetPackageToPackageFileAsync(_validationSet, accessCondition);
-            
+
             _fileStorageService.Verify();
         }
 
@@ -273,6 +278,51 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             Assert.Equal(_testUri, actual);
             _fileStorageService.Verify();
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataAsync()
+        {
+            const string expectedHash = "NJAwUJVdN8HOjha9VNbopjFMaPVZlAPYFef4CpiYGvVEYmafbYo5CB9KtPFXF5pG7Tj7jBb4/axBJpxZKGEY2Q==";
+
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("peach")))
+            {
+                var lazyStream = new Lazy<Task<Stream>>(() => Task.FromResult<Stream>(stream));
+                var metadata = new Dictionary<string, string>();
+                var wasUpdated = false;
+
+                _fileStorageService.Setup(x => x.SetMetadataAsync(
+                        It.Is<string>(folderName => folderName == CoreConstants.PackagesFolderName),
+                        It.Is<string>(fileName => fileName == _packageFileName),
+                        It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
+                    .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
+                        (folderName, fileName, updateMetadataAsync) =>
+                        {
+                            wasUpdated = updateMetadataAsync(lazyStream, metadata).Result;
+                        })
+                    .Returns(Task.CompletedTask);
+
+                _telemetryService.Setup(
+                    x => x.TrackDurationToHashPackage(
+                        It.Is<TimeSpan>(y => y > TimeSpan.Zero),
+                        _package.PackageRegistration.Id,
+                        _package.NormalizedVersion,
+                        CoreConstants.Sha512HashAlgorithmId,
+                        "System.IO.MemoryStream"));
+
+                var streamMetadata = await _target.UpdatePackageBlobMetadataAsync(_package);
+
+                Assert.True(wasUpdated);
+                Assert.Single(metadata);
+                Assert.Equal(expectedHash, metadata[CoreConstants.Sha512HashAlgorithmId]);
+                Assert.NotNull(streamMetadata);
+                Assert.Equal(stream.Length, streamMetadata.Size);
+                Assert.Equal(expectedHash, streamMetadata.Hash);
+                Assert.Equal(CoreConstants.Sha512HashAlgorithmId, streamMetadata.HashAlgorithm);
+
+                _fileStorageService.VerifyAll();
+                _telemetryService.VerifyAll();
+            }
         }
     }
 }
