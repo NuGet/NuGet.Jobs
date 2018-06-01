@@ -18,14 +18,14 @@ namespace NuGet.Services.Validation.Orchestrator
     public class ValidationStorageService : IValidationStorageService
     {
         private readonly IValidationEntitiesContext _validationContext;
-        private readonly IValidationPackageFileService _packageFileService;
+        private readonly IValidationFileService _packageFileService;
         private readonly IValidatorProvider _validatorProvider;
         private readonly ITelemetryService _telemetryService;
         private readonly ILogger<ValidationStorageService> _logger;
 
         public ValidationStorageService(
             IValidationEntitiesContext validationContext,
-            IValidationPackageFileService packageFileService,
+            IValidationFileService packageFileService,
             IValidatorProvider validatorProvider,
             ITelemetryService telemetryService,
             ILogger<ValidationStorageService> logger)

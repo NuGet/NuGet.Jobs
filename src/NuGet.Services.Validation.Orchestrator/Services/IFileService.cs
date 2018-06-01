@@ -8,46 +8,35 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public interface IValidationFileService
+    /// <summary>
+    /// Interface to interact withe the file storage.
+    /// </summary>
+    public interface IFileService_2
     {
         /// <summary>
-        /// The action to delete the package file in the validation container.
-        /// </summary>
-        /// <param name="validationSet">The <see cref="PackageValidationSet"/> for the file to be deleted.</param>
-        /// <returns></returns>
-        Task DeleteValidationPackageFileAsync(PackageValidationSet validationSet);
-
-        /// <summary>
-        /// The action to delete the package file.
-        /// </summary>
-        /// <param name="validationSet">The <see cref="PackageValidationSet"/> for the file to be deleted.</param>
-        /// <returns></returns>
-        Task DeletePackageFileAsync(PackageValidationSet validationSet);
-
-        /// <summary>
-        /// It will return true if the package associated with this validation set exists.
-        /// </summary>
-        /// <param name="validationSet">The <see cref="PackageValidationSet"/> for the file to be found.</param>
-        /// <returns></returns>
-        Task<bool> DoesPackageFileExistAsync(PackageValidationSet validationSet);
-
-        /// <summary>
-        /// It will return true if the package in the validation container associated with this validation set exists.
+        /// 
         /// </summary>
         /// <param name="validationSet"></param>
         /// <returns></returns>
+        Task DeleteValidationPackageFileAsync(PackageValidationSet validationSet);
+
+        Task<bool> DoesPackageFileExistAsync(PackageValidationSet validationSet);
+
         Task<bool> DoesValidationPackageFileExistAsync(PackageValidationSet validationSet);
+
+        Task DeletePackageFileAsync(PackageValidationSet validationSet);
 
         /// <summary>
         /// Download the package content from the packages container to a temporary location on disk.
         /// </summary>
         /// <param name="package">The package metadata.</param>
         /// <returns>The package stream.</returns>
-        Task<Stream> DownloadPackageFileToDiskAsync(PackageValidationSet package);
+        Task<Stream> DownloadPackageFileToDiskAsync(PackageValidationSet validationSet);
 
         /// <summary>
         /// Backs up the package file from the location specific for the validation set.
         /// </summary>
+        /// <param name="package">The package metadata.</param>
         /// <param name="validationSet">The validation set, containing validation set and package identifiers.</param>
         Task BackupPackageFileFromValidationSetPackageAsync(PackageValidationSet validationSet);
 
@@ -80,7 +69,8 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <summary>
         /// Copy a package from the validation container to the packages container.
         /// </summary>
-        /// <param name="validationSet">The validation set.</param>
+        /// <param name="id">The package ID.</param>
+        /// <param name="normalizedVersion">The normalized package version.</param>
         Task CopyValidationPackageToPackageFileAsync(PackageValidationSet validationSet);
 
         /// <summary>

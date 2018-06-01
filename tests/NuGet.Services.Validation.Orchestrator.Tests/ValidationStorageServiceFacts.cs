@@ -274,7 +274,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     .Setup(x => x.CopyPackageUrlForValidationSetAsync(It.IsAny<PackageValidationSet>(), It.IsAny<string>()))
                     .Returns(Task.CompletedTask)
                     .Callback<PackageValidationSet, string>((_, __) => operations.Add(
-                        nameof(IValidationPackageFileService.CopyPackageUrlForValidationSetAsync)));
+                        nameof(IValidationFileService.CopyPackageUrlForValidationSetAsync)));
                 _entitiesContext
                     .Setup(x => x.SaveChangesAsync())
                     .ReturnsAsync(1)
@@ -286,7 +286,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 // Assert
                 Assert.Equal(new List<string>
                 {
-                    nameof(IValidationPackageFileService.CopyPackageUrlForValidationSetAsync),
+                    nameof(IValidationFileService.CopyPackageUrlForValidationSetAsync),
                     nameof(IValidationEntitiesContext.SaveChangesAsync),
                 }, operations);
             }
@@ -446,7 +446,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             protected PackageValidation _packageValidation;
             protected string _nupkgUrl;
             protected Mock<IValidationEntitiesContext> _entitiesContext;
-            protected Mock<IValidationPackageFileService> _packageFileService;
+            protected Mock<IValidationFileService> _packageFileService;
             protected Mock<IValidatorProvider> _validatorProvider;
             protected Mock<ITelemetryService> _telemetryService;
             protected LoggerFactory _loggerFactory;
@@ -472,7 +472,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     .Setup(x => x.PackageValidationSets)
                     .Returns(DbSetMockFactory.Create<PackageValidationSet>());
 
-                _packageFileService = new Mock<IValidationPackageFileService>();
+                _packageFileService = new Mock<IValidationFileService>();
 
                 _validatorProvider = new Mock<IValidatorProvider>();
 

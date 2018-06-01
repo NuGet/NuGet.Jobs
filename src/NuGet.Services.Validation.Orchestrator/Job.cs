@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using NuGetGallery;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
@@ -146,7 +147,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddLogging();
         }
 
-        private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
+        private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot) 
         {
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
@@ -187,8 +188,8 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
             services.AddTransient<IValidatorProvider, ValidatorProvider>();
-            services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
-            services.AddTransient<IMessageHandler<PackageValidationMessageData>, ValidationMessageHandler>();
+            services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
+            services.AddTransient<IMessageHandler<PackageValidationMessageData>, PackageValidationMessageHandler>();
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
             services.AddTransient<IPackageCriteriaEvaluator, PackageCriteriaEvaluator>();
@@ -202,10 +203,11 @@ namespace NuGet.Services.Validation.Orchestrator
                         readAccessGeoRedundant: false);
                 });
             services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
-            services.AddTransient<IValidationPackageFileService, ValidationPackageFileService>();
-            services.AddTransient<IPackageDownloader, PackageDownloader>();
-            services.AddTransient<IPackageStatusProcessor, PackageStatusProcessor>();
-            services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
+            services.AddTransient<IValidationFileServiceMetadata, PackageValidationFileServiceMetadata>();
+            services.AddTransient<IValidationFileService, ValidationFileService>();
+            services.AddTransient<IFileDownloader, PackageDownloader>();
+            services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
+            services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
             services.AddTransient<IValidationSetProcessor, ValidationSetProcessor>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
@@ -244,13 +246,13 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
             services.AddTransient<ICoreMessageService, CoreMessageService>();
-            services.AddTransient<IMessageService, MessageService>();
+            services.AddTransient<IMessageService<Package>, PackageMessageService>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
             services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
             services.AddSingleton(new TelemetryClient());
-            services.AddTransient<IValidationOutcomeProcessor, ValidationOutcomeProcessor>();
+            services.AddTransient<IValidationOutcomeProcessor<Package>, ValidationOutcomeProcessor<Package>>();
             services.AddSingleton(p =>
             {
                 var assembly = Assembly.GetEntryAssembly();

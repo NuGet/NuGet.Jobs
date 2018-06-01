@@ -9,16 +9,16 @@ using NuGetGallery.Services;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class MessageService : IMessageService
+    public class PackageMessageService : IMessageService<Package>
     {
         private readonly ICoreMessageService _coreMessageService;
         private readonly EmailConfiguration _emailConfiguration;
-        private readonly ILogger<MessageService> _logger;
+        private readonly ILogger<PackageMessageService> _logger;
 
-        public MessageService(
+        public PackageMessageService(
             ICoreMessageService coreMessageService,
             IOptionsSnapshot<EmailConfiguration> emailConfigurationAccessor,
-            ILogger<MessageService> logger)
+            ILogger<PackageMessageService> logger)
         {
             _coreMessageService = coreMessageService ?? throw new ArgumentNullException(nameof(coreMessageService));
             if (emailConfigurationAccessor == null)

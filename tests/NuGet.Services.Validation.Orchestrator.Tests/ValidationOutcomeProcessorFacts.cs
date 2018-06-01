@@ -24,10 +24,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             AddValidation("validation1", ValidationStatus.Failed, failureBehavior);
            
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             PackageStateProcessorMock.Verify(
-                x => x.SetPackageStatusAsync(Package, ValidationSet, expectedPackageStatus),
+                x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, expectedPackageStatus),
                 Times.Once);
             PackageFileServiceMock.Verify(
                 x => x.DeletePackageForValidationSetAsync(ValidationSet),
@@ -48,7 +48,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ToList();
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             MessageServiceMock
                 .Verify(ms => ms.SendPackageValidationFailedMessage(Package), Times.Once());
@@ -67,7 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ToList();
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             MessageServiceMock
                 .Verify(ms => ms.SendPackageSignedValidationFailedMessage(Package), Times.Once());
@@ -95,7 +95,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Configuration.ValidationMessageRecheckPeriod = TimeSpan.FromMinutes(postponeMinutes);
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             TelemetryServiceMock
                 .Verify(t => t.TrackValidatorTimeout("IncompleteButTimedOut"));
@@ -123,7 +123,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(Task.FromResult(0));
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             TelemetryServiceMock
                 .Verify(t => t.TrackValidationSetTimeout(Package.PackageRegistration.Id, Package.NormalizedVersion, ValidationSet.ValidationTrackingId));
@@ -158,7 +158,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             // Process the outcome once - the "too long to validate" message should be sent.
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             TelemetryServiceMock
                 .Verify(t => t.TrackSentValidationTakingTooLongMessage(Package.PackageRegistration.Id, Package.NormalizedVersion, ValidationSet.ValidationTrackingId), Times.Once);
@@ -174,7 +174,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidationEnqueuerMock.ResetCalls();
 
             // Process the outcome again - the "too long to validate" message should NOT be sent.
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             TelemetryServiceMock
                 .Verify(t => t.TrackSentValidationTakingTooLongMessage(Package.PackageRegistration.Id, Package.NormalizedVersion, ValidationSet.ValidationTrackingId), Times.Never);
@@ -211,7 +211,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             // Process the outcome once - the "too long to validate" message should NOT be sent.
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             TelemetryServiceMock
                 .Verify(t => t.TrackSentValidationTakingTooLongMessage(Package.PackageRegistration.Id, Package.NormalizedVersion, ValidationSet.ValidationTrackingId), Times.Never);
@@ -236,11 +236,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidationEnqueuerMock
                 .Setup(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()))
                 .Returns(Task.FromResult(0))
-                .Callback<PackageValidationMessageData, DateTimeOffset>((pv, pt) => { messageData = pv; postponeTill = pt; });
+                .Callback<PackageValidationMessageData, DateTimeOffset>((pv, pt) => {
+                    messageData = pv;
+                    postponeTill = pt;
+                });
 
             var processor = CreateProcessor();
             var startTime = DateTimeOffset.Now;
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             ValidationStorageServiceMock
                 .Verify(s => s.UpdateValidationSetAsync(ValidationSet), Times.Once);
@@ -249,7 +252,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Once());
 
             PackageStateProcessorMock.Verify(
-                x => x.SetPackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
+                x => x.SetStatusAsync(It.IsAny<PackageValidatingEntity>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
                 Times.Never);
 
             PackageFileServiceMock.Verify(
@@ -259,7 +262,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.NotNull(messageData);
             Assert.Equal(ValidationSet.ValidationTrackingId, messageData.ValidationTrackingId);
             Assert.Equal(ValidationSet.PackageId, messageData.PackageId);
-            Assert.Equal(Package.Version, messageData.PackageVersion);
+            Assert.Equal(Package.NormalizedVersion, messageData.PackageVersion);
             Assert.Equal(postponeMinutes, (postponeTill - startTime).TotalMinutes, 0);
         }
 
@@ -270,7 +273,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Package.PackageStatusKey = PackageStatus.Available;
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
            
             MessageServiceMock.Verify(
                 x => x.SendPackagePublishedMessage(It.IsAny<Package>()),
@@ -284,10 +287,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Package.PackageStatusKey = PackageStatus.Validating;
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             PackageStateProcessorMock.Verify(
-                x => x.SetPackageStatusAsync(Package, ValidationSet, PackageStatus.Available),
+                x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available),
                 Times.Once);
 
             PackageFileServiceMock.Verify(
@@ -327,22 +330,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             var processor = CreateProcessor();
 
             var before = DateTime.UtcNow;
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
             var after = DateTime.UtcNow;
 
             if (expectedSetPackageStatusCall)
             {
                 PackageStateProcessorMock.Verify(
-                    x => x.SetPackageStatusAsync(Package, ValidationSet, toStatus),
+                    x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, toStatus),
                     Times.Once);
                 PackageStateProcessorMock.Verify(
-                    x => x.SetPackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
+                    x => x.SetStatusAsync(It.IsAny<PackageValidatingEntity>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
                     Times.Once);
             }
             else
             {
                 PackageStateProcessorMock.Verify(
-                    x => x.SetPackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
+                    x => x.SetStatusAsync(It.IsAny<PackageValidatingEntity>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
                     Times.Never);
             }
 
@@ -364,7 +367,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ProcessorStats.AnyRequiredValidationSucceeded = requiredValidationSucceeded;
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             if (expectedCompletionTracking)
             {
@@ -391,7 +394,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Configuration.TimeoutValidationSetAfter = TimeSpan.FromDays(1);
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             ValidationEnqueuerMock
                 .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Once());
@@ -410,7 +413,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Configuration.TimeoutValidationSetAfter = TimeSpan.FromDays(1);
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             ValidationEnqueuerMock
                 .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Never());
@@ -451,7 +454,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(Task.FromResult(1));
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             if (expectedNotification)
             {
@@ -472,13 +475,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Package.PackageStatusKey = PackageStatus.Available;
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             PackageFileServiceMock.Verify(
                 x => x.DeletePackageForValidationSetAsync(ValidationSet),
                 Times.Once);
             PackageStateProcessorMock.Verify(
-                x => x.SetPackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
+                x => x.SetStatusAsync(It.IsAny<PackageValidatingEntity>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
                 Times.Never);
             MessageServiceMock.Verify(
                 x => x.SendPackageSignedValidationFailedMessage(It.IsAny<Package>()),
@@ -528,21 +531,21 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats);
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             if (expectedStatus != PackageStatus.Validating)
             {
                 PackageStateProcessorMock.Verify(
-                    x => x.SetPackageStatusAsync(Package, ValidationSet, expectedStatus),
+                    x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, expectedStatus),
                     Times.Once);
                 PackageStateProcessorMock.Verify(
-                    x => x.SetPackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>(), expectedStatus),
+                    x => x.SetStatusAsync(It.IsAny<PackageValidatingEntity>(), It.IsAny<PackageValidationSet>(), expectedStatus),
                     Times.Once);
             }
             else
             {
                 PackageStateProcessorMock.Verify(
-                    x => x.SetPackageStatusAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
+                    x => x.SetStatusAsync(It.IsAny<PackageValidatingEntity>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()),
                     Times.Never);
             }
         }
@@ -560,11 +563,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var processor = CreateProcessor();
             var thrownException = await Record.ExceptionAsync(
-                async () => await processor.ProcessValidationOutcomeAsync(ValidationSet, Package, ProcessorStats));
+                async () => await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats));
 
             Assert.NotNull(thrownException);
             PackageStateProcessorMock.Verify(
-                x => x.SetPackageStatusAsync(Package, ValidationSet, PackageStatus.Available),
+                x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available),
                 Times.Once);
             PackageFileServiceMock.Verify(
                 x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
@@ -575,12 +578,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         {
             ValidationStorageServiceMock = new Mock<IValidationStorageService>();
             ValidationEnqueuerMock = new Mock<IPackageValidationEnqueuer>();
-            PackageStateProcessorMock = new Mock<IPackageStatusProcessor>();
-            PackageFileServiceMock = new Mock<IValidationPackageFileService>();
+            PackageStateProcessorMock = new Mock<IStatusProcessor<Package>>();
+            PackageFileServiceMock = new Mock<IValidationFileService>();
             ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
-            MessageServiceMock = new Mock<IMessageService>();
+            MessageServiceMock = new Mock<IMessageService<Package>>();
             TelemetryServiceMock = new Mock<ITelemetryService>();
-            LoggerMock = new Mock<ILogger<ValidationOutcomeProcessor>>();
+            LoggerMock = new Mock<ILogger<ValidationOutcomeProcessor<Package>>>();
 
             Configuration = new ValidationConfiguration();
             Configuration.Validations = new List<ValidationConfigurationItem>();
@@ -607,11 +610,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ConfigurationAccessorMock
                 .SetupGet(ca => ca.Value)
                 .Returns(Configuration);
+
+            PackageValidatingEntity = new PackageValidatingEntity(Package);
         }
 
-        protected ValidationOutcomeProcessor CreateProcessor()
+        protected ValidationOutcomeProcessor<Package> CreateProcessor()
         {
-            return new ValidationOutcomeProcessor(
+            return new ValidationOutcomeProcessor<Package>(
                 ValidationStorageServiceMock.Object,
                 ValidationEnqueuerMock.Object,
                 PackageStateProcessorMock.Object,
@@ -623,17 +628,19 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         protected Mock<IValidationStorageService> ValidationStorageServiceMock { get; }
-        protected Mock<IPackageStatusProcessor> PackageStateProcessorMock { get; }
-        protected Mock<IValidationPackageFileService> PackageFileServiceMock { get; }
+        protected Mock<IStatusProcessor<Package>> PackageStateProcessorMock { get; }
+        protected Mock<IValidationFileService> PackageFileServiceMock { get; }
         protected Mock<IPackageValidationEnqueuer> ValidationEnqueuerMock { get; }
         protected Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
-        protected Mock<IMessageService> MessageServiceMock { get; }
+        protected Mock<IMessageService<Package>> MessageServiceMock { get; }
         public Mock<ITelemetryService> TelemetryServiceMock { get; }
-        protected Mock<ILogger<ValidationOutcomeProcessor>> LoggerMock { get; }
+        protected Mock<ILogger<ValidationOutcomeProcessor<Package>>> LoggerMock { get; }
         protected ValidationConfiguration Configuration { get; }
         protected PackageValidationSet ValidationSet { get; }
         protected Package Package { get; }
         protected ValidationSetProcessorResult ProcessorStats { get; }
+
+        protected PackageValidatingEntity PackageValidatingEntity { get; }
 
         private void AddValidation(
             string validationName,

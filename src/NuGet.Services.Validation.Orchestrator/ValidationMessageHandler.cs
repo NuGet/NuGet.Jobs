@@ -11,24 +11,24 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class ValidationMessageHandler : IMessageHandler<PackageValidationMessageData>
+    public class PackageValidationMessageHandler : IMessageHandler<PackageValidationMessageData>
     {
         private readonly ValidationConfiguration _configs;
-        private readonly ICorePackageService _galleryPackageService;
-        private readonly IValidationSetProvider _validationSetProvider;
+        private readonly IEntityService<Package> _galleryPackageService;
+        private readonly IValidationSetProvider<Package> _validationSetProvider;
         private readonly IValidationSetProcessor _validationSetProcessor;
-        private readonly IValidationOutcomeProcessor _validationOutcomeProcessor;
+        private readonly IValidationOutcomeProcessor<Package> _validationOutcomeProcessor;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<ValidationMessageHandler> _logger;
+        private readonly ILogger<PackageValidationMessageHandler> _logger;
 
-        public ValidationMessageHandler(
+        public PackageValidationMessageHandler(
             IOptionsSnapshot<ValidationConfiguration> validationConfigsAccessor,
-            ICorePackageService galleryPackageService,
-            IValidationSetProvider validationSetProvider,
+            IEntityService<Package> galleryPackageService,
+            IValidationSetProvider<Package> validationSetProvider,
             IValidationSetProcessor validationSetProcessor,
-            IValidationOutcomeProcessor validationOutcomeProcessor,
+            IValidationOutcomeProcessor<Package> validationOutcomeProcessor,
             ITelemetryService telemetryService,
-            ILogger<ValidationMessageHandler> logger)
+            ILogger<PackageValidationMessageHandler> logger)
         {
             if (validationConfigsAccessor == null)
             {
@@ -100,7 +100,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
 
                 // Immediately halt validation of a soft deleted package.
-                if (package.PackageStatusKey == PackageStatus.Deleted)
+                if (package.Status == PackageStatus.Deleted)
                 {
                     _logger.LogWarning(
                         "Package {PackageId} {PackageVersion} (package key {PackageKey}) is soft deleted. Dropping message for validation set {ValidationSetId}.",
@@ -112,7 +112,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     return true;
                 }
 
-                var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message.ValidationTrackingId, package);
+                var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message, package);
 
                 if (validationSet == null)
                 {
@@ -123,7 +123,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     return true;
                 }
 
-                var processorStats = await _validationSetProcessor.ProcessValidationsAsync(validationSet, package);
+                var processorStats = await _validationSetProcessor.ProcessValidationsAsync(validationSet);
                 await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, package, processorStats);
             }
             return true;
