@@ -47,7 +47,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public Task<Uri> GetPackageReadUriAsync(PackageValidationSet validationSet)
         {
-            var fileName = BuildFileName(validationSet, _validationFileServiceMetadata.FileSavePathTemplate, _validationFileServiceMetadata.FileExtension);
+            var fileName = BuildFileName(validationSet,
+                _validationFileServiceMetadata.FileSavePathTemplate,
+                _validationFileServiceMetadata.FileExtension);
             return _fileStorageService.GetFileReadUriAsync(_validationFileServiceMetadata.FilePublicFolderName, fileName, endOfAccess: null);
         }
 
@@ -97,7 +99,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public Task CopyValidationPackageForValidationSetAsync(PackageValidationSet validationSet)
         {
-            var srcFileName = BuildFileName(validationSet, _validationFileServiceMetadata.FileSavePathTemplate, _validationFileServiceMetadata.FileExtension);
+            var srcFileName = BuildFileName(validationSet,
+                _validationFileServiceMetadata.FileSavePathTemplate,
+                _validationFileServiceMetadata.FileExtension);
 
             return CopyFileAsync(
                 _validationFileServiceMetadata.ValidationFolderName,
@@ -139,7 +143,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public Task CopyValidationPackageToPackageFileAsync(PackageValidationSet validationSet)
         {
-            var fileName = BuildFileName(validationSet, _validationFileServiceMetadata.FileSavePathTemplate, _validationFileServiceMetadata.FileExtension);
+            var fileName = BuildFileName(validationSet,
+                _validationFileServiceMetadata.FileSavePathTemplate,
+                _validationFileServiceMetadata.FileExtension);
 
             return CopyFileAsync(
                 _validationFileServiceMetadata.ValidationFolderName,
@@ -153,9 +159,12 @@ namespace NuGet.Services.Validation.Orchestrator
             PackageValidationSet validationSet,
             IAccessCondition destAccessCondition)
         {
-            var srcFileName = BuildValidationSetPackageFileName(validationSet, _validationFileServiceMetadata.FileExtension);
+            var srcFileName = BuildValidationSetPackageFileName(validationSet,
+                _validationFileServiceMetadata.FileExtension);
 
-            var destFileName = BuildFileName(validationSet, _validationFileServiceMetadata.FileSavePathTemplate, _validationFileServiceMetadata.FileExtension);
+            var destFileName = BuildFileName(validationSet,
+                _validationFileServiceMetadata.FileSavePathTemplate,
+                _validationFileServiceMetadata.FileExtension);
 
             return CopyFileAsync(
                 _validationFileServiceMetadata.ValidationFolderName,
