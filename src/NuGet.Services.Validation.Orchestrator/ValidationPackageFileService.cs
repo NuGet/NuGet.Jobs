@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -193,16 +192,17 @@ namespace NuGet.Services.Validation.Orchestrator
                 async (lazyStream, metadata) =>
                 {
                     var packageStream = await lazyStream.Value;
+                    string hash;
 
-                    var stopwatch = Stopwatch.StartNew();
-                    var hash = CryptographyService.GenerateHash(packageStream, CoreConstants.Sha512HashAlgorithmId);
-
-                    _telemetryService.TrackDurationToHashPackage(
-                        stopwatch.Elapsed,
+                    using (_telemetryService.TrackDurationToHashPackage(
                         package.PackageRegistration.Id,
                         package.NormalizedVersion,
+                        packageStream.Length,
                         CoreConstants.Sha512HashAlgorithmId,
-                        packageStream.GetType().FullName);
+                        packageStream.GetType().FullName))
+                    {
+                        hash = CryptographyService.GenerateHash(packageStream, CoreConstants.Sha512HashAlgorithmId);
+                    }
 
                     metadata[CoreConstants.Sha512HashAlgorithmId] = hash;
 

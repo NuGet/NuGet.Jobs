@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGet.Jobs.Validation;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
@@ -304,11 +305,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
                 _telemetryService.Setup(
                     x => x.TrackDurationToHashPackage(
-                        It.Is<TimeSpan>(y => y > TimeSpan.Zero),
                         _package.PackageRegistration.Id,
                         _package.NormalizedVersion,
+                        stream.Length,
                         CoreConstants.Sha512HashAlgorithmId,
-                        "System.IO.MemoryStream"));
+                        "System.IO.MemoryStream"))
+                    .Returns(Mock.Of<IDisposable>());
 
                 var streamMetadata = await _target.UpdatePackageBlobMetadataAsync(_package);
 
@@ -319,6 +321,49 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Assert.Equal(stream.Length, streamMetadata.Size);
                 Assert.Equal(expectedHash, streamMetadata.Hash);
                 Assert.Equal(CoreConstants.Sha512HashAlgorithmId, streamMetadata.HashAlgorithm);
+
+                _fileStorageService.VerifyAll();
+                _telemetryService.VerifyAll();
+            }
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws()
+        {
+            const string expectedHash = "NJAwUJVdN8HOjha9VNbopjFMaPVZlAPYFef4CpiYGvVEYmafbYo5CB9KtPFXF5pG7Tj7jBb4/axBJpxZKGEY2Q==";
+
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("peach")))
+            {
+                var lazyStream = new Lazy<Task<Stream>>(() => Task.FromResult<Stream>(stream));
+                var metadata = new Dictionary<string, string>();
+                var wasUpdated = false;
+
+                _fileStorageService.Setup(x => x.SetMetadataAsync(
+                        It.Is<string>(folderName => folderName == CoreConstants.PackagesFolderName),
+                        It.Is<string>(fileName => fileName == _packageFileName),
+                        It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
+                    .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
+                        (folderName, fileName, updateMetadataAsync) =>
+                        {
+                            wasUpdated = updateMetadataAsync(lazyStream, metadata).Result;
+                        })
+                    .ThrowsAsync(new StorageException("The remote server returned an error: (412) The condition specified using HTTP conditional header(s) is not met."));
+
+                _telemetryService.Setup(
+                    x => x.TrackDurationToHashPackage(
+                        _package.PackageRegistration.Id,
+                        _package.NormalizedVersion,
+                        stream.Length,
+                        CoreConstants.Sha512HashAlgorithmId,
+                        "System.IO.MemoryStream"))
+                    .Returns(Mock.Of<IDisposable>());
+
+                await Assert.ThrowsAsync<StorageException>(
+                    () => _target.UpdatePackageBlobMetadataAsync(_package));
+
+                Assert.True(wasUpdated);
+                Assert.Single(metadata);
+                Assert.Equal(expectedHash, metadata[CoreConstants.Sha512HashAlgorithmId]);
 
                 _fileStorageService.VerifyAll();
                 _telemetryService.VerifyAll();
