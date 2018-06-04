@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Initializer.cs" />
     <Compile Include="RepositorySignConfiguration.cs" />
     <Compile Include="TelemetryService.cs" />
     <Compile Include="ITelemetryService.cs" />
