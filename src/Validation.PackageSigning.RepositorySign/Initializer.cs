@@ -209,7 +209,7 @@ namespace Validation.PackageSigning.RepositorySign
                 "Partitioning package set '{SetName}' into batches...",
                 setName);
 
-            var packages = FindPackageInformation(packageIds);
+            var packages = FindPackageInformation(setName, packageIds);
             var orderedPackages = packages.OrderByDescending(p => p.Downloads).ToList();
 
             var batches = new List<List<string>>();
@@ -242,7 +242,7 @@ namespace Validation.PackageSigning.RepositorySign
             return batches;
         }
 
-        private List<PackageInformation> FindPackageInformation(CaseInsensitiveSet packageIds)
+        private List<PackageInformation> FindPackageInformation(string setName, CaseInsensitiveSet packageIds)
         {
             // Batch the package ids into chunks that are manageable.
             var packageIdList = packageIds.ToList();
@@ -268,8 +268,16 @@ namespace Validation.PackageSigning.RepositorySign
             // For each package batch, fetch that package's information.
             var result = new List<PackageInformation>();
 
-            foreach (var batch in batches)
+            for (var batchIndex = 0; batchIndex < batches.Count; batchIndex++)
             {
+                _logger.LogInformation(
+                    "Fetching package information for package set '{SetName}' {BatchIndex}/{BatchesCount}...",
+                    setName,
+                    batchIndex + 1,
+                    batches.Count);
+
+                var batch = batches[batchIndex];
+
                 var packages = _galleryContext.Set<Package>()
                     .Where(p => batch.Contains(p.PackageRegistration.Id))
                     .GroupBy(p => p.PackageRegistration.Id)
@@ -281,6 +289,12 @@ namespace Validation.PackageSigning.RepositorySign
                     });
 
                 result.AddRange(packages);
+
+                _logger.LogInformation(
+                    "Fetched package information for package set '{SetName}' {BatchIndex}/{BatchesCount}",
+                    setName,
+                    batchIndex + 1,
+                    batches.Count);
             }
 
             return result;
