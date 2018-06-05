@@ -19,33 +19,27 @@ namespace Validation.PackageSigning.RepositorySign
     {
         private static int BatchSize = 1000;
 
-        private static readonly string[] PreinstalledPaths = new[]
-        {
-            "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages",
-            // TODO: "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback",
-            // TODO: "C:\\Program Files (x86)\\Microsoft SDKs\\UWPNuGetPackages",
-            "%USERPROFILE%\\.nuget\\packages", // TODO: I don't think these are the fallback folders.
-            "%USERPROFILE%\\.nuget\\packages\\.tools"
-        };
-
         private readonly IGalleryContext _galleryContext;
         private readonly IValidationEntitiesContext _validationContext;
+        private readonly InitializationConfiguration _config;
         private readonly ILogger<Initializer> _logger;
 
         public Initializer(
             IGalleryContext galleryContext,
             IValidationEntitiesContext validationContext,
+            InitializationConfiguration config,
             ILogger<Initializer> logger)
         {
-            // TODO: Accept configuration! (InitializationMaxPackageKey, InitializationSleepDurationBetweenBatchesInSeconds)
             // TODO: Accept service for settings (IsInitialized, etc...)
             _galleryContext = galleryContext ?? throw new ArgumentNullException(nameof(galleryContext));
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task InitializeAsync()
         {
+            // TODO: Check "IsInitialized" setting. If true, error!
             await ClearPackageRevalidationStateAsync();
 
             // Find packages owned by Microsoft or preinstalled by Visual Studio.
@@ -66,14 +60,13 @@ namespace Validation.PackageSigning.RepositorySign
             knownPackages.UnionWith(microsoftOrPreinstalledPackages);
             knownPackages.UnionWith(dependencyPackages);
 
-            // TODO: Need an upper limit on PackageKey that prevents packages that have already been reposigned.
             var remainingPackages = FindRemainingPackages(except: knownPackages);
 
             // Save the packages that were found, by order of priority.
-            InitializePackageSet("Microsoft", microsoftPackages);
-            InitializePackageSet("Preinstalled", preinstalledPackages);
-            InitializePackageSet("Dependency", dependencyPackages);
-            InitializePackageSet("Remaining", remainingPackages);
+            await InitializePackageSetAsync("Microsoft", microsoftPackages);
+            await InitializePackageSetAsync("Preinstalled", preinstalledPackages);
+            await InitializePackageSetAsync("Dependency", dependencyPackages);
+            await InitializePackageSetAsync("Remaining", remainingPackages);
 
             // TODO: Set "IsInitialized" setting to true
         }
@@ -101,7 +94,7 @@ namespace Validation.PackageSigning.RepositorySign
         {
             var preinstalledPackages = new CaseInsensitiveSet();
 
-            foreach (var path in PreinstalledPaths)
+            foreach (var path in _config.PreinstalledPaths)
             {
                 var expandedPath = Environment.ExpandEnvironmentVariables(path);
                 var packagesInPath = Directory.GetDirectories(expandedPath)
@@ -153,19 +146,23 @@ namespace Validation.PackageSigning.RepositorySign
             return new CaseInsensitiveSet(packages);
         }
 
-        private void InitializePackageSet(string setName, CaseInsensitiveSet packageIds)
+        private async Task InitializePackageSetAsync(string setName, CaseInsensitiveSet packageIds)
         {
             var batches = PartitionIntoBatchesOrderedByDownloads(setName, packageIds);
 
             // Initialize each package id. Each version of the package will be persisted, in descending order.
             for (var batchIndex = 0; batchIndex < batches.Count; batchIndex++)
             {
-                _logger.LogInformation("Initializing batch {BatchIndex} of package set '{SetName}'...",
-                    batchIndex,
+                // TODO: Check the kill switch
+                _logger.LogInformation("Initializing batch {BatchIndex} of {BatchesCount} for package set '{SetName}'...",
+                    batchIndex + 1,
+                    batches.Count,
                     setName);
 
                 var batch = batches[batchIndex];
                 var versions = _galleryContext.Set<Package>()
+                    .Where(p => p.Key < _config.MaxPackageKey)
+                    .Where(p => p.PackageStatusKey == PackageStatus.Available || p.PackageStatusKey == PackageStatus.Deleted)
                     .Where(p => batch.Contains(p.PackageRegistration.Id))
                     .GroupBy(p => p.PackageRegistration.Id)
                     .ToDictionary(
@@ -177,6 +174,7 @@ namespace Validation.PackageSigning.RepositorySign
 
                 foreach (var packageId in batch)
                 {
+                    // TODO: Throw if the package does not have versions!
                     foreach (var version in versions[packageId])
                     {
                         // TODO: Insert record
@@ -186,11 +184,20 @@ namespace Validation.PackageSigning.RepositorySign
 
                 // TODO: Persist records.
 
-                _logger.LogInformation("Initialized batch {BatchIndex} of package set '{SetName}'",
-                    batchIndex,
+                _logger.LogInformation("Initialized batch {BatchIndex} of {BatchesCount} for package set '{SetName}'",
+                    batchIndex + 1,
+                    batches.Count,
                     setName);
 
-                // TODO: Sleep if not last
+                // Sleep if this is not the last batch to prevent overloading the database.
+                if (batchIndex < batches.Count - 1)
+                {
+                    _logger.LogInformation(
+                        "Sleeping for {SleepDuration} before initializing the next batch...",
+                        _config.SleepDurationBetweenBatches);
+
+                    await Task.Delay(_config.SleepDurationBetweenBatches);
+                }
             }
 
             _logger.LogInformation("Finished initializing package set '{SetName}'", setName);

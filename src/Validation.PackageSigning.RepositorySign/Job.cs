@@ -192,7 +192,7 @@ namespace Validation.PackageSigning.RepositorySign
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            services.Configure<RepositorySignConfiguration>(configurationRoot.GetSection(JobConfigurationSectionName));
+            services.Configure<RevalidationConfiguration>(configurationRoot.GetSection(JobConfigurationSectionName));
 
             services.AddScoped<IGalleryContext>(provider =>
             {
