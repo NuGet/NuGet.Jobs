@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,7 +24,7 @@ namespace Validation.PackageSigning.RepositorySign
             "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages",
             // TODO: "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback",
             // TODO: "C:\\Program Files (x86)\\Microsoft SDKs\\UWPNuGetPackages",
-            "%USERPROFILE%\\.nuget\\packages",
+            "%USERPROFILE%\\.nuget\\packages", // TODO: I don't think these are the fallback folders.
             "%USERPROFILE%\\.nuget\\packages\\.tools"
         };
 
@@ -34,6 +37,8 @@ namespace Validation.PackageSigning.RepositorySign
             IValidationEntitiesContext validationContext,
             ILogger<Initializer> logger)
         {
+            // TODO: Accept configuration! (InitializationMaxPackageKey, InitializationSleepDurationBetweenBatchesInSeconds)
+            // TODO: Accept service for settings (IsInitialized, etc...)
             _galleryContext = galleryContext ?? throw new ArgumentNullException(nameof(galleryContext));
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -61,6 +66,7 @@ namespace Validation.PackageSigning.RepositorySign
             knownPackages.UnionWith(microsoftOrPreinstalledPackages);
             knownPackages.UnionWith(dependencyPackages);
 
+            // TODO: Need an upper limit on PackageKey that prevents packages that have already been reposigned.
             var remainingPackages = FindRemainingPackages(except: knownPackages);
 
             // Save the packages that were found, by order of priority.
@@ -68,6 +74,8 @@ namespace Validation.PackageSigning.RepositorySign
             InitializePackageSet("Preinstalled", preinstalledPackages);
             InitializePackageSet("Dependency", dependencyPackages);
             InitializePackageSet("Remaining", remainingPackages);
+
+            // TODO: Set "IsInitialized" setting to true
         }
 
         private async Task ClearPackageRevalidationStateAsync()
@@ -136,6 +144,7 @@ namespace Validation.PackageSigning.RepositorySign
 
         private CaseInsensitiveSet FindRemainingPackages(HashSet<string> except)
         {
+            // TODO: Test this on PROD as this may not scale.
             var packages = _galleryContext.PackageRegistrations
                 .Where(r => !except.Contains(r.Id))
                 .Select(r => r.Id)
@@ -170,13 +179,18 @@ namespace Validation.PackageSigning.RepositorySign
                 {
                     foreach (var version in versions[packageId])
                     {
+                        // TODO: Insert record
                         Console.WriteLine($"Revalidate {packageId} {version}");
                     }
                 }
 
+                // TODO: Persist records.
+
                 _logger.LogInformation("Initialized batch {BatchIndex} of package set '{SetName}'",
                     batchIndex,
                     setName);
+
+                // TODO: Sleep if not last
             }
 
             _logger.LogInformation("Finished initializing package set '{SetName}'", setName);
