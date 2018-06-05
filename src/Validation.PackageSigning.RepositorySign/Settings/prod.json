@@ -1,5 +1,17 @@
 ﻿{
   "RepositorySignJob": {
+    "Initialization": {
+      // TODO: Verify these paths!
+      "PreinstalledPaths": [
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages",
+        // TODO: "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback",
+        // TODO: "C:\\Program Files (x86)\\Microsoft SDKs\\UWPNuGetPackages",
+        "%USERPROFILE%\\.nuget\\packages",
+        "%USERPROFILE%\\.nuget\\packages\\.tools"
+      ],
+      "MaxPackageKey": 9999999, // TODO: Update this when repository signing is enabled
+      "SleepDurationBetweenBatches": "00:00:30"
+    }
   },
 
   "GalleryDb": {
