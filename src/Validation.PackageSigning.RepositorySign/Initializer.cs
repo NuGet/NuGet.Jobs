@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +32,7 @@ namespace Validation.PackageSigning.RepositorySign
             ILogger<Initializer> logger)
         {
             // TODO: Accept service for settings (IsInitialized, etc...)
+            // See: https://github.com/NuGet/Engineering/issues/1440
             _galleryContext = galleryContext ?? throw new ArgumentNullException(nameof(galleryContext));
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -75,8 +77,33 @@ namespace Validation.PackageSigning.RepositorySign
         {
             _logger.LogInformation("Clearing package revalidation state, if it exists...");
 
-            // TODO
-            await Task.Yield();
+            var done = true;
+
+            do
+            {
+                var revalidations = await _validationContext.PackageRevalidations
+                    .Take(BatchSize)
+                    .ToListAsync();
+
+                if (revalidations.Any())
+                {
+                    foreach (var revalidation in revalidations)
+                    {
+                        _validationContext.PackageRevalidations.Remove(revalidation);
+                    }
+
+                    _logger.LogInformation(
+                        "Deleting {BatchSize} revalidations and then sleeping for {SleepDuration}...",
+                        revalidations.Count,
+                        _config.SleepDurationBetweenBatches);
+
+                    await _validationContext.SaveChangesAsync();
+                    await Task.Delay(_config.SleepDurationBetweenBatches);
+
+                    done = false;
+                }
+            }
+            while (!done);
 
             _logger.LogInformation("Cleared package revalidation state");
         }
@@ -169,20 +196,35 @@ namespace Validation.PackageSigning.RepositorySign
                         g => g.Key,
                         g => g.Select(p => p.NormalizedVersion)
                             .Select(v => NuGetVersion.Parse(v))
-                            .OrderByDescending(v => v),
+                            .OrderByDescending(v => v)
+                            .ToList(),
                         StringComparer.OrdinalIgnoreCase);
 
                 foreach (var packageId in batch)
                 {
-                    // TODO: Throw if the package does not have versions!
+                    if (!versions.ContainsKey(packageId) || versions[packageId].Count == 0)
+                    {
+                        _logger.LogError(
+                            "Could not find any versions of package {PackageId} to revalidate",
+                            packageId);
+
+                        throw new InvalidOperationException($"Could not find any versions of package {packageId} to revalidate");
+                    }
+
                     foreach (var version in versions[packageId])
                     {
-                        // TODO: Insert record
-                        Console.WriteLine($"Revalidate {packageId} {version}");
+                        _validationContext.PackageRevalidations.Add(new PackageRevalidation
+                        {
+                            PackageId = packageId,
+                            PackageNormalizedVersion = version.ToNormalizedString(),
+                            Enqueued = null,
+                            ValidationTrackingId = null,
+                            Completed = false,
+                        });
                     }
                 }
 
-                // TODO: Persist records.
+                await _validationContext.SaveChangesAsync();
 
                 _logger.LogInformation("Initialized batch {BatchIndex} of {BatchesCount} for package set '{SetName}'",
                     batchIndex + 1,
