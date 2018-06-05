@@ -18,24 +18,24 @@ using Error = NuGet.Services.Validation.Orchestrator.Error;
 namespace NuGet.Services.Validation.Vcs
 {
     [ValidatorName(ValidatorName.Vcs)]
-    public class VcsValidator : BaseValidator, IValidator
+    public class VcsValidator<T> : BaseValidator, IValidator where T : IEntity
     {
         private const string InternalValidatorName = Jobs.Validation.Common.Validators.Vcs.VcsValidator.ValidatorName;
 
         private readonly IPackageValidationService _validationService;
         private readonly IPackageValidationAuditor _validationAuditor;
-        private readonly ICorePackageService _packageService;
-        private readonly IPackageCriteriaEvaluator _criteriaEvaluator;
+        private readonly IEntityService<T> _packageService;
+        private readonly IPackageCriteriaEvaluator<T> _criteriaEvaluator;
         private readonly IOptionsSnapshot<VcsConfiguration> _config;
-        private readonly ILogger<VcsValidator> _logger;
+        private readonly ILogger<VcsValidator<T>> _logger;
 
         public VcsValidator(
             IPackageValidationService validationService,
             IPackageValidationAuditor validationAuditor,
-            ICorePackageService packageService,
-            IPackageCriteriaEvaluator criteriaEvaluator,
+            IEntityService<T> packageService,
+            IPackageCriteriaEvaluator<T> criteriaEvaluator,
             IOptionsSnapshot<VcsConfiguration> config,
-            ILogger<VcsValidator> logger)
+            ILogger<VcsValidator<T>> logger)
         {
             _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
             _validationAuditor = validationAuditor ?? throw new ArgumentNullException(nameof(validationAuditor));
@@ -168,7 +168,7 @@ namespace NuGet.Services.Validation.Vcs
                 request.PackageId,
                 request.PackageVersion);
 
-            if (!_criteriaEvaluator.IsMatch(_config.Value.PackageCriteria, package))
+            if (!_criteriaEvaluator.IsMatch(_config.Value.PackageCriteria, package.EntityRecord))
             {
                 // This means the validation has already started. This is acceptable so we should move on.
                 _logger.LogInformation(

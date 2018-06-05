@@ -12,6 +12,7 @@ using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGet.Jobs.Validation.Common;
 using NuGetGallery;
+using NuGet.Services.Validation.Orchestrator;
 using Xunit;
 
 namespace NuGet.Services.Validation.Vcs
@@ -413,11 +414,11 @@ namespace NuGet.Services.Validation.Vcs
             protected readonly Mock<IValidationRequest> _validationRequest;
             protected readonly Mock<IPackageValidationService> _validationService;
             protected readonly Mock<IPackageValidationAuditor> _validationAuditor;
-            protected readonly Mock<ICorePackageService> _packageService;
-            protected readonly Mock<IPackageCriteriaEvaluator> _criteriaEvaluator;
+            protected readonly Mock<IEntityService<Package>> _packageService;
+            protected readonly Mock<IPackageCriteriaEvaluator<Package>> _criteriaEvaluator;
             protected readonly Mock<IOptionsSnapshot<VcsConfiguration>> _options;
-            protected readonly Mock<ILogger<VcsValidator>> _logger;
-            protected readonly VcsValidator _target;
+            protected readonly Mock<ILogger<VcsValidator<Package>>> _logger;
+            protected readonly VcsValidator<Package> _target;
 
             public FactsBase()
             {
@@ -431,10 +432,10 @@ namespace NuGet.Services.Validation.Vcs
 
                 _validationService = new Mock<IPackageValidationService>();
                 _validationAuditor = new Mock<IPackageValidationAuditor>();
-                _packageService = new Mock<ICorePackageService>();
-                _criteriaEvaluator = new Mock<IPackageCriteriaEvaluator>();
+                _packageService = new Mock<IEntityService<Package>>();
+                _criteriaEvaluator = new Mock<IPackageCriteriaEvaluator<Package>>();
                 _options = new Mock<IOptionsSnapshot<VcsConfiguration>>();
-                _logger = new Mock<ILogger<VcsValidator>>();
+                _logger = new Mock<ILogger<VcsValidator<Package>>>();
 
                 _criteriaEvaluator
                     .Setup(x => x.IsMatch(It.IsAny<IPackageCriteria>(), It.IsAny<Package>()))
@@ -444,7 +445,7 @@ namespace NuGet.Services.Validation.Vcs
                     .Setup(x => x.Value)
                     .Returns(() => _config);
 
-                _target = new VcsValidator(
+                _target = new VcsValidator<Package>(
                     _validationService.Object,
                     _validationAuditor.Object,
                     _packageService.Object,

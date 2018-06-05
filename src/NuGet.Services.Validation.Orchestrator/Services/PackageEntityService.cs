@@ -23,7 +23,7 @@ namespace NuGet.Services.Validation.Orchestrator
         public IValidatingEntity<Package> FindPackageByIdAndVersionStrict(string id, string version)
         {
             var p = _galleryEntityService.FindPackageByIdAndVersionStrict(id, version);
-            return new PackageValidatingEntity(p);
+            return p == null ? null : new PackageValidatingEntity(p);
         }
 
         public IValidatingEntity<Package> FindByKey(int key)
@@ -38,7 +38,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task UpdateMetadataAsync(Package entity, object metadata, bool commitChanges = true)
         {
-            PackageStreamMetadata typedMetadata = metadata == null ? null : (PackageStreamMetadata)metadata;
+            PackageStreamMetadata typedMetadata = metadata == null ? null : metadata as PackageStreamMetadata;
             if (typedMetadata != null)
             {
                 if (typedMetadata.Size != entity.PackageFileSize

@@ -405,7 +405,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         protected readonly Mock<IValidationEntitiesContext> _validationContext;
         protected readonly Mock<IValidatorStateService> _validatorStateServiceMock;
         protected readonly Mock<ICorePackageService> _packageServiceMock;
-        protected Mock<IPackageCriteriaEvaluator> _criteriaEvaluatorMock;
+        protected Mock<IPackageCriteriaEvaluator<Package>> _criteriaEvaluatorMock;
         protected readonly Mock<IScanAndSignEnqueuer> _enqueuerMock;
         protected readonly Mock<ISimpleCloudBlobProvider> _blobProvider;
         protected readonly Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _optionsMock;
@@ -418,7 +418,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _validationContext = new Mock<IValidationEntitiesContext>();
             _validatorStateServiceMock = new Mock<IValidatorStateService>();
             _packageServiceMock = new Mock<ICorePackageService>();
-            _criteriaEvaluatorMock = new Mock<IPackageCriteriaEvaluator>();
+            _criteriaEvaluatorMock = new Mock<IPackageCriteriaEvaluator<Package>>();
             _enqueuerMock = new Mock<IScanAndSignEnqueuer>();
             _loggerMock = new Mock<ILogger<ScanAndSignProcessor>>();
             _blobProvider = new Mock<ISimpleCloudBlobProvider>();

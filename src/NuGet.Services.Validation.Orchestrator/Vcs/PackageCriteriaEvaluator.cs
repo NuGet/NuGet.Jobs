@@ -8,7 +8,7 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Vcs
 {
-    public class PackageCriteriaEvaluator : IPackageCriteriaEvaluator
+    public class PackageCriteriaEvaluator : IPackageCriteriaEvaluator<Package>
     {
         public bool IsMatch(IPackageCriteria criteria, Package package)
         {
