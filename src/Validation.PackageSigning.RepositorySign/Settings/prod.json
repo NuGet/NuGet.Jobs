@@ -9,7 +9,7 @@
         "%USERPROFILE%\\.nuget\\packages",
         "%USERPROFILE%\\.nuget\\packages\\.tools"
       ],
-      "MaxPackageKey": 9999999, // TODO: Update this when repository signing is enabled
+      "MaxPackageCreationDate": "2021-03-01T23:52:40.7022034+00:00", // TODO: Update this when repository signing is enabled
       "SleepDurationBetweenBatches": "00:00:30"
     }
   },

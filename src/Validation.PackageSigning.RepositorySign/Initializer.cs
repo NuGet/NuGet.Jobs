@@ -77,7 +77,7 @@ namespace Validation.PackageSigning.RepositorySign
         {
             _logger.LogInformation("Clearing package revalidation state, if it exists...");
 
-            var done = true;
+            bool done;
 
             do
             {
@@ -100,7 +100,11 @@ namespace Validation.PackageSigning.RepositorySign
                     await _validationContext.SaveChangesAsync();
                     await Task.Delay(_config.SleepDurationBetweenBatches);
 
-                    done = false;
+                    done = (revalidations.Count < BatchSize);
+                }
+                else
+                {
+                    done = true;
                 }
             }
             while (!done);
@@ -188,9 +192,9 @@ namespace Validation.PackageSigning.RepositorySign
 
                 var batch = batches[batchIndex];
                 var versions = _galleryContext.Set<Package>()
-                    .Where(p => p.Key < _config.MaxPackageKey)
                     .Where(p => p.PackageStatusKey == PackageStatus.Available || p.PackageStatusKey == PackageStatus.Deleted)
                     .Where(p => batch.Contains(p.PackageRegistration.Id))
+                    .Where(p => p.Created < _config.MaxPackageCreationDate)
                     .GroupBy(p => p.PackageRegistration.Id)
                     .ToDictionary(
                         g => g.Key,
@@ -217,9 +221,9 @@ namespace Validation.PackageSigning.RepositorySign
                         {
                             PackageId = packageId,
                             PackageNormalizedVersion = version.ToNormalizedString(),
-                            Enqueued = null,
-                            ValidationTrackingId = null,
+                            ValidationTrackingId = Guid.NewGuid(),
                             Completed = false,
+                            Enqueued = null,
                         });
                     }
                 }

@@ -16,10 +16,9 @@ namespace Validation.PackageSigning.RepositorySign
 
         /// <summary>
         /// The revalidation job should not revalidate packages that were uploaded after repository signing was
-        /// enabled. This value should be the key after which all new Package entities were repository signed.
-        /// This upper bound key is exclusive and will not be included in the revalidation.
+        /// enabled. Packages with a created time greater than or equal to this value will not be revalidated.
         /// </summary>
-        public int MaxPackageKey { get; set; }
+        public DateTimeOffset MaxPackageCreationDate { get; set; }
 
         /// <summary>
         /// The time to sleep between initialization batches to prevent overloading databases.
