@@ -12,7 +12,7 @@ using NuGetGallery.Packaging;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class EntityStatusProcessor<T> : IStatusProcessor<T> where T : IEntity
+    public class EntityStatusProcessor<T> : IStatusProcessor<T> where T : class, IEntity
     {
         private readonly IEntityService<T> _galleryPackageService;
         private readonly IValidationFileService _packageFileService;

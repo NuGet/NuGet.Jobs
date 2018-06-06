@@ -5,7 +5,7 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public interface IMessageService<T> where T : IEntity
+    public interface IMessageService<T> where T : class, IEntity
     {
         void SendPackagePublishedMessage(T entity);
         void SendPackageValidationFailedMessage(T entity);

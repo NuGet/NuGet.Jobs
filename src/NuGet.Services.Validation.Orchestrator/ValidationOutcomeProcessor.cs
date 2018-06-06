@@ -12,7 +12,7 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class ValidationOutcomeProcessor<T> : IValidationOutcomeProcessor<T> where T : IEntity
+    public class ValidationOutcomeProcessor<T> : IValidationOutcomeProcessor<T> where T : class, IEntity
     {
         private readonly IValidationStorageService _validationStorageService;
         private readonly IPackageValidationEnqueuer _validationEnqueuer;

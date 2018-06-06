@@ -6,7 +6,7 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public interface IValidatingEntity<T> where T : IEntity
+    public interface IValidatingEntity<T> where T : class, IEntity
     {
         /// <summary>
         /// The Entity Key.

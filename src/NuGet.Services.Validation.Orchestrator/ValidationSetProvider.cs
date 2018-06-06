@@ -12,7 +12,7 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class ValidationSetProvider<T> : IValidationSetProvider<T> where T : IEntity
+    public class ValidationSetProvider<T> : IValidationSetProvider<T> where T : class, IEntity
     {
         private readonly IValidationStorageService _validationStorageService;
         private readonly IValidationFileService _packageFileService;
@@ -89,8 +89,8 @@ namespace NuGet.Services.Validation.Orchestrator
                 
                 if (!sameKey)
                 {
-                    throw new InvalidOperationException($"Validation set package key ({validationSet.PackageKey}) " +
-                        $"does not match expected package key ({validatingEntity.Key}).");
+                    throw new InvalidOperationException($"Validation set  key ({validationSet.PackageKey}) " +
+                        $"does not match expected {validatingEntity.EntityRecord.GetType().Name} key ({validatingEntity.Key}).");
                 }
             }
 
@@ -119,14 +119,14 @@ namespace NuGet.Services.Validation.Orchestrator
             return persistedValidationSet;
         }
 
-        private PackageValidationSet InitializeValidationSet(PackageValidationMessageData message, IValidatingEntity<T> package)
+        private PackageValidationSet InitializeValidationSet(PackageValidationMessageData message, IValidatingEntity<T> validatingEntity)
         {
             // If message would have the package Key the package will not need to be passed as an argument
             _logger.LogInformation("Initializing validation set {ValidationSetId} for package {PackageId} {PackageVersion} (package key {PackageKey})",
                 message.ValidationTrackingId,
                 message.PackageId,
                 message.PackageVersion,
-                package.Key);
+                validatingEntity.Key);
 
             var now = DateTime.UtcNow;
 
@@ -135,7 +135,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 Created = now,
                 PackageId = message.PackageId,
                 PackageNormalizedVersion = message.PackageVersion,
-                PackageKey = package.Key,
+                PackageKey = validatingEntity.Key,
                 PackageValidations = new List<PackageValidation>(),
                 Updated = now,
                 ValidationTrackingId = message.ValidationTrackingId,

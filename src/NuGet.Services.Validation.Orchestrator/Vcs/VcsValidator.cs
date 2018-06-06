@@ -18,7 +18,7 @@ using Error = NuGet.Services.Validation.Orchestrator.Error;
 namespace NuGet.Services.Validation.Vcs
 {
     [ValidatorName(ValidatorName.Vcs)]
-    public class VcsValidator<T> : BaseValidator, IValidator where T : IEntity
+    public class VcsValidator<T> : BaseValidator, IValidator where T: class, IEntity
     {
         private const string InternalValidatorName = Jobs.Validation.Common.Validators.Vcs.VcsValidator.ValidatorName;
 
@@ -164,11 +164,11 @@ namespace NuGet.Services.Validation.Vcs
 
         private bool ShouldSkip(IValidationRequest request)
         {
-            var package = _packageService.FindPackageByIdAndVersionStrict(
+            T package = _packageService.FindPackageByIdAndVersionStrict(
                 request.PackageId,
-                request.PackageVersion);
+                request.PackageVersion)?.EntityRecord;
 
-            if (!_criteriaEvaluator.IsMatch(_config.Value.PackageCriteria, package.EntityRecord))
+            if (!_criteriaEvaluator.IsMatch(_config.Value.PackageCriteria, package))
             {
                 // This means the validation has already started. This is acceptable so we should move on.
                 _logger.LogInformation(

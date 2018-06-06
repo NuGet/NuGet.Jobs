@@ -9,7 +9,7 @@ namespace NuGet.Services.Validation.Orchestrator
     /// <summary>
     /// Interface for the code that deals with any changes that happened in the validation set
     /// </summary>
-    public interface IValidationOutcomeProcessor<T> where T : IEntity
+    public interface IValidationOutcomeProcessor<T> where T : class, IEntity
     {
         /// <summary>
         /// Processes the changes in validation statuses:

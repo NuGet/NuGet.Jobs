@@ -10,7 +10,7 @@ namespace NuGet.Services.Validation.Orchestrator
     /// <summary>
     /// Provides <see cref="PackageValidationSet"/> instances.
     /// </summary>
-    public interface IValidationSetProvider<T> where T : IEntity
+    public interface IValidationSetProvider<T> where T : class, IEntity
     {
         /// <summary>
         /// Reads validation set data from storage, creates one if did not exist in storage

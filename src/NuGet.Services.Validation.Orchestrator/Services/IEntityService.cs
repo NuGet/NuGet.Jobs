@@ -10,7 +10,7 @@ namespace NuGet.Services.Validation.Orchestrator
     /// Interface to interact with the Gallery entities
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IEntityService<T> where T : IEntity
+    public interface IEntityService<T> where T : class, IEntity
     {
         /// <summary>
         /// Find the entity based on the id and version.
