@@ -49,15 +49,15 @@ namespace NuGet.Services.Revalidate
             var preinstalledPackages = _packageFinder.FindPreinstalledPackages(except: microsoftPackages);
 
             // Find the packages depended by both Microsoft and preinstalled packages.
-            var microsoftOrPreinstalledPackages = new CaseInsensitiveSet();
+            var microsoftOrPreinstalledPackages = new HashSet<int>();
 
             microsoftOrPreinstalledPackages.UnionWith(microsoftPackages);
             microsoftOrPreinstalledPackages.UnionWith(preinstalledPackages);
 
             var dependencyPackages = _packageFinder.FindDependencyPackages(microsoftOrPreinstalledPackages);
 
-            // Find all other package ids.
-            var knownPackages = new CaseInsensitiveSet();
+            // Find the set of all other packages.
+            var knownPackages = new HashSet<int>();
 
             knownPackages.UnionWith(microsoftOrPreinstalledPackages);
             knownPackages.UnionWith(dependencyPackages);
@@ -65,10 +65,10 @@ namespace NuGet.Services.Revalidate
             var remainingPackages = _packageFinder.FindAllPackages(except: knownPackages);
 
             // Save the packages that were found, by order of priority.
-            await InitializePackageSetAsync("Microsoft", microsoftPackages);
-            await InitializePackageSetAsync("Preinstalled", preinstalledPackages);
-            await InitializePackageSetAsync("Dependency", dependencyPackages);
-            await InitializePackageSetAsync("Remaining", remainingPackages);
+            await InitializePackageSetAsync(PackageFinder.MicrosoftSetName, microsoftPackages);
+            await InitializePackageSetAsync(PackageFinder.PreinstalledSetName, preinstalledPackages);
+            await InitializePackageSetAsync(PackageFinder.DependencySetName, dependencyPackages);
+            await InitializePackageSetAsync(PackageFinder.RemainingSetName, remainingPackages);
 
             // TODO: Set "IsInitialized" setting to true
         }
@@ -98,23 +98,13 @@ namespace NuGet.Services.Revalidate
             _logger.LogInformation("Cleared package revalidation state");
         }
 
-        private async Task InitializePackageSetAsync(string setName, CaseInsensitiveSet packageIds)
+        private async Task InitializePackageSetAsync(string setName, HashSet<int> packageRegistrationKeys)
         {
-            // Order the set of package ids by downloads, and then batch them into manageable chunks.
-            _logger.LogInformation(
-                "Partitioning package set {SetName} into chunks...",
-                setName);
+            var packageInformations = _packageFinder.FindPackageRegistrationInformation(setName, packageRegistrationKeys);
 
-            var chunks = _packageFinder.FindPackageInformation(setName, packageIds)
+            var chunks = packageInformations
                 .OrderByDescending(p => p.Downloads)
-                .WeightedBatch(BatchSize, p => p.Versions)
-                .Select(b => b.Select(p => p.Id).ToList())
-                .ToList();
-
-            _logger.LogInformation(
-                "Partitioned package set {SetName} into {Chunks} chunks",
-                setName,
-                chunks.Count);
+                .WeightedBatch(BatchSize, p => p.Versions);
 
             for (var chunkIndex = 0; chunkIndex < chunks.Count; chunkIndex++)
             {
@@ -148,20 +138,24 @@ namespace NuGet.Services.Revalidate
             _logger.LogInformation("Finished initializing package set {SetName}", setName);
         }
 
-        private async Task InitializeRevalidationsAsync(List<string> packageIds, Dictionary<string, List<NuGetVersion>> versions)
+        private async Task InitializeRevalidationsAsync(
+            List<PackageRegistrationInformation> packageRegistrations,
+            Dictionary<int, List<NuGetVersion>> versions)
         {
             var revalidations = new List<PackageRevalidation>();
 
-            foreach (var packageId in packageIds)
+            foreach (var packageRegistration in packageRegistrations)
             {
-                if (!versions.ContainsKey(packageId) || versions[packageId].Count == 0)
-                {
-                    _logger.LogError("Could not find any versions of package {PackageId} to revalidate", packageId);
+                var packageId = packageRegistration.Id;
 
-                    throw new InvalidOperationException($"Could not find any versions of package {packageId} to revalidate");
+                if (!versions.ContainsKey(packageRegistration.Key) || versions[packageRegistration.Key].Count == 0)
+                {
+                    _logger.LogWarning("Could not find any versions of package {PackageId} to revalidate", packageId);
+
+                    continue;
                 }
 
-                foreach (var version in versions[packageId])
+                foreach (var version in versions[packageRegistration.Key])
                 {
                     revalidations.Add(new PackageRevalidation
                     {

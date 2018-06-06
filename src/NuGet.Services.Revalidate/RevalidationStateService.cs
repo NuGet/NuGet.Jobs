@@ -24,12 +24,26 @@ namespace NuGet.Services.Revalidate
 
         public async Task AddPackageRevalidationsAsync(IReadOnlyList<PackageRevalidation> revalidations)
         {
+            var validationContext = _context as ValidationEntitiesContext;
+
+            if (validationContext != null)
+            {
+                validationContext.Configuration.AutoDetectChangesEnabled = false;
+                validationContext.Configuration.ValidateOnSaveEnabled = false;
+            }
+
             foreach (var revalidation in revalidations)
             {
                 _context.PackageRevalidations.Add(revalidation);
             }
 
             await _context.SaveChangesAsync();
+
+            if (validationContext != null)
+            {
+                validationContext.Configuration.AutoDetectChangesEnabled = true;
+                validationContext.Configuration.ValidateOnSaveEnabled = true;
+            }
         }
 
         public async Task<int> RemoveRevalidationsAsync(int max)

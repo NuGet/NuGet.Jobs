@@ -11,43 +11,43 @@ namespace NuGet.Services.Revalidate
         /// <summary>
         /// Find packages that are owned by the Microsoft account.
         /// </summary>
-        /// <returns>A case insensitive set of package ids.</returns>
-        CaseInsensitiveSet FindMicrosoftPackages();
+        /// <returns>The set of package registration keys owned by the Microsoft account.</returns>
+        HashSet<int> FindMicrosoftPackages();
 
         /// <summary>
         /// Find packages that are preinstalled by Visual Studio.
         /// </summary>
-        /// <param name="except">A case insensitive set of package ids that should be removed from the result.</param>
-        /// <returns>A case insensitive set of package ids.</returns>
-        CaseInsensitiveSet FindPreinstalledPackages(CaseInsensitiveSet except);
+        /// <param name="except">A set of package registration keys that should be removed from the result.</param>
+        /// <returns>The set of package registration keys preinstalled by Visual Studio.</returns>
+        HashSet<int> FindPreinstalledPackages(HashSet<int> except);
 
         /// <summary>
-        /// Find packages ALL dependencies of the root set of package ids.
+        /// Find packages that the root set depends on, excluding the root self itself.
         /// </summary>
-        /// <param name="roots">The set of root package ids whose dependencies should be fetched.</param>
-        /// <returns>A case insensitive set of package ids.</returns>
-        CaseInsensitiveSet FindDependencyPackages(CaseInsensitiveSet roots);
+        /// <param name="roots">The set of root package registration keys whose dependencies should be fetched.</param>
+        /// <returns>The set of packages registrations that are depended on by the root set.</returns>
+        HashSet<int> FindDependencyPackages(HashSet<int> roots);
 
         /// <summary>
-        /// Find all packages remaining packages.
+        /// Find all remaining packages.
         /// </summary>
-        /// <param name="except">The set of packages that should be removed from the result.</param>
-        /// <returns>A case insensitive set of package ids.</returns>
-        CaseInsensitiveSet FindAllPackages(CaseInsensitiveSet except);
+        /// <param name="except">The set of registration keys that should be excluded from the result.</param>
+        /// <returns>The set of package registrations keys, excluding the except set.</returns>
+        HashSet<int> FindAllPackages(HashSet<int> except);
 
         /// <summary>
-        /// Find the relevant information about the given set of packages.
+        /// Find information about the given set of packages.
         /// </summary>
         /// <param name="setName">The name of this set of packages.</param>
-        /// <param name="packageIds">The set of package ids.</param>
-        /// <returns>Information about each package that exists in the database.</returns>
-        List<PackageInformation> FindPackageInformation(string setName, CaseInsensitiveSet packageIds);
+        /// <param name="packageRegistrationKeys">The set of package registration keys.</param>
+        /// <returns>Information about each package registration, if it exists in the database.</returns>
+        List<PackageRegistrationInformation> FindPackageRegistrationInformation(string setName, HashSet<int> packageRegistrationKeys);
 
         /// <summary>
         /// Find versions that are appropriate for revalidations.
         /// </summary>
-        /// <param name="packageIds">The packages whose versions should be fetched.</param>
-        /// <returns>A dictionary where the keys are package ids and the values are the versions of that package.</returns>
-        Dictionary<string, List<NuGetVersion>> FindAppropriateVersions(List<string> packageIds);
+        /// <param name="packageRegistrations">The packages whose versions should be fetched.</param>
+        /// <returns>A map of package registration keys to the versions of that package registration.</returns>
+        Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packageRegistrations);
     }
 }

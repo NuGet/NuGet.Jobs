@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 using NuGet.Versioning;
 using NuGetGallery;
@@ -15,6 +16,11 @@ namespace NuGet.Services.Revalidate
 
     public class PackageFinder : IPackageFinder
     {
+        public const string MicrosoftSetName = "Microsoft";
+        public const string PreinstalledSetName = "Preinstalled";
+        public const string DependencySetName = "Dependency";
+        public const string RemainingSetName = "Remaining";
+
         private static int BatchSize = 1000;
         private static string MicrosoftAccountName = "Microsoft";
 
@@ -32,18 +38,23 @@ namespace NuGet.Services.Revalidate
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public CaseInsensitiveSet FindMicrosoftPackages()
+        public HashSet<int> FindMicrosoftPackages()
         {
-            var packages = _galleryContext.PackageRegistrations
-                .Where(r => r.Owners.Any(o => o.Username == MicrosoftAccountName))
-                .Select(r => r.Id);
-
-            return new CaseInsensitiveSet(packages);
+            return FindRegistrationKeys(MicrosoftSetName, (skip, take) =>
+            {
+                return _galleryContext.PackageRegistrations
+                    .Where(r => r.Owners.Any(o => o.Username == MicrosoftAccountName))
+                    .OrderBy(r => r.Key)
+                    .Select(r => r.Key)
+                    .Skip(skip)
+                    .Take(take)
+                    .ToList();
+            });
         }
 
-        public CaseInsensitiveSet FindPreinstalledPackages(CaseInsensitiveSet except)
+        public HashSet<int> FindPreinstalledPackages(HashSet<int> except)
         {
-            var preinstalledPackages = new CaseInsensitiveSet();
+            var preinstalledPackagesNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var path in _config.PreinstalledPaths)
             {
@@ -52,55 +63,79 @@ namespace NuGet.Services.Revalidate
                     .Select(d => d.Replace(expandedPath, "").Trim('\\').ToLowerInvariant())
                     .Where(d => !d.StartsWith("."));
 
-                preinstalledPackages.UnionWith(packagesInPath);
+                preinstalledPackagesNames.UnionWith(packagesInPath);
             }
+
+            var preinstalledPackages = FindRegistrationKeys(PreinstalledSetName, (skip, take) =>
+            {
+                return _galleryContext.PackageRegistrations
+                    .Where(r => preinstalledPackagesNames.Contains(r.Id))
+                    .OrderBy(r => r.Key)
+                    .Select(r => r.Key)
+                    .Skip(skip)
+                    .Take(take)
+                    .ToList();
+            });
 
             preinstalledPackages.ExceptWith(except);
 
             return preinstalledPackages;
         }
 
-        public CaseInsensitiveSet FindDependencyPackages(CaseInsensitiveSet roots)
+        public HashSet<int> FindDependencyPackages(HashSet<int> roots)
         {
-            var result = new CaseInsensitiveSet();
-            var next = new CaseInsensitiveSet(roots);
-            var all = new CaseInsensitiveSet(roots);
+            var result = new HashSet<int>();
+            var next = new HashSet<int>(roots);
+            var seen = new HashSet<int>(roots);
 
             do
             {
-                // TODO: Test this on PROD as this may not scale.
-                var dependencies = _galleryContext.Set<PackageDependency>()
-                    .Where(d => !all.Contains(d.Id))
-                    .Where(d => next.Contains(d.Package.PackageRegistration.Id))
-                    .Select(d => d.Id)
+                var dependencies = _galleryContext.PackageRegistrations
+                    .Join(
+                        _galleryContext.Set<PackageDependency>(),
+                        registration => registration.Id,
+                        dependency => dependency.Id,
+                        (registration, dependency) => new
+                        {
+                            DependencyRegistrationKey = registration.Key,
+                            ParentRegistrationKey = dependency.Package.PackageRegistrationKey
+                        })
+                    .Where(j => next.Contains(j.ParentRegistrationKey))
+                    .Select(j => j.DependencyRegistrationKey)
+                    .Distinct()
                     .ToList();
 
                 next.Clear();
-
-                result.UnionWith(dependencies);
                 next.UnionWith(dependencies);
-                all.UnionWith(dependencies);
+                next.ExceptWith(seen);
+
+                result.UnionWith(next);
+                seen.UnionWith(next);
             }
             while (next.Count() > 0);
 
             return result;
         }
 
-        public CaseInsensitiveSet FindAllPackages(CaseInsensitiveSet except)
+        public HashSet<int> FindAllPackages(HashSet<int> except)
         {
-            // TODO: Test this on PROD as this may not scale.
-            var packages = _galleryContext.PackageRegistrations
-                .Where(r => !except.Contains(r.Id))
-                .Select(r => r.Id);
-
-            return new CaseInsensitiveSet(packages);
+            return FindRegistrationKeys(RemainingSetName, (skip, take) =>
+            {
+                return _galleryContext.PackageRegistrations
+                    .Where(r => !except.Contains(r.Key))
+                    .OrderBy(r => r.Key)
+                    .Select(r => r.Key)
+                    .Skip(skip)
+                    .Take(take)
+                    .ToList();
+            });
         }
 
-        public List<PackageInformation> FindPackageInformation(string setName, CaseInsensitiveSet packageIds)
+        public List<PackageRegistrationInformation> FindPackageRegistrationInformation(string setName, HashSet<int> packageIds)
         {
             // Fetch the packages' information in batches.
             var batches = packageIds.Batch(BatchSize);
-            var result = new List<PackageInformation>();
+            var result = new List<PackageRegistrationInformation>();
 
             for (var batchIndex = 0; batchIndex < batches.Count; batchIndex++)
             {
@@ -112,14 +147,14 @@ namespace NuGet.Services.Revalidate
 
                 var batch = batches[batchIndex];
 
-                var packages = _galleryContext.Set<Package>()
-                    .Where(p => packageIds.Contains(p.PackageRegistration.Id))
-                    .GroupBy(p => p.PackageRegistration.Id)
-                    .Select(g => new PackageInformation
+                var packages = _galleryContext.PackageRegistrations
+                    .Where(r => batch.Contains(r.Key))
+                    .Select(r => new PackageRegistrationInformation
                     {
-                        Id = g.Key,
-                        Downloads = g.Sum(p => p.DownloadCount),
-                        Versions = g.Count(),
+                        Key = r.Key,
+                        Id = r.Id,
+                        Downloads = r.DownloadCount,
+                        Versions = r.Packages.Count(),
                     });
 
                 result.AddRange(packages);
@@ -134,22 +169,60 @@ namespace NuGet.Services.Revalidate
             return result;
         }
 
-        public Dictionary<string, List<NuGetVersion>> FindAppropriateVersions(List<string> packageIds)
+        public Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packageRegistrations)
         {
             var maxCreated = _config.MaxPackageCreationDate.UtcDateTime;
+            var keys = packageRegistrations.Select(p => p.Key);
 
-            return _galleryContext.Set<Package>()
-                .Where(p => packageIds.Contains(p.PackageRegistration.Id))
+            var versions = _galleryContext.Set<Package>()
+                .Where(p => keys.Contains(p.PackageRegistrationKey))
                 .Where(p => p.PackageStatusKey == PackageStatus.Available || p.PackageStatusKey == PackageStatus.Deleted)
                 .Where(p => p.Created < maxCreated)
-                .GroupBy(p => p.PackageRegistration.Id)
+                .Select(p => new { p.PackageRegistrationKey, p.NormalizedVersion })
+                .ToList();
+
+            return versions.GroupBy(p => p.PackageRegistrationKey)
                 .ToDictionary(
                     g => g.Key,
                     g => g.Select(p => p.NormalizedVersion)
                         .Select(NuGetVersion.Parse)
                         .OrderByDescending(v => v)
-                        .ToList(),
-                    StringComparer.OrdinalIgnoreCase);
+                        .ToList());
         }
+
+        private HashSet<int> FindRegistrationKeys(string setName, RegistrationKeyFinder finder)
+        {
+            var result = new HashSet<int>();
+            var batches = 0;
+            var done = false;
+
+            while (!done)
+            {
+                var batchResults = finder(batches * BatchSize, BatchSize);
+
+                result.UnionWith(batchResults);
+                batches++;
+
+                _logger.LogInformation("Found {Results} results for package set {SetName}", result.Count, setName);
+
+                if (batchResults.Count < BatchSize)
+                {
+                    done = true;
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Sleeping for {SleepDuration} before searching for more package set {SetName} results",
+                        _config.SleepDurationBetweenBatches,
+                        setName);
+
+                    Thread.Sleep(_config.SleepDurationBetweenBatches);
+                }
+            }
+
+            return result;
+        }
+
+        private delegate List<int> RegistrationKeyFinder(int skip, int take);
     }
 }

@@ -3,9 +3,10 @@
 
 namespace NuGet.Services.Revalidate
 {
-    public class PackageInformation
+    public class PackageRegistrationInformation
     {
-        public int PackageRegistrationKey { get; set; }
+        public int Key { get; set; }
+
         public string Id { get; set; }
         public int Downloads { get; set; }
         public int Versions { get; set; }
