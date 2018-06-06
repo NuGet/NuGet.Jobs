@@ -4,10 +4,10 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Validation.PackageSigning.RepositorySign")]
-[assembly: AssemblyDescription("The job that repository signs previously uploaded packages")]
+[assembly: AssemblyTitle("NuGet.Services.Revalidate")]
+[assembly: AssemblyDescription("The job that revalidates previously updated packages")]
 [assembly: AssemblyCompany(".NET Foundation")]
-[assembly: AssemblyProduct("Validation.PackageSigning.RepositorySign")]
+[assembly: AssemblyProduct("NuGet.Services.Revalidate")]
 [assembly: AssemblyCopyright("Copyright © .NET Foundation 2018")]
 [assembly: ComVisible(false)]
 [assembly: Guid("1963909d-8be3-4cb8-b57e-ab6a8cb22fed")]

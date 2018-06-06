@@ -45,13 +45,13 @@ namespace NuGet.Services.Revalidate
             {
                 if (_initialize)
                 {
-                    Logger.LogInformation("Initializing Repository Sign job...");
+                    Logger.LogInformation("Initializing Revalidate job...");
 
                     await scope.ServiceProvider
                         .GetRequiredService<Initializer>()
                         .InitializeAsync();
 
-                    Logger.LogInformation("Repository Sign job initialized");
+                    Logger.LogInformation("Revalidate job initialized");
                 }
                 else
                 {

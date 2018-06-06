@@ -106,11 +106,11 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "$PSScriptRoot\src\CopyAzureContainer\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\NuGetCDNRedirect\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\NuGet.Services.Validation.Orchestrator\Properties\AssemblyInfo.g.cs",
+            "$PSScriptRoot\src\NuGet.Services.Revalidate\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Stats.CollectAzureChinaCDNLogs\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.PackageSigning.ProcessSignature\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.PackageSigning.ValidateCertificate\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.PackageSigning.RevalidateCertificate\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.PackageSigning.RepositorySign\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\NuGet.Jobs.Common\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.Common.Job\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.ScanAndSign.Core\Properties\AssemblyInfo.g.cs",
@@ -168,11 +168,11 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/CopyAzureContainer/CopyAzureContainer.csproj", `
             "src/NuGetCDNRedirect/NuGetCDNRedirect.csproj", `
             "src/NuGet.Services.Validation.Orchestrator/NuGet.Services.Validation.Orchestrator.csproj", `
+            "src/NuGet.Services.Revalidate/NuGet.Services.Revalidate.csproj", `
             "src/Stats.CollectAzureChinaCDNLogs/Stats.CollectAzureChinaCDNLogs.csproj", `
             "src/Validation.PackageSigning.ProcessSignature/Validation.PackageSigning.ProcessSignature.csproj", `
             "src/Validation.PackageSigning.ValidateCertificate/Validation.PackageSigning.ValidateCertificate.csproj", `
             "src/Validation.PackageSigning.RevalidateCertificate/Validation.PackageSigning.RevalidateCertificate.csproj", `
-            "src/Validation.PackageSigning.RepositorySign/Validation.PackageSigning.RepositorySign.csproj", `
             "src/PackageLagMonitor/Monitoring.PackageLag.csproj" `
             + $ProjectsWithSymbols
 
