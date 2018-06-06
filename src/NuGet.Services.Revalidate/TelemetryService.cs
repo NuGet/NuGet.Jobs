@@ -4,7 +4,7 @@
 using System;
 using NuGet.Services.Logging;
 
-namespace Validation.PackageSigning.RepositorySign
+namespace NuGet.Services.Revalidate
 {
     public class TelemetryService : ITelemetryService
     {

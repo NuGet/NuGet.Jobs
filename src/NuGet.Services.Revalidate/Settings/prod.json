@@ -1,5 +1,5 @@
 ﻿{
-  "RepositorySignJob": {
+  "RevalidateJob": {
     "Initialization": {
       // TODO: Verify these paths!
       "PreinstalledPaths": [
@@ -15,13 +15,13 @@
   },
 
   "GalleryDb": {
-    "ConnectionString": "Data Source=tcp:#{Jobs.validation.GalleryDatabaseAddress};Initial Catalog=nuget-dev-0-v2gallery;Integrated Security=False;User ID=$$Dev-GalleryDBReadOnly-UserName$$;Password=$$Dev-GalleryDBReadOnly-Password$$;Connect Timeout=30;Encrypt=True"
+    "ConnectionString": "Data Source=tcp:#{Jobs.validation.GalleryDatabaseAddress};Initial Catalog=NuGetGallery;Integrated Security=False;User ID=$$Prod-GalleryDBReadOnly-UserName$$;Password=$$Prod-GalleryDBReadOnly-Password$$;Connect Timeout=30;Encrypt=True"
   },
   "ValidationDb": {
-    "ConnectionString": "Data Source=tcp:#{Jobs.validation.DatabaseAddress};Initial Catalog=nuget-dev-validation;Integrated Security=False;User ID=$$Dev-ValidationDBWriter-UserName$$;Password=$$Dev-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
+    "ConnectionString": "Data Source=tcp:#{Jobs.validation.DatabaseAddress};Initial Catalog=nuget-prod-validation;Integrated Security=False;User ID=$$Prod-ValidationDBWriter-UserName$$;Password=$$Prod-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
   },
   "ServiceBus": {
-    "ConnectionString": "Endpoint=sb://nugetdev.servicebus.windows.net/;SharedAccessKeyName=package-certificates-validator;SharedAccessKey=$$Dev-ServiceBus-SharedAccessKey-Validation-CertificatesValidator$$",
+    "ConnectionString": "Endpoint=sb://nugetprod.servicebus.windows.net/;SharedAccessKeyName=package-certificates-validator;SharedAccessKey=$$Prod-ServiceBus-SharedAccessKey-Validation-CertificatesValidator$$",
     "TopicPath": "validate-certificate",
     "SubscriptionName": "validate-certificate"
   },

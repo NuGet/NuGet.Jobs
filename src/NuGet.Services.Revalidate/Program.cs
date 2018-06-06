@@ -3,7 +3,7 @@
 
 using NuGet.Jobs;
 
-namespace Validation.PackageSigning.RepositorySign
+namespace NuGet.Services.Revalidate
 {
     class Program
     {

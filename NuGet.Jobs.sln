@@ -129,7 +129,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Monitoring", "Monitoring", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitoring.PackageLag", "src\PackageLagMonitor\Monitoring.PackageLag.csproj", "{B5147169-E941-4CF8-9FCD-1C123ACD3149}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.PackageSigning.RepositorySign", "src\Validation.PackageSigning.RepositorySign\Validation.PackageSigning.RepositorySign.csproj", "{1963909D-8BE3-4CB8-B57E-AB6A8CB22FED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Services.Revalidate", "src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.csproj", "{1963909D-8BE3-4CB8-B57E-AB6A8CB22FED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -12,7 +12,7 @@ using NuGet.Services.Validation;
 using NuGet.Versioning;
 using NuGetGallery;
 
-namespace Validation.PackageSigning.RepositorySign
+namespace NuGet.Services.Revalidate
 {
     using IGalleryContext = IEntitiesContext;
 

@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Validation.PackageSigning.RepositorySign
+namespace NuGet.Services.Revalidate
 {
     public class InitializationConfiguration
     {

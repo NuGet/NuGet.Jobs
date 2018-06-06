@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Validation.PackageSigning.RepositorySign</id>
+    <id>NuGet.Services.Revalidate</id>
     <version>$version$</version>
-    <title>Validation.PackageSigning.RepositorySign</title>
+    <title>NuGet.Services.Revalidate</title>
     <authors>.NET Foundation</authors>
     <owners>.NET Foundation</owners>
     <description>Validation.PackageSigning.RepositorySign</description>
@@ -12,7 +12,7 @@
   <files>
     <file src="bin\$configuration$\*.*" target="bin"/>
 
-    <file src="Scripts\Validation.PackageSigning.RepositorySign.cmd" />
+    <file src="Scripts\NuGet.Services.Revalidate.cmd" />
 
     <file src="Scripts\Functions.ps1" />
     <file src="Scripts\PreDeploy.ps1" />

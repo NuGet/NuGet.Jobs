@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1963909D-8BE3-4CB8-B57E-AB6A8CB22FED}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Validation.PackageSigning.RepositorySign</RootNamespace>
-    <AssemblyName>Validation.PackageSigning.RepositorySign</AssemblyName>
+    <RootNamespace>NuGet.Services.Revalidate</RootNamespace>
+    <AssemblyName>NuGet.Services.Revalidate</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -58,11 +58,11 @@
     <None Include="Scripts\Functions.ps1" />
     <None Include="Scripts\PostDeploy.ps1" />
     <None Include="Scripts\PreDeploy.ps1" />
-    <None Include="Scripts\Validation.PackageSigning.RepositorySign.cmd" />
+    <None Include="Scripts\NuGet.Services.Revalidate.cmd" />
     <None Include="Settings\dev.json" />
     <None Include="Settings\int.json" />
     <None Include="Settings\prod.json" />
-    <None Include="Validation.PackageSigning.RepositorySign.nuspec" />
+    <None Include="NuGet.Services.Revalidate.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Scripts\nssm.exe" />

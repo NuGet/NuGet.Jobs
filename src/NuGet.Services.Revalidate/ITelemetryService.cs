@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Validation.PackageSigning.RepositorySign
+namespace NuGet.Services.Revalidate
 {
     public interface ITelemetryService
     {

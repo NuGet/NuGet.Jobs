@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
 using Microsoft.Extensions.Configuration;
@@ -15,10 +13,9 @@ using Microsoft.Extensions.Options;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
-using NuGet.Versioning;
 using NuGetGallery;
 
-namespace Validation.PackageSigning.RepositorySign
+namespace NuGet.Services.Revalidate
 {
     using GalleryContext = EntitiesContext;
     using IGalleryContext = IEntitiesContext;
@@ -26,7 +23,7 @@ namespace Validation.PackageSigning.RepositorySign
     public class Job : JsonConfigurationJob
     {
         private const string InitializeArgumentName = "Initialize";
-        private const string JobConfigurationSectionName = "RepositorySignJob";
+        private const string JobConfigurationSectionName = "RevalidateJob";
 
         private bool _initialize;
 
