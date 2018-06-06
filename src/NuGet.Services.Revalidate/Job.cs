@@ -48,7 +48,7 @@ namespace NuGet.Services.Revalidate
                     Logger.LogInformation("Initializing Revalidate job...");
 
                     await scope.ServiceProvider
-                        .GetRequiredService<Initializer>()
+                        .GetRequiredService<InitializationManager>()
                         .InitializeAsync();
 
                     Logger.LogInformation("Revalidate job initialized");
@@ -73,7 +73,9 @@ namespace NuGet.Services.Revalidate
                 return new GalleryContext(config.ConnectionString, readOnly: false);
             });
 
-            services.AddScoped<Initializer>();
+            services.AddScoped<IRevalidationStateService, RevalidationStateService>();
+            services.AddScoped<IPackageFinder, PackageFinder>();
+            services.AddScoped<InitializationManager>();
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)

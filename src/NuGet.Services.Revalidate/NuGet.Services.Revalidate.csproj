@@ -44,8 +44,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\InitializationConfiguration.cs" />
-    <Compile Include="Initializer.cs" />
+    <Compile Include="Extensions\IEnumerableExtensions.cs" />
+    <Compile Include="Extensions\CaseInsensitiveSet.cs" />
+    <Compile Include="Initialization\InitializationManager.cs" />
     <Compile Include="Configuration\RevalidationConfiguration.cs" />
+    <Compile Include="Initialization\IPackageFinder.cs" />
+    <Compile Include="Initialization\PackageFinder.cs" />
+    <Compile Include="Initialization\PackageInformation.cs" />
+    <Compile Include="IRevalidationStateService.cs" />
+    <Compile Include="RevalidationStateService.cs" />
     <Compile Include="TelemetryService.cs" />
     <Compile Include="ITelemetryService.cs" />
     <Compile Include="Job.cs" />
