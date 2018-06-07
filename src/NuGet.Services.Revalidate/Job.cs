@@ -51,29 +51,32 @@ namespace NuGet.Services.Revalidate
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var initializer = scope.ServiceProvider.GetRequiredService<InitializationManager>();
-
-                if (_initialize)
+                if (_initialize || _verifyInitialization)
                 {
-                    Logger.LogInformation("Initializing Revalidate job...");
+                    var initializer = scope.ServiceProvider.GetRequiredService<InitializationManager>();
 
-                    await initializer.InitializeAsync();
+                    if (_initialize)
+                    {
+                        Logger.LogInformation("Initializing Revalidate job...");
 
-                    Logger.LogInformation("Revalidate job initialized");
+                        await initializer.InitializeAsync();
+
+                        Logger.LogInformation("Revalidate job initialized");
+                    }
+
+                    if (_verifyInitialization)
+                    {
+                        Logger.LogInformation("Verifying initialization...");
+
+                        await initializer.VerifyInitializationAsync();
+
+                        Logger.LogInformation("Initialization verified");
+                    }
                 }
-
-                if (_verifyInitialization)
-                {
-                    Logger.LogInformation("Verifying initialization...");
-
-                    await initializer.VerifyInitializationAsync();
-
-                    Logger.LogInformation("Initialization verified");
-                }
-
-                if (!_initialize && !_verifyInitialization)
+                else
                 {
                     // TODO: https://github.com/NuGet/Engineering/issues/1443
+                    // Send revalidation requests to the Orchestrator.
                     throw new NotImplementedException();
                 }
             }
