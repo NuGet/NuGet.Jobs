@@ -184,10 +184,7 @@ namespace NuGet.Services.Revalidate
             return versions.GroupBy(p => p.PackageRegistrationKey)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(p => p.NormalizedVersion)
-                        .Select(NuGetVersion.Parse)
-                        .OrderByDescending(v => v)
-                        .ToList());
+                    g => g.Select(p => NuGetVersion.Parse(p.NormalizedVersion)).ToList());
         }
 
         public int AppropriatePackageCount()

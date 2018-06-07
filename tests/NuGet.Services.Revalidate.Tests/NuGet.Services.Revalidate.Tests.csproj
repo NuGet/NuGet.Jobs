@@ -4,13 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{CAE45AC9-F11B-4215-9D1A-C98BC0F1F687}</ProjectGuid>
+    <ProjectGuid>{19780DCB-B307-4254-B10C-4335FC784DEA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Validation.PackageSigning.ScanAndSign.Tests</RootNamespace>
-    <AssemblyName>Validation.PackageSigning.ScanAndSign.Tests</AssemblyName>
+    <RootNamespace>NuGet.Services.Revalidate.Tests</RootNamespace>
+    <AssemblyName>NuGet.Services.Revalidate.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,6 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -39,32 +41,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ScanAndSignEnqueuerFacts.cs" />
-    <Compile Include="ScanAndSignMessageFacts.cs" />
-    <Compile Include="ScanAndSignProcessorFacts.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\NuGet.Services.Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj">
-      <Project>{e6d094fb-9068-4578-b176-116f97e7506b}</Project>
-      <Name>NuGet.Services.Validation.Orchestrator</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\Validation.Common.Job\Validation.Common.Job.csproj">
-      <Project>{FA87D075-A934-4443-8D0B-5DB32640B6D7}</Project>
-      <Name>Validation.Common.Job</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\Validation.ScanAndSign.Core\Validation.ScanAndSign.Core.csproj">
-      <Project>{DFAC2769-4B67-4FBC-AD60-D93A39DD45AE}</Project>
-      <Name>Validation.ScanAndSign.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Validation.PackageSigning.Helpers\Tests.ContextHelpers.csproj">
-      <Project>{2c5be067-adfd-49e3-ba9f-13a74436e5db}</Project>
-      <Name>Tests.ContextHelpers</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Moq">
+    <PackageReference Include="EntityFramework">
+      <Version>6.1.3</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions">
+      <Version>1.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="moq">
       <Version>4.7.145</Version>
+    </PackageReference>
+    <PackageReference Include="System.Net.Http">
+      <Version>4.3.3</Version>
     </PackageReference>
     <PackageReference Include="xunit">
       <Version>2.3.1</Version>
@@ -72,6 +59,21 @@
     <PackageReference Include="xunit.runner.visualstudio">
       <Version>2.3.1</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Extensions\IEnumerableExtensionsFacts.cs" />
+    <Compile Include="Initializer\PackageFinderFacts.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.csproj">
+      <Project>{1963909d-8be3-4cb8-b57e-ab6a8cb22fed}</Project>
+      <Name>NuGet.Services.Revalidate</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Validation.PackageSigning.Helpers\Tests.ContextHelpers.csproj">
+      <Project>{2c5be067-adfd-49e3-ba9f-13a74436e5db}</Project>
+      <Name>Tests.ContextHelpers</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

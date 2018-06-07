@@ -169,7 +169,10 @@ namespace NuGet.Services.Revalidate
                     continue;
                 }
 
-                foreach (var version in versions[packageRegistration.Key])
+                // Insert each version of the package in descending order of the versions.
+                var packageVersions = versions[packageRegistration.Key].OrderByDescending(v => v);
+
+                foreach (var version in packageVersions)
                 {
                     revalidations.Add(new PackageRevalidation
                     {

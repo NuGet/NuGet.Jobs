@@ -9,11 +9,28 @@ using System.Linq;
 using System.Linq.Expressions;
 using Moq;
 using NuGet.Services.Validation;
+using NuGetGallery;
 
-namespace Validation.PackageSigning.Helpers
+namespace Tests.ContextHelpers
 {
-    public static class ValidationContextHelpers
+    using GalleryContext = NuGetGallery.IEntitiesContext;
+
+    public static class ContextExtensions
     {
+        public static void Mock(
+            this Mock<GalleryContext> context,
+            Mock<IDbSet<PackageRegistration>> packageRegistrationsMock = null,
+            Mock<IDbSet<PackageDependency>> packageDependenciesMock = null,
+            Mock<IDbSet<Package>> packagesMock = null,
+            IEnumerable<PackageRegistration> packageRegistrations = null,
+            IEnumerable<PackageDependency> packageDependencies = null,
+            IEnumerable<Package> packages = null)
+        {
+            context.SetupDbSet(c => c.PackageRegistrations, packageRegistrationsMock, packageRegistrations);
+            context.SetupDbSet(c => c.Set<PackageDependency>(), packageDependenciesMock, packageDependencies);
+            context.SetupDbSet(c => c.Set<Package>(), packagesMock, packages);
+        }
+
         public static void Mock(
             this Mock<IValidationEntitiesContext> validationContext,
             Mock<IDbSet<ValidatorStatus>> validatorStatusesMock = null,
@@ -37,33 +54,34 @@ namespace Validation.PackageSigning.Helpers
             validationContext.SetupDbSet(c => c.CertificateValidations, certificateValidationsMock, certificateValidations);
         }
 
-        private static void SetupDbSet<T>(
-            this Mock<IValidationEntitiesContext> validationContext,
-            Expression<Func<IValidationEntitiesContext, IDbSet<T>>> propertyExpression,
-            Mock<IDbSet<T>> dbSet,
-            IEnumerable<T> dataEnumerable)
-          where T : class
+        private static void SetupDbSet<TContext, TEntity>(
+            this Mock<TContext> validationContext,
+            Expression<Func<TContext, IDbSet<TEntity>>> dbSetAccessor,
+            Mock<IDbSet<TEntity>> dbSet,
+            IEnumerable<TEntity> dataEnumerable)
+          where TContext : class
+          where TEntity : class
         {
-            dbSet = dbSet ?? new Mock<IDbSet<T>>();
-            dataEnumerable = dataEnumerable ?? new T[0];
+            dbSet = dbSet ?? new Mock<IDbSet<TEntity>>();
+            dataEnumerable = dataEnumerable ?? new TEntity[0];
 
             var data = dataEnumerable.AsQueryable();
 
             dbSet
-                .As<IDbAsyncEnumerable<T>>()
+                .As<IDbAsyncEnumerable<TEntity>>()
                 .Setup(m => m.GetAsyncEnumerator())
-                .Returns(new TestDbAsyncEnumerator<T>(data.GetEnumerator()));
+                .Returns(new TestDbAsyncEnumerator<TEntity>(data.GetEnumerator()));
 
             dbSet
-                .As<IQueryable<T>>()
+                .As<IQueryable<TEntity>>()
                 .Setup(m => m.Provider)
-                .Returns(new TestDbAsyncQueryProvider<T>(data.Provider));
+                .Returns(new TestDbAsyncQueryProvider<TEntity>(data.Provider));
 
-            dbSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.Expression);
-            dbSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            dbSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+            dbSet.As<IQueryable<TEntity>>().Setup(m => m.Expression).Returns(data.Expression);
+            dbSet.As<IQueryable<TEntity>>().Setup(m => m.ElementType).Returns(data.ElementType);
+            dbSet.As<IQueryable<TEntity>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
 
-            validationContext.Setup(propertyExpression).Returns(dbSet.Object);
+            validationContext.Setup(dbSetAccessor).Returns(dbSet.Object);
         }
     }
 }
