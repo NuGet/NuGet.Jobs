@@ -10,7 +10,7 @@ namespace NuGet.Services.Revalidate
     {
         private readonly ITelemetryClient _client;
 
-        private const string Prefix = "RepositorySign.";
+        private const string Prefix = "Revalidate.";
 
         public TelemetryService(ITelemetryClient client)
         {

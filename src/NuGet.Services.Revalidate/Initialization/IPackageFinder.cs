@@ -16,10 +16,10 @@ namespace NuGet.Services.Revalidate
         HashSet<int> FindMicrosoftPackages();
 
         /// <summary>
-        /// Find packages that are preinstalled by Visual Studio.
+        /// Find packages that are preinstalled by Visual Studio and the .NET SDK.
         /// </summary>
         /// <param name="except">A set of package registration keys that should be removed from the result.</param>
-        /// <returns>The set of package registration keys preinstalled by Visual Studio.</returns>
+        /// <returns>The set of package registration keys that are preinstalled.</returns>
         HashSet<int> FindPreinstalledPackages(HashSet<int> except);
 
         /// <summary>
@@ -47,14 +47,14 @@ namespace NuGet.Services.Revalidate
         /// <summary>
         /// Find versions that are appropriate for revalidations.
         /// </summary>
-        /// <param name="packageRegistrations">The packages whose versions should be fetched.</param>
+        /// <param name="packages">The packages whose versions should be fetched.</param>
         /// <returns>A map of package registration keys to the versions of that package registration.</returns>
-        Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packageRegistrations);
+        Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packages);
 
         /// <summary>
-        /// Find all package id versions that are appropriate for revalidations.
+        /// Count how many packages are appropriate for revalidation.
         /// </summary>
-        /// <returns>A map of package  of all package id and versions that are appropriate for revalidation.</returns>
+        /// <returns>The count of packages appropriate for revalidation.</returns>
         int AppropriatePackageCount();
     }
 }

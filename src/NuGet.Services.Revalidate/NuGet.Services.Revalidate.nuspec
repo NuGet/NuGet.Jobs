@@ -6,7 +6,7 @@
     <title>NuGet.Services.Revalidate</title>
     <authors>.NET Foundation</authors>
     <owners>.NET Foundation</owners>
-    <description>Validation.PackageSigning.RepositorySign</description>
+    <description>The service used to mass revalidate packages</description>
     <copyright>Copyright .NET Foundation</copyright>
   </metadata>
   <files>

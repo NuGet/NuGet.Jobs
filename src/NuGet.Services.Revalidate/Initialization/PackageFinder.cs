@@ -131,10 +131,10 @@ namespace NuGet.Services.Revalidate
             });
         }
 
-        public List<PackageRegistrationInformation> FindPackageRegistrationInformation(string setName, HashSet<int> packageIds)
+        public List<PackageRegistrationInformation> FindPackageRegistrationInformation(string setName, HashSet<int> packageRegistrationKeys)
         {
             // Fetch the packages' information in batches.
-            var batches = packageIds.Batch(BatchSize);
+            var batches = packageRegistrationKeys.Batch(BatchSize);
             var result = new List<PackageRegistrationInformation>();
 
             for (var batchIndex = 0; batchIndex < batches.Count; batchIndex++)
@@ -169,10 +169,10 @@ namespace NuGet.Services.Revalidate
             return result;
         }
 
-        public Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packageRegistrations)
+        public Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packages)
         {
             var maxCreated = _config.MaxPackageCreationDate.UtcDateTime;
-            var keys = packageRegistrations.Select(p => p.Key);
+            var keys = packages.Select(p => p.Key);
 
             var versions = _galleryContext.Set<Package>()
                 .Where(p => keys.Contains(p.PackageRegistrationKey))
