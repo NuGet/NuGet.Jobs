@@ -10,26 +10,7 @@ namespace NuGet.Services.Revalidate
     {
         public static List<List<T>> Batch<T>(this IEnumerable<T> collection, int batchSize)
         {
-            var result = new List<List<T>>();
-            var current = new List<T>();
-
-            foreach (var item in collection)
-            {
-                if (current.Count + 1 > batchSize)
-                {
-                    result.Add(current);
-                    current = new List<T>();
-                }
-
-                current.Add(item);
-            }
-
-            if (current.Count > 0)
-            {
-                result.Add(current);
-            }
-
-            return result;
+            return WeightedBatch(collection, batchSize, i => 1);
         }
 
         public static List<List<T>> WeightedBatch<T>(this IEnumerable<T> collection, int batchSize, Func<T, int> weightFunc)
