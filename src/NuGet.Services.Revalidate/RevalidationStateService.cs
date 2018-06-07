@@ -64,5 +64,10 @@ namespace NuGet.Services.Revalidate
 
             return revalidations.Count;
         }
+
+        public async Task<int> PackageRevalidationCountAsync()
+        {
+            return await _context.PackageRevalidations.CountAsync();
+        }
     }
 }

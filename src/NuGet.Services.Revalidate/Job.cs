@@ -23,19 +23,27 @@ namespace NuGet.Services.Revalidate
     public class Job : JsonConfigurationJob
     {
         private const string InitializeArgumentName = "Initialize";
+        private const string VerifyInitializationArgumentName = "VerifyInitialization";
         private const string JobConfigurationSectionName = "RevalidateJob";
 
         private bool _initialize;
+        private bool _verifyInitialization;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
             _initialize = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, InitializeArgumentName);
+            _verifyInitialization = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, VerifyInitializationArgumentName);
 
             if (_initialize && !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once))
             {
                 throw new Exception($"Argument {JobArgumentNames.Once} is required if argument {InitializeArgumentName} is present.");
+            }
+
+            if (_verifyInitialization && !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once))
+            {
+                throw new Exception($"Argument {JobArgumentNames.Once} is required if argument {VerifyInitializationArgumentName} is present.");
             }
         }
 
@@ -43,17 +51,27 @@ namespace NuGet.Services.Revalidate
         {
             using (var scope = _serviceProvider.CreateScope())
             {
+                var initializer = scope.ServiceProvider.GetRequiredService<InitializationManager>();
+
                 if (_initialize)
                 {
                     Logger.LogInformation("Initializing Revalidate job...");
 
-                    await scope.ServiceProvider
-                        .GetRequiredService<InitializationManager>()
-                        .InitializeAsync();
+                    await initializer.InitializeAsync();
 
                     Logger.LogInformation("Revalidate job initialized");
                 }
-                else
+
+                if (_verifyInitialization)
+                {
+                    Logger.LogInformation("Verifying initialization...");
+
+                    await initializer.VerifyInitializationAsync();
+
+                    Logger.LogInformation("Initialization verified");
+                }
+
+                if (!_initialize && !_verifyInitialization)
                 {
                     // TODO: https://github.com/NuGet/Engineering/issues/1443
                     throw new NotImplementedException();

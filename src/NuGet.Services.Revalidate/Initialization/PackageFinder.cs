@@ -190,6 +190,16 @@ namespace NuGet.Services.Revalidate
                         .ToList());
         }
 
+        public int AppropriatePackageCount()
+        {
+            var maxCreated = _config.MaxPackageCreationDate.UtcDateTime;
+
+            return _galleryContext.Set<Package>()
+                    .Where(p => p.PackageStatusKey == PackageStatus.Available || p.PackageStatusKey == PackageStatus.Deleted)
+                    .Where(p => p.Created < maxCreated)
+                    .Count();
+        }
+
         private HashSet<int> FindRegistrationKeys(string setName, RegistrationKeyFinder finder)
         {
             var result = new HashSet<int>();

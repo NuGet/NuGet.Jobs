@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using NuGet.Versioning;
 
@@ -49,5 +50,11 @@ namespace NuGet.Services.Revalidate
         /// <param name="packageRegistrations">The packages whose versions should be fetched.</param>
         /// <returns>A map of package registration keys to the versions of that package registration.</returns>
         Dictionary<int, List<NuGetVersion>> FindAppropriateVersions(List<PackageRegistrationInformation> packageRegistrations);
+
+        /// <summary>
+        /// Find all package id versions that are appropriate for revalidations.
+        /// </summary>
+        /// <returns>A map of package  of all package id and versions that are appropriate for revalidation.</returns>
+        int AppropriatePackageCount();
     }
 }

@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -14,8 +12,6 @@ using NuGetGallery;
 
 namespace NuGet.Services.Revalidate
 {
-    using IGalleryContext = IEntitiesContext;
-
     public class InitializationManager
     {
         private static int BatchSize = 1000;
@@ -42,6 +38,7 @@ namespace NuGet.Services.Revalidate
         public async Task InitializeAsync()
         {
             // TODO: Check "IsInitialized" setting. If true, error!
+            // See: https://github.com/NuGet/Engineering/issues/1440
             await ClearPackageRevalidationStateAsync();
 
             // Find packages owned by Microsoft or preinstalled by Visual Studio.
@@ -71,6 +68,22 @@ namespace NuGet.Services.Revalidate
             await InitializePackageSetAsync(PackageFinder.RemainingSetName, remainingPackages);
 
             // TODO: Set "IsInitialized" setting to true
+            // See: https://github.com/NuGet/Engineering/issues/1440
+        }
+
+        public async Task VerifyInitializationAsync()
+        {
+            // TODO: Check "IsInitialized" setting. If false, error!
+            // See: https://github.com/NuGet/Engineering/issues/1440
+            var expectedCount = _packageFinder.AppropriatePackageCount();
+            var actualCount = await _revalidationState.PackageRevalidationCountAsync();
+
+            if (actualCount != expectedCount)
+            {
+                _logger.LogError("Expected {ExpectedRevalidations} revalidations, found {ActualRevalidations}", expectedCount, actualCount);
+
+                throw new Exception($"Expected {expectedCount} revalidation, found {actualCount}");
+            }
         }
 
         private async Task ClearPackageRevalidationStateAsync()
@@ -109,6 +122,7 @@ namespace NuGet.Services.Revalidate
             for (var chunkIndex = 0; chunkIndex < chunks.Count; chunkIndex++)
             {
                 // TODO: Check the kill switch
+                // See https://github.com/NuGet/Engineering/issues/1440
                 _logger.LogInformation("Initializing chunk {Chunk} of {Chunks} for package set {SetName}...",
                     chunkIndex + 1,
                     chunks.Count,
