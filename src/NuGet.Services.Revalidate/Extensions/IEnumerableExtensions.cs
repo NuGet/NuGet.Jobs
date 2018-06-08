@@ -23,7 +23,7 @@ namespace NuGet.Services.Revalidate
             {
                 var itemWeight = weightFunc(item);
 
-                if (currentSize + itemWeight > batchSize)
+                if (currentSize != 0 && currentSize + itemWeight > batchSize)
                 {
                     result.Add(current);
                     current = new List<T>();

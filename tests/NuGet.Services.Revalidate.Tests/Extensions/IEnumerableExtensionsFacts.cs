@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -55,29 +56,33 @@ namespace NuGet.Services.Revalidate.Tests.Extensions
 
         [Theory]
         [MemberData(nameof(TheWeightedBatchMethodData))]
-        public void TheWeightedBatchMethod(int[] input, int batchSize, List<List<int>> expected)
+        public void TheWeightedBatchMethod(int[] input, Func<int, int> weightFunc, int batchSize, List<List<int>> expected)
         {
             // Use each element's value as its weight
-            var actual = input.WeightedBatch(batchSize, i => i);
+            var actual = input.WeightedBatch(batchSize, weightFunc);
 
             AssertEqualBatches(expected, actual);
         }
 
         public static IEnumerable<object[]> TheWeightedBatchMethodData()
         {
+            Func<int, int> UseElementValueAsWeight = (int value) => value;
+
             yield return new object[]
             {
                 new[] { 1, 2, 3, },
+                UseElementValueAsWeight,
                 6,
                 new List<List<int>>
                 {
                     new List<int> { 1, 2, 3 },
-                }
+                },
             };
 
             yield return new object[]
             {
                 new[] { 1, 2, 3, },
+                UseElementValueAsWeight,
                 5,
                 new List<List<int>>
                 {
@@ -89,6 +94,7 @@ namespace NuGet.Services.Revalidate.Tests.Extensions
             yield return new object[]
             {
                 new[] { 1, 2, 3, },
+                UseElementValueAsWeight,
                 3,
                 new List<List<int>>
                 {
@@ -100,6 +106,7 @@ namespace NuGet.Services.Revalidate.Tests.Extensions
             yield return new object[]
             {
                 new[] { 1, 2, 3, },
+                UseElementValueAsWeight,
                 2,
                 new List<List<int>>
                 {
@@ -107,6 +114,19 @@ namespace NuGet.Services.Revalidate.Tests.Extensions
                     new List<int> { 2 },
                     new List<int> { 3 }
                 }
+            };
+
+            Func<int, int> AlwaysReturnWeightOf2 = (int value) => 2;
+
+            yield return new object[]
+            {
+                new[] { 1 },
+                AlwaysReturnWeightOf2,
+                1,
+                new List<List<int>>
+                {
+                    new List<int> { 1 }
+                },
             };
         }
 

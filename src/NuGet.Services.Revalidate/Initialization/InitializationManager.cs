@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation;
 using NuGet.Versioning;
-using NuGetGallery;
 
 namespace NuGet.Services.Revalidate
 {
@@ -19,13 +18,13 @@ namespace NuGet.Services.Revalidate
         private readonly IRevalidationStateService _revalidationState;
         private readonly IPackageFinder _packageFinder;
         private readonly InitializationConfiguration _config;
-        private readonly ILogger<PackageFinder> _logger;
+        private readonly ILogger<InitializationManager> _logger;
 
         public InitializationManager(
             IRevalidationStateService revalidationState,
             IPackageFinder packageFinder,
             InitializationConfiguration config,
-            ILogger<PackageFinder> logger)
+            ILogger<InitializationManager> logger)
         {
             // TODO: Accept service for settings (IsInitialized, etc...)
             // See: https://github.com/NuGet/Engineering/issues/1440

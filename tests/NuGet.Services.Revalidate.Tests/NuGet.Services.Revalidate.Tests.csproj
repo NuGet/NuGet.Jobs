@@ -62,8 +62,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\IEnumerableExtensionsFacts.cs" />
+    <Compile Include="Initializer\InitializationManagerFacts.cs" />
     <Compile Include="Initializer\PackageFinderFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RevalidationStateServiceFacts.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.csproj">

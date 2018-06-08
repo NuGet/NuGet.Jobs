@@ -39,12 +39,14 @@ namespace Tests.ContextHelpers
             Mock<IDbSet<TrustedTimestamp>> trustedTimestampsMock = null,
             Mock<IDbSet<EndCertificate>> endCertificatesMock = null,
             Mock<IDbSet<EndCertificateValidation>> certificateValidationsMock = null,
+            Mock<IDbSet<PackageRevalidation>> packageRevalidationsMock = null,
             IEnumerable<ValidatorStatus> validatorStatuses = null,
             IEnumerable<PackageSigningState> packageSigningStates = null,
             IEnumerable<PackageSignature> packageSignatures = null,
             IEnumerable<TrustedTimestamp> trustedTimestamps = null,
             IEnumerable<EndCertificate> endCertificates = null,
-            IEnumerable<EndCertificateValidation> certificateValidations = null)
+            IEnumerable<EndCertificateValidation> certificateValidations = null,
+            IEnumerable<PackageRevalidation> packageRevalidations = null)
         {
             validationContext.SetupDbSet(c => c.ValidatorStatuses, validatorStatusesMock, validatorStatuses);
             validationContext.SetupDbSet(c => c.PackageSigningStates, packageSigningStatesMock, packageSigningStates);
@@ -52,6 +54,7 @@ namespace Tests.ContextHelpers
             validationContext.SetupDbSet(c => c.TrustedTimestamps, trustedTimestampsMock, trustedTimestamps);
             validationContext.SetupDbSet(c => c.EndCertificates, endCertificatesMock, endCertificates);
             validationContext.SetupDbSet(c => c.CertificateValidations, certificateValidationsMock, certificateValidations);
+            validationContext.SetupDbSet(c => c.PackageRevalidations, packageRevalidationsMock, packageRevalidations);
         }
 
         private static void SetupDbSet<TContext, TEntity>(
@@ -70,16 +73,24 @@ namespace Tests.ContextHelpers
             dbSet
                 .As<IDbAsyncEnumerable<TEntity>>()
                 .Setup(m => m.GetAsyncEnumerator())
-                .Returns(new TestDbAsyncEnumerator<TEntity>(data.GetEnumerator()));
+                .Returns(() => new TestDbAsyncEnumerator<TEntity>(data.GetEnumerator()));
 
             dbSet
                 .As<IQueryable<TEntity>>()
                 .Setup(m => m.Provider)
-                .Returns(new TestDbAsyncQueryProvider<TEntity>(data.Provider));
+                .Returns(() => new TestDbAsyncQueryProvider<TEntity>(data.Provider));
 
-            dbSet.As<IQueryable<TEntity>>().Setup(m => m.Expression).Returns(data.Expression);
-            dbSet.As<IQueryable<TEntity>>().Setup(m => m.ElementType).Returns(data.ElementType);
-            dbSet.As<IQueryable<TEntity>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
+            dbSet
+                .Setup(s => s.Add(It.IsAny<TEntity>()))
+                .Callback<TEntity>(e => data = data.Concat(new[] { e }).AsQueryable());
+
+            dbSet
+                .Setup(s => s.Remove(It.IsAny<TEntity>()))
+                .Callback<TEntity>(e => data = data.Where(d => e != d).AsQueryable());
+
+            dbSet.As<IQueryable<TEntity>>().Setup(m => m.Expression).Returns(() => data.Expression);
+            dbSet.As<IQueryable<TEntity>>().Setup(m => m.ElementType).Returns(() => data.ElementType);
+            dbSet.As<IQueryable<TEntity>>().Setup(m => m.GetEnumerator()).Returns(() => data.GetEnumerator());
 
             validationContext.Setup(dbSetAccessor).Returns(dbSet.Object);
         }
