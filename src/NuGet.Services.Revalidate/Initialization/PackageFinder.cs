@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using NuGet.Versioning;
@@ -40,16 +41,7 @@ namespace NuGet.Services.Revalidate
 
         public HashSet<int> FindMicrosoftPackages()
         {
-            return FindRegistrationKeys(MicrosoftSetName, (skip, take) =>
-            {
-                return _galleryContext.PackageRegistrations
-                    .Where(r => r.Owners.Any(o => o.Username == MicrosoftAccountName))
-                    .OrderBy(r => r.Key)
-                    .Select(r => r.Key)
-                    .Skip(skip)
-                    .Take(take)
-                    .ToList();
-            });
+            return FindRegistrationKeys(MicrosoftSetName, r => r.Owners.Any(o => o.Username == MicrosoftAccountName));
         }
 
         public HashSet<int> FindPreinstalledPackages(HashSet<int> except)
@@ -66,16 +58,7 @@ namespace NuGet.Services.Revalidate
                 preinstalledPackagesNames.UnionWith(packagesInPath);
             }
 
-            var preinstalledPackages = FindRegistrationKeys(PreinstalledSetName, (skip, take) =>
-            {
-                return _galleryContext.PackageRegistrations
-                    .Where(r => preinstalledPackagesNames.Contains(r.Id))
-                    .OrderBy(r => r.Key)
-                    .Select(r => r.Key)
-                    .Skip(skip)
-                    .Take(take)
-                    .ToList();
-            });
+            var preinstalledPackages = FindRegistrationKeys(PreinstalledSetName, r => preinstalledPackagesNames.Contains(r.Id));
 
             preinstalledPackages.ExceptWith(except);
 
@@ -119,16 +102,7 @@ namespace NuGet.Services.Revalidate
 
         public HashSet<int> FindAllPackages(HashSet<int> except)
         {
-            return FindRegistrationKeys(RemainingSetName, (skip, take) =>
-            {
-                return _galleryContext.PackageRegistrations
-                    .Where(r => !except.Contains(r.Key))
-                    .OrderBy(r => r.Key)
-                    .Select(r => r.Key)
-                    .Skip(skip)
-                    .Take(take)
-                    .ToList();
-            });
+            return FindRegistrationKeys(RemainingSetName, r => !except.Contains(r.Key));
         }
 
         public List<PackageRegistrationInformation> FindPackageRegistrationInformation(string setName, HashSet<int> packageRegistrationKeys)
@@ -197,18 +171,25 @@ namespace NuGet.Services.Revalidate
                     .Count();
         }
 
-        private HashSet<int> FindRegistrationKeys(string setName, RegistrationKeyFinder finder)
+        private HashSet<int> FindRegistrationKeys(string setName, Expression<Func<PackageRegistration, bool>> match)
         {
             var result = new HashSet<int>();
-            var batches = 0;
+            var start = -1;
             var done = false;
 
             while (!done)
             {
-                var batchResults = finder(batches * BatchSize, BatchSize);
+                var batchResults = _galleryContext
+                    .PackageRegistrations
+                    .Where(r => r.Key > start)
+                    .Where(match)
+                    .OrderBy(r => r.Key)
+                    .Select(r => r.Key)
+                    .Take(BatchSize)
+                    .ToList();
 
                 result.UnionWith(batchResults);
-                batches++;
+                start = batchResults.Last();
 
                 _logger.LogInformation("Found {Results} results for package set {SetName}", result.Count, setName);
 
@@ -229,7 +210,5 @@ namespace NuGet.Services.Revalidate
 
             return result;
         }
-
-        private delegate List<int> RegistrationKeyFinder(int skip, int take);
     }
 }
