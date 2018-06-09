@@ -6,6 +6,7 @@ using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
+
     public interface IValidatingEntity<T> where T : class, IEntity
     {
         /// <summary>
@@ -14,7 +15,7 @@ namespace NuGet.Services.Validation.Orchestrator
         int Key { get; }
 
         /// <summary>
-        /// The <see cref="IEntity" to be validated./>
+        /// The <see cref="IEntity"/> to be validated.
         /// </summary>
         T EntityRecord { get; }
 

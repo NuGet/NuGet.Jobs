@@ -48,7 +48,7 @@ namespace NuGet.Services.Validation.Orchestrator
             if (validationSet == null)
             {
                 var shouldSkip = await _validationStorageService.OtherRecentValidationSetForPackageExists(
-                    validatingEntity.Key,
+                    validatingEntity,
                     _validationConfiguration.NewValidationRequestDeduplicationWindow,
                     message.ValidationTrackingId);
                 if (shouldSkip)
@@ -111,7 +111,7 @@ namespace NuGet.Services.Validation.Orchestrator
             // package. There will be more than one validation set when an admin has requested a manual revalidation.
             // This can happen much later than when the package was created so the duration is less interesting in that
             // case.
-            if (await _validationStorageService.GetValidationSetCountAsync(validatingEntity.Key) == 1)
+            if (await _validationStorageService.GetValidationSetCountAsync(validatingEntity) == 1)
             {
                 _telemetryService.TrackDurationToValidationSetCreation(validationSet.Created - validatingEntity.Created);
             }

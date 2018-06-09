@@ -193,7 +193,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IMessageHandler<PackageValidationMessageData>, PackageValidationMessageHandler>();
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
-            services.AddTransient<IPackageCriteriaEvaluator<Package>, PackageCriteriaEvaluator>();
+            services.AddTransient<ICriteriaEvaluator<Package>, PackageCriteriaEvaluator>();
             services.AddTransient<VcsValidator<Package>>();
             services.AddTransient<IProcessSignatureEnqueuer, ProcessSignatureEnqueuer>();
             services.AddTransient<NuGetGallery.ICloudBlobClient>(c =>

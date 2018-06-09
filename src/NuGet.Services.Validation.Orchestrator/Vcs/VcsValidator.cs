@@ -25,7 +25,7 @@ namespace NuGet.Services.Validation.Vcs
         private readonly IPackageValidationService _validationService;
         private readonly IPackageValidationAuditor _validationAuditor;
         private readonly IEntityService<T> _packageService;
-        private readonly IPackageCriteriaEvaluator<T> _criteriaEvaluator;
+        private readonly ICriteriaEvaluator<T> _criteriaEvaluator;
         private readonly IOptionsSnapshot<VcsConfiguration> _config;
         private readonly ILogger<VcsValidator<T>> _logger;
 
@@ -33,7 +33,7 @@ namespace NuGet.Services.Validation.Vcs
             IPackageValidationService validationService,
             IPackageValidationAuditor validationAuditor,
             IEntityService<T> packageService,
-            IPackageCriteriaEvaluator<T> criteriaEvaluator,
+            ICriteriaEvaluator<T> criteriaEvaluator,
             IOptionsSnapshot<VcsConfiguration> config,
             ILogger<VcsValidator<T>> logger)
         {

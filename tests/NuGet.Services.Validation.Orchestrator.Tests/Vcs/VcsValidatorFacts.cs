@@ -243,7 +243,7 @@ namespace NuGet.Services.Validation.Vcs
             {
                 // Arrange
                 _criteriaEvaluator
-                    .Setup(x => x.IsMatch(It.IsAny<IPackageCriteria>(), It.IsAny<Package>()))
+                    .Setup(x => x.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
                     .Returns(false);
                 
                 // Act
@@ -255,7 +255,7 @@ namespace NuGet.Services.Validation.Vcs
                     x => x.FindPackageByIdAndVersionStrict(PackageId, PackageVersion),
                     Times.Once);
                 _criteriaEvaluator.Verify(
-                    x => x.IsMatch(It.IsAny<IPackageCriteria>(), It.IsAny<Package>()),
+                    x => x.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()),
                     Times.Once);
                 _validationAuditor.Verify(
                     x => x.ReadAuditAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -371,7 +371,7 @@ namespace NuGet.Services.Validation.Vcs
             {
                 // Arrange
                 _criteriaEvaluator
-                    .Setup(x => x.IsMatch(It.IsAny<IPackageCriteria>(), It.IsAny<Package>()))
+                    .Setup(x => x.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
                     .Returns(false);
 
                 // Act
@@ -383,7 +383,7 @@ namespace NuGet.Services.Validation.Vcs
                     x => x.FindPackageByIdAndVersionStrict(PackageId, PackageVersion),
                     Times.Once);
                 _criteriaEvaluator.Verify(
-                    x => x.IsMatch(It.IsAny<IPackageCriteria>(), It.IsAny<Package>()),
+                    x => x.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()),
                     Times.Once);
                 _validationAuditor.Verify(
                     x => x.ReadAuditAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -415,7 +415,7 @@ namespace NuGet.Services.Validation.Vcs
             protected readonly Mock<IPackageValidationService> _validationService;
             protected readonly Mock<IPackageValidationAuditor> _validationAuditor;
             protected readonly Mock<IEntityService<Package>> _packageService;
-            protected readonly Mock<IPackageCriteriaEvaluator<Package>> _criteriaEvaluator;
+            protected readonly Mock<ICriteriaEvaluator<Package>> _criteriaEvaluator;
             protected readonly Mock<IOptionsSnapshot<VcsConfiguration>> _options;
             protected readonly Mock<ILogger<VcsValidator<Package>>> _logger;
             protected readonly VcsValidator<Package> _target;
@@ -433,12 +433,12 @@ namespace NuGet.Services.Validation.Vcs
                 _validationService = new Mock<IPackageValidationService>();
                 _validationAuditor = new Mock<IPackageValidationAuditor>();
                 _packageService = new Mock<IEntityService<Package>>();
-                _criteriaEvaluator = new Mock<IPackageCriteriaEvaluator<Package>>();
+                _criteriaEvaluator = new Mock<ICriteriaEvaluator<Package>>();
                 _options = new Mock<IOptionsSnapshot<VcsConfiguration>>();
                 _logger = new Mock<ILogger<VcsValidator<Package>>>();
 
                 _criteriaEvaluator
-                    .Setup(x => x.IsMatch(It.IsAny<IPackageCriteria>(), It.IsAny<Package>()))
+                    .Setup(x => x.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
                     .Returns(true);
 
                 _options

@@ -9,8 +9,8 @@ namespace NuGet.Services.Validation.Vcs
     /// <summary>
     /// Evaluates whether a given entity matches some criteria.
     /// </summary>
-    public interface IPackageCriteriaEvaluator<T> where T: class, IEntity
+    public interface ICriteriaEvaluator<T> where T: class, IEntity
     {
-        bool IsMatch(IPackageCriteria criteria, T entity);
+        bool IsMatch(ICriteria criteria, T entity);
     }
 }

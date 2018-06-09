@@ -109,7 +109,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var service = new PackageMessageService(CoreMessageServiceMock.Object, EmailConfigurationAccessorMock.Object, LoggerMock.Object);
 
-            var ex = Record.Exception(() => service.SendPackagePublishedMessage(Package));
+            var ex = Record.Exception(() => service.SendPublishedMessage(Package));
             Assert.Null(ex);
 
             CoreMessageServiceMock
@@ -122,7 +122,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public void SendPackagePublishedEmailThrowsWhenPackageIsNull()
         {
             var service = new PackageMessageService(CoreMessageServiceMock.Object, EmailConfigurationAccessorMock.Object, LoggerMock.Object);
-            var ex = Assert.Throws<ArgumentNullException>(() => service.SendPackagePublishedMessage(null));
+            var ex = Assert.Throws<ArgumentNullException>(() => service.SendPublishedMessage(null));
             Assert.Equal("package", ex.ParamName);
         }
 
@@ -134,7 +134,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             var service = new PackageMessageService(CoreMessageServiceMock.Object, EmailConfigurationAccessorMock.Object, LoggerMock.Object);
 
-            var ex = Record.Exception(() => service.SendPackageValidationFailedMessage(Package));
+            var ex = Record.Exception(() => service.SendValidationFailedMessage(Package));
             Assert.Null(ex);
 
             CoreMessageServiceMock
@@ -147,7 +147,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public void SendPackageValidationFailedMessageThrowsWhenPackageIsNull()
         {
             var service = new PackageMessageService(CoreMessageServiceMock.Object, EmailConfigurationAccessorMock.Object, LoggerMock.Object);
-            var ex = Assert.Throws<ArgumentNullException>(() => service.SendPackageValidationFailedMessage(null));
+            var ex = Assert.Throws<ArgumentNullException>(() => service.SendValidationFailedMessage(null));
             Assert.Equal("package", ex.ParamName);
         }
 

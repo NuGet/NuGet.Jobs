@@ -10,33 +10,15 @@ namespace NuGet.Services.Validation.Orchestrator
     {
         public PackageValidatingEntity(Package entity)
         {
-            EntityRecord = entity;
+            EntityRecord = entity ?? throw new ArgumentNullException(nameof(entity));
         }
 
-        public int Key
-        {
-            get
-            {
-                return EntityRecord.Key;
-            }
-        }
+        public int Key => EntityRecord.Key;
 
         public Package EntityRecord { get; }
 
-        public PackageStatus Status
-        {
-            get
-            {
-                return EntityRecord.PackageStatusKey;
-            }
-        }
+        public PackageStatus Status => EntityRecord.PackageStatusKey;
 
-        public DateTime Created
-        {
-            get
-            {
-                return EntityRecord.Created;
-            }
-        }
+        public DateTime Created => EntityRecord.Created;
     }
 }

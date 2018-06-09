@@ -45,7 +45,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public void SendPackagePublishedMessage(Package package)
+        public void SendPublishedMessage(Package package)
         {
             package = package ?? throw new ArgumentNullException(nameof(package));
 
@@ -55,7 +55,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _coreMessageService.SendPackageAddedNotice(package, galleryPackageUrl, packageSupportUrl, _emailConfiguration.EmailSettingsUrl);
         }
 
-        public void SendPackageValidationFailedMessage(Package package)
+        public void SendValidationFailedMessage(Package package)
         {
             package = package ?? throw new ArgumentNullException(nameof(package));
 
@@ -65,7 +65,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _coreMessageService.SendPackageValidationFailedNotice(package, galleryPackageUrl, packageSupportUrl);
         }
 
-        public void SendPackageSignedValidationFailedMessage(Package package)
+        public void SendSignedValidationFailedMessage(Package package)
         {
             package = package ?? throw new ArgumentNullException(nameof(package));
 
@@ -74,7 +74,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _coreMessageService.SendSignedPackageNotAllowedNotice(package, galleryPackageUrl, _emailConfiguration.AnnouncementsUrl, _emailConfiguration.TwitterUrl);
         }
 
-        public void SendPackageValidationTakingTooLongMessage(Package package)
+        public void SendValidationTakingTooLongMessage(Package package)
         {
             package = package ?? throw new ArgumentNullException(nameof(package));
 

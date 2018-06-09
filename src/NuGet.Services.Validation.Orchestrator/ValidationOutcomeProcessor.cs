@@ -82,11 +82,11 @@ namespace NuGet.Services.Validation.Orchestrator
 
                     if (issuesExistAndAllPackageSigned)
                     {
-                        _messageService.SendPackageSignedValidationFailedMessage(validatingEntity.EntityRecord);
+                        _messageService.SendSignedValidationFailedMessage(validatingEntity.EntityRecord);
                     }
                     else
                     {
-                        _messageService.SendPackageValidationFailedMessage(validatingEntity.EntityRecord);
+                        _messageService.SendValidationFailedMessage(validatingEntity.EntityRecord);
                     }
                 }
                 else
@@ -124,7 +124,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 // Only send the email when first transitioning into the Available state.
                 if (fromStatus != PackageStatus.Available)
                 {
-                    _messageService.SendPackagePublishedMessage(validatingEntity.EntityRecord);
+                    _messageService.SendPublishedMessage(validatingEntity.EntityRecord);
                 }
 
                 if (currentCallStats.AnyRequiredValidationSucceeded)
@@ -238,14 +238,14 @@ namespace NuGet.Services.Validation.Orchestrator
             if (tooLongNotificationAllowed &&
                 validationSetDuration > _validationConfiguration.ValidationSetNotificationTimeout &&
                 previousDuration <= _validationConfiguration.ValidationSetNotificationTimeout &&
-                await _validationStorageService.GetValidationSetCountAsync(validationSet.PackageKey) == 1)
+                await _validationStorageService.GetValidationSetCountAsync(validatingEntity) == 1)
             {
                 _logger.LogWarning("Sending message that validation set {ValidationTrackingId} for package {PackageId} {PackageVersion} is taking too long",
                     validationSet.ValidationTrackingId,
                     validationSet.PackageId,
                     validationSet.PackageNormalizedVersion);
 
-                _messageService.SendPackageValidationTakingTooLongMessage(validatingEntity.EntityRecord);
+                _messageService.SendValidationTakingTooLongMessage(validatingEntity.EntityRecord);
                 _telemetryService.TrackSentValidationTakingTooLongMessage(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId);
             }
 
