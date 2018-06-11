@@ -114,7 +114,18 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
                     .ReturnsAsync(stream);
 
-                await specialTarget.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
+                var streamMetadata = new PackageStreamMetadata()
+                {
+                    Size = Package.PackageFileSize,
+                    Hash = Package.Hash,
+                    HashAlgorithm = Package.HashAlgorithm
+                };
+
+                PackageFileServiceMock
+                    .Setup(x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()))
+                    .ReturnsAsync(streamMetadata);
+
+                await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
 
                 corePackageService.Verify(
                     x => x.UpdatePackageStreamMetadataAsync(It.IsAny<Package>(), It.IsAny<PackageStreamMetadata>(), It.IsAny<bool>()),
@@ -131,6 +142,15 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 PackageFileServiceMock
                     .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
                     .ReturnsAsync(stream);
+                var streamMetadata = new PackageStreamMetadata()
+                {
+                    Size = stream.Length,
+                    Hash = expectedHash,
+                    HashAlgorithm = CoreConstants.Sha512HashAlgorithmId
+                };
+                PackageFileServiceMock
+                    .Setup(x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()))
+                    .ReturnsAsync(streamMetadata);
                 PackageServiceMock
                     .Setup(x => x.UpdateMetadataAsync(Package, It.IsAny<PackageStreamMetadata>(), false))
                     .Returns(Task.CompletedTask)
@@ -144,14 +164,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Assert.Equal("SHA512", actual.HashAlgorithm);
                 PackageServiceMock.Verify(
                     x => x.UpdateMetadataAsync(Package, actual, false),
-                    Times.Once);
-                TelemetryServiceMock.Verify(
-                    x => x.TrackDurationToHashPackage(
-                        It.Is<TimeSpan>(y => y > TimeSpan.Zero),
-                        Package.PackageRegistration.Id,
-                        Package.NormalizedVersion,
-                        "SHA512",
-                        "System.IO.MemoryStream"),
                     Times.Once);
             }
 
@@ -520,9 +532,16 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 TelemetryServiceMock = new Mock<ITelemetryService>();
                 LoggerMock = new Mock<ILogger<EntityStatusProcessor<Package>>>();
 
+                var streamMetadata = new PackageStreamMetadata()
+                {
+                    Size = 1,
+                    Hash = "hash",
+                    HashAlgorithm = CoreConstants.Sha512HashAlgorithmId
+                };
+
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(It.IsAny<PackageValidationSet>()))
-                    .ReturnsAsync(() => Stream.Null);
+                    .Setup(x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()))
+                    .ReturnsAsync(streamMetadata);
 
                 Target = new EntityStatusProcessor<Package>(
                     PackageServiceMock.Object,
