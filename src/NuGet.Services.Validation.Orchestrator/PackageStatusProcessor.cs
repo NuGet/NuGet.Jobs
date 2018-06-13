@@ -93,13 +93,8 @@ namespace NuGet.Services.Validation.Orchestrator
             // 1) Operate on blob storage.
             var copied = await UpdatePublicPackageAsync(validationSet);
 
-//<<<<<<< HEAD
-//            // 2) Operate on the database.
-//            var fromStatus = await MarkPackageAsAvailableAsync(validationSet, validatingEntity, copied);
-//=======
             // 2) Update the package's blob metadata in the packages blob storage container.
             var metadata = await _packageFileService.UpdatePackageBlobMetadataAsync(validationSet);
-//>>>>>>> dev
 
             // 3) Operate on the database.
             var fromStatus = await MarkPackageAsAvailableAsync(validationSet, validatingEntity, metadata, copied);

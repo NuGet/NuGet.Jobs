@@ -177,6 +177,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddScoped<IValidationStorageService, ValidationStorageService>();
             services.Add(ServiceDescriptor.Transient(typeof(NuGetGallery.IEntityRepository<>), typeof(NuGetGallery.EntityRepository<>)));
             services.AddTransient<NuGetGallery.ICorePackageService, NuGetGallery.CorePackageService>();
+            services.AddTransient<IEntityService<Package>,PackageEntityService>();
             services.AddTransient<ISubscriptionClient>(serviceProvider =>
             {
                 var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ServiceBusConfiguration>>().Value;
