@@ -18,24 +18,24 @@ using Error = NuGet.Services.Validation.Orchestrator.Error;
 namespace NuGet.Services.Validation.Vcs
 {
     [ValidatorName(ValidatorName.Vcs)]
-    public class VcsValidator<T> : BaseValidator, IValidator where T: class, IEntity
+    public class VcsValidator : BaseValidator, IValidator
     {
         private const string InternalValidatorName = Jobs.Validation.Common.Validators.Vcs.VcsValidator.ValidatorName;
 
         private readonly IPackageValidationService _validationService;
         private readonly IPackageValidationAuditor _validationAuditor;
-        private readonly IEntityService<T> _packageService;
-        private readonly ICriteriaEvaluator<T> _criteriaEvaluator;
+        private readonly IEntityService<Package> _packageService;
+        private readonly ICriteriaEvaluator<Package> _criteriaEvaluator;
         private readonly IOptionsSnapshot<VcsConfiguration> _config;
-        private readonly ILogger<VcsValidator<T>> _logger;
+        private readonly ILogger<VcsValidator> _logger;
 
         public VcsValidator(
             IPackageValidationService validationService,
             IPackageValidationAuditor validationAuditor,
-            IEntityService<T> packageService,
-            ICriteriaEvaluator<T> criteriaEvaluator,
+            IEntityService<Package> packageService,
+            ICriteriaEvaluator<Package> criteriaEvaluator,
             IOptionsSnapshot<VcsConfiguration> config,
-            ILogger<VcsValidator<T>> logger)
+            ILogger<VcsValidator> logger)
         {
             _validationService = validationService ?? throw new ArgumentNullException(nameof(validationService));
             _validationAuditor = validationAuditor ?? throw new ArgumentNullException(nameof(validationAuditor));
@@ -164,7 +164,7 @@ namespace NuGet.Services.Validation.Vcs
 
         private bool ShouldSkip(IValidationRequest request)
         {
-            T package = _packageService.FindPackageByIdAndVersionStrict(
+            var package = _packageService.FindPackageByIdAndVersionStrict(
                 request.PackageId,
                 request.PackageVersion)?.EntityRecord;
 

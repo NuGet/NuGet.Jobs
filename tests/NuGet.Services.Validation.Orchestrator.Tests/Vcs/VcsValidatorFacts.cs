@@ -417,8 +417,8 @@ namespace NuGet.Services.Validation.Vcs
             protected readonly Mock<IEntityService<Package>> _packageService;
             protected readonly Mock<ICriteriaEvaluator<Package>> _criteriaEvaluator;
             protected readonly Mock<IOptionsSnapshot<VcsConfiguration>> _options;
-            protected readonly Mock<ILogger<VcsValidator<Package>>> _logger;
-            protected readonly VcsValidator<Package> _target;
+            protected readonly Mock<ILogger<VcsValidator>> _logger;
+            protected readonly VcsValidator _target;
 
             public FactsBase()
             {
@@ -435,7 +435,7 @@ namespace NuGet.Services.Validation.Vcs
                 _packageService = new Mock<IEntityService<Package>>();
                 _criteriaEvaluator = new Mock<ICriteriaEvaluator<Package>>();
                 _options = new Mock<IOptionsSnapshot<VcsConfiguration>>();
-                _logger = new Mock<ILogger<VcsValidator<Package>>>();
+                _logger = new Mock<ILogger<VcsValidator>>();
 
                 _criteriaEvaluator
                     .Setup(x => x.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
@@ -445,7 +445,7 @@ namespace NuGet.Services.Validation.Vcs
                     .Setup(x => x.Value)
                     .Returns(() => _config);
 
-                _target = new VcsValidator<Package>(
+                _target = new VcsValidator(
                     _validationService.Object,
                     _validationAuditor.Object,
                     _packageService.Object,
