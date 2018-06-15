@@ -103,13 +103,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var corePackageService = new Mock<ICorePackageService>();
                 var entityPackageService = new PackageEntityService(corePackageService.Object);
 
-                var specialTarget = new EntityStatusProcessor<Package>(
-                   entityPackageService,
-                   PackageFileServiceMock.Object,
-                   ValidatorProviderMock.Object,
-                   TelemetryServiceMock.Object,
-                   LoggerMock.Object);
-
                 PackageFileServiceMock
                     .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
                     .ReturnsAsync(stream);
