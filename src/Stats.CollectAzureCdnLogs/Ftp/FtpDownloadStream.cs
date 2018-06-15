@@ -51,7 +51,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 {
                     CaughtException = ex;
 
-                    _client.Logger.LogError("Failed to download file.", ex);
+                    _client.Logger.LogError(0, ex, "Failed to download file.");
 
                     // Close ftp resources if possible.
                     // Set instances to null to force restart.
@@ -85,6 +85,8 @@ namespace Stats.CollectAzureCdnLogs.Ftp
                 catch (Exception ex)
                 {
                     CaughtException = ex;
+
+                    _client.Logger.LogError(0, ex, "Failed to download file.");
 
                     // Close ftp resources if possible. Set instances to null to force restart.
                     Close();
