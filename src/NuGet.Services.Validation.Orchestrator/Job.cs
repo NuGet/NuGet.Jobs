@@ -139,7 +139,10 @@ namespace NuGet.Services.Validation.Orchestrator
         private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot, ISecretInjector secretInjector)
         {
             var services = new ServiceCollection();
-            services.AddSingleton(secretInjector);
+            if (!_validateOnly)
+            {
+                services.AddSingleton(secretInjector);
+            }
 
             ConfigureLibraries(services);
             ConfigureJobServices(services, configurationRoot);
