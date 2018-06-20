@@ -67,33 +67,33 @@ namespace NuGet.Services.Validation.Orchestrator
 
             using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}",
                 message.PackageId,
-                message.PackageVersion,
+                message.PackageNormalizedVersion,
                 message.ValidationTrackingId))
             {
-                var package = _galleryPackageService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageVersion);
+                var package = _galleryPackageService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
 
                 if (package == null)
                 {
                     // no package in DB yet. Might have received message a bit early, need to retry later
                     if (message.DeliveryCount - 1 >= _configs.MissingPackageRetryCount)
                     {
-                        _logger.LogWarning("Could not find package {PackageId} {PackageVersion} in DB after {DeliveryCount} tries, dropping message",
+                        _logger.LogWarning("Could not find package {PackageId} {PackageNormalizedVersion} in DB after {DeliveryCount} tries, dropping message",
                             message.PackageId,
-                            message.PackageVersion,
+                            message.PackageNormalizedVersion,
                             message.DeliveryCount);
 
                         _telemetryService.TrackMissingPackageForValidationMessage(
                             message.PackageId,
-                            message.PackageVersion,
+                            message.PackageNormalizedVersion,
                             message.ValidationTrackingId.ToString());
 
                         return true;
                     }
                     else
                     {
-                        _logger.LogInformation("Could not find package {PackageId} {PackageVersion} in DB, retrying",
+                        _logger.LogInformation("Could not find package {PackageId} {PackageNormalizedVersion} in DB, retrying",
                             message.PackageId,
-                            message.PackageVersion);
+                            message.PackageNormalizedVersion);
 
                         return false;
                     }
@@ -103,9 +103,9 @@ namespace NuGet.Services.Validation.Orchestrator
                 if (package.Status == PackageStatus.Deleted)
                 {
                     _logger.LogWarning(
-                        "Package {PackageId} {PackageVersion} (package key {PackageKey}) is soft deleted. Dropping message for validation set {ValidationSetId}.",
+                        "Package {PackageId} {PackageNormalizedVersion} (package key {PackageKey}) is soft deleted. Dropping message for validation set {ValidationSetId}.",
                         message.PackageId,
-                        message.PackageVersion,
+                        message.PackageNormalizedVersion,
                         package.Key,
                         message.ValidationTrackingId);
 
@@ -116,9 +116,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 if (validationSet == null)
                 {
-                    _logger.LogInformation("The validation request for {PackageId} {PackageVersion} validation set {ValidationSetId} is a duplicate. Discarding.",
+                    _logger.LogInformation("The validation request for {PackageId} {PackageNormalizedVersion} validation set {ValidationSetId} is a duplicate. Discarding.",
                         message.PackageId,
-                        message.PackageVersion,
+                        message.PackageNormalizedVersion,
                         message.ValidationTrackingId);
                     return true;
                 }

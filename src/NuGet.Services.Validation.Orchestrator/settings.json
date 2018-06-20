@@ -4,33 +4,34 @@
       {
         "name": "VcsValidator",
         "TrackAfter": "1:00:00:00",
-        "requiredValidations": [ "PackageSigningValidator" ],
+        "requiredValidations": [ ],
         "ShouldStart": true,
         "FailureBehavior": "MustSucceed"
-      },
-      {
-        "name": "PackageSigningValidator",
-        "TrackAfter": "00:10:00",
-        "requiredValidations": [],
-        "ShouldStart": true,
-        "FailureBehavior": "MustSucceed"
-      },
-      {
-        "name": "PackageSigningValidator2",
-        "TrackAfter": "00:10:00",
-        "requiredValidations": [ "PackageSigningValidator" ],
-        "ShouldStart": true,
-        "FailureBehavior": "AllowedToFail"
-      },
-      {
-        "name": "PackageCertificatesValidator",
-        "TrackAfter": "00:10:00",
-        "requiredValidations": [ "PackageSigningValidator2" ],
-        "ShouldStart": true,
-        "FailureBehavior": "MustSucceed"
-      }
+      }//,
+      //{
+      //  "name": "PackageSigningValidator",
+      //  "TrackAfter": "00:10:00",
+      //  "requiredValidations": [],
+      //  "ShouldStart": true,
+      //  "FailureBehavior": "MustSucceed"
+      //} //,
+      //{
+      //  "name": "PackageSigningValidator2",
+      //  "TrackAfter": "00:10:00",
+      //  "requiredValidations": [ "PackageSigningValidator" ],
+      //  "ShouldStart": true,
+      //  "FailureBehavior": "AllowedToFail"
+      //},
+      //{
+      //  "name": "PackageCertificatesValidator",
+      //  "TrackAfter": "00:10:00",
+      //  "requiredValidations": [ "PackageSigningValidator2" ],
+      //  "ShouldStart": true,
+      //  "FailureBehavior": "MustSucceed"
+      //}
     ],
-    "ValidationStorageConnectionString": "",
+    //"ValidationStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=cmanutest;AccountKey=ZiWrbTMNTApZxLeWB7a0yN52gJj+ZlGE0ipRi9PaTcn9AU4epwvsngE5rLSMk9TwpazxUtzeyBnFeWFAhfkGpw==",
+    "ValidationStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=nugetdevlegacy;AccountKey=buNtroKT0GvZsMRjd1BtUR/dLSEGoIL4iJ5N9T+SGVkmjlfda5/3TsaD5wKYE7K1L6wpnn3+0r5SQjBJ718ByQ==",
     "MissingPackageRetryCount": 15,
     "ValidationMessageRecheckPeriod": "00:01:00",
     "NewValidationRequestDeduplicationWindow": "00:20:00",
@@ -39,7 +40,7 @@
   },
   "Vcs": {
     "ContainerName": "validation",
-    "DataStorageAccount": "UseDevelopmentStorage=true",
+    "DataStorageAccount": "DefaultEndpointsProtocol=https;AccountName=cmanutest;AccountKey=ZiWrbTMNTApZxLeWB7a0yN52gJj+ZlGE0ipRi9PaTcn9AU4epwvsngE5rLSMk9TwpazxUtzeyBnFeWFAhfkGpw==;EndpointSuffix=core.windows.net",
     "PackageCriteria": {
       "ExcludeOwners": [
         "NugetTestAccount"
@@ -89,15 +90,15 @@
     "ShutdownWaitInterval": "00:01:00"
   },
   "GalleryDb": {
-    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=NuGetGallery; Integrated Security=True; MultipleActiveResultSets=True"
+    "ConnectionString": "Data Source=d1unhwb16g.database.windows.net; Initial Catalog=nuget-dev-0-v2gallery; User ID=nuget-dev-0-admin;Password=?*k\\UVa\\79nR0tPD.8Aw)rtz?%>tKSu^H<R5:hjR4s-A;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30; MultipleActiveResultSets=True"
   },
   "ValidationDb": {
-    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=Validation; Integrated Security=True; MultipleActiveResultSets=True"
+    "ConnectionString": "Data Source=szy5udivcd.database.windows.net; Initial Catalog=cmanudevvalidation; User ID=skofman;Password=NuGet1!@;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30; MultipleActiveResultSets=True"
   },
   "ServiceBus": {
-    "ConnectionString": "",
-    "TopicPath": "",
-    "SubscriptionName": ""
+    "ConnectionString": "Endpoint=sb://cmanu-test.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=qIvovHaqzhJ2zMdJoTEkFaZEqBimf0Bg2TZ+WdYJ2+I=",
+    "TopicPath": "validation",
+    "SubscriptionName": "orchestrator"
   },
   "Smtp": {
     "SmtpUri": ""
