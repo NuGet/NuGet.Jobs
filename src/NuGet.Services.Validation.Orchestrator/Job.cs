@@ -80,12 +80,10 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            ISecretInjector secretInjector;
-
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
             _validateOnly = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, ValidateArgument, defaultValue: false);
 
-            var configurationRoot = GetConfigurationRoot(configurationFilename, _validateOnly, out secretInjector);
+            var configurationRoot = GetConfigurationRoot(configurationFilename, _validateOnly, out var secretInjector);
             _serviceProvider = GetServiceProvider(configurationRoot, secretInjector);
 
             ConfigurationValidated = false;

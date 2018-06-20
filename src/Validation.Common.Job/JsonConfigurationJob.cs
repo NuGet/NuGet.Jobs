@@ -59,10 +59,8 @@ namespace NuGet.Jobs.Validation
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            ISecretInjector secretInjector;
-
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
-            var configurationRoot = GetConfigurationRoot(configurationFilename, out secretInjector);
+            var configurationRoot = GetConfigurationRoot(configurationFilename, out var secretInjector);
 
             _serviceProvider = GetServiceProvider(configurationRoot, secretInjector);
 
