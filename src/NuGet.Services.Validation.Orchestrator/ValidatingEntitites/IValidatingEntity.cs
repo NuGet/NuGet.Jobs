@@ -20,7 +20,7 @@ namespace NuGet.Services.Validation.Orchestrator
         T EntityRecord { get; }
 
         /// <summary>
-        /// The status of the entiy. 
+        /// The status of the entity. 
         /// </summary>
         PackageStatus Status { get; }
 
