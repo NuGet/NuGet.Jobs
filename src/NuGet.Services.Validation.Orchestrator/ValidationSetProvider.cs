@@ -134,7 +134,7 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 Created = now,
                 PackageId = message.PackageId,
-                PackageNormalizedVersion = message.PackageVersion,
+                PackageNormalizedVersion = message.PackageNormalizedVersion,
                 PackageKey = validatingEntity.Key,
                 PackageValidations = new List<PackageValidation>(),
                 Updated = now,
