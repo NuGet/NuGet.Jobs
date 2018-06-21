@@ -52,8 +52,6 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
 
-            // TODO - Merge "_authorSignatureSettings" and "_authorOrRepositorySignatureSettings" once this issue is fixed:
-            // https://github.com/NuGet/Home/issues/7042
             _authorSignatureSettings = new SignedPackageVerifierSettings(
                 allowUnsigned: false,
                 allowIllegal: false,

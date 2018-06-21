@@ -28,7 +28,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
     {
         private const string FormatVerificationName = "format verification";
         private const string AuthorSignatureVerificationName = "author signature integrity and trust verification";
-        private const string SignatureVerificationName = "signature integrity and trust verification";
+        private const string FullSignatureVerificationName = "full signature integrity and trust verification";
 
         private readonly IPackageSigningStateService _packageSigningStateService;
         private readonly ISignatureFormatValidator _formatValidator;
@@ -554,7 +554,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 context.CancellationToken);
             var failureResult = await GetVerifyResult(
                 context,
-                SignatureVerificationName,
+                FullSignatureVerificationName,
                 verifyResult);
             if (failureResult != null)
             {
