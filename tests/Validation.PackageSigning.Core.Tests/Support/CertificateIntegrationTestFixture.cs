@@ -85,6 +85,8 @@ namespace Validation.PackageSigning.Core.Tests.Support
                 StoreName.Root,
                 StoreLocation.LocalMachine);
 
+            _responders.AddRange(testServer.RegisterResponders(rootCa));
+
             return rootCa;
         }
 
@@ -177,9 +179,34 @@ namespace Validation.PackageSigning.Core.Tests.Support
             var issued = IssueCertificate(ca, "Revoked Signing", CustomizeAsSigningCertificate);
             var revocationDate = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(1));
 
+            void Revoke()
+            {
+                ca.Revoke(issued.publicCertificate, RevocationReason.Unspecified, revocationDate);
+            }
+
+            Task WaitForResponseExpirationAsync()
+            {
+                return ca.OcspResponder.WaitForResponseExpirationAsync(issued.publicCertificate);
+            }
+
             return new RevokableCertificate(
                 issued.certificate,
-                revokeAction: () => ca.Revoke(issued.publicCertificate, RevocationReason.Unspecified, revocationDate));
+                Revoke,
+                WaitForResponseExpirationAsync);
+        }
+
+        public async Task<UntrustedSigningCertificate> CreateUntrustedSigningCertificateAsync()
+        {
+            var testServer = await _testServer.Value;
+            var untrustedRootCa = CertificateAuthority.Create(testServer.Url);
+            var untrustedRootCertificate = new X509Certificate2(untrustedRootCa.Certificate.GetEncoded());
+            var responders = testServer.RegisterRespondersForEntireChain(untrustedRootCa);
+
+            var certificate = CreateSigningCertificate(untrustedRootCa);
+
+            var disposable = new DisposableList<IDisposable> { untrustedRootCertificate, responders, certificate };
+
+            return new UntrustedSigningCertificate(untrustedRootCertificate, certificate, disposable);
         }
 
         public async Task<UntrustedTimestampService> CreateUntrustedTimestampServiceAsync()
@@ -200,28 +227,86 @@ namespace Validation.PackageSigning.Core.Tests.Support
         {
             var testServer = await _testServer.Value;
             var rootCa = await _rootCertificateAuthority.Value;
-            var rootCertficate = new X509Certificate2(rootCa.Certificate.GetEncoded());
             var timestampService = TimestampService.Create(rootCa);
             var responders = testServer.RegisterDefaultResponders(timestampService);
 
             var revocationDate = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(1));
 
+            void Revoke()
+            {
+                rootCa.Revoke(timestampService.Certificate, RevocationReason.Unspecified, revocationDate);
+            }
+
+            Task WaitForResponseExpirationAsync()
+            {
+                return rootCa.OcspResponder.WaitForResponseExpirationAsync(timestampService.Certificate);
+            }
+
             return new RevokableTimestampService(
                 timestampService.Url,
-                responders,
-                revokeAction: () => rootCa.Revoke(timestampService.Certificate, RevocationReason.Unspecified, revocationDate));
+                Revoke,
+                WaitForResponseExpirationAsync,
+                responders);
+        }
+
+        public async Task<SigningCertificateWithUnavailableRevocation> CreateSigningCertificateWithUnavailableRevocationAsync()
+        {
+            var testServer = await GetTestServerAsync();
+            var rootCa = await GetRootCertificateAuthority();
+            var intermediateCa = rootCa.CreateIntermediateCertificateAuthority();
+
+            var intermediateCaResponder = testServer.RegisterResponder(intermediateCa);
+
+            IDisposable AddOcspResponder()
+            {
+                return testServer.RegisterResponder(intermediateCa.OcspResponder);
+            }
+
+            void CustomizeAsSigningCertificate(X509V3CertificateGenerator generator)
+            {
+                generator.AddSigningEku();
+                generator.AddAuthorityInfoAccess(intermediateCa, addOcsp: true, addCAIssuers: true);
+            }
+
+            var issued = IssueCertificate(intermediateCa, "Signing Certificate With Unavailable Revocation", CustomizeAsSigningCertificate);
+
+            Task WaitForResponseExpirationAsync()
+            {
+                return intermediateCa.OcspResponder.WaitForResponseExpirationAsync(issued.publicCertificate);
+            }
+
+            return new SigningCertificateWithUnavailableRevocation(
+                issued.certificate,
+                AddOcspResponder,
+                WaitForResponseExpirationAsync,
+                intermediateCaResponder);
         }
 
         public async Task<TimestampServiceWithUnavailableRevocation> CreateTimestampServiceWithUnavailableRevocationAsync()
         {
             var testServer = await _testServer.Value;
-            var rootCa = await _rootCertificateAuthority.Value;
-            var rootCertficate = new X509Certificate2(rootCa.Certificate.GetEncoded());
+            var rootCa = CertificateAuthority.Create(testServer.Url);
+            var rootCertificate = new X509Certificate2(rootCa.Certificate.GetEncoded());
+
+            var trust = new TrustedTestCert<X509Certificate2>(
+                rootCertificate,
+                certificate => certificate,
+                StoreName.Root,
+                StoreLocation.LocalMachine);
+
             var timestampService = TimestampService.Create(rootCa);
+            var disposable = new DisposableList<IDisposable> { rootCertificate, trust };
+
+            Task WaitForResponseExpirationAsync()
+            {
+                return rootCa.OcspResponder.WaitForResponseExpirationAsync(timestampService.Certificate);
+            }
 
             return new TimestampServiceWithUnavailableRevocation(
                 testServer,
-                timestampService);
+                timestampService,
+                WaitForResponseExpirationAsync,
+                disposable);
         }
 
         protected (BCCertificate publicCertificate, X509Certificate2 certificate) IssueCertificate(
@@ -266,16 +351,70 @@ namespace Validation.PackageSigning.Core.Tests.Support
         public class RevokableCertificate
         {
             private readonly Action _revokeAction;
+            private readonly Func<Task> _waitForResponseExpiration;
 
-            public RevokableCertificate(X509Certificate2 certificate, Action revokeAction)
+            public RevokableCertificate(X509Certificate2 certificate, Action revokeAction, Func<Task> waitForResponseExpiration)
             {
                 Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
                 _revokeAction = revokeAction ?? throw new ArgumentNullException(nameof(revokeAction));
+                _waitForResponseExpiration = waitForResponseExpiration ?? throw new ArgumentNullException(nameof(waitForResponseExpiration));
             }
 
             public X509Certificate2 Certificate { get; }
 
             public void Revoke() => _revokeAction();
+            public Task WaitForResponseExpirationAsync() => _waitForResponseExpiration();
+        }
+
+        public class UntrustedSigningCertificate : IDisposable
+        {
+            private readonly X509Certificate2 _rootCertificate;
+            private readonly IDisposable _disposable;
+
+            public UntrustedSigningCertificate(X509Certificate2 rootCertificate, X509Certificate2 signingCertificate, IDisposable disposable)
+            {
+                _rootCertificate = rootCertificate ?? throw new ArgumentNullException(nameof(rootCertificate));
+                Certificate = signingCertificate ?? throw new ArgumentNullException(nameof(Certificate));
+                _disposable = disposable;
+            }
+
+            public X509Certificate2 Certificate { get; }
+
+            public IDisposable TemporarilyTrust()
+            {
+                return new TrustedTestCert<X509Certificate2>(
+                    _rootCertificate,
+                    x => x,
+                    StoreName.Root,
+                    StoreLocation.LocalMachine);
+            }
+
+            public void Dispose() => _disposable?.Dispose();
+        }
+
+        public class SigningCertificateWithUnavailableRevocation : IDisposable
+        {
+            private readonly Func<IDisposable> _temporarilyRespondToRevocations;
+            private readonly Func<Task> _waitForResponseExpiration;
+            private readonly IDisposable _disposable;
+
+            public SigningCertificateWithUnavailableRevocation(
+                X509Certificate2 certificate,
+                Func<IDisposable> temporarilyRespondToRevocations,
+                Func<Task> waitForResponseExpiration,
+                IDisposable disposable)
+            {
+                Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
+                _temporarilyRespondToRevocations = temporarilyRespondToRevocations ?? throw new ArgumentNullException(nameof(temporarilyRespondToRevocations));
+                _waitForResponseExpiration = waitForResponseExpiration ?? throw new ArgumentNullException(nameof(waitForResponseExpiration));
+                _disposable = disposable;
+            }
+
+            public X509Certificate2 Certificate { get; }
+
+            public IDisposable TemporarilyRespondToRevocations() => _temporarilyRespondToRevocations();
+            public Task WaitForResponseExpirationAsync() => _waitForResponseExpiration();
+            public void Dispose() => _disposable?.Dispose();
         }
 
         public class UntrustedTimestampService : IDisposable
@@ -306,13 +445,15 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
         public class RevokableTimestampService : IDisposable
         {
-            private readonly IDisposable _disposable;
             private readonly Action _revokeAction;
+            private readonly Func<Task> _waitForResponseExpiration;
+            private readonly IDisposable _disposable;
 
-            public RevokableTimestampService(Uri timestampServiceUrl, IDisposable disposable, Action revokeAction)
+            public RevokableTimestampService(Uri timestampServiceUrl, Action revokeAction, Func<Task> waitForResponseExpiration, IDisposable disposable)
             {
                 _disposable = disposable;
                 _revokeAction = revokeAction ?? throw new ArgumentNullException(nameof(revokeAction));
+                _waitForResponseExpiration = waitForResponseExpiration ?? throw new ArgumentNullException(nameof(waitForResponseExpiration));
 
                 Url = timestampServiceUrl ?? throw new ArgumentNullException(nameof(timestampServiceUrl));
             }
@@ -320,25 +461,39 @@ namespace Validation.PackageSigning.Core.Tests.Support
             public Uri Url { get; }
 
             public void Revoke() => _revokeAction();
+            public Task WaitForResponseExpirationAsync() => _waitForResponseExpiration();
+
             public void Dispose() => _disposable?.Dispose();
         }
 
-        public class TimestampServiceWithUnavailableRevocation
+        public class TimestampServiceWithUnavailableRevocation : IDisposable
         {
             private readonly SigningTestServer _testServer;
             private readonly TimestampService _timestampService;
+            private readonly Func<Task> _waitforResponseExpirationFunc;
+            private readonly IDisposable _disposable;
 
-            public TimestampServiceWithUnavailableRevocation(SigningTestServer testServer, TimestampService timestampService)
+            public TimestampServiceWithUnavailableRevocation(
+                SigningTestServer testServer,
+                TimestampService timestampService,
+                Func<Task> waitforResponseExpirationFunc,
+                IDisposable disposable)
             {
                 _testServer = testServer ?? throw new ArgumentNullException(nameof(testServer));
                 _timestampService = timestampService ?? throw new ArgumentNullException(nameof(timestampService));
+                _waitforResponseExpirationFunc = waitforResponseExpirationFunc ?? throw new ArgumentNullException(nameof(waitforResponseExpirationFunc));
+                _disposable = disposable;
             }
 
             public Uri Url => _timestampService.Url;
 
             public IDisposable TemporarilyRegisterDefaultResponders() => _testServer.RegisterDefaultResponders(_timestampService);
             public IDisposable TemporarilyRegisterResponders(bool addCa = true, bool addOcsp = true, bool addTimestamper = true)
-                => _testServer.RegisterResponders(_timestampService, addCa, addOcsp, addTimestamper);
+                => _testServer.RegisterRespondersForTimestampServiceAndEntireChain(_timestampService, addCa, addOcsp, addTimestamper);
+
+            public Task WaitForResponseExpirationAsync() => _waitforResponseExpirationFunc();
+
+            public void Dispose() => _disposable?.Dispose();
         }
     }
 }

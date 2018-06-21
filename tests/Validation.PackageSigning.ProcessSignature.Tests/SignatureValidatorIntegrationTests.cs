@@ -127,7 +127,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             // These dependencies are concrete.
             _configuration = new ProcessSignatureConfiguration
             {
-                AllowedRepositorySigningCertificates = new List<string>(),
+                AllowedRepositorySigningCertificates = new List<string> { "fake-thumbprint" },
                 V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl,
             };
             _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
@@ -194,6 +194,40 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task RejectsUntrustedSigningCertificate()
         {
             // Arrange
+            using (var certificate = await _fixture.CreateUntrustedSigningCertificateAsync())
+            {
+                Stream packageStream;
+
+                using (certificate.TemporarilyTrust())
+                {
+                    packageStream = await _fixture.AuthorSignPackageStreamAsync(
+                        TestResources.GetResourceStream(TestResources.UnsignedPackage),
+                        certificate.Certificate,
+                        _output);
+                }
+
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.UnsignedPackageId, certificate.Certificate.ComputeSHA256Thumbprint());
+                _message = _unsignedPackageMessage;
+
+                // Act
+                var result = await _target.ValidateAsync(
+                    _packageKey,
+                    packageStream,
+                    _message,
+                    _token);
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Failed, PackageSigningStatus.Invalid);
+                var issue = Assert.Single(result.Issues);
+                var clientIssue = Assert.IsType<ClientSigningVerificationFailure>(issue);
+                Assert.Equal("NU3018", clientIssue.ClientCode);
+                Assert.Equal(
+                    "The author primary signature found a chain building issue: A certificate chain processed, but " +
+                    "terminated in a root certificate which is not trusted by the trust provider.",
+                    clientIssue.ClientMessage);
+            }
+
+            /*
             TestUtility.RequireSignedPackage(_corePackageService, TestResources.SignedPackageLeafId, TestResources.Leaf1Thumbprint);
             _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
 
@@ -218,7 +252,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal(
                 "The author primary signature found a chain building issue: A certificate chain processed, but " +
                 "terminated in a root certificate which is not trusted by the trust provider.",
-                clientIssue.ClientMessage);
+                clientIssue.ClientMessage); */
         }
 
         [Fact]
@@ -272,91 +306,35 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task AcceptsTrustedTimestampingCertificateWithUnavailableRevocation()
         {
             // Arrange
-            var timestampService = await _fixture.CreateTimestampServiceWithUnavailableRevocationAsync();
-
-            byte[] packageBytes;
-            using (timestampService.TemporarilyRegisterDefaultResponders())
-            {
-                packageBytes = await _fixture.GenerateAuthorSignedPackageBytesAsync(
-                    TestResources.SignedPackageLeaf1,
-                    await _fixture.GetSigningCertificateAsync(),
-                    timestampService.Url,
-                    _output);
-            }
-
-            // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-            // This can be mitigated by leaving the OCSP unavailable during signing once this work item is done:
-            // https://github.com/NuGet/Home/issues/6508
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            TestUtility.RequireSignedPackage(_corePackageService,
-                TestResources.SignedPackageLeafId,
-                await _fixture.GetSigningCertificateThumbprintAsync());
-
-            _packageStream = new MemoryStream(packageBytes);
-
-            _message = new SignatureValidationMessage(
-                TestResources.SignedPackageLeafId,
-                TestResources.SignedPackageLeaf1Version,
-                new Uri($"https://unit.test/validation/{TestResources.SignedPackageLeaf1.ToLowerInvariant()}"),
-                Guid.NewGuid());
-
-            SignatureValidatorResult result;
-            using (timestampService.TemporarilyRegisterResponders(addOcsp: false))
-            {
-                // Act
-                result = await _target.ValidateAsync(
-                   _packageKey,
-                   _packageStream,
-                   _message,
-                   _token);
-            }
-
-            // Assert
-            VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
-            Assert.Empty(result.Issues);
-
-            var allMessages = string.Join(Environment.NewLine, _logger.Messages);
-            Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
-            Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
-        }
-
-        [Fact(Skip = "Appears to be flaky")]
-        public async Task AcceptsTrustedSigningCertificateWithUnavailableRevocation()
-        {
-            // Arrange
-            var testServer = await _fixture.GetTestServerAsync();
-            var rootCa = CertificateAuthority.Create(testServer.Url);
-            var intermediateCa = rootCa.CreateIntermediateCertificateAuthority();
-            var rootCertificate = new X509Certificate2(rootCa.Certificate.GetEncoded());
-            var signingCertificate = _fixture.CreateSigningCertificate(intermediateCa);
-            using (var trust = new TrustedTestCert<X509Certificate2>(
-                rootCertificate,
-                x => x,
-                StoreName.Root,
-                StoreLocation.LocalMachine))
+            using (var timestampService = await _fixture.CreateTimestampServiceWithUnavailableRevocationAsync())
             {
                 byte[] packageBytes;
-                using (testServer.RegisterResponders(intermediateCa))
+                using (timestampService.TemporarilyRegisterDefaultResponders())
                 {
                     packageBytes = await _fixture.GenerateAuthorSignedPackageBytesAsync(
                         TestResources.SignedPackageLeaf1,
-                        signingCertificate,
-                        await _fixture.GetTimestampServiceUrlAsync(),
+                        await _fixture.GetSigningCertificateAsync(),
+                        timestampService.Url,
                         _output);
                 }
 
-                // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-                // This can be mitigated by leaving the OCSP unavailable during signing once this work item is done:
-                // https://github.com/NuGet/Home/issues/6508
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await timestampService.WaitForResponseExpirationAsync();
 
-                TestUtility.RequireSignedPackage(_corePackageService, TestResources.SignedPackageLeafId, signingCertificate.ComputeSHA256Thumbprint());
+                TestUtility.RequireSignedPackage(_corePackageService,
+                    TestResources.SignedPackageLeafId,
+                    await _fixture.GetSigningCertificateThumbprintAsync());
 
                 _packageStream = new MemoryStream(packageBytes);
 
+                _message = new SignatureValidationMessage(
+                    TestResources.SignedPackageLeafId,
+                    TestResources.SignedPackageLeaf1Version,
+                    new Uri($"https://unit.test/validation/{TestResources.SignedPackageLeaf1.ToLowerInvariant()}"),
+                    Guid.NewGuid());
+
                 SignatureValidatorResult result;
-                using (testServer.RegisterResponders(intermediateCa, addOcsp: false))
+                using (timestampService.TemporarilyRegisterResponders(addOcsp: false))
                 {
                     // Act
                     result = await _target.ValidateAsync(
@@ -365,6 +343,44 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                        _message,
                        _token);
                 }
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+
+                var allMessages = string.Join(Environment.NewLine, _logger.Messages);
+                Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
+                Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
+            }
+        }
+
+        [Fact]
+        public async Task AcceptsTrustedSigningCertificateWithUnavailableRevocation()
+        {
+            // Arrange
+            using (var certificateWithUnavailableRevocation = await _fixture.CreateSigningCertificateWithUnavailableRevocationAsync())
+            {
+                Stream packageStream;
+                using (certificateWithUnavailableRevocation.TemporarilyRespondToRevocations())
+                {
+                    packageStream = await _fixture.AuthorSignPackageStreamAsync(
+                        TestResources.GetResourceStream(TestResources.UnsignedPackage),
+                        certificateWithUnavailableRevocation.Certificate,
+                        _output);
+                }
+
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await certificateWithUnavailableRevocation.WaitForResponseExpirationAsync();
+
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.UnsignedPackageId, certificateWithUnavailableRevocation.Certificate.ComputeSHA256Thumbprint());
+                _message = _unsignedPackageMessage;
+
+                // Act
+                var result = await _target.ValidateAsync(
+                   _packageKey,
+                   packageStream,
+                   _message,
+                   _token);
 
                 // Assert
                 VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
@@ -736,7 +752,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             revokableCertificate.Revoke();
 
             // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            await revokableCertificate.WaitForResponseExpirationAsync();
 
             // Act
             var result = await target.ValidateAsync(
@@ -774,8 +790,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 timestampService.Revoke();
 
-                // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await timestampService.WaitForResponseExpirationAsync();
 
                 // Act
                 var result = await target.ValidateAsync(
@@ -848,8 +864,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 SigningStatus = PackageSigningStatus.Valid
             });
 
-            // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            // Wait for the OCSP response cached by the operating system during signing to get stale.
+            await revokableCertificate.WaitForResponseExpirationAsync();
 
             // Act
             var e = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -891,8 +907,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 timestampService.Revoke();
 
-                // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await timestampService.WaitForResponseExpirationAsync();
 
                 // Act
                 var e = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -1141,8 +1157,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
             revokableCertificate.Revoke();
 
-            // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            // Wait for the OCSP response cached by the operating system during signing to get stale.
+            await revokableCertificate.WaitForResponseExpirationAsync();
 
             // Act
             var result = await target.ValidateAsync(
@@ -1177,8 +1193,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 timestampService.Revoke();
 
-                // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await timestampService.WaitForResponseExpirationAsync();
 
                 // Act
                 var result = await target.ValidateAsync(
@@ -1244,8 +1260,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 SigningStatus = PackageSigningStatus.Valid
             });
 
-            // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            // Wait for the OCSP response cached by the operating system during signing to get stale.
+            await revokableCertificate.WaitForResponseExpirationAsync();
 
             // Act
             var e = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -1284,8 +1300,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 timestampService.Revoke();
 
-                // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await timestampService.WaitForResponseExpirationAsync();
 
                 // Act
                 var e = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -1332,7 +1348,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal($"Suspect repository signature for validation id '{_message.ValidationId}'", e.Message);
         }
 
-        [Fact(Skip = "Current client does not validate author signing certificate on repository counter signed packages")]
+        //[Fact(Skip = "Current client does not validate author signing certificate on repository counter signed packages")]
+        [Fact]
         public async Task WhenRepositoryCounterSigned_RejectsUntrustedSigningCertificate()
         {
             // Arrange
@@ -1430,70 +1447,109 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public async Task WhenRepositoryCounterSigned_AcceptsTrustedTimestampingCertificateWithUnavailableRevocation()
         {
             // Arrange
-            var timestampService = await _fixture.CreateTimestampServiceWithUnavailableRevocationAsync();
-
-            Stream packageStream;
-            var certificate = await _fixture.GetSigningCertificateAsync();
-            using (timestampService.TemporarilyRegisterDefaultResponders())
+            using (var timestampService = await _fixture.CreateTimestampServiceWithUnavailableRevocationAsync())
             {
-                var packageBytes = await _fixture.GenerateAuthorSignedPackageBytesAsync(
-                    TestResources.SignedPackageLeaf1,
-                    await _fixture.GetSigningCertificateAsync(),
-                    timestampService.Url,
-                    _output);
+                Stream packageStream;
+                var certificate = await _fixture.GetSigningCertificateAsync();
+                using (timestampService.TemporarilyRegisterDefaultResponders())
+                {
+                    var packageBytes = await _fixture.GenerateAuthorSignedPackageBytesAsync(
+                        TestResources.SignedPackageLeaf1,
+                        await _fixture.GetSigningCertificateAsync(),
+                        timestampService.Url,
+                        _output);
 
-                packageStream = await _fixture.RepositorySignPackageStreamAsync(
-                    new MemoryStream(packageBytes),
-                    certificate,
-                    _output);
+                    packageStream = await _fixture.RepositorySignPackageStreamAsync(
+                        new MemoryStream(packageBytes),
+                        certificate,
+                        _output);
+                }
+
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await timestampService.WaitForResponseExpirationAsync();
+                
+                TestUtility.RequireSignedPackage(_corePackageService,
+                    TestResources.SignedPackageLeafId,
+                    await _fixture.GetSigningCertificateThumbprintAsync());
+
+                _packageStream = packageStream;
+
+                _message = new SignatureValidationMessage(
+                    TestResources.SignedPackageLeafId,
+                    TestResources.SignedPackageLeaf1Version,
+                    new Uri($"https://unit.test/validation/{TestResources.SignedPackageLeaf1.ToLowerInvariant()}"),
+                    Guid.NewGuid());
+
+                var target = CreateSignatureValidator(
+                    allowedRepositorySigningCertificates: new[] { certificate });
+
+                SignatureValidatorResult result;
+                using (timestampService.TemporarilyRegisterResponders(addOcsp: false))
+                {
+                    // Act
+                    result = await target.ValidateAsync(
+                       _packageKey,
+                       _packageStream,
+                       _message,
+                       _token);
+                }
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+
+                var allMessages = string.Join(Environment.NewLine, _logger.Messages);
+                Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
+                Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
             }
-
-            // Wait one second for the OCSP response cached by the operating system during signing to get stale.
-            // This can be mitigated by leaving the OCSP unavailable during signing once this work item is done:
-            // https://github.com/NuGet/Home/issues/6508
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            TestUtility.RequireSignedPackage(_corePackageService,
-                TestResources.SignedPackageLeafId,
-                await _fixture.GetSigningCertificateThumbprintAsync());
-
-            _packageStream = packageStream;
-
-            _message = new SignatureValidationMessage(
-                TestResources.SignedPackageLeafId,
-                TestResources.SignedPackageLeaf1Version,
-                new Uri($"https://unit.test/validation/{TestResources.SignedPackageLeaf1.ToLowerInvariant()}"),
-                Guid.NewGuid());
-
-            var target = CreateSignatureValidator(
-                allowedRepositorySigningCertificates: new[] { certificate });
-
-            SignatureValidatorResult result;
-            using (timestampService.TemporarilyRegisterResponders(addOcsp: false))
-            {
-                // Act
-                result = await target.ValidateAsync(
-                   _packageKey,
-                   _packageStream,
-                   _message,
-                   _token);
-            }
-
-            // Assert
-            VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
-            Assert.Empty(result.Issues);
-
-            var allMessages = string.Join(Environment.NewLine, _logger.Messages);
-            Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
-            Assert.Contains("NU3028: The author primary signature's timestamp found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
         }
 
-        [Fact(Skip = "Appears to be flaky")]
+        [Fact]
         public async Task WhenRepositoryCounterSigned_AcceptsTrustedSigningCertificateWithUnavailableRevocation()
         {
-            /// When <see cref="AcceptsTrustedSigningCertificateWithUnavailableRevocation"/> is fixed,
-            /// this test should be written as well.
-            await Task.CompletedTask;
+            // Arrange
+            using (var certificateWithUnavailableRevocation = await _fixture.CreateSigningCertificateWithUnavailableRevocationAsync())
+            {
+                Stream packageStream;
+                var authorSigningCertificate = await _fixture.GetSigningCertificateAsync();
+
+                using (certificateWithUnavailableRevocation.TemporarilyRespondToRevocations())
+                {
+                    packageStream = await _fixture.AuthorSignPackageStreamAsync(
+                        TestResources.GetResourceStream(TestResources.UnsignedPackage),
+                        authorSigningCertificate,
+                        _output);
+
+                    packageStream = await _fixture.RepositorySignPackageStreamAsync(
+                        packageStream,
+                        certificateWithUnavailableRevocation.Certificate,
+                        _output);
+                }
+
+                // Wait for the OCSP response cached by the operating system during signing to get stale.
+                await certificateWithUnavailableRevocation.WaitForResponseExpirationAsync();
+
+                TestUtility.RequireSignedPackage(_corePackageService, TestResources.UnsignedPackageId, authorSigningCertificate.ComputeSHA256Thumbprint());
+                _message = _unsignedPackageMessage;
+
+                var target = CreateSignatureValidator(
+                    allowedRepositorySigningCertificates: new[] { certificateWithUnavailableRevocation.Certificate });
+
+                // Act
+                var result = await target.ValidateAsync(
+                   _packageKey,
+                   packageStream,
+                   _message,
+                   _token);
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+
+                var allMessages = string.Join(Environment.NewLine, _logger.Messages);
+                Assert.Contains("NU3018: The repository countersignature found a chain building issue: The revocation function was unable to check revocation because the revocation server was offline.", allMessages);
+                Assert.Contains("NU3018: The repository countersignature found a chain building issue: The revocation function was unable to check revocation for the certificate.", allMessages);
+            }
         }
 
         [Theory]

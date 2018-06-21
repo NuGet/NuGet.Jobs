@@ -27,6 +27,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
     public class SignatureValidator : ISignatureValidator
     {
         private const string FormatVerificationName = "format verification";
+        private const string AuthorSignatureVerificationName = "author signature integrity and trust verification";
         private const string SignatureVerificationName = "signature integrity and trust verification";
 
         private readonly IPackageSigningStateService _packageSigningStateService;
@@ -438,9 +439,9 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 return false;
             }
 
-            var status = await _formatValidator.VerifyRepositorySignatureAsync(context.PackageReader, context.CancellationToken);
+            var verifyResult = await _formatValidator.ValidateRepositorySignatureAsync(context.PackageReader, context.CancellationToken);
 
-            if (status == SignatureVerificationStatus.Valid)
+            if (verifyResult.Valid)
             {
                 _logger.LogInformation(
                     "Signed package {PackageId} {PackageVersion} for validation {ValidationId} has a valid repository signature",
@@ -450,28 +451,45 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 
                 return true;
             }
-            else if (status == SignatureVerificationStatus.Suspect && await _packageSigningStateService.HasValidPackageSigningStateAsync(context.PackageKey))
-            {
-                _logger.LogCritical(
-                    "Detected suspect repository signature on revalidation of package {PackageId} {PackageVersion} for " +
-                    "validation {ValidationId}",
-                    context.Message.PackageId,
-                    context.Message.PackageVersion,
-                    context.Message.ValidationId);
-
-                throw new InvalidOperationException($"Suspect repository signature for validation id '{context.Message.ValidationId}'");
-            }
             else
             {
-                _logger.LogInformation(
-                    "Package {PackageId} {PackageVersion} for validation {ValidationId} has an unacceptable repository " +
-                    "signature with status {Status} and will be stripped",
-                    context.Message.PackageId,
-                    context.Message.PackageVersion,
-                    context.Message.ValidationId,
-                    status);
+                var warningsForLogs = verifyResult
+                    .Results
+                    .SelectMany(x => x.GetWarningIssues())
+                    .Select(x => $"{x.Code}: {x.Message}")
+                    .ToList();
+                var errorsForLogs = verifyResult
+                    .Results
+                    .SelectMany(x => x.GetErrorIssues())
+                    .Select(x => $"{x.Code}: {x.Message}")
+                    .ToList();
 
-                return false;
+                if (await _packageSigningStateService.HasValidPackageSigningStateAsync(context.PackageKey))
+                {
+                    _logger.LogCritical(
+                        "Detected unacceptable repository signature on revalidation of package {PackageId} {PackageVersion} for " +
+                        "validation {ValidationId}. Errors: {Errors} Warnings: {Warnings}",
+                        context.Message.PackageId,
+                        context.Message.PackageVersion,
+                        context.Message.ValidationId,
+                        errorsForLogs,
+                        warningsForLogs);
+
+                    throw new InvalidOperationException($"Suspect repository signature for validation id '{context.Message.ValidationId}'");
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Package {PackageId} {PackageVersion} for validation {ValidationId} has an unacceptable repository " +
+                        "signature and will be stripped. Errors: {Errors} Warnings: {Warnings}",
+                        context.Message.PackageId,
+                        context.Message.PackageVersion,
+                        context.Message.ValidationId,
+                        errorsForLogs,
+                        warningsForLogs);
+
+                    return false;
+                }
             }
         }
 
@@ -512,7 +530,24 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 return await RejectAsync(context, ValidationIssue.OnlyAuthorSignaturesSupported);
             }
 
-            // Call the "verify" API, which does the main logic of signature validation.
+            // If the package has both an author and repository signature, verify the author signature independently.
+            if (context.HasAuthorSignature && context.HasRepositorySignature)
+            {
+                var authorVerificationResult = await _formatValidator.ValidateAuthorSignatureAsync(
+                    context.PackageReader,
+                    context.CancellationToken);
+                var authorFailureResult = await GetVerifyResult(
+                    context,
+                    AuthorSignatureVerificationName,
+                    authorVerificationResult);
+
+                if (authorFailureResult != null)
+                {
+                    return authorFailureResult;
+                }
+            }
+
+            // Do a full verification of the signature.
             var verifyResult = await _formatValidator.ValidateFullAsync(
                 context.PackageReader,
                 context.HasRepositorySignature,
@@ -676,6 +711,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             public PrimarySignature Signature { get; set; }
             public SignatureValidationMessage Message { get; }
             public CancellationToken CancellationToken { get; }
+
+            public bool HasAuthorSignature => Signature?.Type == SignatureType.Author;
 
             public bool HasRepositorySignature
             {
