@@ -69,7 +69,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _fullVerifyResult = new VerifySignaturesResult(valid: true, signed: true);
                 _formatValidator
-                    .Setup(x => x.ValidateFullAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                    .Setup(x => x.ValidateAllSignaturesAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(() => _fullVerifyResult);
 
                 _signaturePartsExtractor = new Mock<ISignaturePartsExtractor>();
@@ -267,7 +267,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 Validate(result, ValidationStatus.Failed, PackageSigningStatus.Invalid);
                 Assert.Empty(result.Issues);
                 _formatValidator.Verify(
-                    x => x.ValidateFullAsync(It.IsAny<ISignedPackageReader>(), false, It.IsAny<CancellationToken>()),
+                    x => x.ValidateAllSignaturesAsync(It.IsAny<ISignedPackageReader>(), false, It.IsAny<CancellationToken>()),
                     Times.Never);
             }
 
@@ -587,13 +587,13 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 if (signingStatus == PackageSigningStatus.Valid)
                 {
                     _formatValidator.Verify(
-                        x => x.ValidateFullAsync(It.IsAny<ISignedPackageReader>(), false, It.IsAny<CancellationToken>()),
+                        x => x.ValidateAllSignaturesAsync(It.IsAny<ISignedPackageReader>(), false, It.IsAny<CancellationToken>()),
                         Times.Once);
                 }
                 else
                 {
                     _formatValidator.Verify(
-                        x => x.ValidateFullAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+                        x => x.ValidateAllSignaturesAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
                         Times.Never);
                 }
             }

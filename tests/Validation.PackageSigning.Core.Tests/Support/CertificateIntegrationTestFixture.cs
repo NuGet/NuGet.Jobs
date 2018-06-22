@@ -77,7 +77,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
         {
             var testServer = await GetTestServerAsync();
             var rootCa = CertificateAuthority.Create(testServer.Url);
-            var rootCertificate = new X509Certificate2(rootCa.Certificate.GetEncoded());
+            var rootCertificate = rootCa.Certificate.ToX509Certificate2();
 
             _trustedRoot = new TrustedTestCert<X509Certificate2>(
                 rootCertificate,
@@ -159,7 +159,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
             var testServer = await GetTestServerAsync();
             var rootCa = CertificateAuthority.Create(testServer.Url, options);
 
-            var certificate = new X509Certificate2(rootCa.Certificate.GetEncoded());
+            var certificate = rootCa.Certificate.ToX509Certificate2();
 
             certificate.PrivateKey = DotNetUtilities.ToRSA(options.KeyPair.Private as RsaPrivateCrtKeyParameters);
 
@@ -199,7 +199,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
         {
             var testServer = await _testServer.Value;
             var untrustedRootCa = CertificateAuthority.Create(testServer.Url);
-            var untrustedRootCertificate = new X509Certificate2(untrustedRootCa.Certificate.GetEncoded());
+            var untrustedRootCertificate = untrustedRootCa.Certificate.ToX509Certificate2();
             var responders = testServer.RegisterRespondersForEntireChain(untrustedRootCa);
 
             var certificate = CreateSigningCertificate(untrustedRootCa);
@@ -213,7 +213,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
         {
             var testServer = await _testServer.Value;
             var untrustedRootCa = CertificateAuthority.Create(testServer.Url);
-            var untrustedRootCertificate = new X509Certificate2(untrustedRootCa.Certificate.GetEncoded());
+            var untrustedRootCertificate = untrustedRootCa.Certificate.ToX509Certificate2();
             var timestampService = TimestampService.Create(untrustedRootCa);
             var responders = testServer.RegisterDefaultResponders(timestampService);
 
@@ -286,7 +286,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
         {
             var testServer = await _testServer.Value;
             var rootCa = CertificateAuthority.Create(testServer.Url);
-            var rootCertificate = new X509Certificate2(rootCa.Certificate.GetEncoded());
+            var rootCertificate = rootCa.Certificate.ToX509Certificate2();
 
             var trust = new TrustedTestCert<X509Certificate2>(
                 rootCertificate,
@@ -326,7 +326,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
                 SubjectName = new X509Name($"C=US,ST=WA,L=Redmond,O=NuGet,CN=NuGet Test ${name} Certificate ({Guid.NewGuid()})")
             });
 
-            var certificate = new X509Certificate2(publicCertificate.GetEncoded());
+            var certificate = publicCertificate.ToX509Certificate2();
             certificate.PrivateKey = DotNetUtilities.ToRSA(keyPair.Private as RsaPrivateCrtKeyParameters);
 
             return (publicCertificate, certificate);
@@ -380,7 +380,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
             public X509Certificate2 Certificate { get; }
 
-            public IDisposable TemporarilyTrust()
+            public IDisposable Trust()
             {
                 return new TrustedTestCert<X509Certificate2>(
                     _rootCertificate,
@@ -394,25 +394,25 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
         public class SigningCertificateWithUnavailableRevocation : IDisposable
         {
-            private readonly Func<IDisposable> _temporarilyRespondToRevocations;
+            private readonly Func<IDisposable> _respondToRevocations;
             private readonly Func<Task> _waitForResponseExpiration;
             private readonly IDisposable _disposable;
 
             public SigningCertificateWithUnavailableRevocation(
                 X509Certificate2 certificate,
-                Func<IDisposable> temporarilyRespondToRevocations,
+                Func<IDisposable> respondToRevocations,
                 Func<Task> waitForResponseExpiration,
                 IDisposable disposable)
             {
                 Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
-                _temporarilyRespondToRevocations = temporarilyRespondToRevocations ?? throw new ArgumentNullException(nameof(temporarilyRespondToRevocations));
+                _respondToRevocations = respondToRevocations ?? throw new ArgumentNullException(nameof(respondToRevocations));
                 _waitForResponseExpiration = waitForResponseExpiration ?? throw new ArgumentNullException(nameof(waitForResponseExpiration));
                 _disposable = disposable;
             }
 
             public X509Certificate2 Certificate { get; }
 
-            public IDisposable TemporarilyRespondToRevocations() => _temporarilyRespondToRevocations();
+            public IDisposable RespondToRevocations() => _respondToRevocations();
             public Task WaitForResponseExpirationAsync() => _waitForResponseExpiration();
             public void Dispose() => _disposable?.Dispose();
         }
@@ -431,7 +431,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
             public Uri Url { get; }
 
-            public IDisposable TemporarilyTrust()
+            public IDisposable Trust()
             {
                 return new TrustedTestCert<X509Certificate2>(
                     _certificate,
@@ -487,8 +487,8 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
             public Uri Url => _timestampService.Url;
 
-            public IDisposable TemporarilyRegisterDefaultResponders() => _testServer.RegisterDefaultResponders(_timestampService);
-            public IDisposable TemporarilyRegisterResponders(bool addCa = true, bool addOcsp = true, bool addTimestamper = true)
+            public IDisposable RegisterDefaultResponders() => _testServer.RegisterDefaultResponders(_timestampService);
+            public IDisposable RegisterResponders(bool addCa = true, bool addOcsp = true, bool addTimestamper = true)
                 => _testServer.RegisterRespondersForTimestampServiceAndEntireChain(_timestampService, addCa, addOcsp, addTimestamper);
 
             public Task WaitForResponseExpirationAsync() => _waitforResponseExpirationFunc();

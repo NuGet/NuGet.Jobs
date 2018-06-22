@@ -47,15 +47,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
             while (currentCa != null)
             {
-                if (addCa)
-                {
-                    responders.Add(testServer.RegisterResponder(currentCa));
-                }
-
-                if (addOcsp)
-                {
-                    responders.Add(testServer.RegisterResponder(currentCa.OcspResponder));
-                }
+                responders.AddRange(testServer.RegisterResponders(currentCa, addCa, addOcsp));
 
                 currentCa = currentCa.Parent;
             }

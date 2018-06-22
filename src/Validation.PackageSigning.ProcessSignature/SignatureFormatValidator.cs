@@ -146,7 +146,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 token);
         }
 
-        public async Task<VerifySignaturesResult> ValidateFullAsync(
+        public async Task<VerifySignaturesResult> ValidateAllSignaturesAsync(
             ISignedPackageReader package,
             bool hasRepositorySignature,
             CancellationToken token)
