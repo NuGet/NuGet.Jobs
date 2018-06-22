@@ -857,7 +857,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     _message,
                     _token));
 
-            Assert.Equal($"Applied repository signature did not pass verification for validation id '{_message.ValidationId}'", e.Message);
+            Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
         [Fact]
@@ -900,7 +900,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         _message,
                         _token));
 
-                Assert.Equal($"Applied repository signature did not pass verification for validation id '{_message.ValidationId}'", e.Message);
+                Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
             }
         }
 
@@ -937,7 +937,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     _message,
                     _token));
 
-            Assert.Equal($"Applied repository signature did not pass verification for validation id '{_message.ValidationId}'", e.Message);
+            Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
         [Fact]
@@ -1251,7 +1251,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     _message,
                     _token));
 
-            Assert.Equal($"Applied repository signature did not pass verification for validation id '{_message.ValidationId}'", e.Message);
+            Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
         [Fact]
@@ -1291,7 +1291,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         _message,
                         _token));
 
-                Assert.Equal($"Applied repository signature did not pass verification for validation id '{_message.ValidationId}'", e.Message);
+                Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
             }
         }
 
@@ -1325,7 +1325,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     _message,
                     _token));
 
-            Assert.Equal($"Applied repository signature did not pass verification for validation id '{_message.ValidationId}'", e.Message);
+            Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
         [Fact]

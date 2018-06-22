@@ -464,12 +464,13 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 // 4. We repository signed this package and our repository signature does not pass trust or integrity verification
                 //
                 // For cases #1 and #2, we can strip the repository signature and apply a new one. Cases #3 and #4 are highly suspicious
-                // and an on-call engineer should investigate. Case #4 can be identified by checking whether there is a PackageSigningState
-                // record for the package as we extract the package's signing state before we repository sign packages.
+                // and an on-call engineer should investigate.
                 if (await _packageSigningStateService.HasPackageSigningStateAsync(context.PackageKey))
                 {
+                    // This package failed verification and has a PackageSigningState. This is case #4 as
+                    // we extract the package's signing state before we repository sign packages.
                     _logger.LogCritical(
-                        "Applied repository signature did not pass verification for package {PackageId} {PackageVersion} on " +
+                        "Package {PackageId} {PackageVersion} was repository signed with a signature that fails verification on " +
                         "validation {ValidationId}. Errors: {Errors} Warnings: {Warnings}",
                         context.Message.PackageId,
                         context.Message.PackageVersion,
@@ -478,14 +479,14 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                         warningsForLogs);
 
                     throw new InvalidOperationException(
-                        $"Applied repository signature did not pass verification for validation id '{context.Message.ValidationId}'");
+                        $"Package was repository signed with a signature that fails verification for validation id '{context.Message.ValidationId}'");
                 }
 
                 // For all other cases, strip the repository signature so that a new repository signature will be applied. Note that for
                 // case #3, the newly applied repository signature may still fail verification, thus triggering case #4.
                 _logger.LogInformation(
                     "Repository signature failed verification and will be stripped for package {PackageId} and {PackageVersion} on validation {ValidationId}. " +
-                    "Erros: {Errors} Warnings: {Warnings}",
+                    "Errors: {Errors} Warnings: {Warnings}",
                     context.Message.PackageId,
                     context.Message.PackageVersion,
                     context.Message.ValidationId,
