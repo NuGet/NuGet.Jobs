@@ -50,10 +50,12 @@
     <Compile Include="Initialization\IPackageFinder.cs" />
     <Compile Include="Initialization\PackageFinder.cs" />
     <Compile Include="Initialization\PackageRegistrationInformation.cs" />
-    <Compile Include="IRevalidationStateService.cs" />
-    <Compile Include="RevalidationStateService.cs" />
-    <Compile Include="TelemetryService.cs" />
-    <Compile Include="ITelemetryService.cs" />
+    <Compile Include="Services\IRevalidationStateService.cs" />
+    <Compile Include="Services\IRevalidationService.cs" />
+    <Compile Include="Services\RevalidationService.cs" />
+    <Compile Include="Services\RevalidationStateService.cs" />
+    <Compile Include="Services\TelemetryService.cs" />
+    <Compile Include="Services\ITelemetryService.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
