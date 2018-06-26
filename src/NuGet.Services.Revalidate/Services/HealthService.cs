@@ -5,10 +5,13 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Revalidate
 {
-    public interface IRevalidationService
+    public class HealthService : IHealthService
     {
-        Task RunAsync();
-
-        Task<RevalidationResult> StartNextRevalidationAsync();
+        public Task<bool> IsHealthyAsync()
+        {
+            // TODO:
+            // We are software gods that never make mistakes.
+            return Task.FromResult(true);
+        }
     }
 }

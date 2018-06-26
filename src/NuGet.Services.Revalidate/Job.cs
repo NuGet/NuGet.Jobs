@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
+using NuGet.Services.Logging;
 using NuGetGallery;
 
 namespace NuGet.Services.Revalidate
@@ -25,6 +26,8 @@ namespace NuGet.Services.Revalidate
         private const string InitializeArgumentName = "Initialize";
         private const string VerifyInitializationArgumentName = "VerifyInitialization";
         private const string JobConfigurationSectionName = "RevalidateJob";
+
+        private static readonly TimeSpan RetryLaterSleepDuration = TimeSpan.FromMinutes(5);
 
         private bool _initialize;
         private bool _verifyInitialization;
@@ -75,10 +78,13 @@ namespace NuGet.Services.Revalidate
                 }
                 else
                 {
+                    Logger.LogInformation("Running the revalidation service...");
 
-                    // TODO: https://github.com/NuGet/Engineering/issues/1443
-                    // Send revalidation requests to the Orchestrator.
-                    throw new NotImplementedException();
+                    await scope.ServiceProvider
+                        .GetRequiredService<IRevalidationService>()
+                        .RunAsync();
+
+                    Logger.LogInformation("Revalidation service finished running");
                 }
             }
         }
@@ -95,9 +101,21 @@ namespace NuGet.Services.Revalidate
                 return new GalleryContext(config.ConnectionString, readOnly: false);
             });
 
-            services.AddScoped<IRevalidationStateService, RevalidationStateService>();
-            services.AddScoped<IPackageFinder, PackageFinder>();
-            services.AddScoped<InitializationManager>();
+            // Core
+            services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
+
+            services.AddTransient<IRevalidationStateService, RevalidationStateService>();
+
+            // Initialization
+            services.AddTransient<IPackageFinder, PackageFinder>();
+            services.AddTransient<InitializationManager>();
+
+            // Revalidation
+            services.AddTransient<IHealthService, HealthService>();
+            services.AddTransient<IRevalidationQueue, RevalidationQueue>();
+            services.AddTransient<IRevalidationThrottler, RevalidationThrottler>();
+            services.AddTransient<ISingletonService, SingletonService>();
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)

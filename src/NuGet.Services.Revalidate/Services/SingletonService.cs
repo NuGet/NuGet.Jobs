@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Revalidate
 {
-    public interface IRevalidationService
+    public class SingletonService : ISingletonService
     {
-        Task RunAsync();
-
-        Task<RevalidationResult> StartNextRevalidationAsync();
+        public Task<bool> IsSingletonAsync()
+        {
+            // TODO
+            return Task.FromResult(true);
+        }
     }
 }
