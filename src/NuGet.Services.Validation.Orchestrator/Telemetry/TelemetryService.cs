@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.ApplicationInsights;
+using NuGet.Services.Logging;
 using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator.Telemetry
@@ -18,7 +18,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string PackageStatusChange = OrchestratorPrefix + "PackageStatusChange";
         private const string TotalValidationDurationSeconds = OrchestratorPrefix + "TotalValidationDurationSeconds";
         private const string SentValidationTakingTooLongMessage = OrchestratorPrefix + "SentValidationTakingTooLongMessage";
-        private const string ValidationSetTimeout = OrchestratorPrefix + "TotalValidationDurationSeconds";
+        private const string ValidationSetTimeout = OrchestratorPrefix + "ValidationSetTimedOut";
         private const string ValidationIssue = OrchestratorPrefix + "ValidationIssue";
         private const string ValidationIssueCount = OrchestratorPrefix + "ValidationIssueCount";
         private const string ValidatorTimeout = OrchestratorPrefix + "ValidatorTimeout";
@@ -46,23 +46,27 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string HashAlgorithm = "HashAlgorithm";
         private const string StreamType = "StreamType";
 
-        private readonly TelemetryClient _telemetryClient;
+        private readonly ITelemetryClient _telemetryClient;
 
-        public TelemetryService(TelemetryClient telemetryClient)
+        public TelemetryService(ITelemetryClient telemetryClient)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
         }
 
-        public void TrackDurationToHashPackage(TimeSpan duration, string packageId, string normalizedVersion, string hashAlgorithm, string streamType)
+        public IDisposable TrackDurationToHashPackage(
+            string packageId,
+            string normalizedVersion,
+            long packageSize,
+            string hashAlgorithm,
+            string streamType)
         {
-            _telemetryClient.TrackMetric(
+            return _telemetryClient.TrackDuration(
                 DurationToHashPackageSeconds,
-                duration.TotalSeconds,
                 new Dictionary<string, string>
                 {
                     { PackageId, packageId },
                     { NormalizedVersion, normalizedVersion },
-                    { PackageSize, PackageSize.ToString() },
+                    { PackageSize, packageSize.ToString() },
                     { HashAlgorithm, hashAlgorithm },
                     { StreamType, streamType },
                 });
@@ -212,18 +216,10 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                         { ValidationTrackingId, validationTrackingId },
                     });
 
-        public void TrackDurationToStartPackageSigningValidator(TimeSpan duration)
-        {
-            _telemetryClient.TrackMetric(
-                DurationToStartPackageSigningValidatorSeconds,
-                duration.TotalSeconds);
-        }
+        public IDisposable TrackDurationToStartPackageSigningValidator()
+            => _telemetryClient.TrackDuration(DurationToStartPackageSigningValidatorSeconds);
 
-        public void TrackDurationToStartPackageCertificatesValidator(TimeSpan duration)
-        {
-            _telemetryClient.TrackMetric(
-                DurationToStartPackageCertificatesValidatorSeconds,
-                duration.TotalSeconds);
-        }
+        public IDisposable TrackDurationToStartPackageCertificatesValidator()
+            => _telemetryClient.TrackDuration(DurationToStartPackageCertificatesValidatorSeconds);
     }
 }

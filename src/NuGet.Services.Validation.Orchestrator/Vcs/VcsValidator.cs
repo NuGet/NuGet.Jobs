@@ -8,29 +8,32 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Services.Validation.Orchestrator;
 using NuGet.Versioning;
 using NuGetGallery;
+using Error = NuGet.Services.Validation.Orchestrator.Error;
 
 namespace NuGet.Services.Validation.Vcs
 {
+    [ValidatorName(ValidatorName.Vcs)]
     public class VcsValidator : BaseValidator, IValidator
     {
-        private const string ValidatorName = Jobs.Validation.Common.Validators.Vcs.VcsValidator.ValidatorName;
+        private const string InternalValidatorName = Jobs.Validation.Common.Validators.Vcs.VcsValidator.ValidatorName;
 
         private readonly IPackageValidationService _validationService;
         private readonly IPackageValidationAuditor _validationAuditor;
-        private readonly ICorePackageService _packageService;
-        private readonly IPackageCriteriaEvaluator _criteriaEvaluator;
+        private readonly IEntityService<Package> _packageService;
+        private readonly ICriteriaEvaluator<Package> _criteriaEvaluator;
         private readonly IOptionsSnapshot<VcsConfiguration> _config;
         private readonly ILogger<VcsValidator> _logger;
 
         public VcsValidator(
             IPackageValidationService validationService,
             IPackageValidationAuditor validationAuditor,
-            ICorePackageService packageService,
-            IPackageCriteriaEvaluator criteriaEvaluator,
+            IEntityService<Package> packageService,
+            ICriteriaEvaluator<Package> criteriaEvaluator,
             IOptionsSnapshot<VcsConfiguration> config,
             ILogger<VcsValidator> logger)
         {
@@ -61,7 +64,7 @@ namespace NuGet.Services.Validation.Vcs
 
             var validationStatusList = audit
                 .Entries
-                .Where(x => x.ValidatorName == ValidatorName)
+                .Where(x => x.ValidatorName == InternalValidatorName)
                 .Select(x => GetValidationStatus(request, x.EventId))
                 .ToList();
 
@@ -127,8 +130,8 @@ namespace NuGet.Services.Validation.Vcs
                         Version = normalizedPackageVerison,
                         DownloadUrl = new Uri(request.NupkgUrl),
                     },
-                    new[] { ValidatorName },
-                    request.ValidationId);
+                    validators: new[] { InternalValidatorName },
+                    validationId: request.ValidationId);
             }
             catch (StorageException e) when (e.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.Conflict
                                              || e.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
@@ -163,7 +166,7 @@ namespace NuGet.Services.Validation.Vcs
         {
             var package = _packageService.FindPackageByIdAndVersionStrict(
                 request.PackageId,
-                request.PackageVersion);
+                request.PackageVersion)?.EntityRecord;
 
             if (!_criteriaEvaluator.IsMatch(_config.Value.PackageCriteria, package))
             {

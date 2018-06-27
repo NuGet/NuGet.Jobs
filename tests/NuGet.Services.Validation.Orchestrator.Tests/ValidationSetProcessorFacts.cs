@@ -32,7 +32,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             ValidationStorageMock
                 .Verify(vs => vs.UpdateValidationStatusAsync(ValidationSet.PackageValidations.First(), ValidationResult.Failed), Times.Once());
@@ -75,7 +75,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             validator.Verify(v => v.StartAsync(It.IsAny<IValidationRequest>()), Times.AtLeastOnce());
             if (expectStorageUpdate)
@@ -134,7 +134,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             validator1.Verify(v => v.StartAsync(It.IsAny<IValidationRequest>()), Times.Never);
             validator1.Verify(v => v.GetResultAsync(It.IsAny<IValidationRequest>()), Times.Once);
@@ -155,7 +155,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(ValidationResult.Incomplete);
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             validator
                 .Verify(v => v.StartAsync(It.IsAny<IValidationRequest>()), Times.Never());
@@ -192,7 +192,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verifiable();
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             validator
                 .Verify(v => v.GetResultAsync(It.IsAny<IValidationRequest>()), Times.AtLeastOnce());
@@ -242,7 +242,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(Task.FromResult(0));
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             ValidationStorageMock
                 .Verify(vs => vs.MarkValidationStartedAsync(
@@ -280,7 +280,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(Task.FromResult(0));
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            await processor.ProcessValidationsAsync(ValidationSet);
 
             ValidationStorageMock
                 .Verify(vs => vs.UpdateValidationStatusAsync(
@@ -297,7 +297,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         {
             UseDefaultValidatorProvider();
             var validator = AddValidation("validation1", TimeSpan.FromDays(1));
-            
+
             IValidationRequest validationRequest = null;
             validator
                 .Setup(v => v.GetResultAsync(It.IsAny<IValidationRequest>()))
@@ -308,15 +308,61 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(ValidationResult.Incomplete);
 
             var processor = CreateProcessor();
-            await processor.ProcessValidationsAsync(ValidationSet, Package);
+            var expectedEndOfAccessLower = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
+
+            await processor.ProcessValidationsAsync(ValidationSet);
+
+            var expectedEndOfAccessUpper = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
 
             validator
                 .Verify(v => v.GetResultAsync(It.IsAny<IValidationRequest>()), Times.AtLeastOnce());
+            PackageFileServiceMock
+                .Verify(s =>
+                    s.GetPackageForValidationSetReadUriAsync(
+                        ValidationSet,
+                        It.Is<DateTimeOffset>(actualEndOfAccess => actualEndOfAccess >= expectedEndOfAccessLower && actualEndOfAccess <= expectedEndOfAccessUpper)),
+                    Times.Once);
             Assert.NotNull(validationRequest);
             Assert.Contains(ValidationSet.ValidationTrackingId.ToString(), validationRequest.NupkgUrl);
             Assert.Contains(ValidationContainerName, validationRequest.NupkgUrl);
             Assert.Equal(Package.PackageRegistration.Id, validationRequest.PackageId);
             Assert.Equal(Package.NormalizedVersion, validationRequest.PackageVersion);
+        }
+
+        private class TestException : Exception { };
+
+        [Fact]
+        public async Task IgnoresExceptionsForAllowedToFailValidations()
+        {
+            UseDefaultValidatorProvider();
+            var validatorMock = AddValidation("throwingValidation", TimeSpan.FromDays(1), failureBehavior: ValidationFailureBehavior.AllowedToFail);
+            validatorMock
+                .Setup(v => v.StartAsync(It.IsAny<IValidationRequest>()))
+                .ThrowsAsync(new TestException());
+            validatorMock
+                .Setup(v => v.GetResultAsync(It.IsAny<IValidationRequest>()))
+                .ReturnsAsync(ValidationResult.NotStarted);
+
+            var processor = CreateProcessor();
+            var ex = await Record.ExceptionAsync(() => processor.ProcessValidationsAsync(ValidationSet));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public async Task RethrowsExceptionForMustSucceedValidations()
+        {
+            UseDefaultValidatorProvider();
+            var validatorMock = AddValidation("throwingValidation", TimeSpan.FromDays(1), failureBehavior: ValidationFailureBehavior.MustSucceed);
+            validatorMock
+                .Setup(v => v.StartAsync(It.IsAny<IValidationRequest>()))
+                .ThrowsAsync(new TestException());
+            validatorMock
+                .Setup(v => v.GetResultAsync(It.IsAny<IValidationRequest>()))
+                .ReturnsAsync(ValidationResult.NotStarted);
+
+            var processor = CreateProcessor();
+            await Assert.ThrowsAsync<TestException>(() => processor.ProcessValidationsAsync(ValidationSet));
         }
     }
 
@@ -328,7 +374,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         protected Mock<IValidatorProvider> ValidatorProviderMock { get; }
         protected Mock<IValidationStorageService> ValidationStorageMock { get; }
         protected Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
-        protected Mock<IValidationPackageFileService> PackageFileServiceMock { get; }
+        protected Mock<IValidationFileService> PackageFileServiceMock { get; }
         protected Mock<ILogger<ValidationSetProcessor>> LoggerMock { get; }
         public Mock<ITelemetryService> TelemetryServiceMock { get; }
         protected ValidationConfiguration Configuration { get; }
@@ -347,14 +393,15 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidatorProviderMock = new Mock<IValidatorProvider>(validatorProviderMockBehavior);
             ValidationStorageMock = new Mock<IValidationStorageService>(validationStorageMockBehavior);
             ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>(configurationAccessorMockBehavior);
-            PackageFileServiceMock = new Mock<IValidationPackageFileService>(packageFileServiceMockBehavior);
+            PackageFileServiceMock = new Mock<IValidationFileService>(packageFileServiceMockBehavior);
             LoggerMock = new Mock<ILogger<ValidationSetProcessor>>(loggerMockBehavior);
             TelemetryServiceMock = new Mock<ITelemetryService>(telemetryServiceMockBehavior);
             Configuration = new ValidationConfiguration
             {
                 Validations = new List<ValidationConfigurationItem>
                 {
-                }
+                },
+                TimeoutValidationSetAfter = TimeSpan.FromDays(5),
             };
             ConfigurationAccessorMock
                 .SetupGet(ca => ca.Value)

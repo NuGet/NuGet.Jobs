@@ -1,10 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Data;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
 using Newtonsoft.Json;
+using NuGet.Services.Sql;
 using Search.GenerateAuxiliaryData;
 using Xunit;
 
@@ -42,8 +45,8 @@ namespace Tests.Search.GenerateAuxiliaryData
         {
             return new RankingsExporter(
                 new LoggerFactory().CreateLogger<RankingsExporter>(),
-                defaultConnectionString: "a",
-                defaultDestinationContainer: null,
+                connectionFactory: new Mock<ISqlConnectionFactory>().Object,
+                defaultDestinationContainer: new CloudBlobContainer(new Uri("https://nuget.org")),
                 defaultRankingsScript: "b",
                 defaultName: "c");
         }

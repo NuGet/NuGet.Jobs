@@ -3,19 +3,21 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.ApplicationInsights;
+using NuGet.Services.Logging;
 
 namespace NuGet.Jobs.Validation
 {
     public class CommonTelemetryService : ICommonTelemetryService
     {
         private const string PackageDownloadedSeconds = "PackageDownloadedSeconds";
+        private const string PackageDownloadSpeed = "PackageDownloadSpeedBytesPerSec";
         private const string PackageUri = "PackageUri";
         private const string PackageSize = "PackageSize";
+        private const double DefaultDownloadSpeed = 1;
 
-        private readonly TelemetryClient _telemetryClient;
+        private readonly ITelemetryClient _telemetryClient;
 
-        public CommonTelemetryService(TelemetryClient telemetryClient)
+        public CommonTelemetryService(ITelemetryClient telemetryClient)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
         }
@@ -30,6 +32,14 @@ namespace NuGet.Jobs.Validation
             _telemetryClient.TrackMetric(
                 PackageDownloadedSeconds,
                 duration.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { PackageUri, absoluteUri },
+                    { PackageSize, size.ToString() },
+                });
+            _telemetryClient.TrackMetric(
+                PackageDownloadSpeed,
+                duration.TotalSeconds > 0 ? size / duration.TotalSeconds : DefaultDownloadSpeed,
                 new Dictionary<string, string>
                 {
                     { PackageUri, absoluteUri },

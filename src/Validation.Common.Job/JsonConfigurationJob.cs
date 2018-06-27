@@ -3,10 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.Data.Common;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.ApplicationInsights;
@@ -17,9 +20,12 @@ using Microsoft.Extensions.Options;
 using NuGet.Jobs.Configuration;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
+using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Sql;
 using NuGet.Services.Validation;
 using NuGetGallery;
+using NuGetGallery.Diagnostics;
 
 namespace NuGet.Jobs.Validation
 {
@@ -28,6 +34,7 @@ namespace NuGet.Jobs.Validation
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
         private const string ServiceBusConfigurationSectionName = "ServiceBus";
+        private const string ValidationStorageConfigurationSectionName = "ValidationStorage";
         private const string PackageDownloadTimeoutName = "PackageDownloadTimeout";
 
         /// <summary>
@@ -50,16 +57,17 @@ namespace NuGet.Jobs.Validation
         /// </summary>
         private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
-        public override void Init(IDictionary<string, string> jobArgsDictionary)
+        public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
+            var configurationRoot = GetConfigurationRoot(configurationFilename, out var secretInjector);
 
-            _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename));
+            _serviceProvider = GetServiceProvider(configurationRoot, secretInjector);
 
             ServicePointManager.DefaultConnectionLimit = MaximumConnectionsPerServer;
         }
 
-        private IConfigurationRoot GetConfigurationRoot(string configurationFilename)
+        private IConfigurationRoot GetConfigurationRoot(string configurationFilename, out ISecretInjector secretInjector)
         {
             Logger.LogInformation(
                 "Using the {ConfigurationFilename} configuration file",
@@ -73,7 +81,7 @@ namespace NuGet.Jobs.Validation
 
             var secretReaderFactory = new ConfigurationRootSecretReaderFactory(uninjectedConfiguration);
             var cachingSecretReaderFactory = new CachingSecretReaderFactory(secretReaderFactory, KeyVaultSecretCachingTimeout);
-            var secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
+            secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
 
             builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
@@ -82,10 +90,11 @@ namespace NuGet.Jobs.Validation
             return builder.Build();
         }
 
-        private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot)
+        private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot, ISecretInjector secretInjector)
         {
             // Configure as much as possible with Microsoft.Extensions.DependencyInjection.
             var services = new ServiceCollection();
+            services.AddSingleton(secretInjector);
 
             ConfigureLibraries(services);
             ConfigureDefaultJobServices(services, configurationRoot);
@@ -100,28 +109,45 @@ namespace NuGet.Jobs.Validation
             return new AutofacServiceProvider(containerBuilder.Build());
         }
 
+        protected virtual DbConnection CreateDbConnection<T>(IServiceProvider serviceProvider) where T : IDbConfiguration
+        {
+            var connectionString = serviceProvider.GetRequiredService<IOptionsSnapshot<T>>().Value.ConnectionString;
+            var connectionFactory = new AzureSqlConnectionFactory(connectionString,
+                serviceProvider.GetRequiredService<ISecretInjector>());
+
+            return Task.Run(() => connectionFactory.CreateAsync()).Result;
+        }
+
         private void ConfigureDefaultJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
             services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
+            services.Configure<ValidationStorageConfiguration>(configurationRoot.GetSection(ValidationStorageConfigurationSectionName));
 
             services.AddSingleton(new TelemetryClient());
+            services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
-            services.AddTransient<IPackageDownloader, PackageDownloader>();
+            services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
+            services.AddTransient<IFileDownloader, PackageDownloader>();
+
+            services.AddTransient<ICloudBlobClient>(c =>
+            {
+                var configurationAccessor = c.GetRequiredService<IOptionsSnapshot<ValidationStorageConfiguration>>();
+                return new CloudBlobClientWrapper(
+                    configurationAccessor.Value.ConnectionString,
+                    readAccessGeoRedundant: false);
+            });
+            services.AddTransient<ICoreFileStorageService, CloudBlobCoreFileStorageService>();
 
             services.AddScoped<IValidationEntitiesContext>(p =>
             {
-                var config = p.GetRequiredService<IOptionsSnapshot<ValidationDbConfiguration>>().Value;
-
-                return new ValidationEntitiesContext(config.ConnectionString);
+                return new ValidationEntitiesContext(CreateDbConnection<ValidationDbConfiguration>(p));
             });
 
             services.AddScoped<IEntitiesContext>(p =>
             {
-                var config = p.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value;
-
-                return new EntitiesContext(config.ConnectionString, readOnly: true);
+                return new EntitiesContext(CreateDbConnection<GalleryDbConfiguration>(p), readOnly: true);
             });
 
             services.AddTransient<ISubscriptionClient>(p =>

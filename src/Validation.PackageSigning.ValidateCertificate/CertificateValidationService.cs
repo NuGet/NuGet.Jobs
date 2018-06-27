@@ -60,6 +60,13 @@ namespace Validation.PackageSigning.ValidateCertificate
                     validation.EndCertificate.Thumbprint,
                     result.Status);
             }
+            else
+            {
+                _logger.LogInformation(
+                    "Updating certificate {CertificateThumbprint} to status {NewStatus}",
+                    validation.EndCertificate.Thumbprint,
+                    result.Status);
+            }
 
             try
             {
@@ -279,11 +286,13 @@ namespace Validation.PackageSigning.ValidateCertificate
             {
                 case EndCertificateUse.CodeSigning:
                     packageSignatures = _context.PackageSignatures
+                                                .Where(s => s.Type == PackageSignatureType.Author)
                                                 .Where(s => s.EndCertificate.Thumbprint == certificate.Thumbprint);
                     break;
 
                 case EndCertificateUse.Timestamping:
                     packageSignatures = _context.PackageSignatures
+                                                .Where(s => s.Type == PackageSignatureType.Author)
                                                 .Where(s => s.TrustedTimestamps.Any(t => t.EndCertificate.Thumbprint == certificate.Thumbprint));
 
                     break;

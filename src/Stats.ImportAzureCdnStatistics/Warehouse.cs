@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Services.Sql;
 using Stats.AzureCdnLogs.Common;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -20,8 +21,8 @@ namespace Stats.ImportAzureCdnStatistics
         private const int _maxRetryCount = 3;
         private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(5);
         private readonly ILogger _logger;
-        private readonly SqlConnectionStringBuilder _targetDatabase;
-        private readonly IList<PackageDimension> _cachedPackageDimensions = new List<PackageDimension>();
+        private readonly ISqlConnectionFactory _statisticsDbConnectionFactory;
+        private readonly IDictionary<PackageDimension, PackageDimension> _cachedPackageDimensions = new Dictionary<PackageDimension, PackageDimension>();
         private readonly IList<ToolDimension> _cachedToolDimensions = new List<ToolDimension>();
         private readonly IDictionary<string, int> _cachedClientDimensions = new Dictionary<string, int>();
         private readonly IDictionary<string, int> _cachedPlatformDimensions = new Dictionary<string, int>();
@@ -30,7 +31,7 @@ namespace Stats.ImportAzureCdnStatistics
         private readonly IDictionary<string, int> _cachedIpAddressFacts = new Dictionary<string, int>();
         private IReadOnlyCollection<TimeDimension> _times;
 
-        public Warehouse(ILoggerFactory loggerFactory, SqlConnectionStringBuilder targetDatabase)
+        public Warehouse(ILoggerFactory loggerFactory, ISqlConnectionFactory statisticsDbConnectionFactory)
         {
             if (loggerFactory == null)
             {
@@ -38,7 +39,7 @@ namespace Stats.ImportAzureCdnStatistics
             }
 
             _logger = loggerFactory.CreateLogger<Warehouse>();
-            _targetDatabase = targetDatabase ?? throw new ArgumentNullException(nameof(targetDatabase));
+            _statisticsDbConnectionFactory = statisticsDbConnectionFactory ?? throw new ArgumentNullException(nameof(statisticsDbConnectionFactory));
         }
 
         public async Task InsertDownloadFactsAsync(DataTable downloadFactsDataTable, string logFileName)
@@ -46,7 +47,7 @@ namespace Stats.ImportAzureCdnStatistics
             _logger.LogDebug("Inserting into facts table...");
             var stopwatch = Stopwatch.StartNew();
 
-            using (var connection = await _targetDatabase.ConnectTo())
+            using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
             using (var transaction = connection.BeginTransaction(IsolationLevel.Snapshot))
             {
                 try
@@ -123,7 +124,7 @@ namespace Stats.ImportAzureCdnStatistics
             var packages = packagesTask.Result;
 
             // create facts data rows by linking source data with dimensions
-            var dataImporter = new DataImporter(_targetDatabase);
+            var dataImporter = new DataImporter(_statisticsDbConnectionFactory);
             var factsDataTable = await dataImporter.GetDataTableAsync("Fact_Download");
 
             var knownOperationsAvailable = operations.Any();
@@ -244,7 +245,7 @@ namespace Stats.ImportAzureCdnStatistics
             var ipAddresses = ipAddressesTask.Result;
 
             // create facts data rows by linking source data with dimensions
-            var dataImporter = new DataImporter(_targetDatabase);
+            var dataImporter = new DataImporter(_statisticsDbConnectionFactory);
             var dataTable = await dataImporter.GetDataTableAsync("Fact_Dist_Download");
 
             var knownClientsAvailable = clients.Any();
@@ -340,7 +341,7 @@ namespace Stats.ImportAzureCdnStatistics
         {
             _logger.LogDebug("Storing log file aggregates...");
 
-            using (var connection = await _targetDatabase.ConnectTo())
+            using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
             {
                 try
                 {
@@ -374,7 +375,7 @@ namespace Stats.ImportAzureCdnStatistics
             _logger.LogDebug("Retrieving already processed log files...");
 
             var alreadyAggregatedLogFiles = new List<string>();
-            using (var connection = await _targetDatabase.ConnectTo())
+            using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
             {
                 try
                 {
@@ -432,7 +433,7 @@ namespace Stats.ImportAzureCdnStatistics
 
             try
             {
-                using (var connection = await _targetDatabase.ConnectTo())
+                using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
                 {
                     var command = connection.CreateCommand();
                     command.CommandText = commandText;
@@ -473,7 +474,7 @@ namespace Stats.ImportAzureCdnStatistics
                         _logger.LogDebug("Beginning to retrieve dimension '{Dimension}'.", dimension);
 
                         IDictionary<string, int> dimensions;
-                        using (var connection = await _targetDatabase.ConnectTo())
+                        using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
                         {
                             dimensions = await retrieve(connection);
                         }
@@ -545,7 +546,7 @@ namespace Stats.ImportAzureCdnStatistics
                         _logger.LogDebug("Beginning to retrieve dimension '{Dimension}'.", dimension);
 
                         IReadOnlyCollection<T> dimensions;
-                        using (var connection = await _targetDatabase.ConnectTo())
+                        using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
                         {
                             dimensions = await retrieve(connection);
                         }
@@ -686,26 +687,28 @@ namespace Stats.ImportAzureCdnStatistics
 
         private async Task<IReadOnlyCollection<PackageDimension>> RetrievePackageDimensions(IReadOnlyCollection<PackageStatistics> sourceData, SqlConnection connection)
         {
-            var packages = sourceData
-                .Select(e => new PackageDimension(e.PackageId, e.PackageVersion))
-                .Distinct()
-                .ToList();
-
             var results = new List<PackageDimension>();
-            if (!packages.Any())
+            var nonCachedPackageDimensions = new List<PackageDimension>();
+            var sourceDataPackages = new HashSet<PackageDimension>();
+
+            foreach (var sourceStatistics in sourceData)
             {
-                return results;
+                var sourcePackage = new PackageDimension(sourceStatistics.PackageId, sourceStatistics.PackageVersion);
+                if (!sourceDataPackages.Add(sourcePackage))
+                {
+                    // This package has already been seen in the sourceData
+                    continue;
+                }
+
+                if (_cachedPackageDimensions.TryGetValue(sourcePackage, out var cachedPackage))
+                {
+                    results.Add(cachedPackage);
+                }
+                else
+                {
+                    nonCachedPackageDimensions.Add(sourcePackage);
+                }
             }
-
-            results.AddRange(_cachedPackageDimensions
-                .Where(p1 => packages
-                    .FirstOrDefault(p2 =>
-                        string.Equals(p1.PackageId, p2.PackageId, StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(p1.PackageVersion, p2.PackageVersion, StringComparison.OrdinalIgnoreCase)) != null
-                    )
-                );
-
-            var nonCachedPackageDimensions = packages.Except(results).ToList();
 
             if (nonCachedPackageDimensions.Any())
             {
@@ -729,15 +732,8 @@ namespace Stats.ImportAzureCdnStatistics
                             Id = dataReader.GetInt32(0)
                         };
 
-                        if (!results.Contains(package))
-                        {
-                            results.Add(package);
-                        }
-
-                        if (!_cachedPackageDimensions.Contains(package))
-                        {
-                            _cachedPackageDimensions.Add(package);
-                        }
+                        results.Add(package);
+                        _cachedPackageDimensions[package] = package;
                     }
                 }
             }

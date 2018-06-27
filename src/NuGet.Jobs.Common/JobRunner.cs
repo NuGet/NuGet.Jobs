@@ -56,7 +56,8 @@ namespace NuGet.Jobs
                 _logger.LogInformation("Started...");
 
                 // Get the args passed in or provided as an env variable based on jobName as a dictionary of <string argName, string argValue>
-                var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(loggerFactory.CreateLogger(typeof(JobConfigurationManager)), commandLineArgs, job.JobName, (ISecretReaderFactory)ServiceContainer.GetService(typeof(ISecretReaderFactory)));
+
+                var jobArgsDictionary = JobConfigurationManager.GetJobArgsDictionary(ServiceContainer, loggerFactory.CreateLogger(typeof(JobConfigurationManager)), commandLineArgs, job.JobName);
 
                 // Setup logging
                 if (!ApplicationInsights.Initialized)
@@ -72,7 +73,9 @@ namespace NuGet.Jobs
                 loggerFactory = ConfigureLogging(job);
 
                 var runContinuously = !JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
+                var reinitializeAfterSeconds = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.ReinitializeAfterSeconds);
                 var sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Sleep); // sleep is in milliseconds
+
                 if (!sleepDuration.HasValue)
                 {
                     sleepDuration = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.Interval);
@@ -88,12 +91,19 @@ namespace NuGet.Jobs
                     sleepDuration = 5000;
                 }
 
+                if (!reinitializeAfterSeconds.HasValue)
+                {
+                    _logger.LogInformation(
+                        $"{JobArgumentNames.ReinitializeAfterSeconds} command line argument is not provided or is not a valid integer. " +
+                        "The job will reinitialize on every iteration");
+                }
+
                 // Ensure that SSLv3 is disabled and that Tls v1.2 is enabled.
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
                 // Run the job loop
-                await JobLoop(job, runContinuously, sleepDuration.Value, jobArgsDictionary);
+                await JobLoop(job, runContinuously, sleepDuration.Value, reinitializeAfterSeconds, jobArgsDictionary);
             }
             catch (Exception ex)
             {
@@ -123,22 +133,34 @@ namespace NuGet.Jobs
                 $"'{milliSeconds:F3}' ms (or '{seconds:F3}' seconds or '{minutes:F3}' mins)";
         }
 
-        private static async Task JobLoop(JobBase job, bool runContinuously, int sleepDuration, IDictionary<string, string> jobArgsDictionary)
+        private static async Task JobLoop(
+            JobBase job,
+            bool runContinuously,
+            int sleepDuration,
+            int? reinitializeAfterSeconds,
+            IDictionary<string, string> jobArgsDictionary)
         {
             // Run the job now
             var stopWatch = new Stopwatch();
+            Stopwatch timeSinceInitialization = null;
 
             while (true)
             {
                 _logger.LogInformation("Running {RunType}", (runContinuously ? " continuously..." : " once..."));
                 _logger.LogInformation("SleepDuration is {SleepDuration}", PrettyPrintTime(sleepDuration));
                 _logger.LogInformation("Job run started...");
-                
+
                 var initialized = false;
                 stopWatch.Restart();
+
                 try
                 {
-                    job.Init(jobArgsDictionary);
+                    if (ShouldInitialize(reinitializeAfterSeconds, timeSinceInitialization))
+                    {
+                        job.Init(ServiceContainer, jobArgsDictionary);
+                        timeSinceInitialization = Stopwatch.StartNew();
+                    }
+
                     initialized = true;
 
                     await job.Run();
@@ -168,6 +190,24 @@ namespace NuGet.Jobs
                 
                 await Task.Delay(sleepDuration);
             }
+        }
+
+        private static bool ShouldInitialize(int? reinitializeAfterSeconds, Stopwatch timeSinceInitialization)
+        {
+            // If there is no wait time between reinitializations, always reinitialize.
+            if (!reinitializeAfterSeconds.HasValue)
+            {
+                return true;
+            }
+
+            // A null time since last initialization indicates that the job hasn't been initialized yet.
+            if (timeSinceInitialization == null)
+            {
+                return true;
+            }
+
+            // Otherwise, only reinitialize if the reinitialization threshold has been reached.
+            return (timeSinceInitialization.Elapsed.TotalSeconds > reinitializeAfterSeconds.Value);
         }
     }
 }

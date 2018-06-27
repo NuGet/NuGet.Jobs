@@ -4,7 +4,7 @@
       {
         "name": "VcsValidator",
         "TrackAfter": "1:00:00:00",
-        "requiredValidations": [],
+        "requiredValidations": [ "PackageSigningValidator" ],
         "ShouldStart": true,
         "FailureBehavior": "MustSucceed"
       },
@@ -16,9 +16,16 @@
         "FailureBehavior": "MustSucceed"
       },
       {
-        "name": "PackageCertificatesValidator",
+        "name": "PackageSigningValidator2",
         "TrackAfter": "00:10:00",
         "requiredValidations": [ "PackageSigningValidator" ],
+        "ShouldStart": true,
+        "FailureBehavior": "AllowedToFail"
+      },
+      {
+        "name": "PackageCertificatesValidator",
+        "TrackAfter": "00:10:00",
+        "requiredValidations": [ "PackageSigningValidator2" ],
         "ShouldStart": true,
         "FailureBehavior": "MustSucceed"
       }
@@ -58,6 +65,24 @@
       "SubscriptionName": ""
     },
     "MessageDelay": "00:00:05"
+  },
+  "ScanAndSign": {
+    "ServiceBus": {
+      "ConnectionString": "",
+      "TopicPath": "",
+      "SubscriptionName": ""
+    },
+    "PackageCriteria": {
+      "ExcludeOwners": [
+        "NugetTestAccount"
+      ],
+      "IncludeIdPatterns": [
+        "E2E.SemVer1Stable.*"
+      ]
+    },
+    "MessageDelay": "00:00:05",
+    "RepositorySigningEnabled": false,
+    "V3ServiceIndexUrl": "https://api.nuget.org/v3/index.json"
   },
   "RunnerConfiguration": {
     "ProcessRecycleInterval": "1:00:00:00",

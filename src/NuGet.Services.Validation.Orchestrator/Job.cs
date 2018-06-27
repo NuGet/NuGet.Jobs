@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -17,19 +19,26 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
+using NuGetGallery;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
+using NuGet.Jobs.Validation.ScanAndSign;
+using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
+using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
+using NuGet.Services.Sql;
+using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
-using NuGet.Services.Validation.PackageCertificates;
-using NuGet.Services.Validation.PackageSigning;
+using NuGet.Services.Validation.PackageSigning.ProcessSignature;
+using NuGet.Services.Validation.PackageSigning.ValidateCertificate;
 using NuGet.Services.Validation.Vcs;
+using NuGetGallery.Diagnostics;
 using NuGetGallery.Services;
 
 namespace NuGet.Services.Validation.Orchestrator
@@ -43,6 +52,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string VcsSectionName = "Vcs";
         private const string PackageSigningSectionName = "PackageSigning";
         private const string PackageCertificatesSectionName = "PackageCertificates";
+        private const string ScanAndSignSectionName = "ScanAndSign";
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
@@ -53,8 +63,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
-        private const string PackageSigningBindingKey = PackageSigningSectionName;
+        private const string PackageSignatureBindingKey = PackageSigningSectionName;
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
+        private const string ScanAndSignBindingKey = ScanAndSignSectionName;
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
 
@@ -68,11 +79,14 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         public bool ConfigurationValidated { get; set; }
 
-        public override void Init(IDictionary<string, string> jobArgsDictionary)
+        public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
             _validateOnly = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, ValidateArgument, defaultValue: false);
-            _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename, _validateOnly));
+
+            var configurationRoot = GetConfigurationRoot(configurationFilename, _validateOnly, out var secretInjector);
+            _serviceProvider = GetServiceProvider(configurationRoot, secretInjector);
+
             ConfigurationValidated = false;
         }
 
@@ -92,7 +106,7 @@ namespace NuGet.Services.Validation.Orchestrator
             await runner.RunOrchestrationAsync();
         }
 
-        private IConfigurationRoot GetConfigurationRoot(string configurationFilename, bool validateOnly)
+        private IConfigurationRoot GetConfigurationRoot(string configurationFilename, bool validateOnly, out ISecretInjector secretInjector)
         {
             Logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
             var builder = new ConfigurationBuilder()
@@ -101,6 +115,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             var uninjectedConfiguration = builder.Build();
 
+            secretInjector = null;
             if (validateOnly)
             {
                 // don't try to access KeyVault if only validation is requested:
@@ -111,7 +126,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             var secretReaderFactory = new ConfigurationRootSecretReaderFactory(uninjectedConfiguration);
             var cachingSecretReaderFactory = new CachingSecretReaderFactory(secretReaderFactory, KeyVaultSecretCachingTimeout);
-            var secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
+            secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
 
             builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
@@ -120,9 +135,14 @@ namespace NuGet.Services.Validation.Orchestrator
             return builder.Build();
         }
 
-        private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot)
+        private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot, ISecretInjector secretInjector)
         {
             var services = new ServiceCollection();
+            if (!_validateOnly)
+            {
+                services.AddSingleton(secretInjector);
+            }
+
             ConfigureLibraries(services);
             ConfigureJobServices(services, configurationRoot);
 
@@ -138,34 +158,48 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddLogging();
         }
 
+        private DbConnection CreateDbConnection<T>(IServiceProvider serviceProvider) where T : IDbConfiguration
+        {
+            var connectionString = serviceProvider.GetRequiredService<IOptionsSnapshot<T>>().Value.ConnectionString;
+            var connectionFactory = new AzureSqlConnectionFactory(connectionString,
+                serviceProvider.GetRequiredService<ISecretInjector>());
+
+            return Task.Run(() => connectionFactory.CreateAsync()).Result;
+        }
+
         private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<VcsConfiguration>(configurationRoot.GetSection(VcsSectionName));
-            services.Configure<PackageSigningConfiguration>(configurationRoot.GetSection(PackageSigningSectionName));
-            services.Configure<PackageCertificatesConfiguration>(configurationRoot.GetSection(PackageCertificatesSectionName));
+            services.Configure<ProcessSignatureConfiguration>(configurationRoot.GetSection(PackageSigningSectionName));
+            services.Configure<ValidateCertificateConfiguration>(configurationRoot.GetSection(PackageCertificatesSectionName));
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
             services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
             services.Configure<SmtpConfiguration>(configurationRoot.GetSection(SmtpConfigurationSectionName));
             services.Configure<EmailConfiguration>(configurationRoot.GetSection(EmailConfigurationSectionName));
+            services.Configure<ScanAndSignConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
+            services.Configure<ScanAndSignEnqueuerConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
 
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
 
             services.AddScoped<NuGetGallery.IEntitiesContext>(serviceProvider =>
                 new NuGetGallery.EntitiesContext(
-                    serviceProvider.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value.ConnectionString,
-                    readOnly: false));
+                    CreateDbConnection<GalleryDbConfiguration>(serviceProvider),
+                    readOnly: false)
+                    );
             services.AddScoped(serviceProvider =>
                 new ValidationEntitiesContext(
-                    serviceProvider.GetRequiredService<IOptionsSnapshot<ValidationDbConfiguration>>().Value.ConnectionString));
+                    CreateDbConnection<ValidationDbConfiguration>(serviceProvider)));
+
             services.AddScoped<IValidationEntitiesContext>(serviceProvider =>
                 serviceProvider.GetRequiredService<ValidationEntitiesContext>());
             services.AddScoped<IValidationStorageService, ValidationStorageService>();
             services.Add(ServiceDescriptor.Transient(typeof(NuGetGallery.IEntityRepository<>), typeof(NuGetGallery.EntityRepository<>)));
             services.AddTransient<NuGetGallery.ICorePackageService, NuGetGallery.CorePackageService>();
+            services.AddTransient<IEntityService<Package>, PackageEntityService>();
             services.AddTransient<ISubscriptionClient>(serviceProvider =>
             {
                 var configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<ServiceBusConfiguration>>().Value;
@@ -178,13 +212,13 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
             services.AddTransient<IValidatorProvider, ValidatorProvider>();
-            services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
-            services.AddTransient<IMessageHandler<PackageValidationMessageData>, ValidationMessageHandler>();
+            services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
+            services.AddTransient<IMessageHandler<PackageValidationMessageData>, PackageValidationMessageHandler>();
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
-            services.AddTransient<IPackageCriteriaEvaluator, PackageCriteriaEvaluator>();
+            services.AddTransient<ICriteriaEvaluator<Package>, PackageCriteriaEvaluator>();
             services.AddTransient<VcsValidator>();
-            services.AddTransient<IPackageSignatureVerificationEnqueuer, PackageSignatureVerificationEnqueuer>();
+            services.AddTransient<IProcessSignatureEnqueuer, ProcessSignatureEnqueuer>();
             services.AddTransient<NuGetGallery.ICloudBlobClient>(c =>
                 {
                     var configurationAccessor = c.GetRequiredService<IOptionsSnapshot<ValidationConfiguration>>();
@@ -193,15 +227,19 @@ namespace NuGet.Services.Validation.Orchestrator
                         readAccessGeoRedundant: false);
                 });
             services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
-            services.AddTransient<IValidationPackageFileService, ValidationPackageFileService>();
-            services.AddTransient<IPackageDownloader, PackageDownloader>();
-            services.AddTransient<IPackageStatusProcessor, PackageStatusProcessor>();
-            services.AddTransient<IValidationSetProvider, ValidationSetProvider>();
+            services.AddTransient<IValidationFileServiceMetadata, PackageValidationFileServiceMetadata>();
+            services.AddTransient<IValidationFileService, ValidationFileService>();
+            services.AddTransient<IFileDownloader, PackageDownloader>();
+            services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
+            services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
             services.AddTransient<IValidationSetProcessor, ValidationSetProcessor>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
+            services.AddTransient<IBrokeredMessageSerializer<ScanAndSignMessage>, ScanAndSignMessageSerializer>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
-            services.AddTransient<PackageSigningValidator>();
+            services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
+            services.AddTransient<PackageSignatureProcessor>();
+            services.AddTransient<PackageSignatureValidator>();
             services.AddTransient<MailSenderConfiguration>(serviceProvider =>
             {
                 var smtpConfigurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<SmtpConfiguration>>();
@@ -232,11 +270,13 @@ namespace NuGet.Services.Validation.Orchestrator
             });
             services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
             services.AddTransient<ICoreMessageService, CoreMessageService>();
-            services.AddTransient<IMessageService, MessageService>();
+            services.AddTransient<IMessageService<Package>, PackageMessageService>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
+            services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
             services.AddSingleton(new TelemetryClient());
-            services.AddTransient<IValidationOutcomeProcessor, ValidationOutcomeProcessor>();
+            services.AddTransient<IValidationOutcomeProcessor<Package>, ValidationOutcomeProcessor<Package>>();
             services.AddSingleton(p =>
             {
                 var assembly = Assembly.GetEntryAssembly();
@@ -298,7 +338,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .As<IPackageValidationAuditor>();
 
             containerBuilder
-                .RegisterType<PackageSignatureVerificationEnqueuer>()
+                .RegisterType<ProcessSignatureEnqueuer>()
                 .WithParameter(new ResolvedParameter(
                     (pi, ctx) => pi.ParameterType == typeof(ITopicClient),
                     (pi, ctx) => ctx.ResolveKeyed<TopicClientWrapper>(PackageVerificationTopicClientBindingKey)))
@@ -306,7 +346,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     (pi, ctx) => pi.ParameterType == typeof(IBrokeredMessageSerializer<SignatureValidationMessage>),
                     (pi, ctx) => ctx.Resolve<SignatureValidationMessageSerializer>()
                     ))
-                .As<IPackageSignatureVerificationEnqueuer>();
+                .As<IProcessSignatureEnqueuer>();
 
             containerBuilder
                 .RegisterType<ScopedMessageHandler<PackageValidationMessageData>>()
@@ -319,42 +359,50 @@ namespace NuGet.Services.Validation.Orchestrator
                     IMessageHandler<PackageValidationMessageData>>(
                         OrchestratorBindingKey);
 
-            ConfigurePackageSigningValidator(containerBuilder);
+            ConfigurePackageSigningValidators(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
+            ConfigureScanAndSignProcessor(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
 
-        private static void ConfigurePackageSigningValidator(ContainerBuilder builder)
+        private static void ConfigurePackageSigningValidators(ContainerBuilder builder)
         {
             // Configure the validator state service for the package certificates validator.
             builder
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(Type),
-                    (pi, ctx) => typeof(PackageSigningValidator))
-                .Keyed<IValidatorStateService>(PackageSigningBindingKey);
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.PackageSignatureProcessor)
+                .Keyed<IValidatorStateService>(PackageSignatureBindingKey);
 
             // Configure the package signature verification enqueuer.
             builder
                 .Register(c =>
                 {
-                    var configuration = c.Resolve<IOptionsSnapshot<PackageSigningConfiguration>>().Value.ServiceBus;
+                    var configuration = c.Resolve<IOptionsSnapshot<ProcessSignatureConfiguration>>().Value.ServiceBus;
 
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
-                .Keyed<ITopicClient>(PackageSigningBindingKey);
+                .Keyed<ITopicClient>(PackageSignatureBindingKey);
 
             builder
-                .RegisterType<PackageSignatureVerificationEnqueuer>()
-                .WithKeyedParameter(typeof(ITopicClient), PackageSigningBindingKey)
-                .As<IPackageSignatureVerificationEnqueuer>();
+                .RegisterType<ProcessSignatureEnqueuer>()
+                .WithKeyedParameter(typeof(ITopicClient), PackageSignatureBindingKey)
+                .As<IProcessSignatureEnqueuer>();
 
-            // Configure the package signing validator.
+            // Configure the package signature validators. The processor runs before packages are
+            // repository signed and can strip unacceptable repository signatures. The validator
+            // runs after packages are repository signed.
             builder
-                .RegisterType<PackageSigningValidator>()
-                .WithKeyedParameter(typeof(IValidatorStateService), PackageSigningBindingKey)
-                .As<PackageSigningValidator>();
+                .RegisterType<PackageSignatureProcessor>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSignatureBindingKey)
+                .As<PackageSignatureProcessor>();
+
+            builder
+                .RegisterType<PackageSignatureValidator>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSignatureBindingKey)
+                .As<PackageSignatureValidator>();
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)
@@ -363,24 +411,24 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(Type),
-                    (pi, ctx) => typeof(PackageCertificatesValidator))
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.PackageCertificate)
                 .Keyed<IValidatorStateService>(PackageCertificatesBindingKey);
 
             // Configure the certificate verification enqueuer.
             builder
                 .Register(c =>
                 {
-                    var configuration = c.Resolve<IOptionsSnapshot<PackageCertificatesConfiguration>>().Value.ServiceBus;
+                    var configuration = c.Resolve<IOptionsSnapshot<ValidateCertificateConfiguration>>().Value.ServiceBus;
 
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
                 .Keyed<ITopicClient>(PackageCertificatesBindingKey);
 
             builder
-                .RegisterType<CertificateVerificationEnqueuer>()
+                .RegisterType<ValidateCertificateEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), PackageCertificatesBindingKey)
-                .As<ICertificateVerificationEnqueuer>();
+                .As<IValidateCertificateEnqueuer>();
 
             // Configure the certificates validator.
             builder
@@ -388,8 +436,36 @@ namespace NuGet.Services.Validation.Orchestrator
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageCertificatesBindingKey)
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(TimeSpan?),
-                    (pi, ctx) => ctx.Resolve<IOptionsSnapshot<PackageCertificatesConfiguration>>().Value.CertificateRevalidationThreshold)
+                    (pi, ctx) => ctx.Resolve<IOptionsSnapshot<ValidateCertificateConfiguration>>().Value.CertificateRevalidationThreshold)
                 .As<PackageCertificatesValidator>();
+        }
+
+        private static void ConfigureScanAndSignProcessor(ContainerBuilder builder)
+        {
+            builder
+                .Register(c =>
+                {
+                    var configuration = c.Resolve<IOptionsSnapshot<ScanAndSignConfiguration>>().Value.ServiceBus;
+                    return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+                })
+                .Keyed<ITopicClient>(ScanAndSignBindingKey);
+
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.ScanAndSign)
+                .Keyed<IValidatorStateService>(ScanAndSignBindingKey);
+
+            builder
+                .RegisterType<ScanAndSignEnqueuer>()
+                .WithKeyedParameter(typeof(ITopicClient), ScanAndSignBindingKey)
+                .As<IScanAndSignEnqueuer>();
+
+            builder
+                .RegisterType<ScanAndSignProcessor>()
+                .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
+                .AsSelf();
         }
 
         private T GetRequiredService<T>()

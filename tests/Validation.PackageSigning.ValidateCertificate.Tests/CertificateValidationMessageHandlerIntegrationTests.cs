@@ -11,7 +11,7 @@ using Moq;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Services.Validation;
-using Validation.PackageSigning.Helpers;
+using Tests.ContextHelpers;
 using Validation.PackageSigning.ValidateCertificate.Tests.Support;
 using Xunit;
 
@@ -72,9 +72,21 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
             var packageSigningState2 = new PackageSigningState { SigningStatus = PackageSigningStatus.Valid };
             var packageSigningState3 = new PackageSigningState { SigningStatus = PackageSigningStatus.Valid };
 
-            var signatureAtIngestion = new PackageSignature { Status = PackageSignatureStatus.Unknown };
-            var signatureInGracePeriod = new PackageSignature { Status = PackageSignatureStatus.InGracePeriod };
-            var signatureAfterGracePeriod = new PackageSignature { Status = PackageSignatureStatus.Valid };
+            var signatureAtIngestion = new PackageSignature
+            {
+                Status = PackageSignatureStatus.Unknown,
+                Type = PackageSignatureType.Author,
+            };
+            var signatureInGracePeriod = new PackageSignature
+            {
+                Status = PackageSignatureStatus.InGracePeriod,
+                Type = PackageSignatureType.Author,
+            };
+            var signatureAfterGracePeriod = new PackageSignature
+            {
+                Status = PackageSignatureStatus.Valid,
+                Type = PackageSignatureType.Author,
+            };
 
             var trustedTimestamp1 = new TrustedTimestamp { Status = TrustedTimestampStatus.Valid, Value = signatureTime };
             var trustedTimestamp2 = new TrustedTimestamp { Status = TrustedTimestampStatus.Valid, Value = signatureTime };
@@ -212,9 +224,21 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
 
             var packageSigningState = new PackageSigningState { SigningStatus = PackageSigningStatus.Valid };
 
-            var signatureAtIngestion = new PackageSignature { Status = PackageSignatureStatus.Unknown };
-            var signatureInGracePeriod = new PackageSignature { Status = PackageSignatureStatus.InGracePeriod };
-            var signatureAfterGracePeriod = new PackageSignature { Status = PackageSignatureStatus.Valid };
+            var signatureAtIngestion = new PackageSignature
+            {
+                Status = PackageSignatureStatus.Unknown,
+                Type = PackageSignatureType.Author,
+            };
+            var signatureInGracePeriod = new PackageSignature
+            {
+                Status = PackageSignatureStatus.InGracePeriod,
+                Type = PackageSignatureType.Author,
+            };
+            var signatureAfterGracePeriod = new PackageSignature
+            {
+                Status = PackageSignatureStatus.Valid,
+                Type = PackageSignatureType.Author,
+            };
 
             var endCertificate = new EndCertificate
             {
