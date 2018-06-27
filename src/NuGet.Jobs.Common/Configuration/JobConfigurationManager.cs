@@ -147,6 +147,13 @@ namespace NuGet.Jobs
             return null;
         }
 
+        public static T TryGetEnumArgument<T>(IDictionary<string, string> jobArgsDictionary, string argName, T defaultValue)
+            where T : struct
+        {
+            var argumentString = TryGetArgument(jobArgsDictionary, argName);
+            return !string.IsNullOrEmpty(argumentString) && Enum.TryParse(argumentString, out T result) ? result : defaultValue;
+        }
+
         private static Dictionary<string, string> ReadCommandLineArguments(ILogger logger, string[] commandLineArgs)
         {
             var argsDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
