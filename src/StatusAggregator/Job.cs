@@ -149,7 +149,7 @@ namespace StatusAggregator
                     ? creationTimesPerPath[eventToCheckClosure.AffectedComponentPath]
                     : minCreationTime;
 
-                await CheckEventForClosure(eventToCheckClosure, nextCreationTime);
+                await UpdateEventAndCheckForClosure(eventToCheckClosure, nextCreationTime);
             }
 
             // Aggregate the new incidents and create new events if necessary.
@@ -186,7 +186,7 @@ namespace StatusAggregator
                                 continue;
                             }
                             
-                            if (await CheckEventForClosure(possibleEvent, parsedIncident.CreationTime))
+                            if (await UpdateEventAndCheckForClosure(possibleEvent, parsedIncident.CreationTime))
                             {
                                 Console.WriteLine($"Cannot link {parsedIncident.Id} to {possibleEvent.RowKey} because its incidents are inactive and too old");
                                 continue;
@@ -220,31 +220,74 @@ namespace StatusAggregator
             }
         }
 
-        private async Task<bool> CheckEventForClosure(EventEntity eventEntity, DateTime nextCreationTime)
+        private async Task<bool> UpdateEventAndCheckForClosure(EventEntity eventEntity, DateTime nextCreationTime)
         {
             if (!eventEntity.IsActive)
             {
+                // Inactive events have already been closed.
                 return false;
             }
 
             var incidentsLinkedToEventToClose = GetIncidentsLinkedToEvent(eventEntity);
 
+            if (!incidentsLinkedToEventToClose.ToList().Any())
+            {
+                // If an event has no linked incidents it must have been created manually and should not be closed automatically.
+                return false;
+            }
+
             var shouldClose = !incidentsLinkedToEventToClose
-                    .Where(i => i.IsActive || i.MitigationTime >= nextCreationTime - EventEndDelay)
+                    .Where(i => i.IsActive || i.MitigationTime > nextCreationTime - EventEndDelay)
                     .ToList()
                     .Any();
 
             if (shouldClose)
             {
                 Console.WriteLine($"Closing {eventEntity.RowKey} because its incidents are inactive and too old");
-                eventEntity.EndTime = incidentsLinkedToEventToClose
+                var mitigationTime = incidentsLinkedToEventToClose
                     .ToList()
-                    .Max(i => i.MitigationTime);
+                    .Max(i => i.MitigationTime ?? DateTime.MinValue);
+
+                await CreateMessageForEventStartIfTimeHasPassed(eventEntity, mitigationTime);
+
+                // Create a message to alert customers that the event is resolved.
+                // Only create a message if the event already has messages associated with it.
+                var messagesForEvent = _table
+                    .CreateQuery<MessageEntity>()
+                    .AsQueryable()
+                    .Where(m =>
+                        m.PartitionKey == MessageEntity.DefaultPartitionKey &&
+                        m.EventRowKey == eventEntity.RowKey)
+                    .ToList();
+
+                if (messagesForEvent.Any())
+                {
+                    var messageEntity = new MessageEntity(eventEntity, mitigationTime, "NO LONGER IMPACTED");
+                    var messageOperation = TableOperation.InsertOrReplace(messageEntity);
+                    await _table.ExecuteAsync(messageOperation);
+                }
+
+                // Update the event
+                eventEntity.EndTime = mitigationTime;
                 var eventOperation = TableOperation.InsertOrReplace(eventEntity);
                 await _table.ExecuteAsync(eventOperation);
             }
+            else
+            {
+                await CreateMessageForEventStartIfTimeHasPassed(eventEntity, nextCreationTime);
+            }
 
             return shouldClose;
+        }
+
+        private async Task CreateMessageForEventStartIfTimeHasPassed(EventEntity eventEntity, DateTime currentTime)
+        {
+            if (currentTime > eventEntity.StartTime + EventStartDelay)
+            {
+                var messageEntity = new MessageEntity(eventEntity, eventEntity.StartTime, "WE ARE IMPACTED");
+                var messageOperation = TableOperation.InsertOrReplace(messageEntity);
+                await _table.ExecuteAsync(messageOperation);
+            }
         }
 
         private IQueryable<IncidentEntity> GetIncidentsLinkedToEvent(EventEntity eventEntity)
