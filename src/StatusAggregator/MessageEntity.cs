@@ -11,17 +11,17 @@ namespace StatusAggregator
         {
         }
 
-        public MessageEntity(EventEntity eventEntity, DateTime time, string message)
+        public MessageEntity(EventEntity eventEntity, DateTime time, string contents)
             : base(DefaultPartitionKey, GetRowKey(eventEntity, time))
         {
             EventRowKey = eventEntity.RowKey;
             Time = time;
-            Message = message;
+            Contents = contents;
         }
 
         public string EventRowKey { get; set; }
         public DateTime Time { get; set; }
-        public string Message { get; set; }
+        public string Contents { get; set; }
 
         private static string GetRowKey(EventEntity eventEntity, DateTime time)
         {

@@ -29,7 +29,7 @@ namespace StatusAggregator
                 return false;
             }
 
-            parsedIncident = new ParsedIncident(incident, "Publishing", ComponentStatus.Degraded);
+            parsedIncident = new ParsedIncident(incident, $"NuGet{Component.ComponentPathDivider}Package Publishing", ComponentStatus.Degraded);
             return true;
         }
 

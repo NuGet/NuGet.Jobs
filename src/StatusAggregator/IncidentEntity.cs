@@ -40,7 +40,7 @@ namespace StatusAggregator
 
         private static string GetRowKey(ParsedIncident parsedIncident)
         {
-            return $"{parsedIncident.Id}_{parsedIncident.AffectedComponentPath}_{parsedIncident.AffectedComponentStatus}";
+            return $"{parsedIncident.Id}_{Component.ToRowKeySafeComponentPath(parsedIncident.AffectedComponentPath)}_{parsedIncident.AffectedComponentStatus}";
         }
     }
 }

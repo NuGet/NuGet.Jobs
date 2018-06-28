@@ -13,6 +13,7 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NuGet.Jobs;
 using NuGet.Services.KeyVault;
 
@@ -24,6 +25,7 @@ namespace StatusAggregator
 
         private static TimeSpan EventStartDelay = TimeSpan.FromMinutes(15);
         private static TimeSpan EventEndDelay = TimeSpan.FromMinutes(10);
+        private static TimeSpan EventVisibilityPeriod = TimeSpan.FromDays(7);
 
         private CloudBlobContainer _container;
         private CloudTable _table;
@@ -69,14 +71,14 @@ namespace StatusAggregator
 
         public override async Task Run()
         {
-            // await _container.CreateIfNotExistsAsync();
-            await _table.CreateIfNotExistsAsync();
-
-            await AggregateEvents();
+            await AggregateData();
+            await ExportData();
         }
 
-        private async Task AggregateEvents()
+        private async Task AggregateData()
         {
+            await _table.CreateIfNotExistsAsync();
+
             // Check the status of any active incidents.
             var activeIncidentEntities = _table
                 .CreateQuery<IncidentEntity>()
@@ -138,11 +140,7 @@ namespace StatusAggregator
                 ? creationTimesPerPath.Min(t => t.Value) 
                 : new[] { nextCursor, DateTime.UtcNow }.Max();
 
-            var eventsToCheckClosure = _table
-                .CreateQuery<EventEntity>()
-                .AsQueryable()
-                .Where(e => e.PartitionKey == EventEntity.DefaultPartitionKey && e.IsActive);
-
+            var eventsToCheckClosure = GetActiveEvents();
             foreach (var eventToCheckClosure in eventsToCheckClosure)
             {
                 var nextCreationTime = creationTimesPerPath.ContainsKey(eventToCheckClosure.AffectedComponentPath)
@@ -220,6 +218,120 @@ namespace StatusAggregator
             }
         }
 
+        private static readonly JsonSerializerSettings _statusBlobJsonSerializerSettings = new JsonSerializerSettings()
+        {
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+            Converters = new List<JsonConverter>() { new StringEnumConverter() }
+        };
+
+        private async Task ExportData()
+        {
+            await _container.CreateIfNotExistsAsync();
+
+            var rootComponent = SetupRootComponent();
+
+            var activeEvents = GetActiveEvents();
+            foreach (var activeEvent in activeEvents)
+            {
+                var componentPathParts = activeEvent.AffectedComponentPath.Split(Component.ComponentPathDivider);
+
+                var currentComponent = new Component("", "", new[] { rootComponent });
+                foreach (var componentPathPart in componentPathParts)
+                {
+                    currentComponent = currentComponent.SubComponents.FirstOrDefault(c => c.Name == componentPathPart);
+
+                    if (currentComponent == null)
+                    {
+                        break;
+                    }
+                }
+
+                if (currentComponent == null)
+                {
+                    continue;
+                }
+
+                currentComponent.Status = activeEvent.AffectedComponentStatus;
+            }
+
+            var recentEvents = _table
+                .CreateQuery<EventEntity>()
+                .AsQueryable()
+                .Where(e => 
+                    e.PartitionKey == EventEntity.DefaultPartitionKey && 
+                    (e.IsActive || (e.EndTime >= DateTime.Now - EventVisibilityPeriod)))
+                .ToList()
+                .Select(e =>
+                {
+                    var messages = GetMessagesLinkedToEvent(e)
+                        .ToList()
+                        .Select(m => new Message(m));
+                    return new Event(e, messages);
+                });
+
+            var status = new Status(rootComponent, recentEvents);
+            var statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
+
+            var blob = _container.GetBlockBlobReference(StatusBlobName);
+            await blob.UploadTextAsync(statusJson);
+        }
+
+        private Component SetupRootComponent()
+        {
+            return new Component(
+                "NuGet", 
+                "", 
+                new[] 
+                {
+                    new Component(
+                        "NuGet.org", 
+                        "Browsing the Gallery website", 
+                        new[] 
+                        {
+                            new Component("USNC", "Primary region"),
+                            new Component("USSC", "Backup region")
+                        }),
+                    new Component(
+                        "Restore", 
+                        "Downloading and installing packages from NuGet", 
+                        new[] 
+                        {
+                            new Component(
+                                "V3", 
+                                "Restore using the V3 API", 
+                                new[] 
+                                {
+                                    new Component("Global", "V3 restore for users outside of China"),
+                                    new Component("China", "V3 restore for users inside China")
+                                }),
+                            new Component("V2", "Restore using the V2 API")
+                        }),
+                    new Component(
+                        "Search", 
+                        "Searching for new and existing packages in Visual Studio or the Gallery website", 
+                        new[] 
+                        {
+                            new Component(
+                                "Global", 
+                                "Search for packages outside Asia", 
+                                new[] 
+                                {
+                                    new Component("USNC", "Primary region"),
+                                    new Component("USSC", "Backup region")
+                                }),
+                            new Component(
+                                "Asia", 
+                                "Search for packages inside Asia", 
+                                new[] 
+                                {
+                                    new Component("EA", "Primary region"),
+                                    new Component("SEA", "Backup region")
+                                })
+                        }),
+                    new Component("Package Publishing", "Uploading new packages to NuGet.org")
+                });
+        }
+
         private async Task<bool> UpdateEventAndCheckForClosure(EventEntity eventEntity, DateTime nextCreationTime)
         {
             if (!eventEntity.IsActive)
@@ -252,15 +364,7 @@ namespace StatusAggregator
 
                 // Create a message to alert customers that the event is resolved.
                 // Only create a message if the event already has messages associated with it.
-                var messagesForEvent = _table
-                    .CreateQuery<MessageEntity>()
-                    .AsQueryable()
-                    .Where(m =>
-                        m.PartitionKey == MessageEntity.DefaultPartitionKey &&
-                        m.EventRowKey == eventEntity.RowKey)
-                    .ToList();
-
-                if (messagesForEvent.Any())
+                if (GetMessagesLinkedToEvent(eventEntity).ToList().Any())
                 {
                     var messageEntity = new MessageEntity(eventEntity, mitigationTime, "NO LONGER IMPACTED");
                     var messageOperation = TableOperation.InsertOrReplace(messageEntity);
@@ -290,6 +394,14 @@ namespace StatusAggregator
             }
         }
 
+        private IQueryable<EventEntity> GetActiveEvents()
+        {
+            return _table
+                .CreateQuery<EventEntity>()
+                .AsQueryable()
+                .Where(e => e.PartitionKey == EventEntity.DefaultPartitionKey && e.IsActive);
+        }
+
         private IQueryable<IncidentEntity> GetIncidentsLinkedToEvent(EventEntity eventEntity)
         {
             return _table
@@ -299,6 +411,16 @@ namespace StatusAggregator
                     i.PartitionKey == IncidentEntity.DefaultPartitionKey &&
                     i.IsLinkedToEvent &&
                     i.EventRowKey == eventEntity.RowKey);
+        }
+
+        private IQueryable<MessageEntity> GetMessagesLinkedToEvent(EventEntity eventEntity)
+        {
+            return _table
+                .CreateQuery<MessageEntity>()
+                .AsQueryable()
+                .Where(m =>
+                    m.PartitionKey == MessageEntity.DefaultPartitionKey &&
+                    m.EventRowKey == eventEntity.RowKey);
         }
 
         private DateTime GetCursor()
@@ -319,7 +441,7 @@ namespace StatusAggregator
         private static readonly string IncidentApiIndividualIncidentQueryFormatString = $"{IncidentApiIncidentsEndpoint}({{0}})";
         private static readonly string IncidentApiIncidentListQueryFormatString = $"{IncidentApiIncidentsEndpoint}?{{0}}";
 
-        private static JsonSerializerSettings _incidentApiJsonSerializerSettings = new JsonSerializerSettings() { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
+        private static readonly JsonSerializerSettings _incidentApiJsonSerializerSettings = new JsonSerializerSettings() { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
         
         private string GetIncidentApiIncidentList(string oDataQueryParameters)
         {

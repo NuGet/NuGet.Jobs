@@ -32,7 +32,7 @@ namespace StatusAggregator
 
         private static string GetRowKey(IncidentEntity incidentEntity)
         {
-            return $"{incidentEntity.AffectedComponentPath}_{incidentEntity.CreationTime.ToString("o")}";
+            return $"{Component.ToRowKeySafeComponentPath(incidentEntity.AffectedComponentPath)}_{incidentEntity.CreationTime.ToString("o")}";
         }
     }
 }
