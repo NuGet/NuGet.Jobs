@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Autofac;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.ServiceBus;
@@ -32,6 +33,22 @@ namespace NuGet.Jobs.Validation
                     "Failed to gracefully shutdown Service Bus subscription processor. {MessagesInProgress} messages left",
                     processor.NumberOfMessagesInProgress);
             }
+        }
+
+        internal override void ConfigureAutofacServicesInternal(ContainerBuilder containerBuilder)
+        {
+            const string validateCertificateBindingKey = "SubscriptionProcessorJob_SubscriptionProcessorKey";
+
+            containerBuilder
+                .RegisterType<ScopedMessageHandler<T>>()
+                .Keyed<IMessageHandler<T>>(validateCertificateBindingKey);
+
+            containerBuilder
+                .RegisterType<SubscriptionProcessor<T>>()
+                .WithParameter(
+                    (parameter, context) => parameter.ParameterType == typeof(IMessageHandler<T>),
+                    (parameter, context) => context.ResolveKeyed(validateCertificateBindingKey, typeof(IMessageHandler<T>)))
+                .As<ISubscriptionProcessor<T>>();
         }
     }
 }

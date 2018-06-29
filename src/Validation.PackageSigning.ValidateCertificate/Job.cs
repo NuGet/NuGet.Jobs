@@ -44,22 +44,5 @@ namespace Validation.PackageSigning.ValidateCertificate
             services.AddTransient<ITelemetryService, TelemetryService>();
             services.AddSingleton(new TelemetryClient());
         }
-
-        protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
-        {
-            const string validateCertificateBindingKey = "ValidateCertificateKey";
-            var certificateValidationMessageHandlerType = typeof(IMessageHandler<CertificateValidationMessage>);
-
-            containerBuilder
-                .RegisterType<ScopedMessageHandler<CertificateValidationMessage>>()
-                .Keyed<IMessageHandler<CertificateValidationMessage>>(validateCertificateBindingKey);
-
-            containerBuilder
-                .RegisterType<SubscriptionProcessor<CertificateValidationMessage>>()
-                .WithParameter(
-                    (parameter, context) => parameter.ParameterType == certificateValidationMessageHandlerType,
-                    (parameter, context) => context.ResolveKeyed(validateCertificateBindingKey, certificateValidationMessageHandlerType))
-                .As<ISubscriptionProcessor<CertificateValidationMessage>>();
-        }
     }
 }

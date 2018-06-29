@@ -104,6 +104,7 @@ namespace NuGet.Jobs.Validation
             var containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(services);
 
+            ConfigureAutofacServicesInternal(containerBuilder);
             ConfigureAutofacServices(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
@@ -184,7 +185,12 @@ namespace NuGet.Jobs.Validation
             services.AddLogging();
         }
 
-        protected abstract void ConfigureAutofacServices(ContainerBuilder containerBuilder);
+        protected virtual void ConfigureAutofacServices(ContainerBuilder containerBuilder)
+        {
+        }
         protected abstract void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot);
+        internal virtual void ConfigureAutofacServicesInternal(ContainerBuilder containerBuilder)
+        {
+        }
     }
 }
