@@ -86,7 +86,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             if (validatorStatus.State != ValidationStatus.NotStarted)
             {
                 _logger.LogWarning(
-                    "Scan and Sign validation with validation Id {ValidationId} ({PackageId} {PackageVersion}) has already started.",
+                    "Scan only validation with validation Id {ValidationId} ({PackageId} {PackageVersion}) has already started.",
                     request.ValidationId,
                     request.PackageId,
                     request.PackageVersion);
