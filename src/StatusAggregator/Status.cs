@@ -9,7 +9,7 @@ namespace StatusAggregator
         {
         }
 
-        public Status(Component rootComponent, IEnumerable<Event> events)
+        public Status(IComponent rootComponent, IEnumerable<Event> events)
         {
             LastUpdated = DateTime.Now;
             RootComponent = rootComponent;
@@ -17,7 +17,7 @@ namespace StatusAggregator
         }
 
         public DateTime LastUpdated { get; set; }
-        public Component RootComponent { get; set; }
+        public IComponent RootComponent { get; set; }
         public IEnumerable<Event> Events { get; set; }
     }
 }

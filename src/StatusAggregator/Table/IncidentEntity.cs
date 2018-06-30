@@ -1,7 +1,8 @@
 ﻿using System;
 using Microsoft.WindowsAzure.Storage.Table;
+using StatusAggregator.Incidents.Parse;
 
-namespace StatusAggregator
+namespace StatusAggregator.Table
 {
     public class IncidentEntity : TableEntity
     {

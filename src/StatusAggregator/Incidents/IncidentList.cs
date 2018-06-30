@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace StatusAggregator
+namespace StatusAggregator.Incidents
 {
     public class IncidentList
     {

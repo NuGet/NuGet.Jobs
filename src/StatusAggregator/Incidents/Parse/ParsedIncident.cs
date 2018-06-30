@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace StatusAggregator
+namespace StatusAggregator.Incidents.Parse
 {
     public class ParsedIncident
     {

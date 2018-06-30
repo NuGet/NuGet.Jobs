@@ -4,18 +4,18 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NuGet.Jobs;
 using NuGet.Services.KeyVault;
+using StatusAggregator.Incidents;
+using StatusAggregator.Incidents.Parse;
+using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
@@ -28,12 +28,12 @@ namespace StatusAggregator
         private static TimeSpan EventVisibilityPeriod = TimeSpan.FromDays(7);
 
         private CloudBlobContainer _container;
-        private CloudTable _table;
-        
-        private Uri _incidentApiBaseUri;
-        private X509Certificate2 _incidentApiCertificate;
-        private string _incidentApiRoutingId;
-        private string _incidentApiEnvironment;
+        private ITableWrapper _table;
+
+        private ICursor _cursor;
+
+        private IIncidentCollector _incidentCollector;
+        private IEnumerable<IIncidentParser> _incidentParsers;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
@@ -44,13 +44,14 @@ namespace StatusAggregator
             var containerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusContainerName);
             _container = blobClient.GetContainerReference(containerName);
 
-            var tableClient = storageAccount.CreateCloudTableClient();
             var tableName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusTableName);
-            _table = tableClient.GetTableReference(tableName);
+            _table = new TableWrapper(storageAccount, tableName);
 
-            _incidentApiBaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri));
-            _incidentApiRoutingId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiRoutingId);
-            _incidentApiEnvironment = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiEnvironment);
+            _cursor = new Cursor(_table);
+
+            var incidentApiBaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri));
+            var incidentApiRoutingId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiRoutingId);
+            var incidentApiEnvironment = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiEnvironment);
             var incidentApiCertificateThumbprint = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificateThumbprint);
             var incidentApiCertificateStoreName = 
                 JobConfigurationManager.TryGetEnumArgument(
@@ -62,11 +63,13 @@ namespace StatusAggregator
                     jobArgsDictionary, 
                     JobArgumentNames.StatusIncidentApiCertificateStoreLocation, 
                     StoreLocation.LocalMachine);
-            _incidentApiCertificate = CertificateUtility.FindCertificateByThumbprint(
+            var incidentApiCertificate = CertificateUtility.FindCertificateByThumbprint(
                 incidentApiCertificateStoreName, 
                 incidentApiCertificateStoreLocation, 
                 incidentApiCertificateThumbprint, 
                 true);
+            _incidentCollector = new IncidentCollector(incidentApiBaseUri, incidentApiCertificate, incidentApiRoutingId);
+            _incidentParsers = GetIncidentParsers();
         }
 
         public override async Task Run()
@@ -82,54 +85,32 @@ namespace StatusAggregator
             // Check the status of any active incidents.
             var activeIncidentEntities = _table
                 .CreateQuery<IncidentEntity>()
-                .AsQueryable()
                 .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive);
 
             foreach (var activeIncidentEntity in activeIncidentEntities)
             {
-                var activeIncident = await GetIncident(activeIncidentEntity.IncidentApiId);
+                var activeIncident = await _incidentCollector.GetIncident(activeIncidentEntity.IncidentApiId);
                 activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
-                var incidentOperation = TableOperation.InsertOrReplace(activeIncidentEntity);
-                await _table.ExecuteAsync(incidentOperation);
+                await _table.InsertOrReplaceAsync(activeIncidentEntity);
             }
 
             // Fetch any new incidents.
-            var lastCursor = GetCursor();
-            var nextCursor = DateTime.MinValue;
+            var lastCursor = _cursor.Get();
             Console.WriteLine($"Read cursor at {lastCursor.ToString("o")}");
-            var incidentParsers = new IIncidentParser[] { new ValidationDurationIncidentParser("PROD"), new OutdatedSearchServiceInstanceIncidentParser("PROD") };
+
+            var incidents = await _incidentCollector.GetRecentIncidents(lastCursor);
+            var nextCursor = incidents.Any() ? incidents.Max(i => i.CreateDate) : lastCursor;
             var parsedIncidents = new List<ParsedIncident>();
-            string query = lastCursor == DateTime.MinValue
-                ? GetIncidentApiIncidentListAllIncidentsQuery()
-                : GetIncidentApiIncidentListRecentIncidentsQuery(lastCursor);
-            var nextLink = GetIncidentApiUri(GetIncidentApiIncidentList(query));
-            do
+            foreach (var incident in incidents)
             {
-                var incidents = await GetIncidentApiResponse<IncidentList>(nextLink);
-                foreach (var incident in incidents.Incidents)
+                foreach (var incidentParser in _incidentParsers)
                 {
-                    if (incident.CreateDate <= lastCursor)
+                    if (incidentParser.TryParseIncident(incident, out var parsedIncident))
                     {
-                        continue;
-                    }
-
-                    if (incident.CreateDate > nextCursor)
-                    {
-                        nextCursor = incident.CreateDate;
-                    }
-
-                    foreach (var incidentParser in incidentParsers)
-                    {
-                        if (incidentParser.TryParseIncident(incident, out var parsedIncident))
-                        {
-                            Console.WriteLine($"Found {parsedIncident.Id} affecting {parsedIncident.AffectedComponentPath} with status {parsedIncident.AffectedComponentStatus} from {parsedIncident.CreationTime} to {parsedIncident.MitigationTime}");
-                            parsedIncidents.Add(parsedIncident);
-                        }
+                        parsedIncidents.Add(parsedIncident);
                     }
                 }
-
-                nextLink = incidents.NextLink;
-            } while (nextLink != null);
+            }
 
             // Close any active events that no longer have any active incidents.
             var creationTimesPerPath = parsedIncidents
@@ -161,7 +142,6 @@ namespace StatusAggregator
                     // Find an event to attach this incident to
                     var possibleEvents = _table
                         .CreateQuery<EventEntity>()
-                        .AsQueryable()
                         .Where(e =>
                             e.PartitionKey == EventEntity.DefaultPartitionKey &&
                             // The incident and the event must affect the same component
@@ -200,22 +180,28 @@ namespace StatusAggregator
                     {
                         var eventEntity = new EventEntity(incidentEntity);
                         Console.WriteLine($"Could not find existing event to attach {parsedIncident.Id} to, creating new event {eventEntity.RowKey}");
-                        var eventOperation = TableOperation.InsertOrReplace(eventEntity);
-                        await _table.ExecuteAsync(eventOperation);
+                        await _table.InsertOrReplaceAsync(eventEntity);
                     }
 
-                    var incidentOperation = TableOperation.InsertOrReplace(incidentEntity);
-                    await _table.ExecuteAsync(incidentOperation);
+                    await _table.InsertOrReplaceAsync(incidentEntity);
                 }
             }
 
             // Update the cursor to signify that we've fetched all incidents thus far.
             if (nextCursor > lastCursor)
             {
-                var cursorEntity = new CursorEntity(nextCursor);
-                var operation = TableOperation.InsertOrReplace(cursorEntity);
-                await _table.ExecuteAsync(operation);
+                await _cursor.Set(nextCursor);
             }
+        }
+
+        private IEnumerable<IIncidentParser> GetIncidentParsers()
+        {
+            return new IIncidentParser[]
+            {
+                new ValidationDurationIncidentParser("PROD"),
+                new OutdatedRegionalSearchServiceInstanceIncidentParser("PROD"),
+                new OutdatedSearchServiceInstanceIncidentParser("PROD")
+            };
         }
 
         private static readonly JsonSerializerSettings _statusBlobJsonSerializerSettings = new JsonSerializerSettings()
@@ -235,7 +221,7 @@ namespace StatusAggregator
             {
                 var componentPathParts = activeEvent.AffectedComponentPath.Split(Component.ComponentPathDivider);
 
-                var currentComponent = new Component("", "", new[] { rootComponent });
+                IComponent currentComponent = new TreeComponent("", "", new[] { rootComponent });
                 foreach (var componentPathPart in componentPathParts)
                 {
                     currentComponent = currentComponent.SubComponents.FirstOrDefault(c => c.Name == componentPathPart);
@@ -256,7 +242,6 @@ namespace StatusAggregator
 
             var recentEvents = _table
                 .CreateQuery<EventEntity>()
-                .AsQueryable()
                 .Where(e => 
                     e.PartitionKey == EventEntity.DefaultPartitionKey && 
                     (e.IsActive || (e.EndTime >= DateTime.Now - EventVisibilityPeriod)))
@@ -276,59 +261,59 @@ namespace StatusAggregator
             await blob.UploadTextAsync(statusJson);
         }
 
-        private Component SetupRootComponent()
+        private IComponent SetupRootComponent()
         {
-            return new Component(
+            return new TreeComponent(
                 "NuGet", 
                 "", 
-                new[] 
+                new IComponent[] 
                 {
-                    new Component(
+                    new PrimarySecondaryComponent(
                         "NuGet.org", 
                         "Browsing the Gallery website", 
                         new[] 
                         {
-                            new Component("USNC", "Primary region"),
-                            new Component("USSC", "Backup region")
+                            new TreeComponent("USNC", "Primary region"),
+                            new TreeComponent("USSC", "Backup region")
                         }),
-                    new Component(
+                    new TreeComponent(
                         "Restore", 
                         "Downloading and installing packages from NuGet", 
                         new[] 
                         {
-                            new Component(
+                            new TreeComponent(
                                 "V3", 
                                 "Restore using the V3 API", 
                                 new[] 
                                 {
-                                    new Component("Global", "V3 restore for users outside of China"),
-                                    new Component("China", "V3 restore for users inside China")
+                                    new TreeComponent("Global", "V3 restore for users outside of China"),
+                                    new TreeComponent("China", "V3 restore for users inside China")
                                 }),
-                            new Component("V2", "Restore using the V2 API")
+                            new TreeComponent("V2", "Restore using the V2 API")
                         }),
-                    new Component(
+                    new TreeComponent(
                         "Search", 
                         "Searching for new and existing packages in Visual Studio or the Gallery website", 
                         new[] 
                         {
-                            new Component(
+                            new PrimarySecondaryComponent(
                                 "Global", 
                                 "Search for packages outside Asia", 
                                 new[] 
                                 {
-                                    new Component("USNC", "Primary region"),
-                                    new Component("USSC", "Backup region")
+                                    new TreeComponent("USNC", "Primary region"),
+                                    new TreeComponent("USSC", "Backup region")
                                 }),
-                            new Component(
+                            new PrimarySecondaryComponent(
                                 "Asia", 
                                 "Search for packages inside Asia", 
                                 new[] 
                                 {
-                                    new Component("EA", "Primary region"),
-                                    new Component("SEA", "Backup region")
+                                    new TreeComponent("EA", "Primary region"),
+                                    new TreeComponent("SEA", "Backup region")
                                 })
                         }),
-                    new Component("Package Publishing", "Uploading new packages to NuGet.org")
+                    new TreeComponent("Package Publishing", "Uploading new packages to NuGet.org")
                 });
         }
 
@@ -367,14 +352,12 @@ namespace StatusAggregator
                 if (GetMessagesLinkedToEvent(eventEntity).ToList().Any())
                 {
                     var messageEntity = new MessageEntity(eventEntity, mitigationTime, "NO LONGER IMPACTED");
-                    var messageOperation = TableOperation.InsertOrReplace(messageEntity);
-                    await _table.ExecuteAsync(messageOperation);
+                    await _table.InsertOrReplaceAsync(messageEntity);
                 }
 
                 // Update the event
                 eventEntity.EndTime = mitigationTime;
-                var eventOperation = TableOperation.InsertOrReplace(eventEntity);
-                await _table.ExecuteAsync(eventOperation);
+                await _table.InsertOrReplaceAsync(eventEntity);
             }
             else
             {
@@ -389,8 +372,7 @@ namespace StatusAggregator
             if (currentTime > eventEntity.StartTime + EventStartDelay)
             {
                 var messageEntity = new MessageEntity(eventEntity, eventEntity.StartTime, "WE ARE IMPACTED");
-                var messageOperation = TableOperation.InsertOrReplace(messageEntity);
-                await _table.ExecuteAsync(messageOperation);
+                await _table.InsertOrReplaceAsync(messageEntity);
             }
         }
 
@@ -398,7 +380,6 @@ namespace StatusAggregator
         {
             return _table
                 .CreateQuery<EventEntity>()
-                .AsQueryable()
                 .Where(e => e.PartitionKey == EventEntity.DefaultPartitionKey && e.IsActive);
         }
 
@@ -406,7 +387,6 @@ namespace StatusAggregator
         {
             return _table
                 .CreateQuery<IncidentEntity>()
-                .AsQueryable()
                 .Where(i =>
                     i.PartitionKey == IncidentEntity.DefaultPartitionKey &&
                     i.IsLinkedToEvent &&
@@ -417,77 +397,9 @@ namespace StatusAggregator
         {
             return _table
                 .CreateQuery<MessageEntity>()
-                .AsQueryable()
                 .Where(m =>
                     m.PartitionKey == MessageEntity.DefaultPartitionKey &&
                     m.EventRowKey == eventEntity.RowKey);
-        }
-
-        private DateTime GetCursor()
-        {
-            var query = new TableQuery<CursorEntity>()
-                .Where(TableQuery.GenerateFilterCondition(
-                    nameof(ITableEntity.PartitionKey), 
-                    QueryComparisons.Equal, 
-                    CursorEntity.DefaultPartitionKey));
-
-            var cursors = _table.ExecuteQuery(query).ToArray();
-            return cursors.Any()
-                ? cursors.Max(c => c.Value)
-                : DateTime.MinValue;
-        }
-
-        private const string IncidentApiIncidentsEndpoint = "incidents";
-        private static readonly string IncidentApiIndividualIncidentQueryFormatString = $"{IncidentApiIncidentsEndpoint}({{0}})";
-        private static readonly string IncidentApiIncidentListQueryFormatString = $"{IncidentApiIncidentsEndpoint}?{{0}}";
-
-        private static readonly JsonSerializerSettings _incidentApiJsonSerializerSettings = new JsonSerializerSettings() { DateTimeZoneHandling = DateTimeZoneHandling.Utc };
-        
-        private string GetIncidentApiIncidentList(string oDataQueryParameters)
-        {
-            return string.Format(IncidentApiIncidentListQueryFormatString, oDataQueryParameters);
-        }
-
-        private string GetIncidentApiGetIncidentQuery(string id)
-        {
-            return string.Format(IncidentApiIndividualIncidentQueryFormatString, id);
-        }
-
-        private string GetIncidentApiIncidentListAllIncidentsQuery()
-        {
-            return $"$filter=RoutingId eq '{_incidentApiRoutingId}'";
-        }
-
-        private string GetIncidentApiIncidentListRecentIncidentsQuery(DateTime cursor)
-        {
-            return $"$filter=RoutingId eq '{_incidentApiRoutingId}' and CreateDate gt datetime'{cursor.ToString("o")}'";
-        }
-
-        private Uri GetIncidentApiUri(string query)
-        {
-            return new Uri(_incidentApiBaseUri, query);
-        }
-
-        private Task<Incident> GetIncident(string id)
-        {
-            return GetIncidentApiResponse<Incident>(GetIncidentApiGetIncidentQuery(id));
-        }
-
-        private Task<T> GetIncidentApiResponse<T>(string query)
-        {
-            return GetIncidentApiResponse<T>(GetIncidentApiUri(query));
-        }
-
-        private async Task<T> GetIncidentApiResponse<T>(Uri uri)
-        {
-            var request = WebRequest.CreateHttp(uri);
-            request.ClientCertificates.Add(_incidentApiCertificate);
-            var response = await request.GetResponseAsync();
-            using (var reader = new StreamReader(response.GetResponseStream()))
-            {
-                var content = await reader.ReadToEndAsync();
-                return JsonConvert.DeserializeObject<T>(content, _incidentApiJsonSerializerSettings);
-            }
         }
     }
 }

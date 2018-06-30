@@ -3,7 +3,7 @@
 
 using System;
 
-namespace StatusAggregator
+namespace StatusAggregator.Incidents
 {
     public class Incident
     {

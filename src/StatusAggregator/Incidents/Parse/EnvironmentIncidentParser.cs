@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 
-namespace StatusAggregator
+namespace StatusAggregator.Incidents.Parse
 {
-    public class EnvironmentIncidentParser : IncidentParser
+    public abstract class EnvironmentIncidentParser : IncidentParser
     {
         private const string EnvironmentGroupName = "Environment";
 
@@ -29,9 +29,23 @@ namespace StatusAggregator
                 return false;
             }
 
-            parsedIncident = new ParsedIncident(incident, $"NuGet{Component.ComponentPathDivider}Package Publishing", ComponentStatus.Degraded);
+            if (!TryParseAffectedComponentPath(incident, groups, out var affectedComponentPath))
+            {
+                return false;
+            }
+
+            if (!TryParseAffectedComponentStatus(incident, groups, out var affectedComponentStatus))
+            {
+                return false;
+            }
+
+            parsedIncident = new ParsedIncident(incident, affectedComponentPath, affectedComponentStatus);
             return true;
         }
+
+        protected abstract bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath);
+
+        protected abstract bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus);
 
         private static string GetRegEx(string subtitleRegEx)
         {

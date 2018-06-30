@@ -3,7 +3,7 @@
 
 using System.Text.RegularExpressions;
 
-namespace StatusAggregator
+namespace StatusAggregator.Incidents.Parse
 {
     public abstract class IncidentParser : IIncidentParser
     {

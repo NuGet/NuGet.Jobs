@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.WindowsAzure.Storage.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Table
 {
     public class MessageEntity : TableEntity
     {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StatusAggregator.Table;
+using System;
 
 namespace StatusAggregator
 {
