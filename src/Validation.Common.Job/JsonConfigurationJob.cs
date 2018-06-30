@@ -104,7 +104,6 @@ namespace NuGet.Jobs.Validation
             var containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(services);
 
-            ConfigureAutofacServicesInternal(containerBuilder);
             ConfigureAutofacServices(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
@@ -185,12 +184,16 @@ namespace NuGet.Jobs.Validation
             services.AddLogging();
         }
 
-        protected virtual void ConfigureAutofacServices(ContainerBuilder containerBuilder)
-        {
-        }
+        /// <summary>
+        /// Method to be implemented in derived classes to provide Autofac-specific configuration for
+        /// that specific job (like setting up keyed resolution).
+        /// </summary>
+        protected abstract void ConfigureAutofacServices(ContainerBuilder containerBuilder);
+
+        /// <summary>
+        /// Method to be implemented in derived classes to provide DI container configuration
+        /// specific for the job.
+        /// </summary>
         protected abstract void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot);
-        internal virtual void ConfigureAutofacServicesInternal(ContainerBuilder containerBuilder)
-        {
-        }
     }
 }

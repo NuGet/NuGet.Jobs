@@ -20,7 +20,13 @@ namespace NuGet.Jobs.Validation
 
         public override async Task Run()
         {
-            var processor = _serviceProvider.GetRequiredService<ISubscriptionProcessor<T>>();
+            var processor = _serviceProvider.GetService<ISubscriptionProcessor<T>>();
+
+            if (processor == null)
+            {
+                throw new Exception($"DI container was not set up to produce instances of ISubscriptionProcessor<{typeof(T).Name}>. " +
+                    $"Call SubcriptionProcessorJob<T>.ConfigureDefaultSubscriptionProcessor() or set it up your way.");
+            }
 
             processor.Start();
 
@@ -35,19 +41,19 @@ namespace NuGet.Jobs.Validation
             }
         }
 
-        internal override void ConfigureAutofacServicesInternal(ContainerBuilder containerBuilder)
+        protected static void ConfigureDefaultSubscriptionProcessor(ContainerBuilder containerBuilder)
         {
-            const string validateCertificateBindingKey = "SubscriptionProcessorJob_SubscriptionProcessorKey";
+            const string bindingKey = "SubscriptionProcessorJob_SubscriptionProcessorKey";
 
             containerBuilder
                 .RegisterType<ScopedMessageHandler<T>>()
-                .Keyed<IMessageHandler<T>>(validateCertificateBindingKey);
+                .Keyed<IMessageHandler<T>>(bindingKey);
 
             containerBuilder
                 .RegisterType<SubscriptionProcessor<T>>()
                 .WithParameter(
                     (parameter, context) => parameter.ParameterType == typeof(IMessageHandler<T>),
-                    (parameter, context) => context.ResolveKeyed(validateCertificateBindingKey, typeof(IMessageHandler<T>)))
+                    (parameter, context) => context.ResolveKeyed(bindingKey, typeof(IMessageHandler<T>)))
                 .As<ISubscriptionProcessor<T>>();
         }
     }

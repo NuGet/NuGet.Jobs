@@ -68,6 +68,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
         {
+            ConfigureDefaultSubscriptionProcessor(containerBuilder);
+
             containerBuilder
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
