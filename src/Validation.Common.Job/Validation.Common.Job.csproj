@@ -108,7 +108,7 @@
       <Version>2.26.0-master-33404</Version>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
-      <Version>4.4.5-sb-failedvalidationemails-33931</Version>
+      <Version>4.4.5-dev-34157</Version>
     </PackageReference>
     <PackageReference Include="Serilog">
       <Version>2.5.0</Version>
