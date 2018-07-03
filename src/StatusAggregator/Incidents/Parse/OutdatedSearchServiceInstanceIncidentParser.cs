@@ -16,7 +16,7 @@ namespace StatusAggregator.Incidents.Parse
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
-            affectedComponentPath = $"NuGet{Component.ComponentPathDivider}Package Publishing";
+            affectedComponentPath = $"NuGet{SubComponent.ComponentPathDivider}Package Publishing";
             return true;
         }
 

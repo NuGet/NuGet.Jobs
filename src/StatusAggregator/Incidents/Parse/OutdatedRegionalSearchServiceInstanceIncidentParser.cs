@@ -66,7 +66,7 @@ namespace StatusAggregator.Incidents.Parse
                     return false;
             }
 
-            affectedComponentPath = $"NuGet{Component.ComponentPathDivider}Search{Component.ComponentPathDivider}{region}{Component.ComponentPathDivider}{subRegion}";
+            affectedComponentPath = $"NuGet{SubComponent.ComponentPathDivider}Search{SubComponent.ComponentPathDivider}{region}{SubComponent.ComponentPathDivider}{subRegion}";
             return true;
         }
 

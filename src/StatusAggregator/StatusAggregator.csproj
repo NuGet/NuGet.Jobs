@@ -48,13 +48,31 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Component.cs" />
+    <Compile Include="Components.cs" />
     <Compile Include="ComponentStatus.cs" />
     <Compile Include="Cursor.cs" />
+    <Compile Include="EventUpdater.cs" />
     <Compile Include="IComponent.cs" />
     <Compile Include="ICursor.cs" />
+    <Compile Include="IEventUpdater.cs" />
+    <Compile Include="IIncidentFactory.cs" />
+    <Compile Include="IIncidentUpdater.cs" />
+    <Compile Include="IncidentUpdater.cs" />
+    <Compile Include="IStatusUpdater.cs" />
+    <Compile Include="IMessageUpdater.cs" />
+    <Compile Include="StatusContractResolver.cs" />
+    <Compile Include="StatusUpdater.cs" />
     <Compile Include="Incidents\IIncidentCollector.cs" />
     <Compile Include="Incidents\IncidentCollector.cs" />
+    <Compile Include="Incidents\Parse\AggregateIncidentParser.cs" />
+    <Compile Include="Incidents\Parse\IAggregateIncidentParser.cs" />
+    <Compile Include="IncidentFactory.cs" />
+    <Compile Include="IStatusExporter.cs" />
+    <Compile Include="ISubComponent.cs" />
+    <Compile Include="MessageUpdater.cs" />
     <Compile Include="PrimarySecondaryComponent.cs" />
+    <Compile Include="StatusExporter.cs" />
+    <Compile Include="SubComponent.cs" />
     <Compile Include="Table\CursorEntity.cs" />
     <Compile Include="Incidents\Parse\EnvironmentIncidentParser.cs" />
     <Compile Include="Event.cs" />
@@ -77,6 +95,7 @@
     <Compile Include="Status.cs" />
     <Compile Include="Incidents\Parse\ValidationDurationIncidentParser.cs" />
     <Compile Include="Table\TableWrapper.cs" />
+    <Compile Include="Table\TableWrapperExtensions.cs" />
     <Compile Include="TreeComponent.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -4,9 +4,9 @@ namespace StatusAggregator
 {
     public interface IComponent
     {
-        string Name { get; set; }
-        string Description { get; set; }
+        string Name { get; }
+        string Description { get; }
         ComponentStatus Status { get; set; }
-        IEnumerable<IComponent> SubComponents { get; set; }
+        IEnumerable<ISubComponent> SubComponents { get; }
     }
 }

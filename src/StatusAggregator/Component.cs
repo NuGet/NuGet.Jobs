@@ -5,8 +5,6 @@ namespace StatusAggregator
 {
     public abstract class Component : IComponent
     {
-        public const char ComponentPathDivider = '/';
-
         public Component()
         {
         }
@@ -17,7 +15,7 @@ namespace StatusAggregator
         {
             Name = name;
             Description = description;
-            SubComponents = Enumerable.Empty<Component>();
+            SubComponents = Enumerable.Empty<ISubComponent>();
         }
 
         public Component(
@@ -26,20 +24,17 @@ namespace StatusAggregator
             IEnumerable<IComponent> subComponents)
             : this(name, description)
         {
-            SubComponents = subComponents;
+            SubComponents = subComponents.Select(s => new SubComponent(s, this));
         }
 
-        public string Name { get; set; }
-
-        public string Description { get; set; }
-
-        public IEnumerable<IComponent> SubComponents { get; set; }
-
+        public string Name { get; }
+        public string Description { get; }
         public abstract ComponentStatus Status { get; set; }
+        public IEnumerable<ISubComponent> SubComponents { get; }
 
         public static string ToRowKeySafeComponentPath(string componentPath)
         {
-            return componentPath.Replace(ComponentPathDivider, '_');
+            return componentPath.Replace(SubComponent.ComponentPathDivider, '_');
         }
     }
 }
