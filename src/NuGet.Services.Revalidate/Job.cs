@@ -14,6 +14,8 @@ using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
 using NuGet.Services.Logging;
+using NuGet.Services.ServiceBus;
+using NuGet.Services.Validation;
 using NuGetGallery;
 
 namespace NuGet.Services.Revalidate
@@ -92,6 +94,7 @@ namespace NuGet.Services.Revalidate
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<RevalidationConfiguration>(configurationRoot.GetSection(JobConfigurationSectionName));
+            services.AddSingleton(provider => provider.GetRequiredService<IOptionsSnapshot<RevalidationConfiguration>>().Value);
             services.AddSingleton(provider => provider.GetRequiredService<IOptionsSnapshot<RevalidationConfiguration>>().Value.Initialization);
 
             services.AddScoped<IGalleryContext>(provider =>
@@ -114,8 +117,18 @@ namespace NuGet.Services.Revalidate
             // Revalidation
             services.AddTransient<IHealthService, HealthService>();
             services.AddTransient<IRevalidationQueue, RevalidationQueue>();
+            services.AddTransient<IRevalidationService, RevalidationService>();
             services.AddTransient<IRevalidationThrottler, RevalidationThrottler>();
             services.AddTransient<ISingletonService, SingletonService>();
+
+            services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
+            services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
+            services.AddTransient<ITopicClient>(provider =>
+            {
+                var config = provider.GetRequiredService<IOptionsSnapshot<ServiceBusConfiguration>>().Value;
+
+                return new TopicClientWrapper(config.ConnectionString, config.TopicPath);
+            });
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)

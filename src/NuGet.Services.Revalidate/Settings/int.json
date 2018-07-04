@@ -18,9 +18,8 @@
     "ConnectionString": "Data Source=tcp:#{Jobs.validation.DatabaseAddress};Initial Catalog=nuget-int-validation;Integrated Security=False;User ID=$$Int-ValidationDBWriter-UserName$$;Password=$$Int-ValidationDBWriter-Password$$;Connect Timeout=30;Encrypt=True"
   },
   "ServiceBus": {
-    "ConnectionString": "Endpoint=sb://nugetint.servicebus.windows.net/;SharedAccessKeyName=package-certificates-validator;SharedAccessKey=$$Int-ServiceBus-SharedAccessKey-Validation-CertificatesValidator$$",
-    "TopicPath": "validate-certificate",
-    "SubscriptionName": "validate-certificate"
+    "ConnectionString": "Endpoint=sb://nugetint.servicebus.windows.net/;SharedAccessKeyName=gallery;SharedAccessKey=$$Int-ServiceBus-SharedAccessKey-Validation-GallerySender$$",
+    "TopicPath": "validation"
   },
 
   "KeyVault_VaultName": "#{Deployment.Azure.KeyVault.VaultName}",
