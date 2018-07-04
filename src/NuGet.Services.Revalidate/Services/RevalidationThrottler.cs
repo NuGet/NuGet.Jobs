@@ -3,11 +3,19 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace NuGet.Services.Revalidate
 {
     public class RevalidationThrottler : IRevalidationThrottler
     {
+        private readonly ILogger<RevalidationThrottler> _logger;
+
+        public RevalidationThrottler(ILogger<RevalidationThrottler> logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
         public Task<bool> IsThrottledAsync()
         {
             // TODO:
@@ -28,9 +36,12 @@ namespace NuGet.Services.Revalidate
             return Task.CompletedTask;
         }
 
-        public TimeSpan RevalidationSleepInterval()
+        public async Task OnRevalidationEnqueuedAsync()
         {
-            return TimeSpan.FromMinutes(5);
+            // TODO: Calculate sleep duration to achieve desired event rate.
+            _logger.LogInformation("Sleeping for 5 minutes...");
+
+            await Task.Delay(TimeSpan.FromMinutes(5));
         }
     }
 }

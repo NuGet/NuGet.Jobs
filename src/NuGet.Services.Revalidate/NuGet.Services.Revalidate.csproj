@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\InitializationConfiguration.cs" />
+    <Compile Include="Configuration\RevalidationQueueConfiguration.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />
     <Compile Include="Initialization\InitializationManager.cs" />
     <Compile Include="Configuration\RevalidationConfiguration.cs" />

@@ -28,9 +28,9 @@ namespace NuGet.Services.Revalidate
         Task IncreaseCapacityAsync();
 
         /// <summary>
-        /// Calculate the time that should slept between revalidations to achieve the desired revalidation rate.
+        /// Delay the current task to achieve the desired revalidation rate.
         /// </summary>
-        /// <returns>The time that should be slept between revalidations.</returns>
-        TimeSpan RevalidationSleepInterval();
+        /// <returns>Delay the task to ensure the desired revalidation rate.</returns>
+        Task OnRevalidationEnqueuedAsync();
     }
 }

@@ -58,13 +58,9 @@ namespace NuGet.Services.Revalidate
                 switch (result)
                 {
                     case RevalidationResult.RevalidationEnqueued:
-                        var sleepDuration = _throttler.RevalidationSleepInterval();
+                        _logger.LogInformation("Successfully enqueued revalidation");
 
-                        _logger.LogInformation(
-                            "Successfully enqueued revalidation, sleeping for {SleepDuration}...",
-                            sleepDuration);
-
-                        await Task.Delay(sleepDuration);
+                        await _throttler.OnRevalidationEnqueuedAsync();
                         break;
 
                     case RevalidationResult.RetryLater:

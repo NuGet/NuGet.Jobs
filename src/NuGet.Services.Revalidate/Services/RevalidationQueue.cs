@@ -18,14 +18,14 @@ namespace NuGet.Services.Revalidate
     {
         private readonly IGalleryContext _galleryContext;
         private readonly IValidationEntitiesContext _validationContext;
-        private readonly RevalidationConfiguration _config;
+        private readonly RevalidationQueueConfiguration _config;
         private readonly ITelemetryService _telemetry;
         private readonly ILogger<RevalidationQueue> _logger;
 
         public RevalidationQueue(
             IGalleryContext galleryContext,
             IValidationEntitiesContext validationContext,
-            RevalidationConfiguration config,
+            RevalidationQueueConfiguration config,
             ITelemetryService telemetry,
             ILogger<RevalidationQueue> logger)
         {
@@ -38,12 +38,12 @@ namespace NuGet.Services.Revalidate
 
         public async Task<PackageRevalidation> NextOrNullAsync()
         {
-            for (var i = 0; i < _config.RevalidationQueueMaximumAttempts; i++)
+            for (var i = 0; i < _config.MaximumAttempts; i++)
             {
                 _logger.LogInformation(
                     "Attempting to find the next revalidation. Try {Attempt} of {MaxAttempts}",
-                    i,
-                    _config.RevalidationQueueMaximumAttempts);
+                    i + 1,
+                    _config.MaximumAttempts);
 
                 var next = await _validationContext.PackageRevalidations
                     .Where(r => r.Enqueued == null)
@@ -61,17 +61,23 @@ namespace NuGet.Services.Revalidate
                 if (await HasRepositorySignature(next) || await IsDeleted(next))
                 {
                     await MarkAsCompleted(next);
-                    await Task.Delay(_config.RevalidationQueueSleepBetweenAttempts);
+                    await Task.Delay(_config.SleepBetweenAttempts);
 
                     continue;
                 }
+
+                _logger.LogInformation(
+                    "Found revalidation for {PackageId} {PackageNormalizedVersion} after {Attempt} attempts",
+                    next.PackageId,
+                    next.PackageNormalizedVersion,
+                    i + 1);
 
                 return next;
             }
 
             _logger.LogInformation(
                 "Did not find any revalidations after {MaxAttempts}. Retry later...",
-                _config.RevalidationQueueMaximumAttempts);
+                _config.MaximumAttempts);
 
             return null;
         }

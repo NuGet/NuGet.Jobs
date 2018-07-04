@@ -8,6 +8,10 @@
       ],
       "MaxPackageCreationDate": "2021-03-01T23:52:40.7022034+00:00", // TODO: Update this when repository signing is enabled
       "SleepDurationBetweenBatches": "00:00:30"
+    },
+    "Queue": {
+      "MaximumAttempts": 5,
+      "SleepBetweenAttempts": "00:05:00"
     }
   },
 
