@@ -4,11 +4,12 @@
 using System;
 using System.Collections.Generic;
 using NuGet.Services.Logging;
+using NuGet.Services.ServiceBus;
 using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator.Telemetry
 {
-    public class TelemetryService : ITelemetryService
+    public class TelemetryService : ITelemetryService, ISubscriptionProcessorTelemetryService
     {
         private const string OrchestratorPrefix = "Orchestrator.";
         private const string PackageSigningPrefix = "PackageSigning.";
@@ -28,6 +29,8 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string MissingPackageForValidationMessage = OrchestratorPrefix + "MissingPackageForValidationMessage";
         private const string MissingNupkgForAvailablePackage = OrchestratorPrefix + "MissingNupkgForAvailablePackage";
         private const string DurationToHashPackageSeconds = OrchestratorPrefix + "DurationToHashPackageSeconds";
+        private const string MessageDeliveryLag = OrchestratorPrefix + "MessageDeliveryLag";
+        private const string MessageEnqueueLag = OrchestratorPrefix + "MessageEnqueueLag";
 
         private const string DurationToStartPackageSigningValidatorSeconds = PackageSigningPrefix + "DurationToStartSeconds";
 
@@ -221,5 +224,11 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
 
         public IDisposable TrackDurationToStartPackageCertificatesValidator()
             => _telemetryClient.TrackDuration(DurationToStartPackageCertificatesValidatorSeconds);
+
+        public void TrackMessageDeliveryLag<TMessage>(TimeSpan deliveryLag)
+            => _telemetryClient.TrackMetric(MessageDeliveryLag, deliveryLag.TotalSeconds);
+
+        public void TrackEnqueueLag<TMessage>(TimeSpan enqueueLag)
+            => _telemetryClient.TrackMetric(MessageEnqueueLag, enqueueLag.TotalSeconds);
     }
 }
