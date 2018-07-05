@@ -48,6 +48,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string PackageSize = "PackageSize";
         private const string HashAlgorithm = "HashAlgorithm";
         private const string StreamType = "StreamType";
+        private const string MessageType = "MessageType";
 
         private readonly ITelemetryClient _telemetryClient;
 
@@ -226,9 +227,21 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
             => _telemetryClient.TrackDuration(DurationToStartPackageCertificatesValidatorSeconds);
 
         public void TrackMessageDeliveryLag<TMessage>(TimeSpan deliveryLag)
-            => _telemetryClient.TrackMetric(MessageDeliveryLag, deliveryLag.TotalSeconds);
+            => _telemetryClient.TrackMetric(
+                MessageDeliveryLag,
+                deliveryLag.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { MessageType, typeof(TMessage).Name }
+                });
 
         public void TrackEnqueueLag<TMessage>(TimeSpan enqueueLag)
-            => _telemetryClient.TrackMetric(MessageEnqueueLag, enqueueLag.TotalSeconds);
+            => _telemetryClient.TrackMetric(
+                MessageEnqueueLag,
+                enqueueLag.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { MessageType, typeof(TMessage).Name }
+                });
     }
 }
