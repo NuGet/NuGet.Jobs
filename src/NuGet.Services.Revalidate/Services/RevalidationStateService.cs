@@ -23,7 +23,7 @@ namespace NuGet.Services.Revalidate
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<bool> IsKillswitchActive()
+        public Task<bool> IsKillswitchActiveAsync()
         {
             // TODO
             return Task.FromResult(false);

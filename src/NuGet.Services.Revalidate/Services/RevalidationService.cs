@@ -11,8 +11,6 @@ namespace NuGet.Services.Revalidate
 {
     public class RevalidationService : IRevalidationService
     {
-        private static readonly TimeSpan RetryLaterSleepDuration = TimeSpan.FromMinutes(5);
-
         private readonly IRevalidationStateService _state;
         private readonly ISingletonService _singletonService;
         private readonly IRevalidationThrottler _throttler;
@@ -47,9 +45,9 @@ namespace NuGet.Services.Revalidate
 
         public async Task RunAsync()
         {
-            var start = Stopwatch.StartNew();
+            var runTime = Stopwatch.StartNew();
 
-            while (start.Elapsed <= _config.ShutdownWaitInterval)
+            do
             {
                 _logger.LogInformation("Starting next revalidation...");
 
@@ -64,11 +62,9 @@ namespace NuGet.Services.Revalidate
                         break;
 
                     case RevalidationResult.RetryLater:
-                        _logger.LogInformation(
-                            "Could not start revalidation, sleeping for {SleepDuration}...",
-                            RetryLaterSleepDuration);
+                        _logger.LogInformation("Could not start revalidation, retrying later");
 
-                        await Task.Delay(RetryLaterSleepDuration);
+                        await _throttler.OnRetryRevalidationLaterAsync();
                         break;
 
                     case RevalidationResult.UnrecoverableError:
@@ -80,35 +76,39 @@ namespace NuGet.Services.Revalidate
                         return;
                 }
             }
+            while (runTime.Elapsed <= _config.ShutdownWaitInterval);
 
-            _logger.LogInformation("Finished running after {ElapsedTime}", start.Elapsed);
+            _logger.LogInformation("Finished running after {ElapsedTime}", runTime.Elapsed);
         }
 
         public async Task<RevalidationResult> StartNextRevalidationAsync()
         {
-            // Check whether a revalidation can be started.
-            var checkResult = await CanStartRevalidationAsync();
-            if (checkResult != null)
+            using (_telemetryService.TrackDurationToStartNextRevalidation())
             {
-                _logger.LogInformation(
-                    "Detected that a revalidation should not be started due to result {Result}",
-                    checkResult.Value);
+                // Check whether a revalidation can be started.
+                var checkResult = await CanStartRevalidationAsync();
+                if (checkResult != null)
+                {
+                    _logger.LogInformation(
+                        "Detected that a revalidation should not be started due to result {Result}",
+                        checkResult.Value);
 
-                return checkResult.Value;
+                    return checkResult.Value;
+                }
+
+                // Everything looks good! Attempt to start the next revalidation.
+                await _throttler.IncreaseCapacityAsync();
+
+                var revalidation = await _revalidationQueue.NextOrNullAsync();
+                if (revalidation == null)
+                {
+                    _logger.LogInformation("Could not find a package to revalidate at this time, retry later...");
+
+                    return RevalidationResult.RetryLater;
+                }
+
+                return await StartRevalidationAsync(revalidation);
             }
-
-            // Everything looks good! Attempt to start the next revalidation.
-            await _throttler.IncreaseCapacityAsync();
-
-            var revalidation = await _revalidationQueue.NextOrNullAsync();
-            if (revalidation == null)
-            {
-                _logger.LogInformation("Could not find a package to revalidate at this time, retry later...");
-
-                return RevalidationResult.RetryLater;
-            }
-
-            return await StartRevalidationAsync(revalidation);
         }
 
         private async Task<RevalidationResult?> CanStartRevalidationAsync()
@@ -120,7 +120,7 @@ namespace NuGet.Services.Revalidate
                 return RevalidationResult.UnrecoverableError;
             }
 
-            if (await _state.IsKillswitchActive())
+            if (await _state.IsKillswitchActiveAsync())
             {
                 _logger.LogWarning("Revalidation killswitch has been activated, retry later...");
 
@@ -143,7 +143,7 @@ namespace NuGet.Services.Revalidate
                 return RevalidationResult.RetryLater;
             }
 
-            if (await _state.IsKillswitchActive())
+            if (await _state.IsKillswitchActiveAsync())
             {
                 _logger.LogWarning("Revalidation killswitch has been activated after the throttle and health check, retry later...");
 

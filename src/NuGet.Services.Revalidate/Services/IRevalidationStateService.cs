@@ -13,7 +13,7 @@ namespace NuGet.Services.Revalidate
         /// Check whether the killswitch has been activated. If it has, all revalidation operations should be halted.
         /// </summary>
         /// <returns>Whether the killswitch has been activated.</returns>
-        Task<bool> IsKillswitchActive();
+        Task<bool> IsKillswitchActiveAsync();
 
         /// <summary>
         /// Add the new revalidations to the database.

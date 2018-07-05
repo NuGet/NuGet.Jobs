@@ -9,10 +9,12 @@ namespace NuGet.Services.Revalidate
 {
     public class RevalidationThrottler : IRevalidationThrottler
     {
+        private readonly RevalidationConfiguration _config;
         private readonly ILogger<RevalidationThrottler> _logger;
 
-        public RevalidationThrottler(ILogger<RevalidationThrottler> logger)
+        public RevalidationThrottler(RevalidationConfiguration config, ILogger<RevalidationThrottler> logger)
         {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -42,6 +44,13 @@ namespace NuGet.Services.Revalidate
             _logger.LogInformation("Sleeping for 5 minutes...");
 
             await Task.Delay(TimeSpan.FromMinutes(5));
+        }
+
+        public async Task OnRetryRevalidationLaterAsync()
+        {
+            _logger.LogInformation("Sleeping for {SleepDuration}", _config.RetryLaterSleep);
+
+            await Task.Delay(_config.RetryLaterSleep);
         }
     }
 }
