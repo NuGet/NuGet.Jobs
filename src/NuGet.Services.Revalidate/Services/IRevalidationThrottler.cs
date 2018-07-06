@@ -30,12 +30,12 @@ namespace NuGet.Services.Revalidate
         /// Delay the current task to achieve the desired revalidation rate.
         /// </summary>
         /// <returns>Delay the task to ensure the desired revalidation rate.</returns>
-        Task OnRevalidationEnqueuedAsync();
+        Task DelayUntilNextRevalidationAsync();
 
         /// <summary>
         /// Delay the current task until when a revalidation can be retried.
         /// </summary>
         /// <returns>Delay the task until when revalidations can be retried.</returns>
-        Task OnRetryRevalidationLaterAsync();
+        Task DelayUntilRevalidationRetryAsync();
     }
 }

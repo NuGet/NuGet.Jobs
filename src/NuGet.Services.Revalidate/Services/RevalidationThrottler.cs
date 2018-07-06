@@ -38,17 +38,19 @@ namespace NuGet.Services.Revalidate
             return Task.CompletedTask;
         }
 
-        public async Task OnRevalidationEnqueuedAsync()
+        public async Task DelayUntilNextRevalidationAsync()
         {
             // TODO: Calculate sleep duration to achieve desired event rate.
-            _logger.LogInformation("Sleeping for 5 minutes...");
+            _logger.LogInformation("Delaying until next revalidation by sleeping for 5 minutes...");
 
             await Task.Delay(TimeSpan.FromMinutes(5));
         }
 
-        public async Task OnRetryRevalidationLaterAsync()
+        public async Task DelayUntilRevalidationRetryAsync()
         {
-            _logger.LogInformation("Sleeping for {SleepDuration}", _config.RetryLaterSleep);
+            _logger.LogInformation(
+                "Delaying for revalidation retry by sleeping for {SleepDuration}",
+                _config.RetryLaterSleep);
 
             await Task.Delay(_config.RetryLaterSleep);
         }

@@ -56,7 +56,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 // Act & Assert
                 await _target.RunAsync();
 
-                _throttler.Verify(t => t.OnRetryRevalidationLaterAsync(), Times.Once);
+                _throttler.Verify(t => t.DelayUntilRevalidationRetryAsync(), Times.Once);
             }
 
             [Fact]
@@ -68,7 +68,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 // Act & Assert
                 await _target.RunAsync();
 
-                _throttler.Verify(t => t.OnRevalidationEnqueuedAsync(), Times.Once);
+                _throttler.Verify(t => t.DelayUntilNextRevalidationAsync(), Times.Once);
             }
         }
 

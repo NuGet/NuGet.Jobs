@@ -58,13 +58,13 @@ namespace NuGet.Services.Revalidate
                     case RevalidationResult.RevalidationEnqueued:
                         _logger.LogInformation("Successfully enqueued revalidation");
 
-                        await _throttler.OnRevalidationEnqueuedAsync();
+                        await _throttler.DelayUntilNextRevalidationAsync();
                         break;
 
                     case RevalidationResult.RetryLater:
                         _logger.LogInformation("Could not start revalidation, retrying later");
 
-                        await _throttler.OnRetryRevalidationLaterAsync();
+                        await _throttler.DelayUntilRevalidationRetryAsync();
                         break;
 
                     case RevalidationResult.UnrecoverableError:

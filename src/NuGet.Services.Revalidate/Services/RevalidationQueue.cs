@@ -93,12 +93,13 @@ namespace NuGet.Services.Revalidate
 
         private async Task<bool> IsDeleted(PackageRevalidation revalidation)
         {
-            var package = await _galleryContext.Set<Package>()
+            var packageStatus = await _galleryContext.Set<Package>()
                 .Where(p => p.PackageRegistration.Id == revalidation.PackageId)
                 .Where(p => p.NormalizedVersion == revalidation.PackageNormalizedVersion)
+                .Select(p => (PackageStatus?)p.PackageStatusKey)
                 .FirstOrDefaultAsync();
 
-            return (package == null || package.PackageStatusKey == PackageStatus.Deleted);
+            return (packageStatus == null || packageStatus == PackageStatus.Deleted);
         }
 
         private async Task MarkAsCompleted(PackageRevalidation revalidation)
