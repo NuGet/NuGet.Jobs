@@ -5,6 +5,7 @@ using System;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
+
     public class OrchestrationRunnerConfiguration
     {
         /// <summary>
@@ -17,5 +18,10 @@ namespace NuGet.Services.Validation.Orchestrator
         /// if not done by the interval end, process would be terminated forcefully with log record about the incident.
         /// </summary>
         public TimeSpan ShutdownWaitInterval { get; set; }
+
+        /// <summary>
+        /// Information used by the initialization to register the correct IMessageHandler to be used by the Orchestrator.
+        /// /// </summary>
+        public ValidatingType ValidatingType { get; set; }
     }
 }

@@ -15,33 +15,33 @@ using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery;
 
+
 namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 {
-    [ValidatorName(ValidatorName.ScanAndSign)]
-    public class ScanAndSignProcessor : IProcessor
+    public class ScanAndSignProcessor<T> : IProcessor where T : class, IEntity
     {
         private readonly IValidationEntitiesContext _validationContext;
         private readonly IValidatorStateService _validatorStateService;
-        private readonly ICorePackageService _packageService;
-        private readonly ICriteriaEvaluator<Package> _criteriaEvaluator;
+        private readonly IEntityService<T> _galleryService;
+        private readonly ICriteriaEvaluator<T> _criteriaEvaluator;
         private readonly IScanAndSignEnqueuer _scanAndSignEnqueuer;
         private readonly ISimpleCloudBlobProvider _blobProvider;
         private readonly ScanAndSignConfiguration _configuration;
-        private readonly ILogger<ScanAndSignProcessor> _logger;
+        private readonly ILogger<ScanAndSignProcessor<T>> _logger;
 
         public ScanAndSignProcessor(
             IValidationEntitiesContext validationContext,
             IValidatorStateService validatorStateService,
-            ICorePackageService packageService,
-            ICriteriaEvaluator<Package> criteriaEvaluator,
+            IEntityService<T> galleryService,
+            ICriteriaEvaluator<T> criteriaEvaluator,
             IScanAndSignEnqueuer scanAndSignEnqueuer,
             ISimpleCloudBlobProvider blobProvider,
             IOptionsSnapshot<ScanAndSignConfiguration> configurationAccessor,
-            ILogger<ScanAndSignProcessor> logger)
+            ILogger<ScanAndSignProcessor<T>> logger)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
-            _packageService = packageService ?? throw new ArgumentNullException(nameof(packageService));
+            _galleryService = galleryService ?? throw new ArgumentNullException(nameof(galleryService));
             _criteriaEvaluator = criteriaEvaluator ?? throw new ArgumentNullException(nameof(criteriaEvaluator));
             _scanAndSignEnqueuer = scanAndSignEnqueuer ?? throw new ArgumentNullException(nameof(scanAndSignEnqueuer));
             _blobProvider = blobProvider ?? throw new ArgumentNullException(nameof(blobProvider));
@@ -134,7 +134,11 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
             if (await ShouldRepositorySignAsync(request))
             {
-                var owners = FindPackageOwners(request);
+                var p = _galleryService.FindPackageByIdAndVersionStrict(
+                request.PackageId,
+                request.PackageVersion);
+
+                var owners = _galleryService.GetOwners(p.EntityRecord);
 
                 _logger.LogInformation(
                     "Repository signing {PackageId} {PackageVersion} with {ServiceIndex} and {Owners}",
@@ -180,11 +184,11 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
         private bool ShouldSkipScan(IValidationRequest request)
         {
-            var package = _packageService.FindPackageByIdAndVersionStrict(
+            var package = _galleryService.FindPackageByIdAndVersionStrict(
                 request.PackageId,
                 request.PackageVersion);
 
-            if (!_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, package))
+            if (!_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, package.EntityRecord))
             {
                 _logger.LogInformation(
                     "The scan for {ValidationId} ({PackageId} {PackageVersion}) was skipped due to package criteria configuration.",
@@ -217,23 +221,6 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             }
 
            return true;
-        }
-
-        private List<string> FindPackageOwners(IValidationRequest request)
-        {
-            var registration = _packageService.FindPackageRegistrationById(request.PackageId);
-
-            if (registration == null)
-            {
-                _logger.LogError("Attempted to validate package that has no package registration");
-
-                throw new InvalidOperationException($"Registration for package id {request.PackageId} does not exist");
-            }
-
-            return registration
-                .Owners
-                .Select(o => o.Username)
-                .ToList();
         }
     }
 }

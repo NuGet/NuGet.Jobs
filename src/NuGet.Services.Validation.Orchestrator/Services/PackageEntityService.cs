@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using NuGetGallery;
 using NuGetGallery.Packaging;
@@ -48,6 +50,12 @@ namespace NuGet.Services.Validation.Orchestrator
                     await _galleryEntityService.UpdatePackageStreamMetadataAsync(entity, typedMetadata, commitChanges);
                 }
             }
+        }
+
+        public List<string> GetOwners(Package entity)
+        {
+            if( entity == null) { throw new NullReferenceException(nameof(entity)); }
+            return entity.PackageRegistration.Owners.Select(u => u.Username).ToList();
         }
     }
 }

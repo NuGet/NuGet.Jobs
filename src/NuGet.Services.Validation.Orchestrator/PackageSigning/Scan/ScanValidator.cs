@@ -23,7 +23,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
         private readonly ICriteriaEvaluator<Package> _criteriaEvaluator;
         private readonly IScanAndSignEnqueuer _scanAndSignEnqueuer;
         private readonly ScanAndSignConfiguration _configuration;
-        private readonly ILogger<ScanAndSignProcessor> _logger;
+        private readonly ILogger<PackageScanAndSignProcessor> _logger;
 
         public ScanValidator(
             IValidationEntitiesContext validationContext,
@@ -32,7 +32,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             ICriteriaEvaluator<Package> criteriaEvaluator,
             IScanAndSignEnqueuer scanAndSignEnqueuer,
             IOptionsSnapshot<ScanAndSignConfiguration> configurationAccessor,
-            ILogger<ScanAndSignProcessor> logger)
+            ILogger<PackageScanAndSignProcessor> logger)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));

@@ -237,13 +237,16 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             _validationContext.Mock();
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistration);
+               .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+               .Returns(new PackageValidatingEntity(_package));
+            _packageServiceMock
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistration.Owners.Select(u => u.Username).ToList());
 
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
-                .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
+                .Verify(p => p.GetOwners(_package), Times.Once);
 
             _enqueuerMock
                 .Verify(e =>
@@ -270,13 +273,16 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             _validationContext.Mock();
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistration);
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
+            _packageServiceMock
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistration.Owners.Select(u=>u.Username).ToList());
 
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
-                .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
+                .Verify(p => p.GetOwners(_package), Times.Once);
 
             _enqueuerMock
                 .Verify(e =>
@@ -303,13 +309,16 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             _validationContext.Mock();
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns<PackageRegistration>(null);
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
+            _packageServiceMock
+                .Setup(p => p.GetOwners(_package))
+                .Throws(new InvalidOperationException());
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _target.StartAsync(_request));
 
             _packageServiceMock
-                .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
+                .Verify(p => p.GetOwners(_package), Times.Once);
 
             _enqueuerMock
                 .Verify(e =>
@@ -337,10 +346,14 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 }
             });
 
+            _packageServiceMock
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
+
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
-                .Verify(p => p.FindPackageRegistrationById(It.IsAny<string>()), Times.Never);
+                .Verify(p => p.GetOwners(It.IsAny<Package>()), Times.Never);
 
             _enqueuerMock
                 .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
@@ -361,7 +374,12 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                     Type = PackageSignatureType.Repository,
                 }
             });
-
+            _packageServiceMock
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
+            _packageServiceMock
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistration.Owners.Select(u => u.Username).ToList());
             _criteriaEvaluatorMock
                 .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
                 .Returns(false);
@@ -386,8 +404,11 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             _validationContext.Mock();
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistration);
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
+            _packageServiceMock
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistration.Owners.Select( u=>u.Username ).ToList());
 
             _criteriaEvaluatorMock
                 .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
@@ -405,6 +426,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         }
 
         private ValidationRequest _request;
+        private Package _package;
         private ValidatorStatus _status;
         private PackageRegistration _packageRegistration = new PackageRegistration
         {
@@ -412,12 +434,20 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             {
                 new User("Billy"),
                 new User("Bob"),
-            }
+            },
+            Id = "somepackage"
         };
 
         public TheStartAsyncMethod()
         {
-            _request = new ValidationRequest(Guid.NewGuid(), 42, "somepackage", "somversion", "https://example.com/package.nupkg");
+            _package = new Package()
+            {
+                Key = 42,
+                Version = "somversion",
+                PackageRegistration = _packageRegistration
+            };
+
+            _request = new ValidationRequest(Guid.NewGuid(), _package.Key, _packageRegistration.Id, _package.Version, "https://example.com/package.nupkg");
             _status = new ValidatorStatus
             {
                 State = ValidationStatus.NotStarted,
@@ -438,26 +468,26 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
     {
         protected readonly Mock<IValidationEntitiesContext> _validationContext;
         protected readonly Mock<IValidatorStateService> _validatorStateServiceMock;
-        protected readonly Mock<ICorePackageService> _packageServiceMock;
+        protected readonly Mock<IEntityService<Package>> _packageServiceMock;
         protected Mock<ICriteriaEvaluator<Package>> _criteriaEvaluatorMock;
         protected readonly Mock<IScanAndSignEnqueuer> _enqueuerMock;
         protected readonly Mock<ISimpleCloudBlobProvider> _blobProvider;
         protected readonly Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _optionsMock;
-        protected readonly Mock<ILogger<ScanAndSignProcessor>> _loggerMock;
+        protected readonly Mock<ILogger<PackageScanAndSignProcessor>> _loggerMock;
         protected readonly ScanAndSignConfiguration _config;
-        protected readonly ScanAndSignProcessor _target;
+        protected readonly PackageScanAndSignProcessor _target;
 
         public ScanAndSignProcessorFactsBase()
         {
             _validationContext = new Mock<IValidationEntitiesContext>();
             _validatorStateServiceMock = new Mock<IValidatorStateService>();
-            _packageServiceMock = new Mock<ICorePackageService>();
+            _packageServiceMock = new Mock<IEntityService<Package>>();
             _criteriaEvaluatorMock = new Mock<ICriteriaEvaluator<Package>>();
             _enqueuerMock = new Mock<IScanAndSignEnqueuer>();
-            _loggerMock = new Mock<ILogger<ScanAndSignProcessor>>();
+            _loggerMock = new Mock<ILogger<PackageScanAndSignProcessor>>();
             _blobProvider = new Mock<ISimpleCloudBlobProvider>();
             _optionsMock = new Mock<IOptionsSnapshot<ScanAndSignConfiguration>>();
-            _loggerMock = new Mock<ILogger<ScanAndSignProcessor>>();
+            _loggerMock = new Mock<ILogger<PackageScanAndSignProcessor>>();
 
             _criteriaEvaluatorMock
                 .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
@@ -469,7 +499,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             _optionsMock.Setup(o => o.Value).Returns(_config);
 
-            _target = new ScanAndSignProcessor(
+            _target = new PackageScanAndSignProcessor(
                 _validationContext.Object,
                 _validatorStateServiceMock.Object,
                 _packageServiceMock.Object,
