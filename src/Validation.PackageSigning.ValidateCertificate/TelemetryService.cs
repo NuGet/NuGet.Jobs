@@ -11,10 +11,10 @@ namespace Validation.PackageSigning.ValidateCertificate
 {
     public class TelemetryService : ITelemetryService, ISubscriptionProcessorTelemetryService
     {
-        private const string PackageSignatureMayBeInvalidated = "PackageSignatureMayBeInvalidated";
-        private const string PackageSignatureShouldBeInvalidated = "PackageSignatureShouldBeInvalidated";
-        private const string UnableToValidateCertificate = "UnableToValidateCertificate";
         private const string Prefix = "ValidateCertificate.";
+        private const string PackageSignatureMayBeInvalidated = Prefix + "PackageSignatureMayBeInvalidated";
+        private const string PackageSignatureShouldBeInvalidated = Prefix + "PackageSignatureShouldBeInvalidated";
+        private const string UnableToValidateCertificate = Prefix + "UnableToValidateCertificate";
         private const string MessageDeliveryLag = Prefix + "MessageDeliveryLag";
         private const string MessageEnqueueLag = Prefix + "MessageEnqueueLag";
 
