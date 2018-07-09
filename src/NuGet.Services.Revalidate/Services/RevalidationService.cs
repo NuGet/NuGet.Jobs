@@ -85,7 +85,8 @@ namespace NuGet.Services.Revalidate
         {
             using (_telemetryService.TrackDurationToStartNextRevalidation())
             {
-                // Check whether a revalidation can be started.
+                // Don't start a revalidation if the job has been deactivated, if the ingestion pipeline is unhealthy,
+                // or if we have reached our quota of desired revalidations.
                 var checkResult = await CanStartRevalidationAsync();
                 if (checkResult != null)
                 {
@@ -96,7 +97,7 @@ namespace NuGet.Services.Revalidate
                     return checkResult.Value;
                 }
 
-                // Everything looks good! Attempt to start the next revalidation.
+                // Everything is in tip-top shape! Increase the throttling quota and start the next revalidation.
                 await _throttler.IncreaseCapacityAsync();
 
                 var revalidation = await _revalidationQueue.NextOrNullAsync();
