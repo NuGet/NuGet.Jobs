@@ -10,12 +10,6 @@ namespace NuGet.Services.Revalidate
     public interface IRevalidationStateService
     {
         /// <summary>
-        /// Check whether the killswitch has been activated. If it has, all revalidation operations should be halted.
-        /// </summary>
-        /// <returns>Whether the killswitch has been activated.</returns>
-        Task<bool> IsKillswitchActiveAsync();
-
-        /// <summary>
         /// Add the new revalidations to the database.
         /// </summary>
         /// <returns>A task that completes once the revalidations have been saved.</returns>
@@ -32,6 +26,12 @@ namespace NuGet.Services.Revalidate
         /// </summary>
         /// <returns>The count of package revalidations in the database.</returns>
         Task<int> PackageRevalidationCountAsync();
+
+        /// <summary>
+        /// Count the number of package revalidations that were enqueued in the past hour.
+        /// </summary>
+        /// <returns>The number of enqueued revalidations.</returns>
+        Task<int> CountRevalidationsEnqueuedInPastHourAsync();
 
         /// <summary>
         /// Update the package revalidation and mark is as enqueued.

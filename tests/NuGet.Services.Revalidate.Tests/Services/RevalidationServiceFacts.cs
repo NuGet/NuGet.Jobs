@@ -2,9 +2,11 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
+using NuGet.Services.Logging;
 using NuGet.Services.Validation;
 using Xunit;
 
@@ -14,6 +16,16 @@ namespace NuGet.Services.Revalidate.Tests.Services
     {
         public class TheRunAsyncMethod : FactsBase
         {
+            [Fact]
+            public async Task ThrowsIfNotInitialized()
+            {
+                Setup(isInitialized: false);
+
+                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.RunAsync());
+
+                Assert.Equal("The revalidation service must be initialized before running revalidations", e.Message);
+            }
+
             [Fact]
             public async Task ReturnsUnrecoverableError()
             {
@@ -84,10 +96,22 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 var result = await _target.StartNextRevalidationAsync();
 
                 _singletonService.Verify(s => s.IsSingletonAsync(), Times.Once);
-                _throttler.Verify(t => t.IncreaseCapacityAsync(), Times.Never);
+                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
 
                 Assert.Equal(RevalidationResult.UnrecoverableError, result);
+            }
+
+            [Fact]
+            public async Task IfSingletonCheckThrows_ReturnsRetryLater()
+            {
+                // Arrange
+                Setup(singletonThrows: true);
+
+                // Act & Assert
+                var result = await _target.StartNextRevalidationAsync();
+
+                Assert.Equal(RevalidationResult.RetryLater, result);
             }
 
             [Fact]
@@ -99,9 +123,21 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 // Act & Assert
                 var result = await _target.StartNextRevalidationAsync();
 
-                _stateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Once);
-                _throttler.Verify(t => t.IncreaseCapacityAsync(), Times.Never);
+                _sharedStateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Once);
+                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
+
+                Assert.Equal(RevalidationResult.RetryLater, result);
+            }
+
+            [Fact]
+            public async Task IfKillswitchThrows_ReturnsRetryLater()
+            {
+                // Arrange
+                Setup(killswitchThrows: true);
+
+                // Act & Assert
+                var result = await _target.StartNextRevalidationAsync();
 
                 Assert.Equal(RevalidationResult.RetryLater, result);
             }
@@ -116,8 +152,20 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 var result = await _target.StartNextRevalidationAsync();
 
                 _throttler.Verify(s => s.IsThrottledAsync(), Times.Once);
-                _throttler.Verify(t => t.IncreaseCapacityAsync(), Times.Never);
+                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
+
+                Assert.Equal(RevalidationResult.RetryLater, result);
+            }
+
+            [Fact]
+            public async Task IfThrottledThrows_ReturnsRetryLater()
+            {
+                // Arrange
+                Setup(throttledThrows: true);
+
+                // Act & Assert
+                var result = await _target.StartNextRevalidationAsync();
 
                 Assert.Equal(RevalidationResult.RetryLater, result);
             }
@@ -131,9 +179,21 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 // Act & Assert
                 var result = await _target.StartNextRevalidationAsync();
 
-                _throttler.Verify(t => t.IncreaseCapacityAsync(), Times.Never);
+                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _healthService.Verify(h => h.IsHealthyAsync(), Times.Once);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
+
+                Assert.Equal(RevalidationResult.RetryLater, result);
+            }
+
+            [Fact]
+            public async Task IfUnhealthyThrows_ReturnsRetryLater()
+            {
+                // Arrange
+                Setup(healthyThrows: true);
+
+                // Act & Assert
+                var result = await _target.StartNextRevalidationAsync();
 
                 Assert.Equal(RevalidationResult.RetryLater, result);
             }
@@ -148,13 +208,25 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 var result = await _target.StartNextRevalidationAsync();
 
                 _singletonService.Verify(s => s.IsSingletonAsync(), Times.Once);
-                _stateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
+                _sharedStateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
                 _throttler.Verify(s => s.IsThrottledAsync(), Times.Once);
                 _healthService.Verify(h => h.IsHealthyAsync(), Times.Once);
 
-                _throttler.Verify(t => t.IncreaseCapacityAsync(), Times.Once);
+                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Once);
 
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
+
+                Assert.Equal(RevalidationResult.RetryLater, result);
+            }
+
+            [Fact]
+            public async Task IfRevalidationQueueNextThrows_ReturnsRetryLater()
+            {
+                // Arrange
+                Setup(nextThrows: true);
+
+                // Act & Assert
+                var result = await _target.StartNextRevalidationAsync();
 
                 Assert.Equal(RevalidationResult.RetryLater, result);
             }
@@ -184,11 +256,11 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
                 // Assert
                 _singletonService.Verify(s => s.IsSingletonAsync(), Times.Once);
-                _stateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
+                _sharedStateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
                 _throttler.Verify(s => s.IsThrottledAsync(), Times.Once);
                 _healthService.Verify(h => h.IsHealthyAsync(), Times.Once);
 
-                _throttler.Verify(t => t.IncreaseCapacityAsync(), Times.Once);
+                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Once);
 
                 _validationEnqueuer.Verify(
                     e => e.StartValidationAsync(It.Is<PackageValidationMessageData>(m =>
@@ -209,6 +281,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
         public class FactsBase
         {
             protected readonly Mock<IRevalidationStateService> _stateService;
+            protected readonly Mock<IRevalidationSharedStateService> _sharedStateService;
             protected readonly Mock<ISingletonService> _singletonService;
             protected readonly Mock<IRevalidationThrottler> _throttler;
             protected readonly Mock<IHealthService> _healthService;
@@ -224,12 +297,21 @@ namespace NuGet.Services.Revalidate.Tests.Services
             public FactsBase()
             {
                 _stateService = new Mock<IRevalidationStateService>();
+                _sharedStateService = new Mock<IRevalidationSharedStateService>();
                 _singletonService = new Mock<ISingletonService>();
                 _throttler = new Mock<IRevalidationThrottler>();
                 _healthService = new Mock<IHealthService>();
                 _revalidationQueue = new Mock<IRevalidationQueue>();
                 _validationEnqueuer = new Mock<IPackageValidationEnqueuer>();
                 _telemetryService = new Mock<ITelemetryService>();
+
+                _telemetryService
+                    .Setup(t => t.TrackStartNextRevalidationOperation())
+                    .Returns(new DurationMetric<StartNextRevalidationOperation>(
+                        Mock.Of<ITelemetryClient>(),
+                        "Name",
+                        new StartNextRevalidationOperation(),
+                        Mock.Of<Func<StartNextRevalidationOperation, IDictionary<string, string>>>()));
 
                 _config = new RevalidationConfiguration
                 {
@@ -245,6 +327,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
                 _target = new RevalidationService(
                     _stateService.Object,
+                    _sharedStateService.Object,
                     _singletonService.Object,
                     _throttler.Object,
                     _healthService.Object,
@@ -255,13 +338,35 @@ namespace NuGet.Services.Revalidate.Tests.Services
                     Mock.Of<ILogger<RevalidationService>>());
             }
 
-            protected void Setup(bool isSingleton = true, bool killswitchActive = false, bool isThrottled = false, bool isHealthy = true, PackageRevalidation next = null)
+            protected void Setup(
+                bool isInitialized = true,
+                bool isSingleton = true,
+                bool killswitchActive = false,
+                bool isThrottled = false,
+                bool isHealthy = true,
+                PackageRevalidation next = null,
+                bool initializedThrows = false,
+                bool singletonThrows = false,
+                bool killswitchThrows = false,
+                bool throttledThrows = false,
+                bool healthyThrows = false,
+                bool nextThrows = false)
             {
+                _sharedStateService.Setup(s => s.IsInitializedAsync()).ReturnsAsync(isInitialized);
                 _singletonService.Setup(s => s.IsSingletonAsync()).ReturnsAsync(isSingleton);
-                _stateService.Setup(s => s.IsKillswitchActiveAsync()).ReturnsAsync(killswitchActive);
+                _sharedStateService.Setup(s => s.IsKillswitchActiveAsync()).ReturnsAsync(killswitchActive);
                 _throttler.Setup(t => t.IsThrottledAsync()).ReturnsAsync(isThrottled);
                 _healthService.Setup(t => t.IsHealthyAsync()).ReturnsAsync(isHealthy);
                 _revalidationQueue.Setup(q => q.NextOrNullAsync()).ReturnsAsync(next);
+
+                var exception = new Exception();
+
+                if (initializedThrows) _sharedStateService.Setup(s => s.IsInitializedAsync()).ThrowsAsync(exception);
+                if (singletonThrows) _singletonService.Setup(s => s.IsSingletonAsync()).ThrowsAsync(exception);
+                if (killswitchThrows) _sharedStateService.Setup(s => s.IsKillswitchActiveAsync()).ThrowsAsync(exception);
+                if (throttledThrows) _throttler.Setup(t => t.IsThrottledAsync()).ThrowsAsync(exception);
+                if (healthyThrows) _healthService.Setup(t => t.IsHealthyAsync()).ThrowsAsync(exception);
+                if (nextThrows) _revalidationQueue.Setup(q => q.NextOrNullAsync()).ThrowsAsync(exception);
             }
 
             protected void SetupUnrecoverableErrorResult()

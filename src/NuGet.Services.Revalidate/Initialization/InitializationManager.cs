@@ -15,19 +15,20 @@ namespace NuGet.Services.Revalidate
     {
         private static int BatchSize = 1000;
 
+        private readonly IRevalidationSharedStateService _settings;
         private readonly IRevalidationStateService _revalidationState;
         private readonly IPackageFinder _packageFinder;
         private readonly InitializationConfiguration _config;
         private readonly ILogger<InitializationManager> _logger;
 
         public InitializationManager(
+            IRevalidationSharedStateService settings,
             IRevalidationStateService revalidationState,
             IPackageFinder packageFinder,
             InitializationConfiguration config,
             ILogger<InitializationManager> logger)
         {
-            // TODO: Accept service for settings (IsInitialized, etc...)
-            // See: https://github.com/NuGet/Engineering/issues/1440
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _revalidationState = revalidationState ?? throw new ArgumentNullException(nameof(revalidationState));
             _packageFinder = packageFinder ?? throw new ArgumentNullException(nameof(packageFinder));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -36,8 +37,13 @@ namespace NuGet.Services.Revalidate
 
         public async Task InitializeAsync()
         {
-            // TODO: Check "IsInitialized" setting. If true, error!
-            // See: https://github.com/NuGet/Engineering/issues/1440
+            if (await _settings.IsInitializedAsync())
+            {
+                _logger.LogError("Attempted to initialize the revalidation job when it is already initialized!");
+
+                throw new InvalidOperationException("Attempted to initialize the revalidation job when it is already initialized!");
+            }
+
             await ClearPackageRevalidationStateAsync();
 
             // Find packages owned by Microsoft or preinstalled by Visual Studio.
@@ -66,14 +72,18 @@ namespace NuGet.Services.Revalidate
             await InitializePackageSetAsync(PackageFinder.DependencySetName, dependencyPackages);
             await InitializePackageSetAsync(PackageFinder.RemainingSetName, remainingPackages);
 
-            // TODO: Set "IsInitialized" setting to true
-            // See: https://github.com/NuGet/Engineering/issues/1440
+            await _settings.MarkAsInitializedAsync();
         }
 
         public async Task VerifyInitializationAsync()
         {
-            // TODO: Check "IsInitialized" setting. If false, error!
-            // See: https://github.com/NuGet/Engineering/issues/1440
+            if (!await _settings.IsInitializedAsync())
+            {
+                _logger.LogError("Expected revalidation state to be initialized");
+
+                throw new Exception("Expected revalidation state to be initialized");
+            }
+
             var expectedCount = _packageFinder.AppropriatePackageCount();
             var actualCount = await _revalidationState.PackageRevalidationCountAsync();
 
@@ -120,9 +130,19 @@ namespace NuGet.Services.Revalidate
 
             for (var chunkIndex = 0; chunkIndex < chunks.Count; chunkIndex++)
             {
-                // TODO: Check the kill switch
-                // See https://github.com/NuGet/Engineering/issues/1440
-                _logger.LogInformation("Initializing chunk {Chunk} of {Chunks} for package set {SetName}...",
+                while (await _settings.IsKillswitchActiveAsync())
+                {
+                    _logger.LogInformation(
+                        "Delaying initialization of chunk {Chunk} of {Chunks} for package set {SetName} due to active killswitch",
+                        chunkIndex + 1,
+                        chunks.Count,
+                        setName);
+
+                    await Task.Delay(_config.SleepDurationBetweenBatches);
+                }
+
+                _logger.LogInformation(
+                    "Initializing chunk {Chunk} of {Chunks} for package set {SetName}...",
                     chunkIndex + 1,
                     chunks.Count,
                     setName);
@@ -132,7 +152,8 @@ namespace NuGet.Services.Revalidate
 
                 await InitializeRevalidationsAsync(chunk, versions);
 
-                _logger.LogInformation("Initialized chunk {Chunk} of {Chunks} for package set {SetName}",
+                _logger.LogInformation(
+                    "Initialized chunk {Chunk} of {Chunks} for package set {SetName}",
                     chunkIndex + 1,
                     chunks.Count,
                     setName);

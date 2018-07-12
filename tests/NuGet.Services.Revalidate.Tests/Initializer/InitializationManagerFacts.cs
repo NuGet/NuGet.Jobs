@@ -19,6 +19,18 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
         public class TheInitializeAsyncMethod : FactsBase
         {
             [Fact]
+            public async Task ThrowsIfAlreadyInitialized()
+            {
+                // Arrange
+                _settings.Setup(s => s.IsInitializedAsync()).ReturnsAsync(true);
+
+                // Act & Assert
+                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.InitializeAsync());
+
+                Assert.Equal("Attempted to initialize the revalidation job when it is already initialized!", e.Message);
+            }
+
+            [Fact]
             public async Task RemovesPreviousRevalidations()
             {
                 // Arrange
@@ -71,7 +83,6 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                     remainingPackages: new[]
                     {
                         new Package { PackageRegistrationKey = 3, DownloadCount = 20, NormalizedVersion = "3.0.0", },
-
                     });
 
                 // Act & assert
@@ -248,7 +259,36 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 };
             }
 
-            // Partitions packages by batches of 1000 versions (with intelligent weights)
+            [Fact]
+            public async Task MarksAsInitializedAfterAddingRevalidations()
+            {
+                // Arrange
+                Setup(remainingPackages: new[]
+                {
+                    new Package { PackageRegistrationKey = 3, DownloadCount = 20, NormalizedVersion = "3.0.0", },
+                });
+
+                int order = 0;
+                int addRevalidationOrder = 0;
+                int markAsInitializedOrder = 0;
+
+                _revalidationState
+                    .Setup(s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()))
+                    .Callback(() => addRevalidationOrder = order++)
+                    .Returns(Task.CompletedTask);
+
+                _settings
+                    .Setup(s => s.MarkAsInitializedAsync())
+                    .Callback(() => markAsInitializedOrder = order++)
+                    .Returns(Task.CompletedTask);
+
+                // Act & Assert
+                await _target.InitializeAsync();
+
+                _settings.Verify(s => s.MarkAsInitializedAsync(), Times.Once);
+
+                Assert.True(markAsInitializedOrder > addRevalidationOrder);
+            }
 
             private void Setup(
                 IEnumerable<Package> microsoftPackages = null,
@@ -354,17 +394,31 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
         public class TheVerifyAsyncMethod : FactsBase
         {
             [Fact]
+            public async Task ThrowsIfNotInitialized()
+            {
+                _settings.Setup(s => s.IsInitializedAsync()).ReturnsAsync(false);
+
+                var e = await Assert.ThrowsAsync<Exception>(() => _target.VerifyInitializationAsync());
+
+                Assert.Equal("Expected revalidation state to be initialized", e.Message);
+            }
+
+            [Fact]
             public async Task ThrowsIfAppropriatePackageCountDoesNotMatchRevalidationCount()
             {
+                _settings.Setup(s => s.IsInitializedAsync()).ReturnsAsync(true);
                 _packageFinder.Setup(f => f.AppropriatePackageCount()).Returns(100);
                 _revalidationState.Setup(s => s.PackageRevalidationCountAsync()).ReturnsAsync(50);
 
-                var exception = await Assert.ThrowsAsync<Exception>(async () => await _target.VerifyInitializationAsync());
+                var e = await Assert.ThrowsAsync<Exception>(() => _target.VerifyInitializationAsync());
+
+                Assert.Equal("Expected 100 revalidation, found 50", e.Message);
             }
 
             [Fact]
             public async Task DoesNotThrowIfCountsMatch()
             {
+                _settings.Setup(s => s.IsInitializedAsync()).ReturnsAsync(true);
                 _packageFinder.Setup(f => f.AppropriatePackageCount()).Returns(100);
                 _revalidationState.Setup(s => s.PackageRevalidationCountAsync()).ReturnsAsync(100);
 
@@ -374,6 +428,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
 
         public class FactsBase
         {
+            public readonly Mock<IRevalidationSharedStateService> _settings;
             public readonly Mock<IRevalidationStateService> _revalidationState;
             public readonly Mock<IPackageFinder> _packageFinder;
 
@@ -382,12 +437,14 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
 
             public FactsBase()
             {
+                _settings = new Mock<IRevalidationSharedStateService>();
                 _revalidationState = new Mock<IRevalidationStateService>();
                 _packageFinder = new Mock<IPackageFinder>();
 
                 _config = new InitializationConfiguration();
 
                 _target = new InitializationManager(
+                    _settings.Object,
                     _revalidationState.Object,
                     _packageFinder.Object,
                     _config,

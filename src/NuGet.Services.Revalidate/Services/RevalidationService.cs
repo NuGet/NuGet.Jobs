@@ -12,6 +12,7 @@ namespace NuGet.Services.Revalidate
     public class RevalidationService : IRevalidationService
     {
         private readonly IRevalidationStateService _state;
+        private readonly IRevalidationSharedStateService _sharedState;
         private readonly ISingletonService _singletonService;
         private readonly IRevalidationThrottler _throttler;
         private readonly IHealthService _healthService;
@@ -23,6 +24,7 @@ namespace NuGet.Services.Revalidate
 
         public RevalidationService(
             IRevalidationStateService state,
+            IRevalidationSharedStateService sharedState,
             ISingletonService singletonService,
             IRevalidationThrottler throttler,
             IHealthService healthService,
@@ -32,6 +34,7 @@ namespace NuGet.Services.Revalidate
             ITelemetryService telemetryService,
             ILogger<RevalidationService> logger)
         {
+            _sharedState = sharedState ?? throw new ArgumentNullException(nameof(sharedState));
             _state = state ?? throw new ArgumentNullException(nameof(state));
             _singletonService = singletonService ?? throw new ArgumentNullException(nameof(singletonService));
             _throttler = throttler ?? throw new ArgumentNullException(nameof(throttler));
@@ -45,6 +48,13 @@ namespace NuGet.Services.Revalidate
 
         public async Task RunAsync()
         {
+            if (!await _sharedState.IsInitializedAsync())
+            {
+                _logger.LogError("The revalidation service must be initialized before running revalidations");
+
+                throw new InvalidOperationException("The revalidation service must be initialized before running revalidations");
+            }
+
             var runTime = Stopwatch.StartNew();
 
             do
@@ -83,7 +93,19 @@ namespace NuGet.Services.Revalidate
 
         public async Task<RevalidationResult> StartNextRevalidationAsync()
         {
-            using (_telemetryService.TrackDurationToStartNextRevalidation())
+            using (var operation = _telemetryService.TrackStartNextRevalidationOperation())
+            {
+                var result = await StartNextRevalidationInternalAsync();
+
+                operation.Properties.Result = result;
+
+                return result;
+            }
+        }
+
+        public async Task<RevalidationResult> StartNextRevalidationInternalAsync()
+        {
+            try
             {
                 // Don't start a revalidation if the job has been deactivated, if the ingestion pipeline is unhealthy,
                 // or if we have reached our quota of desired revalidations.
@@ -98,7 +120,7 @@ namespace NuGet.Services.Revalidate
                 }
 
                 // Everything is in tip-top shape! Increase the throttling quota and start the next revalidation.
-                await _throttler.IncreaseCapacityAsync();
+                await _sharedState.IncreaseDesiredPackageEventRateAsync();
 
                 var revalidation = await _revalidationQueue.NextOrNullAsync();
                 if (revalidation == null)
@@ -109,6 +131,12 @@ namespace NuGet.Services.Revalidate
                 }
 
                 return await StartRevalidationAsync(revalidation);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(0, e, "Failed to start next validation due to exception, retry later...");
+
+                return RevalidationResult.RetryLater;
             }
         }
 
@@ -121,7 +149,7 @@ namespace NuGet.Services.Revalidate
                 return RevalidationResult.UnrecoverableError;
             }
 
-            if (await _state.IsKillswitchActiveAsync())
+            if (await _sharedState.IsKillswitchActiveAsync())
             {
                 _logger.LogWarning("Revalidation killswitch has been activated, retry later...");
 
@@ -137,14 +165,14 @@ namespace NuGet.Services.Revalidate
 
             if (!await _healthService.IsHealthyAsync())
             {
-                _logger.LogWarning("Service appears to be unhealthy, resetting throttling capacity and retry later...");
+                _logger.LogWarning("Service appears to be unhealthy, resetting the desired package event rate. Retry later...");
 
-                await _throttler.ResetCapacityAsync();
+                await _sharedState.ResetDesiredPackageEventRateAsync();
 
                 return RevalidationResult.RetryLater;
             }
 
-            if (await _state.IsKillswitchActiveAsync())
+            if (await _sharedState.IsKillswitchActiveAsync())
             {
                 _logger.LogWarning("Revalidation killswitch has been activated after the throttle and health check, retry later...");
 

@@ -23,12 +23,6 @@ namespace NuGet.Services.Revalidate
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<bool> IsKillswitchActiveAsync()
-        {
-            // TODO
-            return Task.FromResult(false);
-        }
-
         public async Task AddPackageRevalidationsAsync(IReadOnlyList<PackageRevalidation> revalidations)
         {
             var validationContext = _context as ValidationEntitiesContext;
@@ -75,6 +69,15 @@ namespace NuGet.Services.Revalidate
         public async Task<int> PackageRevalidationCountAsync()
         {
             return await _context.PackageRevalidations.CountAsync();
+        }
+
+        public async Task<int> CountRevalidationsEnqueuedInPastHourAsync()
+        {
+            var lowerBound = DateTime.UtcNow.Subtract(TimeSpan.FromHours(1));
+
+            return await _context.PackageRevalidations
+                .Where(r => r.Enqueued >= lowerBound)
+                .CountAsync();
         }
 
         public async Task MarkRevalidationAsEnqueuedAsync(PackageRevalidation revalidation)
