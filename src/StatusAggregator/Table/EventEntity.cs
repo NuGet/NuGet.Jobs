@@ -17,13 +17,13 @@ namespace StatusAggregator.Table
             : base(DefaultPartitionKey, GetRowKey(incidentEntity))
         {
             AffectedComponentPath = incidentEntity.AffectedComponentPath;
-            AffectedComponentStatus = incidentEntity.AffectedComponentStatus;
+            AffectedComponentStatus = (int)incidentEntity.AffectedComponentStatus;
             StartTime = incidentEntity.CreationTime;
             incidentEntity.EventRowKey = RowKey;
         }
 
         public string AffectedComponentPath { get; set; }
-        public ComponentStatus AffectedComponentStatus { get; set; }
+        public int AffectedComponentStatus { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public bool IsActive
@@ -34,7 +34,7 @@ namespace StatusAggregator.Table
 
         public Event AsEvent(IEnumerable<Message> messages)
         {
-            return new Event(AffectedComponentPath, AffectedComponentStatus, StartTime, EndTime, messages);
+            return new Event(AffectedComponentPath, (ComponentStatus)AffectedComponentStatus, StartTime, EndTime, messages);
         }
 
         private static string GetRowKey(IncidentEntity incidentEntity)

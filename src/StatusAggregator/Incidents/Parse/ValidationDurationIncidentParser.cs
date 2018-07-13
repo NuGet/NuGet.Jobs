@@ -1,18 +1,16 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using NuGet.Services.Status;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public class ValidationDurationIncidentParser : EnvironmentIncidentParser
+    public class ValidationDurationIncidentParser : DefaultIncidentParser
     {
         private const string SubtitleRegEx = "Too many packages are stuck in the \"Validating\" state!";
 
-        private readonly string _environment;
-
-        public ValidationDurationIncidentParser(string environment)
-            : base(SubtitleRegEx, environment)
+        public ValidationDurationIncidentParser(IEnumerable<string> environments, int maximumSeverity)
+            : base(SubtitleRegEx, environments, maximumSeverity)
         {
-            _environment = environment;
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)

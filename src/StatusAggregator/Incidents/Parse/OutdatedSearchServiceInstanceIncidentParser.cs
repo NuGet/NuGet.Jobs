@@ -1,18 +1,16 @@
 ﻿using NuGet.Services.Status;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public class OutdatedSearchServiceInstanceIncidentParser : EnvironmentIncidentParser
+    public class OutdatedSearchServiceInstanceIncidentParser : DefaultIncidentParser
     {
         private const string SubtitleRegEx = "A search service instance is using an outdated index!";
 
-        private readonly string _environment;
-
-        public OutdatedSearchServiceInstanceIncidentParser(string environment)
-            : base(SubtitleRegEx, environment)
+        public OutdatedSearchServiceInstanceIncidentParser(IEnumerable<string> environments, int maximumSeverity)
+            : base(SubtitleRegEx, environments, maximumSeverity)
         {
-            _environment = environment;
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)

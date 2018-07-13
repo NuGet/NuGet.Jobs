@@ -40,7 +40,6 @@ namespace StatusAggregator
 
             var incidentApiBaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri));
             var incidentApiRoutingId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiRoutingId);
-            var incidentApiEnvironment = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiEnvironment);
             var incidentApiCertificateThumbprint = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificateThumbprint);
             var incidentApiCertificateStoreName = 
                 JobConfigurationManager.TryGetEnumArgument(
@@ -58,7 +57,10 @@ namespace StatusAggregator
                 incidentApiCertificateThumbprint, 
                 true);
             var incidentCollector = new IncidentCollector(incidentApiBaseUri, incidentApiCertificate, incidentApiRoutingId);
-            var aggregateIncidentParser = new AggregateIncidentParser(GetIncidentParsers());
+
+            var environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';');
+            var maximumSeverity = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) ?? int.MaxValue;
+            var aggregateIncidentParser = new AggregateIncidentParser(GetIncidentParsers(environments, maximumSeverity));
             var incidentUpdater = new IncidentUpdater(_table, eventUpdater, incidentCollector, aggregateIncidentParser, incidentFactory);
 
             _statusUpdater = new StatusUpdater(cursor, incidentUpdater);
@@ -79,13 +81,13 @@ namespace StatusAggregator
             await _statusExporter.Export();
         }
 
-        private IEnumerable<IIncidentParser> GetIncidentParsers()
+        private IEnumerable<IIncidentParser> GetIncidentParsers(IEnumerable<string> environments, int maximumSeverity)
         {
             return new IIncidentParser[]
             {
-                new ValidationDurationIncidentParser("PROD"),
-                new OutdatedRegionalSearchServiceInstanceIncidentParser("PROD"),
-                new OutdatedSearchServiceInstanceIncidentParser("PROD")
+                new ValidationDurationIncidentParser(environments, maximumSeverity),
+                new OutdatedRegionalSearchServiceInstanceIncidentParser(environments, maximumSeverity),
+                new OutdatedSearchServiceInstanceIncidentParser(environments, maximumSeverity)
             };
         }
     }

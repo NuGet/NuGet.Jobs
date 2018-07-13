@@ -4,7 +4,9 @@ namespace StatusAggregator
 {
     public static class Components
     {
-        public static IComponent Root = new TreeComponent(
+        public static IComponent CreateNuGetServiceRootComponent()
+        {
+            return new TreeComponent(
                 "NuGet",
                 "",
                 new IComponent[]
@@ -56,5 +58,6 @@ namespace StatusAggregator
                         }),
                     new LeafComponent("Package Publishing", "Uploading new packages to NuGet.org")
                 });
+        }
     }
 }

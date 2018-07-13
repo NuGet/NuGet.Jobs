@@ -55,7 +55,7 @@ namespace StatusAggregator.Tests
             Assert.Equal(Id, incidentEntity.IncidentApiId);
             Assert.Equal(CreationTime, incidentEntity.CreationTime);
             Assert.Equal(AffectedComponentPath, incidentEntity.AffectedComponentPath);
-            Assert.Equal(AffectedComponentStatus, incidentEntity.AffectedComponentStatus);
+            Assert.Equal((int)AffectedComponentStatus, incidentEntity.AffectedComponentStatus);
             Assert.NotNull(eventEntity);
             Assert.Equal(eventEntity.RowKey, incidentEntity.EventRowKey);
             Assert.Equal(IncidentEntity.DefaultPartitionKey, incidentEntity.PartitionKey);

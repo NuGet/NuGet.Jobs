@@ -1,21 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using NuGet.Services.Status;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public class OutdatedRegionalSearchServiceInstanceIncidentParser : EnvironmentIncidentParser
+    public class OutdatedRegionalSearchServiceInstanceIncidentParser : DefaultIncidentParser
     {
         private const string ServiceEnvironmentGroupName = "SearchServiceName";
         private const string ServiceRegionGroupName = "SearchServiceName";
         private static string SubtitleRegEx = $@"Search service 'nuget-\[(?<{ServiceEnvironmentGroupName}>.*)\]-\[(?<{ServiceRegionGroupName}>.*)\]-search' is using an outdated index!";
 
-        private readonly string _environment;
+        private readonly IEnumerable<string> _environments;
 
-        public OutdatedRegionalSearchServiceInstanceIncidentParser(string environment)
-            : base(SubtitleRegEx, environment)
+        public OutdatedRegionalSearchServiceInstanceIncidentParser(IEnumerable<string> environments, int maximumSeverity)
+            : base(SubtitleRegEx, environments, maximumSeverity)
         {
-            _environment = environment;
+            _environments = environments;
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
@@ -25,7 +27,7 @@ namespace StatusAggregator.Incidents.Parse
             var searchEnvironment = groups[ServiceEnvironmentGroupName].Value;
             var searchRegion = groups[ServiceRegionGroupName].Value;
 
-            if (!string.Equals(searchEnvironment, _environment, StringComparison.OrdinalIgnoreCase))
+            if (!_environments.Any(e => string.Equals(searchEnvironment, e, StringComparison.OrdinalIgnoreCase)))
             {
                 return false;
             }

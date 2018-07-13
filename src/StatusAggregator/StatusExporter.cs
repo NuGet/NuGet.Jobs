@@ -34,7 +34,7 @@ namespace StatusAggregator
 
         public async Task Export()
         {
-            var rootComponent = Components.Root;
+            var rootComponent = Components.CreateNuGetServiceRootComponent();
 
             var activeEvents = _table.GetActiveEvents();
             foreach (var activeEvent in activeEvents)
@@ -46,7 +46,7 @@ namespace StatusAggregator
                     continue;
                 }
 
-                currentComponent.Status = activeEvent.AffectedComponentStatus;
+                currentComponent.Status = (ComponentStatus)activeEvent.AffectedComponentStatus;
             }
 
             var recentEvents = _table
@@ -63,7 +63,7 @@ namespace StatusAggregator
                     return e.AsEvent(messages);
                 });
 
-            var status = new ServiceStatus(Components.Root, recentEvents);
+            var status = new ServiceStatus(rootComponent, recentEvents);
             var statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
 
             var blob = _container.GetBlockBlobReference(StatusBlobName);

@@ -1,31 +1,35 @@
 ﻿using NuGet.Services.Status;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public abstract class EnvironmentIncidentParser : IncidentParser
+    public abstract class DefaultIncidentParser : IncidentParser
     {
         private const string EnvironmentGroupName = "Environment";
 
-        private readonly string _environment;
+        private readonly IEnumerable<string> _environments;
+        private readonly int _maximumSeverity;
 
-        public EnvironmentIncidentParser(string subtitleRegEx, string environment)
+        public DefaultIncidentParser(string subtitleRegEx, IEnumerable<string> environments, int maximumSeverity)
             : base(GetRegEx(subtitleRegEx))
         {
-            _environment = environment;
+            _environments = environments;
+            _maximumSeverity = maximumSeverity;
         }
 
         protected override bool TryParseIncident(Incident incident, GroupCollection groups, out ParsedIncident parsedIncident)
         {
             parsedIncident = null;
 
-            if (incident.Severity > 2)
+            if (incident.Severity > _maximumSeverity)
             {
                 return false;
             }
-
-            if (!string.Equals(groups[EnvironmentGroupName].Value, _environment, StringComparison.OrdinalIgnoreCase))
+            
+            if (!_environments.Any(e => string.Equals(groups[EnvironmentGroupName].Value, e, StringComparison.OrdinalIgnoreCase)))
             {
                 return false;
             }

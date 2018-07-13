@@ -18,7 +18,7 @@ namespace StatusAggregator.Table
         {
             IncidentApiId = parsedIncident.Id;
             AffectedComponentPath = parsedIncident.AffectedComponentPath;
-            AffectedComponentStatus = parsedIncident.AffectedComponentStatus;
+            AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
             CreationTime = parsedIncident.CreationTime;
             MitigationTime = parsedIncident.MitigationTime;
         }
@@ -31,7 +31,7 @@ namespace StatusAggregator.Table
         }
         public string IncidentApiId { get; set; }
         public string AffectedComponentPath { get; set; }
-        public ComponentStatus AffectedComponentStatus { get; set; }
+        public int AffectedComponentStatus { get; set; }
         public DateTime CreationTime { get; set; }
         public DateTime? MitigationTime { get; set; }
         public bool IsActive
