@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using NuGet.Services.Status;
 using StatusAggregator.Table;
 
 namespace StatusAggregator
@@ -33,10 +34,12 @@ namespace StatusAggregator
 
         public async Task Export()
         {
+            var rootComponent = Components.Root;
+
             var activeEvents = _table.GetActiveEvents();
             foreach (var activeEvent in activeEvents)
             {
-                var currentComponent = Components.Get(activeEvent.AffectedComponentPath);
+                var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
 
                 if (currentComponent == null)
                 {
@@ -56,11 +59,11 @@ namespace StatusAggregator
                 {
                     var messages = _table.GetMessagesLinkedToEvent(e)
                         .ToList()
-                        .Select(m => new Message(m));
-                    return new Event(e, messages);
+                        .Select(m => m.AsMessage());
+                    return e.AsEvent(messages);
                 });
 
-            var status = new Status(Components.Root, recentEvents);
+            var status = new ServiceStatus(Components.Root, recentEvents);
             var statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
 
             var blob = _container.GetBlockBlobReference(StatusBlobName);

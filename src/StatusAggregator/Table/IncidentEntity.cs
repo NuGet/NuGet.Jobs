@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.WindowsAzure.Storage.Table;
+using NuGet.Services.Status;
 using StatusAggregator.Incidents.Parse;
 
 namespace StatusAggregator.Table
@@ -41,7 +42,7 @@ namespace StatusAggregator.Table
 
         private static string GetRowKey(ParsedIncident parsedIncident)
         {
-            return $"{parsedIncident.Id}_{Component.ToRowKeySafeComponentPath(parsedIncident.AffectedComponentPath)}_{parsedIncident.AffectedComponentStatus}";
+            return $"{parsedIncident.Id}_{TableUtility.ToRowKeySafeComponentPath(parsedIncident.AffectedComponentPath)}_{parsedIncident.AffectedComponentStatus}";
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.WindowsAzure.Storage.Table;
+using NuGet.Services.Status;
 
 namespace StatusAggregator.Table
 {
@@ -22,6 +23,11 @@ namespace StatusAggregator.Table
         public string EventRowKey { get; set; }
         public DateTime Time { get; set; }
         public string Contents { get; set; }
+
+        public Message AsMessage()
+        {
+            return new Message(Time, Contents);
+        }
 
         private static string GetRowKey(EventEntity eventEntity, DateTime time)
         {

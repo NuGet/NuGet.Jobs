@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NuGet.Services.Status;
+using System;
 using System.Text.RegularExpressions;
 
 namespace StatusAggregator.Incidents.Parse

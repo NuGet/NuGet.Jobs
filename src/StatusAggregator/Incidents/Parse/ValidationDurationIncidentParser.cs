@@ -1,5 +1,5 @@
-﻿using System;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using NuGet.Services.Status;
 
 namespace StatusAggregator.Incidents.Parse
 {
@@ -17,7 +17,7 @@ namespace StatusAggregator.Incidents.Parse
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
-            affectedComponentPath = $"NuGet{SubComponent.ComponentPathDivider}Package Publishing";
+            affectedComponentPath = ComponentUtility.GetPath("NuGet", "Package Publishing");
             return true;
         }
 

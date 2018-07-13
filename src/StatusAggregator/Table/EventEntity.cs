@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.WindowsAzure.Storage.Table;
+using NuGet.Services.Status;
 
 namespace StatusAggregator.Table
 {
@@ -30,9 +32,14 @@ namespace StatusAggregator.Table
             set { }
         }
 
+        public Event AsEvent(IEnumerable<Message> messages)
+        {
+            return new Event(AffectedComponentPath, AffectedComponentStatus, StartTime, EndTime, messages);
+        }
+
         private static string GetRowKey(IncidentEntity incidentEntity)
         {
-            return $"{Component.ToRowKeySafeComponentPath(incidentEntity.AffectedComponentPath)}_{incidentEntity.CreationTime.ToString("o")}";
+            return $"{TableUtility.ToRowKeySafeComponentPath(incidentEntity.AffectedComponentPath)}_{incidentEntity.CreationTime.ToString("o")}";
         }
     }
 }

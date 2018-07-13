@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using NuGet.Services.Status;
 
 namespace StatusAggregator.Incidents.Parse
 {
@@ -66,7 +67,7 @@ namespace StatusAggregator.Incidents.Parse
                     return false;
             }
 
-            affectedComponentPath = $"NuGet{SubComponent.ComponentPathDivider}Search{SubComponent.ComponentPathDivider}{region}{SubComponent.ComponentPathDivider}{subRegion}";
+            affectedComponentPath = ComponentUtility.GetPath("NuGet", "Search", region, subRegion);
             return true;
         }
 
