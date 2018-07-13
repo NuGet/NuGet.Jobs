@@ -12,7 +12,7 @@ start /w statusaggregator.exe ^
     -StatusIncidentApiRoutingId "#{Jobs.statusaggregator.IncidentApiRoutingId}" ^
     -StatusIncidentApiCertificateThumbprint "#{Jobs.statusaggregator.IncidentApiCertificateThumbprint}" ^
     -StatusStorageAccount "#{Jobs.statusaggregator.StorageAccount}" ^
-    -StatusContainerName "#{Jobs.statusaggregator.TableName}" ^
+    -StatusContainerName "#{Jobs.statusaggregator.ContainerName}" ^
     -StatusTableName "#{Jobs.statusaggregator.TableName}" ^
     -StatusEnvironment "#{Jobs.statusaggregator.Environment}" ^
     -StatusMaximumSeverity "#{Jobs.statusaggregator.MaximumSeverity}"
