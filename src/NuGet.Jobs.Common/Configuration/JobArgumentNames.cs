@@ -126,9 +126,7 @@ namespace NuGet.Jobs
         public const string StatusMaximumSeverity = "StatusMaximumSeverity";
         public const string StatusIncidentApiBaseUri = "StatusIncidentApiBaseUri";
         public const string StatusIncidentApiRoutingId = "StatusIncidentApiRoutingId";
-        public const string StatusIncidentApiCertificateThumbprint = "StatusIncidentApiCertificateThumbprint";
-        public const string StatusIncidentApiCertificateStoreName = "StatusIncidentApiCertificateStoreName";
-        public const string StatusIncidentApiCertificateStoreLocation = "StatusIncidentApiCertificateStoreLocation";
+        public const string StatusIncidentApiCertificate = "StatusIncidentApiCertificate";
         
         // Arguments specific to Stats.AggregateCdnDownloadsInGallery
         public static string BatchSleepSeconds = "BatchSleepSeconds";

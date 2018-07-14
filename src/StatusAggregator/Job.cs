@@ -8,8 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
-using NuGet.Services.KeyVault;
 using StatusAggregator.Incidents;
 using StatusAggregator.Incidents.Parse;
 using StatusAggregator.Table;
@@ -40,22 +40,8 @@ namespace StatusAggregator
 
             var incidentApiBaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri));
             var incidentApiRoutingId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiRoutingId);
-            var incidentApiCertificateThumbprint = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificateThumbprint);
-            var incidentApiCertificateStoreName = 
-                JobConfigurationManager.TryGetEnumArgument(
-                    jobArgsDictionary, 
-                    JobArgumentNames.StatusIncidentApiCertificateStoreName, 
-                    StoreName.My);
-            var incidentApiCertificateStoreLocation = 
-                JobConfigurationManager.TryGetEnumArgument(
-                    jobArgsDictionary, 
-                    JobArgumentNames.StatusIncidentApiCertificateStoreLocation, 
-                    StoreLocation.LocalMachine);
-            var incidentApiCertificate = CertificateUtility.FindCertificateByThumbprint(
-                incidentApiCertificateStoreName, 
-                incidentApiCertificateStoreLocation, 
-                incidentApiCertificateThumbprint, 
-                true);
+            var incidentApiCertificate = GetCertificateFromJson(
+                JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate));
             var incidentCollector = new IncidentCollector(incidentApiBaseUri, incidentApiCertificate, incidentApiRoutingId);
 
             var environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';');
@@ -89,6 +75,17 @@ namespace StatusAggregator
                 new OutdatedRegionalSearchServiceInstanceIncidentParser(environments, maximumSeverity),
                 new OutdatedSearchServiceInstanceIncidentParser(environments, maximumSeverity)
             };
+        }
+
+        private static X509Certificate2 GetCertificateFromJson(string certJson)
+        {
+            var certJObject = JObject.Parse(certJson);
+
+            var certData = certJObject["Data"].Value<string>();
+            var certPassword = certJObject["Password"].Value<string>();
+
+            var certBytes = Convert.FromBase64String(certData);
+            return new X509Certificate2(certBytes, certPassword);
         }
     }
 }

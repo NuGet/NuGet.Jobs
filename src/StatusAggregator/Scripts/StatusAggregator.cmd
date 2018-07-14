@@ -10,7 +10,7 @@ title #{Jobs.archivepackages.Title}
 start /w statusaggregator.exe ^
 	-StatusIncidentApiBaseUri "#{Jobs.statusaggregator.IncidentApiBaseUri}" ^
     -StatusIncidentApiRoutingId "#{Jobs.statusaggregator.IncidentApiRoutingId}" ^
-    -StatusIncidentApiCertificateThumbprint "#{Jobs.statusaggregator.IncidentApiCertificateThumbprint}" ^
+    -StatusIncidentApiCertificate "#{Jobs.statusaggregator.IncidentApiCertificate}" ^
     -StatusStorageAccount "#{Jobs.statusaggregator.StorageAccount}" ^
     -StatusContainerName "#{Jobs.statusaggregator.ContainerName}" ^
     -StatusTableName "#{Jobs.statusaggregator.TableName}" ^
