@@ -15,7 +15,7 @@ start /w statusaggregator.exe ^
     -StatusContainerName "#{Jobs.statusaggregator.ContainerName}" ^
     -StatusTableName "#{Jobs.statusaggregator.TableName}" ^
     -StatusEnvironment "#{Jobs.statusaggregator.Environment}" ^
-    -StatusMaximumSeverity "#{Jobs.statusaggregator.MaximumSeverity}"
+    -StatusMaximumSeverity "#{Jobs.statusaggregator.MaximumSeverity}" ^
     -VaultName "#{Deployment.Azure.KeyVault.VaultName}" ^
     -ClientId "#{Deployment.Azure.KeyVault.ClientId}" ^
     -CertificateThumbprint "#{Deployment.Azure.KeyVault.CertificateThumbprint}" ^
