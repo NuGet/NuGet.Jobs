@@ -16,8 +16,8 @@ namespace StatusAggregator
                         "Browsing the Gallery website",
                         new[]
                         {
-                            new LeafComponent("USNC", "Primary region"),
-                            new LeafComponent("USSC", "Backup region")
+                            new LeafComponent("North Central US", "Primary region"),
+                            new LeafComponent("South Central US", "Backup region")
                         }),
                     new TreeComponent(
                         "Restore",
@@ -25,14 +25,14 @@ namespace StatusAggregator
                         new IComponent[]
                         {
                             new TreeComponent(
-                                "V3",
+                                "V3 Protocol",
                                 "Restore using the V3 API",
                                 new[]
                                 {
                                     new LeafComponent("Global", "V3 restore for users outside of China"),
                                     new LeafComponent("China", "V3 restore for users inside China")
                                 }),
-                            new LeafComponent("V2", "Restore using the V2 API")
+                            new LeafComponent("V2 Protocol", "Restore using the V2 API")
                         }),
                     new TreeComponent(
                         "Search",
@@ -41,19 +41,19 @@ namespace StatusAggregator
                         {
                             new PrimarySecondaryComponent(
                                 "Global",
-                                "Search for packages outside Asia",
+                                "Search for packages outside China",
                                 new[]
                                 {
-                                    new LeafComponent("USNC", "Primary region"),
-                                    new LeafComponent("USSC", "Backup region")
+                                    new LeafComponent("North Central US", "Primary region"),
+                                    new LeafComponent("South Central US", "Backup region")
                                 }),
                             new PrimarySecondaryComponent(
-                                "Asia",
-                                "Search for packages inside Asia",
+                                "China",
+                                "Search for packages inside China",
                                 new[]
                                 {
-                                    new LeafComponent("EA", "Primary region"),
-                                    new LeafComponent("SEA", "Backup region")
+                                    new LeafComponent("East Asia", "Primary region"),
+                                    new LeafComponent("Southeast Asia", "Backup region")
                                 })
                         }),
                     new LeafComponent("Package Publishing", "Uploading new packages to NuGet.org")

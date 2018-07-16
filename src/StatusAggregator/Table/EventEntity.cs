@@ -32,7 +32,7 @@ namespace StatusAggregator.Table
             set { }
         }
 
-        public Event AsEvent(IEnumerable<Message> messages)
+        public Event AsEvent(IEnumerable<IMessage> messages)
         {
             return new Event(AffectedComponentPath, (ComponentStatus)AffectedComponentStatus, StartTime, EndTime, messages);
         }

@@ -36,19 +36,6 @@ namespace StatusAggregator
         {
             var rootComponent = Components.CreateNuGetServiceRootComponent();
 
-            var activeEvents = _table.GetActiveEvents();
-            foreach (var activeEvent in activeEvents)
-            {
-                var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
-
-                if (currentComponent == null)
-                {
-                    continue;
-                }
-
-                currentComponent.Status = (ComponentStatus)activeEvent.AffectedComponentStatus;
-            }
-
             var recentEvents = _table
                 .CreateQuery<EventEntity>()
                 .Where(e =>
@@ -61,7 +48,21 @@ namespace StatusAggregator
                         .ToList()
                         .Select(m => m.AsMessage());
                     return e.AsEvent(messages);
-                });
+                })
+                .Where(e => e.Messages != null && e.Messages.Any());
+
+            foreach (var activeEvent in recentEvents.Where(e => e.EndTime == null || e.EndTime >= DateTime.Now))
+            {
+                var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
+
+                if (currentComponent == null)
+                {
+                    continue;
+                }
+
+                currentComponent.Status = activeEvent.AffectedComponentStatus;
+            }
+            
 
             var status = new ServiceStatus(rootComponent, recentEvents);
             var statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
