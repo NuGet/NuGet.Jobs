@@ -21,7 +21,7 @@ namespace StatusAggregator
             // Enough time must have passed before we create a start message for an event.
             if (nextCreationTime > eventEntity.StartTime + EventStartDelay)
             {
-                var messageEntity = new MessageEntity(eventEntity, eventEntity.StartTime, "WE ARE IMPACTED");
+                var messageEntity = new MessageEntity(eventEntity, eventEntity.StartTime, "<b>Package publishing is degraded.</b> New packages will likely take longer than usual before becoming available for download.");
                 await _table.InsertOrReplaceAsync(messageEntity);
             }
         }
@@ -36,7 +36,7 @@ namespace StatusAggregator
             // Only create a message if the event already has messages associated with it.
             if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
             {
-                var messageEntity = new MessageEntity(eventEntity, eventEntity.EndTime.Value, "NO LONGER IMPACTED");
+                var messageEntity = new MessageEntity(eventEntity, eventEntity.EndTime.Value, "<b>Package publishing is no longer degraded.</b> New packages should become available for download as quickly as usual.");
                 await _table.InsertOrReplaceAsync(messageEntity);
             }
         }

@@ -40,7 +40,7 @@ namespace StatusAggregator
                 .CreateQuery<EventEntity>()
                 .Where(e =>
                     e.PartitionKey == EventEntity.DefaultPartitionKey &&
-                    (e.IsActive || (e.EndTime >= DateTime.Now - EventVisibilityPeriod)))
+                    (e.IsActive || (e.EndTime >= DateTime.UtcNow - EventVisibilityPeriod)))
                 .ToList()
                 .Select(e =>
                 {
@@ -51,7 +51,7 @@ namespace StatusAggregator
                 })
                 .Where(e => e.Messages != null && e.Messages.Any());
 
-            foreach (var activeEvent in recentEvents.Where(e => e.EndTime == null || e.EndTime >= DateTime.Now))
+            foreach (var activeEvent in recentEvents.Where(e => e.EndTime == null || e.EndTime >= DateTime.UtcNow))
             {
                 var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
 
