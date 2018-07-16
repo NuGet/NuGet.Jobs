@@ -36,7 +36,7 @@ namespace StatusAggregator
             // Only create a message if the event already has messages associated with it.
             if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
             {
-                var messageEntity = new MessageEntity(eventEntity, eventEntity.EndTime.Value, "<b>Package publishing is no longer degraded.</b> New packages should become available for download as quickly as usual.");
+                var messageEntity = new MessageEntity(eventEntity, eventEntity.EndTime.Value, "<b>Package publishing is no longer degraded.</b> New packages should become available for download as quickly as usual. Thank you for your patience.");
                 await _table.InsertOrReplaceAsync(messageEntity);
             }
         }
