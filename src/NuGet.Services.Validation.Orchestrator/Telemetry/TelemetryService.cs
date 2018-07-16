@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
 using NuGetGallery;
@@ -31,6 +32,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string DurationToHashPackageSeconds = OrchestratorPrefix + "DurationToHashPackageSeconds";
         private const string MessageDeliveryLag = OrchestratorPrefix + "MessageDeliveryLag";
         private const string MessageEnqueueLag = OrchestratorPrefix + "MessageEnqueueLag";
+        private const string ValidatorEnquedMessage = OrchestratorPrefix + "ValidatorEnquedMessage";
 
         private const string DurationToStartPackageSigningValidatorSeconds = PackageSigningPrefix + "DurationToStartSeconds";
 
@@ -49,6 +51,8 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string HashAlgorithm = "HashAlgorithm";
         private const string StreamType = "StreamType";
         private const string MessageType = "MessageType";
+        private const string ValidationId = "ValidationId";
+        private const string OperationDateTime = "OperationDateTime";
 
         private readonly ITelemetryClient _telemetryClient;
 
@@ -243,5 +247,16 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                 {
                     { MessageType, typeof(TMessage).Name }
                 });
+
+        public void TrackValidatorEnquedMessage(string validatorName, Guid validationId, DateTime enqueueDateTime)
+           => _telemetryClient.TrackMetric(
+               ValidatorEnquedMessage,
+               1,
+               new Dictionary<string, string>
+               {
+                   { ValidatorType, validatorName },
+                   { ValidationId, validationId.ToString()},
+                   { OperationDateTime, enqueueDateTime.ToUniversalTime().ToString("MM/dd/yy H:mm:ss", CultureInfo.InvariantCulture) }
+               });
     }
 }
