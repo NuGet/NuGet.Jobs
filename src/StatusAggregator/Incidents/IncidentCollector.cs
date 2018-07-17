@@ -21,11 +21,11 @@ namespace StatusAggregator.Incidents
         public IncidentCollector(
             Uri incidentApiBaseUri, 
             X509Certificate2 incidentApiCertificate, 
-            string incidentApiRoutingId)
+            string incidentApiTeamId)
         {
             _incidentApiBaseUri = incidentApiBaseUri;
             _incidentApiCertificate = incidentApiCertificate;
-            _incidentApiRoutingId = incidentApiRoutingId;
+            _incidentApiTeamId = incidentApiTeamId;
         }
 
         public Task<Incident> GetIncident(string id)
@@ -65,7 +65,7 @@ namespace StatusAggregator.Incidents
 
         private readonly Uri _incidentApiBaseUri;
         private readonly X509Certificate2 _incidentApiCertificate;
-        private readonly string _incidentApiRoutingId;
+        private readonly string _incidentApiTeamId;
 
         private string GetIncidentApiIncidentList(string oDataQueryParameters)
         {
@@ -79,12 +79,12 @@ namespace StatusAggregator.Incidents
 
         private string GetIncidentApiIncidentListAllIncidentsQuery()
         {
-            return $"$filter=RoutingId eq '{_incidentApiRoutingId}'";
+            return $"$filter=OwningTeamId eq '{_incidentApiTeamId}'";
         }
 
         private string GetIncidentApiIncidentListRecentIncidentsQuery(DateTime cursor)
         {
-            return $"$filter=RoutingId eq '{_incidentApiRoutingId}' and CreateDate gt datetime'{cursor.ToString("o")}'";
+            return $"$filter=OwningTeamId eq '{_incidentApiTeamId}' and CreateDate gt datetime'{cursor.ToString("o")}'";
         }
 
         private Uri GetIncidentApiUri(string query)

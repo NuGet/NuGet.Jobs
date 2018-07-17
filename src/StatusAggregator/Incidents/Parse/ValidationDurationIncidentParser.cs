@@ -4,18 +4,18 @@ using NuGet.Services.Status;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public class ValidationDurationIncidentParser : DefaultIncidentParser
+    public class ValidationDurationIncidentParser : EnvironmentPrefixIncidentParser
     {
         private const string SubtitleRegEx = "Too many packages are stuck in the \"Validating\" state!";
 
-        public ValidationDurationIncidentParser(IEnumerable<string> environments, int maximumSeverity)
-            : base(SubtitleRegEx, environments, maximumSeverity)
+        public ValidationDurationIncidentParser(IEnumerable<string> environments, IEnumerable<IIncidentParsingFilter> filters)
+            : base(SubtitleRegEx, environments, filters)
         {
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
-            affectedComponentPath = ComponentUtility.GetPath("NuGet", "Package Publishing");
+            affectedComponentPath = ComponentUtility.GetPath(Components.RootName, Components.UploadName);
             return true;
         }
 

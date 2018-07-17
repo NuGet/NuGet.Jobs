@@ -39,10 +39,10 @@ namespace StatusAggregator
             var incidentFactory = new IncidentFactory(_table, eventUpdater);
 
             var incidentApiBaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri));
-            var incidentApiRoutingId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiRoutingId);
+            var incidentApiTeamId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiTeamId);
             var incidentApiCertificate = GetCertificateFromJson(
                 JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate));
-            var incidentCollector = new IncidentCollector(incidentApiBaseUri, incidentApiCertificate, incidentApiRoutingId);
+            var incidentCollector = new IncidentCollector(incidentApiBaseUri, incidentApiCertificate, incidentApiTeamId);
 
             var environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';');
             var maximumSeverity = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) ?? int.MaxValue;
@@ -69,11 +69,22 @@ namespace StatusAggregator
 
         private IEnumerable<IIncidentParser> GetIncidentParsers(IEnumerable<string> environments, int maximumSeverity)
         {
+            var filters = GetIncidentParsingFilters(maximumSeverity);
+
             return new IIncidentParser[]
             {
-                new ValidationDurationIncidentParser(environments, maximumSeverity),
-                new OutdatedRegionalSearchServiceInstanceIncidentParser(environments, maximumSeverity),
-                new OutdatedSearchServiceInstanceIncidentParser(environments, maximumSeverity)
+                new ValidationDurationIncidentParser(environments, filters),
+                new OutdatedRegionalSearchServiceInstanceIncidentParser(environments, filters),
+                new OutdatedSearchServiceInstanceIncidentParser(environments, filters),
+                new PingdomIncidentParser(filters)
+            };
+        }
+
+        private IEnumerable<IIncidentParsingFilter> GetIncidentParsingFilters(int maximumSeverity)
+        {
+            return new IIncidentParsingFilter[]
+            {
+                new SeverityFilter(maximumSeverity)
             };
         }
 

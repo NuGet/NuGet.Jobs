@@ -4,18 +4,18 @@ using System.Text.RegularExpressions;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public class OutdatedSearchServiceInstanceIncidentParser : DefaultIncidentParser
+    public class OutdatedSearchServiceInstanceIncidentParser : EnvironmentPrefixIncidentParser
     {
         private const string SubtitleRegEx = "A search service instance is using an outdated index!";
 
-        public OutdatedSearchServiceInstanceIncidentParser(IEnumerable<string> environments, int maximumSeverity)
-            : base(SubtitleRegEx, environments, maximumSeverity)
+        public OutdatedSearchServiceInstanceIncidentParser(IEnumerable<string> environments, IEnumerable<IIncidentParsingFilter> filters)
+            : base(SubtitleRegEx, environments, filters)
         {
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
-            affectedComponentPath = ComponentUtility.GetPath("NuGet", "Package Publishing");
+            affectedComponentPath = ComponentUtility.GetPath(Components.RootName, Components.UploadName);
             return true;
         }
 

@@ -12,7 +12,7 @@ namespace StatusAggregator.Incidents
         public IncidentStatus Status { get; set; }
         public DateTime CreateDate { get; set; }
         public string Title { get; set; }
-        public string RoutingId { get; set; }
+        public string OwningTeamId { get; set; }
         public IncidentSourceData Source { get; set; }
         public IncidentStateChangeEventData MitigationData { get; set; }
         public IncidentStateChangeEventData ResolutionData { get; set; }

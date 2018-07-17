@@ -54,6 +54,10 @@
     <Compile Include="IEventUpdater.cs" />
     <Compile Include="IIncidentFactory.cs" />
     <Compile Include="IIncidentUpdater.cs" />
+    <Compile Include="Incidents\Parse\EnvironmentFilter.cs" />
+    <Compile Include="Incidents\Parse\IIncidentParsingFilter.cs" />
+    <Compile Include="Incidents\Parse\PingdomIncidentParser.cs" />
+    <Compile Include="Incidents\Parse\SeverityFilter.cs" />
     <Compile Include="IncidentUpdater.cs" />
     <Compile Include="IStatusUpdater.cs" />
     <Compile Include="IMessageUpdater.cs" />
@@ -68,7 +72,7 @@
     <Compile Include="MessageUpdater.cs" />
     <Compile Include="StatusExporter.cs" />
     <Compile Include="Table\CursorEntity.cs" />
-    <Compile Include="Incidents\Parse\DefaultIncidentParser.cs" />
+    <Compile Include="Incidents\Parse\EnvironmentPrefixIncidentParser.cs" />
     <Compile Include="Table\EventEntity.cs" />
     <Compile Include="Incidents\Parse\IIncidentParser.cs" />
     <Compile Include="Incidents\Incident.cs" />

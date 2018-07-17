@@ -6,16 +6,16 @@ using NuGet.Services.Status;
 
 namespace StatusAggregator.Incidents.Parse
 {
-    public class OutdatedRegionalSearchServiceInstanceIncidentParser : DefaultIncidentParser
+    public class OutdatedRegionalSearchServiceInstanceIncidentParser : EnvironmentPrefixIncidentParser
     {
-        private const string ServiceEnvironmentGroupName = "SearchServiceName";
-        private const string ServiceRegionGroupName = "SearchServiceName";
-        private static string SubtitleRegEx = $@"Search service 'nuget-\[(?<{ServiceEnvironmentGroupName}>.*)\]-\[(?<{ServiceRegionGroupName}>.*)\]-search' is using an outdated index!";
+        private const string ServiceEnvironmentGroupName = "SearchEnvironment";
+        private const string ServiceRegionGroupName = "SearchRegion";
+        private static string SubtitleRegEx = $@"Search service 'nuget-(?<{ServiceEnvironmentGroupName}>.*)-(?<{ServiceRegionGroupName}>.*)-search' is using an outdated index!";
 
         private readonly IEnumerable<string> _environments;
 
-        public OutdatedRegionalSearchServiceInstanceIncidentParser(IEnumerable<string> environments, int maximumSeverity)
-            : base(SubtitleRegEx, environments, maximumSeverity)
+        public OutdatedRegionalSearchServiceInstanceIncidentParser(IEnumerable<string> environments, IEnumerable<IIncidentParsingFilter> filters)
+            : base(SubtitleRegEx, environments, filters)
         {
             _environments = environments;
         }
@@ -40,11 +40,11 @@ namespace StatusAggregator.Incidents.Parse
                 case "0":
                 case "usnc":
                 case "ussc":
-                    region = "Global";
+                    region = Components.GlobalRegionName;
                     break;
                 case "eastasia":
                 case "southeastasia":
-                    region = "Asia";
+                    region = Components.ChinaRegionName;
                     break;
                 default:
                     return false;
@@ -54,22 +54,22 @@ namespace StatusAggregator.Incidents.Parse
             {
                 case "0":
                 case "usnc":
-                    subRegion = "USNC";
+                    subRegion = Components.UsncInstanceName;
                     break;
                 case "ussc":
-                    subRegion = "USSC";
+                    subRegion = Components.UsscInstanceName;
                     break;
                 case "eastasia":
-                    subRegion = "EA";
+                    subRegion = Components.EaInstanceName;
                     break;
                 case "southeastasia":
-                    subRegion = "SEA";
+                    subRegion = Components.SeaInstanceName;
                     break;
                 default:
                     return false;
             }
 
-            affectedComponentPath = ComponentUtility.GetPath("NuGet", "Search", region, subRegion);
+            affectedComponentPath = ComponentUtility.GetPath(Components.RootName, Components.SearchName, region, subRegion);
             return true;
         }
 
