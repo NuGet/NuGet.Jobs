@@ -114,7 +114,8 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "$PSScriptRoot\src\NuGet.Jobs.Common\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.Common.Job\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.ScanAndSign.Core\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs"
+            "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs",
+            "$PSScriptRoot\src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
@@ -147,7 +148,8 @@ Invoke-BuildStep 'Creating artifacts' {
         $ProjectsWithSymbols =
             "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
             "src/Validation.Common.Job/Validation.Common.Job.csproj",
-            "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj"
+            "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj",
+            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj"
 
         $Projects = `
             "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
