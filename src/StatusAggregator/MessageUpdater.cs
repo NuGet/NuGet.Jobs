@@ -21,13 +21,13 @@ namespace StatusAggregator
         public async Task CreateMessageForEventStart(EventEntity eventEntity, DateTime nextCreationTime)
         {
             // Enough time must have passed before we create a start message for an event.
-            if (nextCreationTime > eventEntity.StartTime + EventStartDelay)
+            // Only create a message if the event doesn't have messages associated with it.
+            if (nextCreationTime > eventEntity.StartTime + EventStartDelay &&
+                !_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any() &&
+                TryGetMessageForEventStartForEvent(eventEntity, out var message))
             {
-                if (TryGetMessageForEventStartForEvent(eventEntity, out var message))
-                {
-                    var messageEntity = new MessageEntity(eventEntity, eventEntity.StartTime, message);
-                    await _table.InsertOrReplaceAsync(messageEntity);
-                }
+                var messageEntity = new MessageEntity(eventEntity, eventEntity.StartTime, message);
+                await _table.InsertOrReplaceAsync(messageEntity);
             }
         }
 
