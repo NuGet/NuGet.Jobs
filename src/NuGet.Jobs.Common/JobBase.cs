@@ -25,13 +25,13 @@ namespace NuGet.Jobs
         protected JobBase()
             : this(null)
         {
-            _sqlConnectionFactories = new Dictionary<string, ISqlConnectionFactory>();
         }
 
         protected JobBase(EventSource jobEventSource)
         {
             JobName = GetType().ToString();
             _jobEventSource = jobEventSource;
+            _sqlConnectionFactories = new Dictionary<string, ISqlConnectionFactory>();
         }
 
         public string JobName { get; private set; }
