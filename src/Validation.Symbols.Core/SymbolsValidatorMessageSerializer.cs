@@ -6,47 +6,47 @@ using NuGet.Services.ServiceBus;
 
 namespace NuGet.Jobs.Validation.Symbols.Core
 {
-    public class SymbolValidatorMessageSerializer : IBrokeredMessageSerializer<SymbolValidatorMessage>
+    public class SymbolsValidatorMessageSerializer : IBrokeredMessageSerializer<SymbolsValidatorMessage>
     {
         private const string SchemaName = "SignatureValidationMessageData";
 
-        private IBrokeredMessageSerializer<SymbolValidatorMessageData1> _serializer =
-            new BrokeredMessageSerializer<SymbolValidatorMessageData1>();
+        private IBrokeredMessageSerializer<SymbolsValidatorMessageDataV1> _serializer =
+            new BrokeredMessageSerializer<SymbolsValidatorMessageDataV1>();
 
-        public SymbolValidatorMessage Deserialize(IBrokeredMessage message)
+        public SymbolsValidatorMessage Deserialize(IBrokeredMessage message)
         {
             var deserializedMessage = _serializer.Deserialize(message);
 
-            return new SymbolValidatorMessage(
+            return new SymbolsValidatorMessage(
                 deserializedMessage.ValidationId,
-                deserializedMessage.SymbolPackageKey,
+                deserializedMessage.SymbolsPackageKey,
                 deserializedMessage.PackageId,
                 deserializedMessage.PackageNormalizedVersion,
-                deserializedMessage.SNupkgUrl);
+                deserializedMessage.SnupkgUrl);
         }
 
-        public IBrokeredMessage Serialize(SymbolValidatorMessage message)
-            => _serializer.Serialize(new SymbolValidatorMessageData1
+        public IBrokeredMessage Serialize(SymbolsValidatorMessage message)
+            => _serializer.Serialize(new SymbolsValidatorMessageDataV1
             {
                 ValidationId = message.ValidationId,
-                SymbolPackageKey = message.SymbolPackageKey,
+                SymbolsPackageKey = message.SymbolsPackageKey,
                 PackageId = message.PackageId,
                 PackageNormalizedVersion = message.PackageNormalizedVersion,
-                SNupkgUrl = message.SNupkgUrl
+                SnupkgUrl = message.SnupkgUrl
             });
 
         [Schema(Name = SchemaName, Version = 1)]
-        private class SymbolValidatorMessageData1
+        private class SymbolsValidatorMessageDataV1
         {
             public Guid ValidationId { get; set; }
 
-            public int SymbolPackageKey { get; set; }
+            public int SymbolsPackageKey { get; set; }
 
             public string PackageId { get; set; }
 
             public string PackageNormalizedVersion { get; set; }
 
-            public string SNupkgUrl { get; set; }
+            public string SnupkgUrl { get; set; }
         }
     }
 }

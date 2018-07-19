@@ -6,7 +6,7 @@ using NuGet.Jobs.Configuration;
 
 namespace NuGet.Services.Validation.Symbols
 {
-    public class SymbolValidationConfiguration
+    public class SymbolsValidationConfiguration
     {
         /// <summary>
         /// The Service Bus configuration used to enqueue symbol validations.

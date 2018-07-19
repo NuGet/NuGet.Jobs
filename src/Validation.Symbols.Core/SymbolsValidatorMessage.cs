@@ -5,29 +5,29 @@ using System;
 
 namespace NuGet.Jobs.Validation.Symbols.Core
 {
-    public class SymbolValidatorMessage : ISymbolValidatorMessage
+    public class SymbolsValidatorMessage : ISymbolsValidatorMessage
     {
-        public SymbolValidatorMessage(Guid validationId, 
+        public SymbolsValidatorMessage(Guid validationId, 
             int symbolPackageKey,
             string packageId,
             string packageNormalizedVersion,
             string snupkgUrl)
         {
             ValidationId = validationId;
-            SymbolPackageKey = symbolPackageKey;
+            SymbolsPackageKey = symbolPackageKey;
             PackageId = packageId;
             PackageNormalizedVersion = packageNormalizedVersion;
-            SNupkgUrl = snupkgUrl;
+            SnupkgUrl = snupkgUrl;
         }
 
         public Guid ValidationId { get; }
 
-        public int SymbolPackageKey { get; }
+        public int SymbolsPackageKey { get; }
 
         public string PackageId { get; }
 
         public string PackageNormalizedVersion { get; }
 
-        public string SNupkgUrl { get; }
+        public string SnupkgUrl { get; }
     }
 }

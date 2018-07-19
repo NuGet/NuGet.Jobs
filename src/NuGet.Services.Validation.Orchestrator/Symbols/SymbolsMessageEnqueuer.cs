@@ -9,16 +9,16 @@ using NuGet.Services.ServiceBus;
 
 namespace NuGet.Services.Validation.Symbols
 {
-    public class SymbolMessageEnqueuer : ISymbolMessageEnqueuer
+    public class SymbolsMessageEnqueuer : ISymbolsMessageEnqueuer
     {
         private readonly ITopicClient _topicClient;
-        private readonly IOptionsSnapshot<SymbolValidationConfiguration> _configuration;
-        private readonly IBrokeredMessageSerializer<SymbolValidatorMessage> _serializer;
+        private readonly IOptionsSnapshot<SymbolsValidationConfiguration> _configuration;
+        private readonly IBrokeredMessageSerializer<SymbolsValidatorMessage> _serializer;
 
-        public SymbolMessageEnqueuer(
+        public SymbolsMessageEnqueuer(
             ITopicClient topicClient,
-            IBrokeredMessageSerializer<SymbolValidatorMessage> serializer,
-            IOptionsSnapshot<SymbolValidationConfiguration> configuration)
+            IBrokeredMessageSerializer<SymbolsValidatorMessage> serializer,
+            IOptionsSnapshot<SymbolsValidationConfiguration> configuration)
         {
             _topicClient = topicClient ?? throw new ArgumentNullException(nameof(topicClient));
             _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
@@ -27,7 +27,7 @@ namespace NuGet.Services.Validation.Symbols
 
         public async Task EnqueueSymbolsValidationMessageAsync(IValidationRequest request)
         {
-            var message = new SymbolValidatorMessage(validationId: request.ValidationId, 
+            var message = new SymbolsValidatorMessage(validationId: request.ValidationId, 
                 symbolPackageKey: request.PackageKey,
                 packageId: request.PackageId,
                 packageNormalizedVersion: request.PackageVersion,

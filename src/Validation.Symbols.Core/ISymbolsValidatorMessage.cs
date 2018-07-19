@@ -5,7 +5,7 @@ using System;
 
 namespace NuGet.Jobs.Validation.Symbols.Core
 {
-    interface ISymbolValidatorMessage
+    interface ISymbolsValidatorMessage
     {
         /// <summary>
         /// The Validation id 
@@ -17,7 +17,7 @@ namespace NuGet.Jobs.Validation.Symbols.Core
         /// <summary>
         /// The id of the symbol package.
         /// </summary>
-        int SymbolPackageKey { get; }
+        int SymbolsPackageKey { get; }
 
         /// <summary>
         /// The package Id.
@@ -32,6 +32,6 @@ namespace NuGet.Jobs.Validation.Symbols.Core
         /// <summary>
         /// The Url of the snupkg. 
         /// </summary>
-        string SNupkgUrl { get; }
+        string SnupkgUrl { get; }
     }
 }

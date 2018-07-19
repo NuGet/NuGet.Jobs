@@ -13,19 +13,19 @@ using Error = NuGet.Services.Validation.Orchestrator.Error;
 
 namespace NuGet.Services.Validation.Symbols
 {
-    [ValidatorName(ValidatorName.SymbolValidator)]
-    public class SymbolValidator : BaseValidator, IValidator
+    [ValidatorName(ValidatorName.SymbolsValidator)]
+    public class SymbolsValidator : BaseValidator, IValidator
     {
         private readonly IValidatorStateService _validatorStateService;
-        private readonly ISymbolMessageEnqueuer _symbolMessageEnqueuer;
+        private readonly ISymbolsMessageEnqueuer _symbolMessageEnqueuer;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<SymbolValidator> _logger;
+        private readonly ILogger<SymbolsValidator> _logger;
 
-        public SymbolValidator(
+        public SymbolsValidator(
             IValidatorStateService validatorStateService,
-            ISymbolMessageEnqueuer symbolMessageEnqueuer,
+            ISymbolsMessageEnqueuer symbolMessageEnqueuer,
             ITelemetryService telemetryService,
-            ILogger<SymbolValidator> logger)
+            ILogger<SymbolsValidator> logger)
         {
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _symbolMessageEnqueuer = symbolMessageEnqueuer ?? throw new ArgumentNullException(nameof(symbolMessageEnqueuer));
@@ -83,7 +83,7 @@ namespace NuGet.Services.Validation.Symbols
 
             // Due to race conditions or failure of method TryAddValidatorStatusAsync the same message can be enqueued multiple times
             // Log this information to postmortem evaluate this behavior
-            _telemetryService.TrackValidatorEnqueuedMessage(ValidatorName.SymbolValidator, request.ValidationId);
+            _telemetryService.TrackValidatorEnqueuedMessage(ValidatorName.SymbolsValidator, request.ValidationId);
             await _symbolMessageEnqueuer.EnqueueSymbolsValidationMessageAsync(request);
 
             var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);

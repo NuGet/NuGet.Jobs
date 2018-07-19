@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Validation.Symbols
 {
-    public interface ISymbolMessageEnqueuer
+    public interface ISymbolsMessageEnqueuer
     {
         /// <summary>
         /// Enqueues a message to one of the topics used by the Symbol validators
