@@ -49,7 +49,8 @@ namespace NuGet.Jobs
         /// <summary>
         /// Initializes an <see cref="ISqlConnectionFactory"/>, for use by validation jobs.
         /// </summary>
-        public DatabaseIdentifier RegisterDatabase<T>(IServiceProvider serviceProvider)
+        /// <returns>ConnectionStringBuilder, used for diagnostics.</returns>
+        public SqlConnectionStringBuilder RegisterDatabase<T>(IServiceProvider serviceProvider)
             where T : IDbConfiguration
         {
             if (serviceProvider == null)
@@ -60,14 +61,15 @@ namespace NuGet.Jobs
             var secretInjector = serviceProvider.GetRequiredService<ISecretInjector>();
             var connectionString = serviceProvider.GetRequiredService<IOptionsSnapshot<T>>().Value.ConnectionString;
             var connectionFactory = new AzureSqlConnectionFactory(connectionString, secretInjector);
-
+            
             return RegisterDatabase(nameof(T), connectionString, secretInjector);
         }
 
         /// <summary>
         /// Initializes an <see cref="ISqlConnectionFactory"/>, for use by non-validation jobs.
         /// </summary>
-        public DatabaseIdentifier RegisterDatabase(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary, string argName)
+        /// <returns>ConnectionStringBuilder, used for diagnostics.</returns>
+        public SqlConnectionStringBuilder RegisterDatabase(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary, string argName)
         {
             if (serviceContainer == null)
             {
@@ -94,12 +96,13 @@ namespace NuGet.Jobs
         /// Register a job database at initialization time. Each call should overwrite any existing
         /// registration because <see cref="JobRunner"/> calls <see cref="Init"/> on every iteration.
         /// </summary>
-        private DatabaseIdentifier RegisterDatabase(string name, string connectionString, ISecretInjector secretInjector)
+        /// <returns>ConnectionStringBuilder, used for diagnostics.</returns>
+        private SqlConnectionStringBuilder RegisterDatabase(string name, string connectionString, ISecretInjector secretInjector)
         {
             var connectionFactory = new AzureSqlConnectionFactory(connectionString, secretInjector, Logger);
             _sqlConnectionFactories[name] = connectionFactory;
 
-            return new DatabaseIdentifier(connectionFactory);
+            return connectionFactory.SqlConnectionStringBuilder;
         }
 
         /// <summary>

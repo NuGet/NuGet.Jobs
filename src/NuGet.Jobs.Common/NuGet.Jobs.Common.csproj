@@ -49,7 +49,6 @@
     <Compile Include="Configuration\ServiceBusConfiguration.cs" />
     <Compile Include="Configuration\ValidationDbConfiguration.cs" />
     <Compile Include="Configuration\ValidationStorageConfiguration.cs" />
-    <Compile Include="DatabaseIdentifier.cs" />
     <Compile Include="Extensions\XElementExtensions.cs" />
     <Compile Include="SecretReader\ISecretReaderFactory.cs" />
     <Compile Include="SecretReader\SecretReaderFactory.cs" />

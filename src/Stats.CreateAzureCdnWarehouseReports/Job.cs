@@ -29,7 +29,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
         private int _sqlCommandTimeoutSeconds = DefaultSqlCommandTimeoutSeconds;
         private int _perPackageReportDegreeOfParallelism = DefaultPerPackageReportDegreeOfParallelism;
 
-        private DatabaseIdentifier StatisticsDatabase { get; set; }
+        private SqlConnectionStringBuilder StatisticsDatabase { get; set; }
 
         private static readonly IDictionary<string, string> _storedProcedures = new Dictionary<string, string>
         {

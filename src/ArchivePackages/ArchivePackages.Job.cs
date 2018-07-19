@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Data.SqlClient;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading.Tasks;
@@ -58,7 +59,7 @@ namespace ArchivePackages
 
         protected CloudBlobContainer SecondaryDestinationContainer { get; private set; }
 
-        private DatabaseIdentifier PackageDatabase { get; set; }
+        private SqlConnectionStringBuilder PackageDatabase { get; set; }
 
         public Job() : base(JobEventSource.Log) { }
 
