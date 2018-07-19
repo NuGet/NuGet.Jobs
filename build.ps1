@@ -148,8 +148,8 @@ Invoke-BuildStep 'Creating artifacts' {
         $ProjectsWithSymbols =
             "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
             "src/Validation.Common.Job/Validation.Common.Job.csproj",
-            "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj",
-            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj"
+            "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj"
+
 
         $Projects = `
             "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
@@ -175,7 +175,8 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Validation.PackageSigning.ProcessSignature/Validation.PackageSigning.ProcessSignature.csproj", `
             "src/Validation.PackageSigning.ValidateCertificate/Validation.PackageSigning.ValidateCertificate.csproj", `
             "src/Validation.PackageSigning.RevalidateCertificate/Validation.PackageSigning.RevalidateCertificate.csproj", `
-            "src/PackageLagMonitor/Monitoring.PackageLag.csproj" `
+            "src/PackageLagMonitor/Monitoring.PackageLag.csproj", `
+            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj" `
             + $ProjectsWithSymbols
 
         Foreach ($Project in $Projects) {

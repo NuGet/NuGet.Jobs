@@ -87,7 +87,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 var actual = await _target.GetResultAsync(_validationRequest.Object);
 
                 // Assert
-                Assert.Equal(ValidationStatus.Succeeded, actual.Status);
+                Assert.Equal(ValidationStatus.Failed, actual.Status);
                 Assert.Equal(1, actual.Issues.Count);
             }
 
@@ -126,7 +126,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 await _target.StartAsync(_validationRequest.Object);
 
                 _symbolMessageEnqueuer
-                    .Verify(x => x.EnqueueSymbolMessageAsync(It.IsAny<IValidationRequest>()), Times.Never);
+                    .Verify(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()), Times.Never);
 
                 _validatorStateService
                     .Verify(x => x.TryAddValidatorStatusAsync(It.IsAny<ValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Never);
@@ -156,7 +156,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                      });
 
                 _symbolMessageEnqueuer
-                    .Setup(x => x.EnqueueSymbolMessageAsync(It.IsAny<IValidationRequest>()))
+                    .Setup(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()))
                     .Callback(() =>
                     {
                         verificationQueuedBeforeStatePersisted = !statePersisted;
@@ -183,7 +183,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
 
                 // Assert
                 _symbolMessageEnqueuer
-                    .Verify(x => x.EnqueueSymbolMessageAsync(It.IsAny<IValidationRequest>()), Times.Once);
+                    .Verify(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()), Times.Once);
 
                 _validatorStateService
                     .Verify(
@@ -226,7 +226,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 var actual = await _target.StartAsync(_validationRequest.Object);
 
                 // Assert
-                Assert.Equal(ValidationStatus.Succeeded, actual.Status);
+                Assert.Equal(ValidationStatus.Failed, actual.Status);
                 Assert.Equal(1, actual.Issues.Count);
             }
 

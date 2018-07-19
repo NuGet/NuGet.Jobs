@@ -10,8 +10,8 @@ namespace NuGet.Services.Validation.Symbols
         /// <summary>
         /// Enqueues a message to one of the topics used by the Symbol validators
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        Task EnqueueSymbolMessageAsync(IValidationRequest request);
+        /// <param name="request">The validtion request.</param>
+        /// <returns>A <see cref="Task"/> that will be completed when the execution is completed.</returns>
+        Task EnqueueSymbolsValidationMessageAsync(IValidationRequest request);
     }
 }

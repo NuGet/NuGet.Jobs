@@ -51,7 +51,7 @@ namespace NuGet.Services.Validation.Symbols
                            result.NupkgUrl,
                            result.Issues.Select(i => i.IssueCode));
             }
-            return validatorStatus.ToValidationResult();
+            return result;
         }
 
         /// <summary>
@@ -74,16 +74,17 @@ namespace NuGet.Services.Validation.Symbols
             if (validatorStatus.State != ValidationStatus.NotStarted)
             {
                 _logger.LogWarning(
-                    "Symbol validation for {0} has already started.",
-                    request.NupkgUrl);
+                    "Symbol validation for {PackageId} {PackageNormalizedVersion} has already started.",
+                    request.PackageId,
+                    request.PackageVersion);
 
                 return validatorStatus.ToValidationResult();
             }
 
             // Due to race conditions or failure of method TryAddValidatorStatusAsync the same message can be enqueued multiple times
             // Log this information to postmortem evaluate this behavior
-            await _symbolMessageEnqueuer.EnqueueSymbolMessageAsync(request);
-            _telemetryService.TrackValidatorEnquedMessage(ValidatorName.SymbolValidator, request.ValidationId, DateTime.UtcNow);
+            _telemetryService.TrackValidatorEnqueuedMessage(ValidatorName.SymbolValidator, request.ValidationId);
+            await _symbolMessageEnqueuer.EnqueueSymbolsValidationMessageAsync(request);
 
             var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
 

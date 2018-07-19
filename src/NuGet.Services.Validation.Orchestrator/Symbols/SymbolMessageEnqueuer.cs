@@ -25,16 +25,16 @@ namespace NuGet.Services.Validation.Symbols
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        public async Task EnqueueSymbolMessageAsync(IValidationRequest request)
+        public async Task EnqueueSymbolsValidationMessageAsync(IValidationRequest request)
         {
-            var message = new SymbolValidatorMessage( validationId: request.ValidationId, 
+            var message = new SymbolValidatorMessage(validationId: request.ValidationId, 
                 symbolPackageKey: request.PackageKey,
                 packageId: request.PackageId,
                 packageNormalizedVersion: request.PackageVersion,
                 snupkgUrl: request.NupkgUrl);
             var brokeredMessage = _serializer.Serialize(message);
 
-            var visibleAt = DateTimeOffset.UtcNow;
+            var visibleAt = DateTimeOffset.UtcNow + (_configuration.Value.MessageDelay ?? TimeSpan.Zero);
             brokeredMessage.ScheduledEnqueueTimeUtc = visibleAt;
 
             await _topicClient.SendAsync(brokeredMessage);
