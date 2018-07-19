@@ -23,7 +23,7 @@ namespace NuGet.Services.Validation.Symbols
                 .Returns(() => _brokeredMessage.Object)
                 .Callback<SymbolValidatorMessage>(x => message = x);
 
-            await _target.EnqueueSymbolMessageAsync(_validationRequest.Object);
+            await _target.EnqueueSymbolsValidationMessageAsync(_validationRequest.Object);
 
             Assert.Equal(_validationRequest.Object.ValidationId, message.ValidationId);
             Assert.Equal(_validationRequest.Object.PackageId, message.PackageId);
