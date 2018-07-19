@@ -178,7 +178,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Validation.PackageSigning.RevalidateCertificate/Validation.PackageSigning.RevalidateCertificate.csproj", `
             "src/PackageLagMonitor/Monitoring.PackageLag.csproj", `
 	    "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj", `
-	    "src/Validation.Symbols/Validation.Symbols.csproj", `
+	    "src/Validation.Symbols/Validation.Symbols.csproj" `
             + $ProjectsWithSymbols
 
         Foreach ($Project in $Projects) {
