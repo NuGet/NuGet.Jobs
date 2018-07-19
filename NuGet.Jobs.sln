@@ -137,6 +137,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Services.Revalidate.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.Symbols.Core", "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj", "{17510A22-176F-4E96-A867-E79F1B54F54F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.Symbols", "src\Validation.Symbols\Validation.Symbols.csproj", "{2DD07A73-8C88-4429-BB24-C2813586EF92}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -357,6 +359,10 @@ Global
 		{17510A22-176F-4E96-A867-E79F1B54F54F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17510A22-176F-4E96-A867-E79F1B54F54F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17510A22-176F-4E96-A867-E79F1B54F54F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DD07A73-8C88-4429-BB24-C2813586EF92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DD07A73-8C88-4429-BB24-C2813586EF92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DD07A73-8C88-4429-BB24-C2813586EF92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DD07A73-8C88-4429-BB24-C2813586EF92}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -415,6 +421,7 @@ Global
 		{1963909D-8BE3-4CB8-B57E-AB6A8CB22FED} = {678D7B14-F8BC-4193-99AF-2EE8AA390A02}
 		{19780DCB-B307-4254-B10C-4335FC784DEA} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{17510A22-176F-4E96-A867-E79F1B54F54F} = {678D7B14-F8BC-4193-99AF-2EE8AA390A02}
+		{2DD07A73-8C88-4429-BB24-C2813586EF92} = {678D7B14-F8BC-4193-99AF-2EE8AA390A02}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {284A7AC3-FB43-4F1F-9C9C-2AF0E1F46C2B}

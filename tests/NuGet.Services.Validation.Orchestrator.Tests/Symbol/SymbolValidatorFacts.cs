@@ -87,7 +87,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 var actual = await _target.GetResultAsync(_validationRequest.Object);
 
                 // Assert
-                Assert.Equal(ValidationStatus.Succeeded, actual.Status);
+                Assert.Equal(ValidationStatus.Failed, actual.Status);
                 Assert.Equal(1, actual.Issues.Count);
             }
 
@@ -226,7 +226,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 var actual = await _target.StartAsync(_validationRequest.Object);
 
                 // Assert
-                Assert.Equal(ValidationStatus.Succeeded, actual.Status);
+                Assert.Equal(ValidationStatus.Failed, actual.Status);
                 Assert.Equal(1, actual.Issues.Count);
             }
 
