@@ -10,7 +10,7 @@ namespace StatusAggregator.Incidents.Parse
     {
         private const string ServiceEnvironmentGroupName = "SearchEnvironment";
         private const string ServiceRegionGroupName = "SearchRegion";
-        private static string SubtitleRegEx = $@"Search service 'nuget-(?<{ServiceEnvironmentGroupName}>.*)-(?<{ServiceRegionGroupName}>.*)-search' is using an outdated index!";
+        private static string SubtitleRegEx = $@"Search service 'nuget-(?<{ServiceEnvironmentGroupName}>.*)-(?<{ServiceRegionGroupName}>.*)-(v2v3)?search' is using an outdated index!";
 
         private readonly IEnumerable<string> _environments;
 
@@ -32,44 +32,7 @@ namespace StatusAggregator.Incidents.Parse
                 return false;
             }
 
-            string region;
-            string subRegion;
-
-            switch (searchRegion)
-            {
-                case "0":
-                case "usnc":
-                case "ussc":
-                    region = Components.GlobalRegionName;
-                    break;
-                case "eastasia":
-                case "southeastasia":
-                    region = Components.ChinaRegionName;
-                    break;
-                default:
-                    return false;
-            }
-
-            switch (searchRegion)
-            {
-                case "0":
-                case "usnc":
-                    subRegion = Components.UsncInstanceName;
-                    break;
-                case "ussc":
-                    subRegion = Components.UsscInstanceName;
-                    break;
-                case "eastasia":
-                    subRegion = Components.EaInstanceName;
-                    break;
-                case "southeastasia":
-                    subRegion = Components.SeaInstanceName;
-                    break;
-                default:
-                    return false;
-            }
-
-            affectedComponentPath = ComponentUtility.GetPath(Components.RootName, Components.SearchName, region, subRegion);
+            affectedComponentPath = ComponentUtility.GetPath(Components.RootName, Components.UploadName);
             return true;
         }
 
