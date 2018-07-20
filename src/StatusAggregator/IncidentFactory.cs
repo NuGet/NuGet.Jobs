@@ -53,6 +53,13 @@ namespace StatusAggregator
                 }
 
                 Console.WriteLine($"Linking {parsedIncident.Id} to {possibleEvent.RowKey}");
+                if ((int)parsedIncident.AffectedComponentStatus > possibleEvent.AffectedComponentStatus)
+                {
+                    Console.WriteLine($"{parsedIncident.Id} is a more severe than {possibleEvent.RowKey}, upgrading severity of event");
+                    possibleEvent.AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
+                    await _table.InsertOrReplaceAsync(possibleEvent);
+                }
+
                 incidentEntity.EventRowKey = possibleEvents.First().RowKey;
                 break;
             }

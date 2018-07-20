@@ -51,7 +51,13 @@ namespace StatusAggregator
                 })
                 .Where(e => e.Messages != null && e.Messages.Any());
 
-            foreach (var activeEvent in recentEvents.Where(e => e.EndTime == null || e.EndTime >= DateTime.UtcNow))
+            // If multiple events are affecting a single region, the event with the highest severity should affect the component.
+            var activeEvents = recentEvents
+                .Where(e => e.EndTime == null || e.EndTime >= DateTime.UtcNow)
+                .GroupBy(e => e.AffectedComponentPath)
+                .Select(g => g.OrderByDescending(e => e.AffectedComponentStatus).First());
+
+            foreach (var activeEvent in activeEvents)
             {
                 var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
 
