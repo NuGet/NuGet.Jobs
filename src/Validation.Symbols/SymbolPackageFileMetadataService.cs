@@ -6,7 +6,7 @@ namespace Validation.Symbols
 {
     public class SymbolPackageFileMetadataService : IFileMetadataService
     {
-        public string FileFolderName => "symbols";
+        public string FileFolderName => "symbol-packages";
 
         public string FileSavePathTemplate => CoreConstants.PackageFileSavePathTemplate;
 
@@ -14,7 +14,7 @@ namespace Validation.Symbols
 
         public string ValidationFolderName => CoreConstants.ValidationFolderName;
 
-        public string FileBackupsFolderName => "symbol-backups";
+        public string FileBackupsFolderName => "symbol-package-backups";
 
         public string FileBackupSavePathTemplate => CoreConstants.PackageFileBackupSavePathTemplate;
     }
