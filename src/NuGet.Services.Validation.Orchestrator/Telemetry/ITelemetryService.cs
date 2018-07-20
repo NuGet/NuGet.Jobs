@@ -123,7 +123,6 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// </summary>
         /// <param name="validatorName">The validator name the message was sent to.</param>
         /// <param name="validationId">The validationId.</param>
-        /// <param name="enqueueDateTime">The time the message was enqueued to the validator queue</param>
-        void TrackValidatorEnquedMessage(string validatorName, Guid validationId, DateTime enqueueDateTime);
+        void TrackSymbolsMessageEnqueued(string validatorName, Guid validationId);
     }
 }

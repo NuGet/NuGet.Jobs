@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+
 using Moq;
 using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Storage;
@@ -50,7 +50,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = ValidatorName.SymbolValidator,
+                        ValidatorName = ValidatorName.SymbolsValidator,
                         State = status,
                         ValidatorIssues = new List<ValidatorIssue>(),
                     });
@@ -71,7 +71,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = ValidatorName.SymbolValidator,
+                        ValidatorName = ValidatorName.SymbolsValidator,
                         State = ValidationStatus.Failed,
                         ValidatorIssues = new List<ValidatorIssue>
                         {
@@ -117,7 +117,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
-                         ValidatorName = ValidatorName.SymbolValidator,
+                         ValidatorName = ValidatorName.SymbolsValidator,
                          State = status,
                          ValidatorIssues = new List<ValidatorIssue>(),
                      });
@@ -126,13 +126,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 await _target.StartAsync(_validationRequest.Object);
 
                 _symbolMessageEnqueuer
-                    .Verify(x => x.EnqueueSymbolMessageAsync(It.IsAny<IValidationRequest>()), Times.Never);
+                    .Verify(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()), Times.Never);
 
                 _validatorStateService
                     .Verify(x => x.TryAddValidatorStatusAsync(It.IsAny<ValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Never);
 
                 _telemetryService.Verify(
-                    x => x.TrackValidatorEnquedMessage(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<DateTime>()),
+                    x => x.TrackSymbolsMessageEnqueued(It.IsAny<string>(), It.IsAny<Guid>()),
                     Times.Never);
             }
 
@@ -150,13 +150,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                      {
                          ValidationId = ValidationId,
                          PackageKey = PackageKey,
-                         ValidatorName = ValidatorName.SymbolValidator,
+                         ValidatorName = ValidatorName.SymbolsValidator,
                          State = ValidationStatus.NotStarted,
                          ValidatorIssues = new List<ValidatorIssue>(),
                      });
 
                 _symbolMessageEnqueuer
-                    .Setup(x => x.EnqueueSymbolMessageAsync(It.IsAny<IValidationRequest>()))
+                    .Setup(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()))
                     .Callback(() =>
                     {
                         verificationQueuedBeforeStatePersisted = !statePersisted;
@@ -183,7 +183,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
 
                 // Assert
                 _symbolMessageEnqueuer
-                    .Verify(x => x.EnqueueSymbolMessageAsync(It.IsAny<IValidationRequest>()), Times.Once);
+                    .Verify(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()), Times.Once);
 
                 _validatorStateService
                     .Verify(
@@ -194,7 +194,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                         Times.Once);
 
                 _telemetryService.Verify(
-                    x => x.TrackValidatorEnquedMessage( ValidatorName.SymbolValidator, _validationRequest.Object.ValidationId, It.IsAny<DateTime>()),
+                    x => x.TrackSymbolsMessageEnqueued( ValidatorName.SymbolsValidator, _validationRequest.Object.ValidationId),
                     Times.Once);
 
                 Assert.True(verificationQueuedBeforeStatePersisted);
@@ -210,7 +210,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     {
                         ValidationId = ValidationId,
                         PackageKey = PackageKey,
-                        ValidatorName = ValidatorName.SymbolValidator,
+                        ValidatorName = ValidatorName.SymbolsValidator,
                         State = ValidationStatus.Failed,
                         ValidatorIssues = new List<ValidatorIssue>
                         {
@@ -236,24 +236,25 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
         public abstract class FactsBase
         {
             protected readonly Mock<IValidatorStateService> _validatorStateService;
-            protected readonly Mock<ISymbolMessageEnqueuer> _symbolMessageEnqueuer;
+            protected readonly Mock<ISymbolsMessageEnqueuer> _symbolMessageEnqueuer;
             protected readonly Mock<ISimpleCloudBlobProvider> _blobProvider;
             protected readonly Mock<ITelemetryService> _telemetryService;
-            protected readonly ILogger<SymbolValidator> _logger;
+            protected readonly ILogger<SymbolsValidator> _logger;
             protected readonly Mock<IValidationRequest> _validationRequest;
-            protected readonly SymbolValidator _target;
+            protected readonly SymbolsValidator _target;
 
-            protected readonly SymbolValidationConfiguration _config;
+            protected readonly SymbolsValidationConfiguration _config;
+
 
             public FactsBase(ITestOutputHelper output)
             {
                 _validatorStateService = new Mock<IValidatorStateService>();
-                _symbolMessageEnqueuer = new Mock<ISymbolMessageEnqueuer>();
+                _symbolMessageEnqueuer = new Mock<ISymbolsMessageEnqueuer>();
                 _blobProvider = new Mock<ISimpleCloudBlobProvider>();
-                _config = new SymbolValidationConfiguration();
+                _config = new SymbolsValidationConfiguration();
                 _telemetryService = new Mock<ITelemetryService>();
                 var loggerFactory = new LoggerFactory().AddXunit(output);
-                _logger = loggerFactory.CreateLogger<SymbolValidator>();
+                _logger = loggerFactory.CreateLogger<SymbolsValidator>();
 
                 _validationRequest = new Mock<IValidationRequest>();
                 _validationRequest.Setup(x => x.NupkgUrl).Returns(NupkgUrl);
@@ -262,7 +263,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 _validationRequest.Setup(x => x.PackageVersion).Returns(PackageVersion);
                 _validationRequest.Setup(x => x.ValidationId).Returns(ValidationId);
 
-                _target = new SymbolValidator(
+                _target = new SymbolsValidator(
                     _validatorStateService.Object,
                     _symbolMessageEnqueuer.Object,
                     _telemetryService.Object,

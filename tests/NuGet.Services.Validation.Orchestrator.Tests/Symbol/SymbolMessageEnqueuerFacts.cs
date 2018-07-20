@@ -17,36 +17,37 @@ namespace NuGet.Services.Validation.Symbols
         [Fact]
         public async Task SendsSerializeMessage()
         {
-            SymbolValidatorMessage message = null;
+            SymbolsValidatorMessage message = null;
             _serializer
-                .Setup(x => x.Serialize(It.IsAny<SymbolValidatorMessage>()))
+                .Setup(x => x.Serialize(It.IsAny<SymbolsValidatorMessage>()))
                 .Returns(() => _brokeredMessage.Object)
-                .Callback<SymbolValidatorMessage>(x => message = x);
+                .Callback<SymbolsValidatorMessage>(x => message = x);
 
-            await _target.EnqueueSymbolMessageAsync(_validationRequest.Object);
+            await _target.EnqueueSymbolsValidationMessageAsync(_validationRequest.Object);
 
             Assert.Equal(_validationRequest.Object.ValidationId, message.ValidationId);
             Assert.Equal(_validationRequest.Object.PackageId, message.PackageId);
             Assert.Equal(_validationRequest.Object.PackageVersion, message.PackageNormalizedVersion);
-            Assert.Equal(_validationRequest.Object.NupkgUrl, message.SNupkgUrl);
+
+            Assert.Equal(_validationRequest.Object.NupkgUrl, message.SnupkgUrl);
             _serializer.Verify(
-                x => x.Serialize(It.IsAny<SymbolValidatorMessage>()),
+                x => x.Serialize(It.IsAny<SymbolsValidatorMessage>()),
                 Times.Once);
             _topicClient.Verify(x => x.SendAsync(_brokeredMessage.Object), Times.Once);
             _topicClient.Verify(x => x.SendAsync(It.IsAny<IBrokeredMessage>()), Times.Once);
         }
 
         private readonly Mock<ITopicClient> _topicClient;
-        private readonly Mock<IBrokeredMessageSerializer<SymbolValidatorMessage>> _serializer;
-        private readonly Mock<IOptionsSnapshot<SymbolValidationConfiguration>> _options;
-        private readonly SymbolValidationConfiguration _configuration;
+        private readonly Mock<IBrokeredMessageSerializer<SymbolsValidatorMessage>> _serializer;
+        private readonly Mock<IOptionsSnapshot<SymbolsValidationConfiguration>> _options;
+        private readonly SymbolsValidationConfiguration _configuration;
         private readonly Mock<IBrokeredMessage> _brokeredMessage;
         private readonly Mock<IValidationRequest> _validationRequest;
-        private readonly SymbolMessageEnqueuer _target;
+        private readonly SymbolsMessageEnqueuer _target;
 
         public SymbolMessageEnqueuerFacts()
         {
-            _configuration = new SymbolValidationConfiguration();
+            _configuration = new SymbolsValidationConfiguration();
             _brokeredMessage = new Mock<IBrokeredMessage>();
             _validationRequest = new Mock<IValidationRequest>();
 
@@ -57,15 +58,16 @@ namespace NuGet.Services.Validation.Symbols
             _brokeredMessage.SetupProperty(x => x.ScheduledEnqueueTimeUtc);
 
             _topicClient = new Mock<ITopicClient>();
-            _serializer = new Mock<IBrokeredMessageSerializer<SymbolValidatorMessage>>();
-            _options = new Mock<IOptionsSnapshot<SymbolValidationConfiguration>>();
+
+            _serializer = new Mock<IBrokeredMessageSerializer<SymbolsValidatorMessage>>();
+            _options = new Mock<IOptionsSnapshot<SymbolsValidationConfiguration>>();
 
             _options.Setup(x => x.Value).Returns(() => _configuration);
             _serializer
-                .Setup(x => x.Serialize(It.IsAny<SymbolValidatorMessage>()))
+                .Setup(x => x.Serialize(It.IsAny<SymbolsValidatorMessage>()))
                 .Returns(() => _brokeredMessage.Object);
 
-            _target = new SymbolMessageEnqueuer(
+            _target = new SymbolsMessageEnqueuer(
                 _topicClient.Object,
                 _serializer.Object,
                 _options.Object);
