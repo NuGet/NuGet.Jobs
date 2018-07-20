@@ -123,6 +123,6 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// </summary>
         /// <param name="validatorName">The validator name the message was sent to.</param>
         /// <param name="validationId">The validationId.</param>
-        void TrackValidatorEnqueuedMessage(string validatorName, Guid validationId);
+        void TrackSymbolsMessageEnqueued(string validatorName, Guid validationId);
     }
 }

@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string DurationToHashPackageSeconds = OrchestratorPrefix + "DurationToHashPackageSeconds";
         private const string MessageDeliveryLag = OrchestratorPrefix + "MessageDeliveryLag";
         private const string MessageEnqueueLag = OrchestratorPrefix + "MessageEnqueueLag";
-        private const string ValidatorEnqueuedMessage = OrchestratorPrefix + "SymbolsMessageEnqueued";
+        private const string SymbolsMessageEnqueued = OrchestratorPrefix + "SymbolsMessageEnqueued";
 
         private const string DurationToStartPackageSigningValidatorSeconds = PackageSigningPrefix + "DurationToStartSeconds";
 
@@ -247,9 +247,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                     { MessageType, typeof(TMessage).Name }
                 });
 
-        public void TrackValidatorEnqueuedMessage(string validatorName, Guid validationId)
+        public void TrackSymbolsMessageEnqueued(string validatorName, Guid validationId)
            => _telemetryClient.TrackMetric(
-               ValidatorEnqueuedMessage,
+               SymbolsMessageEnqueued,
                1,
                new Dictionary<string, string>
                {
