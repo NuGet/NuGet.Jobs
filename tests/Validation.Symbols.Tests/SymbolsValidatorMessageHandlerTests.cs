@@ -198,7 +198,7 @@ namespace Validation.Symbols.Tests
             public Mock<ISymbolsValidatorService> _symbolService;
             public Mock<IValidatorStateService> _validatorStateService;
             public Mock<ILogger<SymbolsValidatorMessageHandler>> _logger;
-            public SymbolValidatorMessage _message;
+            public SymbolsValidatorMessage _message;
             public ValidatorStatus _status;
 
             public FactBase()
@@ -206,7 +206,7 @@ namespace Validation.Symbols.Tests
                 _symbolService = new Mock<ISymbolsValidatorService>();
                 _validatorStateService = new Mock<IValidatorStateService>();
                 _logger = new Mock<ILogger<SymbolsValidatorMessageHandler>>();
-                _message = new SymbolValidatorMessage(Guid.NewGuid(), 42, "TestPackage", "1.1.1", "url");
+                _message = new SymbolsValidatorMessage(Guid.NewGuid(), 42, "TestPackage", "1.1.1", "url");
             }
         }
     }

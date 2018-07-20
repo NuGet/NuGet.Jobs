@@ -15,7 +15,7 @@ using NuGetGallery.Diagnostics;
 
 namespace Validation.Symbols
 {
-    public class Job : SubcriptionProcessorJob<SymbolValidatorMessage>
+    public class Job : SubcriptionProcessorJob<SymbolsValidatorMessage>
     {
         private const string SymbolsConfigurationSectionName = "SymbolsConfiguration";
 
@@ -24,8 +24,8 @@ namespace Validation.Symbols
             services.Configure<SymbolsValidatorConfiguration>(configurationRoot.GetSection(SymbolsConfigurationSectionName));
             services.AddTransient<ITelemetryService, TelemetryService>();
             services.AddTransient<ISubscriptionProcessorTelemetryService, TelemetryService>();
-            services.AddTransient<IBrokeredMessageSerializer<SymbolValidatorMessage>, SymbolValidatorMessageSerializer>();
-            services.AddTransient<IMessageHandler<SymbolValidatorMessage>, SymbolsValidatorMessageHandler>();
+            services.AddTransient<IBrokeredMessageSerializer<SymbolsValidatorMessage>, SymbolsValidatorMessageSerializer>();
+            services.AddTransient<IMessageHandler<SymbolsValidatorMessage>, SymbolsValidatorMessageHandler>();
             services.AddTransient<ISymbolsValidatorService, SymbolsValidatorService>();
             services.AddTransient<IZipArchiveService, ZipArchiveService>();
             services.AddSingleton<ISymbolsFileService>(c =>
@@ -57,7 +57,7 @@ namespace Validation.Symbols
                 .RegisterType<ValidatorStateService>()
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(string),
-                    (pi, ctx) => ValidatorName.SymbolValidator)
+                    (pi, ctx) => ValidatorName.SymbolsValidator)
                 .As<IValidatorStateService>();
         }
     }

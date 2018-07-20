@@ -20,8 +20,7 @@ namespace Validation.Symbols
 {
     public class SymbolsValidatorService : ISymbolsValidatorService
     {
-        private const string SymbolWorkingDirectory = "SymbolsValidator";
-
+        private static TimeSpan _cleanWorkingDirectoryTimeSpan = TimeSpan.FromSeconds(20);
         private static readonly string[] PEExtensionsPatterns = new string[] { "*.dll", "*.exe" };
         private static readonly string SymbolExtensionPattern = "*.pdb";
         private static readonly string[] PEExtensions = new string[] { ".dll", ".exe" };
@@ -80,28 +79,42 @@ namespace Validation.Symbols
             }
             finally
             {
-                TryCleanWorkingDirectory(targetDirectory);
+                TryCleanWorkingDirectoryForSeconds(targetDirectory, _cleanWorkingDirectoryTimeSpan);
             }
         }
 
         public string GetWorkingDirectory()
         {
-            return Path.Combine(Path.GetTempPath(), SymbolWorkingDirectory, Guid.NewGuid().ToString());
+            return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         }
 
-        private void TryCleanWorkingDirectory(string workingDirectory)
+        private void TryCleanWorkingDirectoryForSeconds(string workingDirectory, TimeSpan seconds)
         {
-            try
+            CancellationTokenSource cts = new CancellationTokenSource(seconds);
+            Task cleanTask = new Task(() =>
             {
-                if (Directory.Exists(workingDirectory))
+                IOException lastException = new IOException("NoStarted");
+                while (!cts.Token.IsCancellationRequested)
                 {
-                    Directory.Delete(workingDirectory, true);
+                    try
+                    {
+                        if (Directory.Exists(workingDirectory))
+                        {
+                            Directory.Delete(workingDirectory, true);
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        lastException = e;
+                    }
                 }
-            }
-            catch(Exception e)
-            {
-                _logger.LogWarning(0, e, "{ValidatorName} :TryCleanWorkingDirectory failed.", ValidatorName.SymbolValidator);
-            }
+                if(Directory.Exists(workingDirectory))
+                {
+                    _logger.LogWarning(0, lastException, "{ValidatorName} :TryCleanWorkingDirectory failed.", ValidatorName.SymbolsValidator);
+                }
+            }, TaskCreationOptions.LongRunning);
+
+            cleanTask.Start();
         }
 
         /// <summary>
@@ -183,7 +196,7 @@ namespace Validation.Symbols
             _logger.LogError("{ValidatorName}: There were not any dll or exe files found locally." +
                              "This could indicate an issue in the execution or the package was not correct created. PackageId {PackageId} PackageNormalizedVersion {PackageNormalizedVersion}. " +
                              "SymbolCount: {SymbolCount}",
-                             ValidatorName.SymbolValidator,
+                             ValidatorName.SymbolsValidator,
                              packageId,
                              packageNormalizedVersion,
                              Directory.GetFiles(targetDirectory, SymbolExtensionPattern, SearchOption.AllDirectories));

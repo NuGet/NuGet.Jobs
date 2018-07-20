@@ -15,7 +15,7 @@ using NuGet.Services.Validation;
 
 namespace Validation.Symbols
 {
-    public class SymbolsValidatorMessageHandler : IMessageHandler<SymbolValidatorMessage>
+    public class SymbolsValidatorMessageHandler : IMessageHandler<SymbolsValidatorMessage>
     {
         private const int MaxDBSaveRetry = 5;
         private readonly ILogger<SymbolsValidatorMessageHandler> _logger;
@@ -31,7 +31,7 @@ namespace Validation.Symbols
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
         }
 
-        public async Task<bool> HandleAsync(SymbolValidatorMessage message)
+        public async Task<bool> HandleAsync(SymbolsValidatorMessage message)
         {
             if(message == null)
             {
@@ -44,7 +44,7 @@ namespace Validation.Symbols
             {
                 _logger.LogInformation(
                     "{ValidatorName} : Could not find validation entity, requeueing (package: {PackageId} {PackageVersion}, validationId: {ValidationId})",
-                    ValidatorName.SymbolValidator,
+                    ValidatorName.SymbolsValidator,
                     message.PackageId,
                     message.PackageNormalizedVersion,
                     message.ValidationId);
@@ -56,7 +56,7 @@ namespace Validation.Symbols
             {
                 _logger.LogWarning(
                     "{ValidatorName}:Unexpected status '{ValidatorState}' when 'Incomplete' was expected, requeueing (package id: {PackageId} package version: {PackageVersion} validation id: {ValidationId})",
-                    ValidatorName.SymbolValidator,
+                    ValidatorName.SymbolsValidator,
                     validation.State,
                     message.PackageId,
                     message.PackageNormalizedVersion,
@@ -70,7 +70,7 @@ namespace Validation.Symbols
             {
                 _logger.LogWarning(
                     "{ValidatorName}:Terminal symbol verification status '{ValidatorState}' when 'Incomplete' was expected, dropping message (package id: {PackageId} package version: {PackageVersion} validation id: {ValidationId})",
-                    ValidatorName.SymbolValidator,
+                    ValidatorName.SymbolsValidator,
                     validation.State,
                     message.PackageId,
                     message.PackageNormalizedVersion,
@@ -105,14 +105,14 @@ namespace Validation.Symbols
 
             _logger.LogWarning(
                             "{ValidatorName}:The validation did not return a complete status for package {PackageId} {PackageVersion} for validation id: {ValidationId} .",
-                            ValidatorName.SymbolValidator,
+                            ValidatorName.SymbolsValidator,
                             message.PackageId,
                             message.PackageNormalizedVersion,
                             message.ValidationId);
             return false;
         }
 
-        private async Task<bool> SaveStatusAsync(ValidatorStatus validation, SymbolValidatorMessage message, int maxRetries)
+        private async Task<bool> SaveStatusAsync(ValidatorStatus validation, SymbolsValidatorMessage message, int maxRetries)
         {
             bool saveStatus = false;
             int currentRetry = 0;
@@ -122,7 +122,7 @@ namespace Validation.Symbols
                 {
                     _logger.LogWarning(
                             "{ValidatorName}:Try to save validation status package {PackageId} {PackageVersion} for validation id: {ValidationId} RetryCount: {currentRetry}.",
-                            ValidatorName.SymbolValidator,
+                            ValidatorName.SymbolsValidator,
                             message.PackageId,
                             message.PackageNormalizedVersion,
                             message.ValidationId,
@@ -135,7 +135,7 @@ namespace Validation.Symbols
                         0,
                         e,
                         "{ValidatorName}:Unable to save to save package {PackageId} {PackageVersion} for validation id: {ValidationId}.",
-                        ValidatorName.SymbolValidator,
+                        ValidatorName.SymbolsValidator,
                         message.PackageId,
                         message.PackageNormalizedVersion,
                         message.ValidationId);
@@ -145,7 +145,7 @@ namespace Validation.Symbols
             {
                 _logger.LogWarning(
                         "{ValidatorName}:Unable to save to save after {MaxRetries}. Requeueing package {PackageId} {PackageVersion} for validation id: {ValidationId}.",
-                        ValidatorName.SymbolValidator,
+                        ValidatorName.SymbolsValidator,
                         maxRetries,
                         message.PackageId,
                         message.PackageNormalizedVersion,
