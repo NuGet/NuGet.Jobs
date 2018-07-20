@@ -47,6 +47,31 @@ namespace NuGet.Jobs
         }
 
         /// <summary>
+        /// Test connection early to fail fast, and log connection diagnostics.
+        /// </summary>
+        private async Task TestConnection(ISqlConnectionFactory connectionFactory)
+        {
+            try
+            {
+                using (var connection = await connectionFactory.OpenAsync())
+                {
+                    using (var cmd = new SqlCommand("SELECT CONCAT(CURRENT_USER, '/', SYSTEM_USER)", connection))
+                    {
+                        var result = cmd.ExecuteScalar();
+                        var user = result.ToString();
+                        Logger.LogInformation("Connected to database {DataSource}/{InitialCatalog} as {User}",
+                            connectionFactory.DataSource, connectionFactory.InitialCatalog, user);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(0, e, "Failed to connect to database {DataSource}/{InitialCatalog}",
+                    connectionFactory.DataSource, connectionFactory.InitialCatalog);
+            }
+        }
+
+        /// <summary>
         /// Initializes an <see cref="ISqlConnectionFactory"/>, for use by validation jobs.
         /// </summary>
         /// <returns>ConnectionStringBuilder, used for diagnostics.</returns>
@@ -61,7 +86,7 @@ namespace NuGet.Jobs
             var secretInjector = serviceProvider.GetRequiredService<ISecretInjector>();
             var connectionString = serviceProvider.GetRequiredService<IOptionsSnapshot<T>>().Value.ConnectionString;
             var connectionFactory = new AzureSqlConnectionFactory(connectionString, secretInjector);
-            
+
             return RegisterDatabase(nameof(T), connectionString, secretInjector);
         }
 
@@ -101,6 +126,8 @@ namespace NuGet.Jobs
         {
             var connectionFactory = new AzureSqlConnectionFactory(connectionString, secretInjector, Logger);
             _sqlConnectionFactories[name] = connectionFactory;
+
+            Task.Run(() => TestConnection(connectionFactory)).Wait();
 
             return connectionFactory.SqlConnectionStringBuilder;
         }
