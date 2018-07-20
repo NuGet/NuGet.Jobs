@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Validation.Symbols
 {
-    public interface ISymbolFileService
+    public interface ISymbolsFileService
     {
         /// <summary>
         /// Downloads the nupkg file async.
@@ -19,7 +19,7 @@ namespace Validation.Symbols
         Task<Stream> DownloadNupkgFileAsync(string packageId, string packageNormalizedVersion, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Downloads the snhupkg file.
+        /// Downloads the snupkg file.
         /// </summary>
         /// <param name="packageId">The package id.</param>
         /// <param name="packageNormalizedVersion">The package normalized version.</param>

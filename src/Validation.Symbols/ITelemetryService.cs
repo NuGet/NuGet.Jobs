@@ -28,6 +28,6 @@ namespace Validation.Symbols
         /// <param name="packageNormalizedVersion">The package normalized version.</param>
         /// <param name="executiontimeInSeconds">The execution time in seconds.</param>
         /// <param name="symbolCount">The count of symbols validated.</param>
-        void TrackSymbolValidationTimeEvent(string packageId, string packageNormalizedVersion, long executiontimeInSeconds, int symbolCount);
+        void TrackSymbolValidationDurationEvent(string packageId, string packageNormalizedVersion, long executiontimeInSeconds, int symbolCount);
     }
 }

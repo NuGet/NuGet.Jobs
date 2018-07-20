@@ -3,7 +3,7 @@
 
 namespace Validation.Symbols
 {
-    public class SymbolValidatorConfiguration
+    public class SymbolsValidatorConfiguration
     {
         /// <summary>
         /// Connection string for the Azure storage the package validation container.

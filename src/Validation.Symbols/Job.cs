@@ -21,15 +21,16 @@ namespace Validation.Symbols
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            services.Configure<SymbolValidatorConfiguration>(configurationRoot.GetSection(SymbolsConfigurationSectionName));
+            services.Configure<SymbolsValidatorConfiguration>(configurationRoot.GetSection(SymbolsConfigurationSectionName));
             services.AddTransient<ITelemetryService, TelemetryService>();
             services.AddTransient<ISubscriptionProcessorTelemetryService, TelemetryService>();
             services.AddTransient<IBrokeredMessageSerializer<SymbolValidatorMessage>, SymbolValidatorMessageSerializer>();
-            services.AddTransient<IMessageHandler<SymbolValidatorMessage>, SymbolValidatorMessageHandler>();
-            services.AddTransient<ISymbolValidatorService, SymbolValidatorService>();
-            services.AddSingleton<ISymbolFileService>(c =>
+            services.AddTransient<IMessageHandler<SymbolValidatorMessage>, SymbolsValidatorMessageHandler>();
+            services.AddTransient<ISymbolsValidatorService, SymbolsValidatorService>();
+            services.AddTransient<IZipArchiveService, ZipArchiveService>();
+            services.AddSingleton<ISymbolsFileService>(c =>
             {
-                var configurationAccessor = c.GetRequiredService<IOptionsSnapshot<SymbolValidatorConfiguration>>();
+                var configurationAccessor = c.GetRequiredService<IOptionsSnapshot<SymbolsValidatorConfiguration>>();
                 var packageStorageService = new CloudBlobCoreFileStorageService(new CloudBlobClientWrapper(
                     configurationAccessor.Value.PackageConnectionString,
                     readAccessGeoRedundant: false), c.GetRequiredService<IDiagnosticsService>());
@@ -43,7 +44,7 @@ namespace Validation.Symbols
                    configurationAccessor.Value.ValidationSymbolsConnectionString,
                    readAccessGeoRedundant: false), c.GetRequiredService<IDiagnosticsService>());
 
-                return new SymbolFileService(packageStorageService, packageValidationStorageService, symbolValidationStorageService);
+                return new SymbolsFileService(packageStorageService, packageValidationStorageService, symbolValidationStorageService);
             });
             services.AddSingleton(new TelemetryClient());
         }

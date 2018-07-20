@@ -15,15 +15,15 @@ using NuGet.Services.Validation;
 
 namespace Validation.Symbols
 {
-    public class SymbolValidatorMessageHandler : IMessageHandler<SymbolValidatorMessage>
+    public class SymbolsValidatorMessageHandler : IMessageHandler<SymbolValidatorMessage>
     {
         private const int MaxDBSaveRetry = 5;
-        private readonly ILogger<SymbolValidatorMessageHandler> _logger;
-        private readonly ISymbolValidatorService _symbolService;
+        private readonly ILogger<SymbolsValidatorMessageHandler> _logger;
+        private readonly ISymbolsValidatorService _symbolService;
         private readonly IValidatorStateService _validatorStateService;
 
-        public SymbolValidatorMessageHandler(ILogger<SymbolValidatorMessageHandler> logger,
-            ISymbolValidatorService symbolService,
+        public SymbolsValidatorMessageHandler(ILogger<SymbolsValidatorMessageHandler> logger,
+            ISymbolsValidatorService symbolService,
             IValidatorStateService validatorStateService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -33,6 +33,10 @@ namespace Validation.Symbols
 
         public async Task<bool> HandleAsync(SymbolValidatorMessage message)
         {
+            if(message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
             var validation = await _validatorStateService.GetStatusAsync(message.ValidationId);
 
             // A validation should be queued with ValidatorState == Incomplete.
@@ -78,7 +82,6 @@ namespace Validation.Symbols
 
             var validationResult =  await _symbolService.ValidateSymbolsAsync(message.PackageId, message.PackageNormalizedVersion, CancellationToken.None);
 
-            // Save any issues if the resulting state is terminal.
             if (validationResult.Status == ValidationStatus.Failed || validationResult.Status == ValidationStatus.Succeeded)
             {
                 validation.State = validationResult.Status;
@@ -96,16 +99,24 @@ namespace Validation.Symbols
                 {
                     validation.NupkgUrl = validationResult.NupkgUrl;
                 }
+
+                return await SaveStatusAsync(validation, message, MaxDBSaveRetry);
             }
 
-            return await SaveStatusAsync(validation, message, MaxDBSaveRetry);
+            _logger.LogWarning(
+                            "{ValidatorName}:The validation did not return a complete status for package {PackageId} {PackageVersion} for validation id: {ValidationId} .",
+                            ValidatorName.SymbolValidator,
+                            message.PackageId,
+                            message.PackageNormalizedVersion,
+                            message.ValidationId);
+            return false;
         }
 
         private async Task<bool> SaveStatusAsync(ValidatorStatus validation, SymbolValidatorMessage message, int maxRetries)
         {
             bool saveStatus = false;
             int currentRetry = 0;
-            while (!saveStatus && currentRetry < maxRetries)
+            while (!saveStatus && ++currentRetry < maxRetries)
             {
                 try
                 {

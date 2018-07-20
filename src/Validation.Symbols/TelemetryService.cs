@@ -53,7 +53,7 @@ namespace Validation.Symbols
                 });
         }
 
-        public void TrackSymbolValidationTimeEvent(string packageId, string packageNormalizedVersion, long executiontimeInSeconds, int symbolCount)
+        public void TrackSymbolValidationDurationEvent(string packageId, string packageNormalizedVersion, long executiontimeInSeconds, int symbolCount)
         {
             _telemetryClient.TrackMetric(
                 SymbolValidationDuration,

@@ -9,13 +9,13 @@ using NuGetGallery;
 
 namespace Validation.Symbols
 {
-    public class SymbolFileService : ISymbolFileService
+    public class SymbolsFileService : ISymbolsFileService
     {
         private CorePackageFileService _packageFileService;
         private CorePackageFileService _packageValidationFileService;
         private CorePackageFileService _symbolValidationFileService;
 
-        public SymbolFileService(
+        public SymbolsFileService(
             ICoreFileStorageService packageStorageService,
             ICoreFileStorageService packageValidationStorageService,
             ICoreFileStorageService symbolValidationStorageService)

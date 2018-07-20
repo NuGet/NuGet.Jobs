@@ -18,7 +18,7 @@ using NuGet.Services.Validation.Issues;
 
 namespace Validation.Symbols
 {
-    public class SymbolValidatorService : ISymbolValidatorService
+    public class SymbolsValidatorService : ISymbolsValidatorService
     {
         private const string SymbolWorkingDirectory = "SymbolsValidator";
 
@@ -27,55 +27,55 @@ namespace Validation.Symbols
         private static readonly string[] PEExtensions = new string[] { ".dll", ".exe" };
         private static readonly string SymbolExtension = ".pdb";
 
-        private readonly ISymbolFileService _symybolFileService;
+        private readonly ISymbolsFileService _symbolFileService;
+        private readonly IZipArchiveService _zipArchiveService;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<SymbolValidatorService> _logger;
+        private readonly ILogger<SymbolsValidatorService> _logger;
 
-        public SymbolValidatorService(
-            ISymbolFileService symybolFileService,
+        public SymbolsValidatorService(
+            ISymbolsFileService symbolFileService,
+            IZipArchiveService zipArchiveService,
             ITelemetryService telemetryService,
-            ILogger<SymbolValidatorService> logger)
+            ILogger<SymbolsValidatorService> logger)
         {
-            _symybolFileService = symybolFileService ?? throw new ArgumentNullException(nameof(symybolFileService));
+            _symbolFileService = symbolFileService ?? throw new ArgumentNullException(nameof(symbolFileService));
+            _zipArchiveService = zipArchiveService ?? throw new ArgumentNullException(nameof(zipArchiveService));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        #region Interface methods
         public async Task<IValidationResult> ValidateSymbolsAsync(string packageId, string packageNormalizedVersion, CancellationToken token)
         {
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            var snupkgstream = await _symybolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
+            var snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
             if(snupkgstream == null)
             {
                 _telemetryService.TrackSymbolNotFoundEvent(packageId, packageNormalizedVersion);
                 return ValidationResult.Failed;
             }
-            var nupkgstream = await _symybolFileService.DownloadNupkgFileAsync(packageId, packageNormalizedVersion, token);
+            var nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(packageId, packageNormalizedVersion, token);
             if (nupkgstream == null)
             {
                 _telemetryService.TrackPackageNotFoundEvent(packageId, packageNormalizedVersion);
+                return ValidationResult.Failed;
             }
-            var pdbs = ReadFilesFromZipStream(snupkgstream, SymbolExtension);
-            var pes = ReadFilesFromZipStream(nupkgstream, PEExtensions);
+            var pdbs = _zipArchiveService.ReadFilesFromZipStream(snupkgstream, SymbolExtension);
+            var pes = _zipArchiveService.ReadFilesFromZipStream(nupkgstream, PEExtensions);
 
             if (!SymbolsHaveMatchingPEFiles(pdbs, pes))
             {
-                // ToDo - change when server common updated                
-                return ValidationResult.FailedWithIssues(ValidationIssue.Unknown);
-                // MatchingPortablePDBNotFound;
+                return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
             }
-
             var targetDirectory = GetWorkingDirectory();
             try
             {
-                var symbolFiles = ExtractFilesFromZipStream(snupkgstream, targetDirectory);
-                ExtractFilesFromZipStream(nupkgstream, targetDirectory, symbolFiles);
+                var symbolFiles = _zipArchiveService.ExtractFilesFromZipStream(snupkgstream, targetDirectory);
+                _zipArchiveService.ExtractFilesFromZipStream(nupkgstream, targetDirectory, symbolFiles);
 
                 var status = ValidateSymbolMatching(targetDirectory, packageId, packageNormalizedVersion, PEExtensionsPatterns);
                 sw.Stop();
-                _telemetryService.TrackSymbolValidationTimeEvent(packageId, packageNormalizedVersion, sw.ElapsedMilliseconds / 1000, pdbs.Count);
+                _telemetryService.TrackSymbolValidationDurationEvent(packageId, packageNormalizedVersion, sw.ElapsedMilliseconds / 1000, pdbs.Count);
                 return status;
             }
             finally
@@ -84,33 +84,7 @@ namespace Validation.Symbols
             }
         }
 
-
-        /// <summary>
-        /// Returns the files from a zip stream. The results are filtered for the files with the specified exceptions.
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="matchingExtensions"></param>
-        /// <returns></returns>
-        public HashSet<string> ReadFilesFromZipStream(Stream stream, params string[] matchingExtensions)
-        {
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
-            {
-                return ReadFilesFromZipStream(archive.Entries, matchingExtensions);
-            }
-        }
-
-
-        public HashSet<string> ExtractFilesFromZipStream(Stream stream, string targetDirectory, HashSet<string> symbolFilter = null)
-        {
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
-            {
-                return Extract(archive.Entries, targetDirectory, symbolFilter);
-            }
-        }
-
-        #endregion
-
-        public virtual string GetWorkingDirectory()
+        public string GetWorkingDirectory()
         {
             return Path.Combine(Path.GetTempPath(), SymbolWorkingDirectory, Guid.NewGuid().ToString());
         }
@@ -131,43 +105,6 @@ namespace Validation.Symbols
         }
 
         /// <summary>
-        /// Overwrite to not extract the files to the <paramref name="targetDirectory"/>.
-        /// </summary>
-        /// <param name="entry"><see cref="ZipArchiveEntry" /> entry.</param>
-        /// <param name="targetDirectory">The target directory to extract the compressed data.</param>
-        public virtual void OnExtract(ZipArchiveEntry entry, string targetDirectory)
-        {
-            string destinationPath = Path.GetFullPath(Path.Combine(targetDirectory, entry.FullName));
-            string destinationDirectory = Path.GetDirectoryName(destinationPath);
-            if (!Directory.Exists(destinationDirectory))
-            {
-                Directory.CreateDirectory(destinationDirectory);
-            }
-            entry.ExtractToFile(destinationPath);
-        }
-
-        public HashSet<string> Extract(IReadOnlyCollection<ZipArchiveEntry> entries,
-          string targetDirectory,
-          HashSet<string> symbolFilter = null)
-        {
-            return new HashSet<string>(entries.
-                   Where(e => !string.IsNullOrEmpty(e.Name)).
-                   Where((e) =>
-                   {
-                       if (symbolFilter == null)
-                       {
-                           return true;
-                       }
-                       return RemoveExtension(symbolFilter).Contains(RemoveExtension(e.FullName));
-                   }).
-                   Select((e) =>
-                   {
-                       OnExtract(e, targetDirectory);
-                       return e.FullName;
-                   }));
-        }
-
-        /// <summary>
         /// The method that performs the actual validation.
         /// More information about checksum algorithm: 
         /// https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PE-COFF.md#portable-pdb-checksum 
@@ -177,7 +114,7 @@ namespace Validation.Symbols
         /// <param name="packageNormalizedVersion">PackageNormalized version.</param>
         /// <param name="peExtensionsPatterns">Extensions patterns used for the known PE files.</param>
         /// <returns></returns>
-        public IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion, string[] peExtensionsPatterns)
+        public virtual IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion, string[] peExtensionsPatterns)
         {
             foreach (string extension in peExtensionsPatterns)
             {
@@ -200,10 +137,7 @@ namespace Validation.Symbols
 
                             if (checksumRecords.Length == 0)
                             {
-                                // ToDo - change when server common updated
-                                return ValidationResult.FailedWithIssues(ValidationIssue.Unknown);
-
-                                //ChecksumDoesNotMatch;
+                                return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
                             }
 
                             var pdbBytes = File.ReadAllBytes(pdbPath);
@@ -238,15 +172,11 @@ namespace Validation.Symbols
                                 }
 
                                 // Not found any checksum record that matches the PDB.
-                                // ToDo - change when server common updated
-                                return ValidationResult.FailedWithIssues(ValidationIssue.Unknown);
-                                //ChecksumDoesNotMatch;
+                                return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
                             }
                         }
                     }
-                    // ToDo - change when server common updated
-                    return ValidationResult.FailedWithIssues(ValidationIssue.Unknown);
-                    //MatchingPortablePDBNotFound;
+                    return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
                 }
             }
             // If did not return there were not any PE files to validate. In this case return error to not proceeed with an ingestion.
@@ -257,61 +187,28 @@ namespace Validation.Symbols
                              packageId,
                              packageNormalizedVersion,
                              Directory.GetFiles(targetDirectory, SymbolExtensionPattern, SearchOption.AllDirectories));
-            // ToDo - change when server common updated
-            return ValidationResult.FailedWithIssues(ValidationIssue.Unknown);
-            //.MatchingPortablePDBNotFound;
+            return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
         }
 
-        #region A set of static helper methods
         /// <summary>
         /// Based on the snupkg, nupkg folder structure validate that the symbols have associated binary files.
         /// </summary>
         /// <param name="symbols">Symbol list extracted from the compressed folder.</param>
         /// <param name="PEs">The list of PE files extracted from the compressed folder.</param>
         /// <returns></returns>
-        public bool SymbolsHaveMatchingPEFiles(IEnumerable<string> symbols, IEnumerable<string> PEs)
+        public static bool SymbolsHaveMatchingPEFiles(IEnumerable<string> symbols, IEnumerable<string> PEs)
         {
-            var symbolsWithoutExtension = RemoveExtension(symbols);
-            var PEsWithoutExtensions = RemoveExtension(PEs);
+            if(symbols == null)
+            {
+                throw new ArgumentNullException(nameof(symbols));
+            }
+            if (PEs == null)
+            {
+                throw new ArgumentNullException(nameof(PEs));
+            }
+            var symbolsWithoutExtension = ZipArchiveService.RemoveExtension(symbols);
+            var PEsWithoutExtensions = ZipArchiveService.RemoveExtension(PEs);
             return !symbolsWithoutExtension.Where(s => !PEsWithoutExtensions.Contains(s)).Any();
         }
-
-        /// <summary>
-        /// Removes all the file extensions.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        public static HashSet<string> RemoveExtension(IEnumerable<string> files)
-        {
-            return new HashSet<string>(files.Select((s) =>
-            {
-                return RemoveExtension(s);
-            }));
-        }
-
-        /// <summary>
-        /// Removes the extension for a file.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        public static string RemoveExtension(string file)
-        {
-            return string.Concat(Path.GetDirectoryName(file), "\\", Path.GetFileNameWithoutExtension(file));
-        }
-
-        /// <summary>
-        /// Reads all the entries from a zip streams and filter them based on the set of <paramref name="matchingExtensions"/>.
-        /// </summary>
-        /// <param name="entries">The <see cref="ZipArchiveEntry"/> collection.</param>
-        /// <param name="matchingExtensions">The extensions used for filter.</param>
-        /// <returns></returns>
-        public static HashSet<string> ReadFilesFromZipStream(IReadOnlyCollection<ZipArchiveEntry> entries, params string[] matchingExtensions)
-        {
-            return new HashSet<string>(entries.
-                    Where(e => !string.IsNullOrEmpty(e.Name)).
-                    Where(e => matchingExtensions.Contains(Path.GetExtension(e.FullName.ToLowerInvariant()))).
-                    Select(e => e.FullName));
-        }
-        #endregion 
     }
 }
