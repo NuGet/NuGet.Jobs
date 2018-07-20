@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string DurationToHashPackageSeconds = OrchestratorPrefix + "DurationToHashPackageSeconds";
         private const string MessageDeliveryLag = OrchestratorPrefix + "MessageDeliveryLag";
         private const string MessageEnqueueLag = OrchestratorPrefix + "MessageEnqueueLag";
-        private const string ValidatorEnqueuedMessage = OrchestratorPrefix + "ValidatorEnqueuedMessage";
+        private const string ValidatorEnqueuedMessage = OrchestratorPrefix + "SymbolsMessageEnqueued";
 
         private const string DurationToStartPackageSigningValidatorSeconds = PackageSigningPrefix + "DurationToStartSeconds";
 

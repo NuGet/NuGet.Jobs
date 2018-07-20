@@ -45,11 +45,11 @@ namespace NuGet.Services.Validation.Symbols
             if (validatorStatus.State == ValidationStatus.Failed)
             {
                 _logger.LogInformation(
-                           "SymbolValidationFailure " +
-                           "status = {ValidationStatus}, snupkg URL = {NupkgUrl}, validation issues = {Issues}",
-                           result.Status,
-                           result.NupkgUrl,
-                           result.Issues.Select(i => i.IssueCode));
+                    "SymbolValidationFailure "+
+                    "status = {ValidationStatus}, snupkg URL = {NupkgUrl}, validation issues = {Issues}",
+                    result.Status,
+                    result.NupkgUrl,
+                    result.Issues.Select(i => i.IssueCode));
             }
             return result;
         }
