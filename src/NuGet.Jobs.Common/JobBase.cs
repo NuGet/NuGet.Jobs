@@ -54,14 +54,12 @@ namespace NuGet.Jobs
             try
             {
                 using (var connection = await connectionFactory.OpenAsync())
+                using (var cmd = new SqlCommand("SELECT CONCAT(CURRENT_USER, '/', SYSTEM_USER)", connection))
                 {
-                    using (var cmd = new SqlCommand("SELECT CONCAT(CURRENT_USER, '/', SYSTEM_USER)", connection))
-                    {
-                        var result = cmd.ExecuteScalar();
-                        var user = result.ToString();
-                        Logger.LogInformation("Connected to database {DataSource}/{InitialCatalog} as {User}",
-                            connectionFactory.DataSource, connectionFactory.InitialCatalog, user);
-                    }
+                    var result = cmd.ExecuteScalar();
+                    var user = result.ToString();
+                    Logger.LogInformation("Connected to database {DataSource}/{InitialCatalog} as {User}",
+                        connectionFactory.DataSource, connectionFactory.InitialCatalog, user);
                 }
             }
             catch (Exception e)
