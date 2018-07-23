@@ -11,8 +11,8 @@ namespace NuGet.Services.Revalidate
 {
     public class RevalidationService : IRevalidationService
     {
-        private readonly IRevalidationStateService _state;
-        private readonly IRevalidationSharedStateService _sharedState;
+        private readonly IRevalidationJobStateService _jobState;
+        private readonly IPackageRevalidationStateService _packageState;
         private readonly ISingletonService _singletonService;
         private readonly IRevalidationThrottler _throttler;
         private readonly IHealthService _healthService;
@@ -23,8 +23,8 @@ namespace NuGet.Services.Revalidate
         private readonly ILogger<RevalidationService> _logger;
 
         public RevalidationService(
-            IRevalidationStateService state,
-            IRevalidationSharedStateService sharedState,
+            IRevalidationJobStateService jobState,
+            IPackageRevalidationStateService packageState,
             ISingletonService singletonService,
             IRevalidationThrottler throttler,
             IHealthService healthService,
@@ -34,8 +34,8 @@ namespace NuGet.Services.Revalidate
             ITelemetryService telemetryService,
             ILogger<RevalidationService> logger)
         {
-            _sharedState = sharedState ?? throw new ArgumentNullException(nameof(sharedState));
-            _state = state ?? throw new ArgumentNullException(nameof(state));
+            _jobState = jobState ?? throw new ArgumentNullException(nameof(jobState));
+            _packageState = packageState ?? throw new ArgumentNullException(nameof(packageState));
             _singletonService = singletonService ?? throw new ArgumentNullException(nameof(singletonService));
             _throttler = throttler ?? throw new ArgumentNullException(nameof(throttler));
             _healthService = healthService ?? throw new ArgumentNullException(nameof(healthService));
@@ -48,7 +48,7 @@ namespace NuGet.Services.Revalidate
 
         public async Task RunAsync()
         {
-            if (!await _sharedState.IsInitializedAsync())
+            if (!await _jobState.IsInitializedAsync())
             {
                 _logger.LogError("The revalidation service must be initialized before running revalidations");
 
@@ -120,7 +120,7 @@ namespace NuGet.Services.Revalidate
                 }
 
                 // Everything is in tip-top shape! Increase the throttling quota and start the next revalidation.
-                await _sharedState.IncreaseDesiredPackageEventRateAsync();
+                await _jobState.IncreaseDesiredPackageEventRateAsync();
 
                 var revalidation = await _revalidationQueue.NextOrNullAsync();
                 if (revalidation == null)
@@ -149,7 +149,7 @@ namespace NuGet.Services.Revalidate
                 return RevalidationResult.UnrecoverableError;
             }
 
-            if (await _sharedState.IsKillswitchActiveAsync())
+            if (await _jobState.IsKillswitchActiveAsync())
             {
                 _logger.LogWarning("Revalidation killswitch has been activated, retry later...");
 
@@ -167,12 +167,12 @@ namespace NuGet.Services.Revalidate
             {
                 _logger.LogWarning("Service appears to be unhealthy, resetting the desired package event rate. Retry later...");
 
-                await _sharedState.ResetDesiredPackageEventRateAsync();
+                await _jobState.ResetDesiredPackageEventRateAsync();
 
                 return RevalidationResult.RetryLater;
             }
 
-            if (await _sharedState.IsKillswitchActiveAsync())
+            if (await _jobState.IsKillswitchActiveAsync())
             {
                 _logger.LogWarning("Revalidation killswitch has been activated after the throttle and health check, retry later...");
 
@@ -190,7 +190,7 @@ namespace NuGet.Services.Revalidate
                 revalidation.ValidationTrackingId.Value);
 
             await _validationEnqueuer.StartValidationAsync(message);
-            await _state.MarkRevalidationAsEnqueuedAsync(revalidation);
+            await _packageState.MarkPackageRevalidationAsEnqueuedAsync(revalidation);
 
             _telemetryService.TrackPackageRevalidationStarted(revalidation.PackageId, revalidation.PackageNormalizedVersion);
 

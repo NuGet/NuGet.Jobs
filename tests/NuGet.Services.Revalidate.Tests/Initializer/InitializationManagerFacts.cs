@@ -44,7 +44,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
 
                 var firstRemove = true;
 
-                _revalidationState.Setup(s => s.RemoveRevalidationsAsync(1000))
+                _packageState.Setup(s => s.RemovePackageRevalidationsAsync(1000))
                     .ReturnsAsync(() =>
                     {
                         if (firstRemove)
@@ -59,7 +59,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 // Act & assert
                 await _target.InitializeAsync();
 
-                _revalidationState.Verify(s => s.RemoveRevalidationsAsync(1000), Times.Exactly(2));
+                _packageState.Verify(s => s.RemovePackageRevalidationsAsync(1000), Times.Exactly(2));
             }
 
             [Fact]
@@ -88,7 +88,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 // Act & assert
                 await _target.InitializeAsync();
 
-                _revalidationState.Verify(
+                _packageState.Verify(
                     s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()),
                     Times.Exactly(4));
 
@@ -127,7 +127,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 // Act & assert
                 await _target.InitializeAsync();
 
-                _revalidationState.Verify(
+                _packageState.Verify(
                     s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()),
                     Times.Once);
 
@@ -164,7 +164,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 // Act & assert
                 await _target.InitializeAsync();
 
-                _revalidationState.Verify(
+                _packageState.Verify(
                     s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()),
                     Times.Once);
 
@@ -220,7 +220,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 // Act & assert
                 await _target.InitializeAsync();
 
-                _revalidationState.Verify(
+                _packageState.Verify(
                     s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()),
                     Times.Exactly(expectedBatches));
             }
@@ -272,7 +272,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
                 int addRevalidationOrder = 0;
                 int markAsInitializedOrder = 0;
 
-                _revalidationState
+                _packageState
                     .Setup(s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()))
                     .Callback(() => addRevalidationOrder = order++)
                     .Returns(Task.CompletedTask);
@@ -384,7 +384,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
             {
                 _revalidationBatches = new List<IReadOnlyList<PackageRevalidation>>();
 
-                _revalidationState
+                _packageState
                     .Setup(s => s.AddPackageRevalidationsAsync(It.IsAny<IReadOnlyList<PackageRevalidation>>()))
                     .Callback<IReadOnlyList<PackageRevalidation>>(r => _revalidationBatches.Add(r))
                     .Returns(Task.CompletedTask);
@@ -408,7 +408,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
             {
                 _settings.Setup(s => s.IsInitializedAsync()).ReturnsAsync(true);
                 _packageFinder.Setup(f => f.AppropriatePackageCount()).Returns(100);
-                _revalidationState.Setup(s => s.PackageRevalidationCountAsync()).ReturnsAsync(50);
+                _packageState.Setup(s => s.PackageRevalidationCountAsync()).ReturnsAsync(50);
 
                 var e = await Assert.ThrowsAsync<Exception>(() => _target.VerifyInitializationAsync());
 
@@ -420,7 +420,7 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
             {
                 _settings.Setup(s => s.IsInitializedAsync()).ReturnsAsync(true);
                 _packageFinder.Setup(f => f.AppropriatePackageCount()).Returns(100);
-                _revalidationState.Setup(s => s.PackageRevalidationCountAsync()).ReturnsAsync(100);
+                _packageState.Setup(s => s.PackageRevalidationCountAsync()).ReturnsAsync(100);
 
                 await _target.VerifyInitializationAsync();
             }
@@ -428,8 +428,8 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
 
         public class FactsBase
         {
-            public readonly Mock<IRevalidationSharedStateService> _settings;
-            public readonly Mock<IRevalidationStateService> _revalidationState;
+            public readonly Mock<IRevalidationJobStateService> _settings;
+            public readonly Mock<IPackageRevalidationStateService> _packageState;
             public readonly Mock<IPackageFinder> _packageFinder;
 
             public readonly InitializationConfiguration _config;
@@ -437,15 +437,15 @@ namespace NuGet.Services.Revalidate.Tests.Initializer
 
             public FactsBase()
             {
-                _settings = new Mock<IRevalidationSharedStateService>();
-                _revalidationState = new Mock<IRevalidationStateService>();
+                _settings = new Mock<IRevalidationJobStateService>();
+                _packageState = new Mock<IPackageRevalidationStateService>();
                 _packageFinder = new Mock<IPackageFinder>();
 
                 _config = new InitializationConfiguration();
 
                 _target = new InitializationManager(
                     _settings.Object,
-                    _revalidationState.Object,
+                    _packageState.Object,
                     _packageFinder.Object,
                     _config,
                     Mock.Of<ILogger<InitializationManager>>());

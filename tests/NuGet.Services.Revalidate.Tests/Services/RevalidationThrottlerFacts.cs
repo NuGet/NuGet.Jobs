@@ -12,16 +12,16 @@ namespace NuGet.Services.Revalidate.Tests.Services
     {
         public class TheIsThrottledAsyncMethod
         {
-            private readonly Mock<IRevalidationSharedStateService> _settings;
-            private readonly Mock<IRevalidationStateService> _state;
+            private readonly Mock<IRevalidationJobStateService> _settings;
+            private readonly Mock<IPackageRevalidationStateService> _state;
             private readonly RevalidationConfiguration _config;
 
             private readonly IRevalidationThrottler _target;
 
             public TheIsThrottledAsyncMethod()
             {
-                _settings = new Mock<IRevalidationSharedStateService>();
-                _state = new Mock<IRevalidationStateService>();
+                _settings = new Mock<IRevalidationJobStateService>();
+                _state = new Mock<IPackageRevalidationStateService>();
 
                 _config = new RevalidationConfiguration();
 

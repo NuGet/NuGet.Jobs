@@ -9,28 +9,28 @@ namespace NuGet.Services.Revalidate
 {
     public class RevalidationThrottler : IRevalidationThrottler
     {
-        private readonly IRevalidationSharedStateService _settings;
-        private readonly IRevalidationStateService _state;
+        private readonly IRevalidationJobStateService _jobState;
+        private readonly IPackageRevalidationStateService _packageState;
         private readonly RevalidationConfiguration _config;
         private readonly ILogger<RevalidationThrottler> _logger;
 
         public RevalidationThrottler(
-            IRevalidationSharedStateService settings,
-            IRevalidationStateService state,
+            IRevalidationJobStateService jobState,
+            IPackageRevalidationStateService packageState,
             RevalidationConfiguration config,
             ILogger<RevalidationThrottler> logger)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _state = state ?? throw new ArgumentNullException(nameof(state));
+            _jobState = jobState ?? throw new ArgumentNullException(nameof(jobState));
+            _packageState = packageState ?? throw new ArgumentNullException(nameof(packageState));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<bool> IsThrottledAsync()
         {
-            var desiredRate = await _settings.GetDesiredPackageEventRateAsync();
+            var desiredRate = await _jobState.GetDesiredPackageEventRateAsync();
             var recentGalleryEvents = await CountGalleryEventsInPastHourAsync();
-            var recentRevalidations = await _state.CountRevalidationsEnqueuedInPastHourAsync();
+            var recentRevalidations = await _packageState.CountRevalidationsEnqueuedInPastHourAsync();
 
             var revalidationQuota = desiredRate - recentRevalidations - recentGalleryEvents;
 
@@ -39,7 +39,7 @@ namespace NuGet.Services.Revalidate
 
         public async Task DelayUntilNextRevalidationAsync()
         {
-            var desiredHourlyRate = await _settings.GetDesiredPackageEventRateAsync();
+            var desiredHourlyRate = await _jobState.GetDesiredPackageEventRateAsync();
             var sleepDuration = TimeSpan.FromHours(1.0 / desiredHourlyRate);
 
             _logger.LogInformation("Delaying until next revalidation by sleeping for {SleepDuration}...", sleepDuration);

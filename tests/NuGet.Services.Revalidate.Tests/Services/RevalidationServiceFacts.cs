@@ -96,7 +96,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 var result = await _target.StartNextRevalidationAsync();
 
                 _singletonService.Verify(s => s.IsSingletonAsync(), Times.Once);
-                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
+                _jobState.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
 
                 Assert.Equal(RevalidationResult.UnrecoverableError, result);
@@ -123,8 +123,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 // Act & Assert
                 var result = await _target.StartNextRevalidationAsync();
 
-                _sharedStateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Once);
-                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
+                _jobState.Verify(s => s.IsKillswitchActiveAsync(), Times.Once);
+                _jobState.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
 
                 Assert.Equal(RevalidationResult.RetryLater, result);
@@ -152,7 +152,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 var result = await _target.StartNextRevalidationAsync();
 
                 _throttler.Verify(s => s.IsThrottledAsync(), Times.Once);
-                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
+                _jobState.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
 
                 Assert.Equal(RevalidationResult.RetryLater, result);
@@ -179,7 +179,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 // Act & Assert
                 var result = await _target.StartNextRevalidationAsync();
 
-                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
+                _jobState.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Never);
                 _healthService.Verify(h => h.IsHealthyAsync(), Times.Once);
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
 
@@ -208,11 +208,11 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 var result = await _target.StartNextRevalidationAsync();
 
                 _singletonService.Verify(s => s.IsSingletonAsync(), Times.Once);
-                _sharedStateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
+                _jobState.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
                 _throttler.Verify(s => s.IsThrottledAsync(), Times.Once);
                 _healthService.Verify(h => h.IsHealthyAsync(), Times.Once);
 
-                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Once);
+                _jobState.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Once);
 
                 _validationEnqueuer.Verify(e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()), Times.Never);
 
@@ -246,8 +246,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
                     .Callback(() => enqueueStep = order++)
                     .Returns(Task.CompletedTask);
 
-                _stateService
-                    .Setup(s => s.MarkRevalidationAsEnqueuedAsync(It.IsAny<PackageRevalidation>()))
+                _packageState
+                    .Setup(s => s.MarkPackageRevalidationAsEnqueuedAsync(It.IsAny<PackageRevalidation>()))
                     .Callback(() => markStep = order++)
                     .Returns(Task.CompletedTask);
 
@@ -256,11 +256,11 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
                 // Assert
                 _singletonService.Verify(s => s.IsSingletonAsync(), Times.Once);
-                _sharedStateService.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
+                _jobState.Verify(s => s.IsKillswitchActiveAsync(), Times.Exactly(2));
                 _throttler.Verify(s => s.IsThrottledAsync(), Times.Once);
                 _healthService.Verify(h => h.IsHealthyAsync(), Times.Once);
 
-                _sharedStateService.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Once);
+                _jobState.Verify(s => s.IncreaseDesiredPackageEventRateAsync(), Times.Once);
 
                 _validationEnqueuer.Verify(
                     e => e.StartValidationAsync(It.Is<PackageValidationMessageData>(m =>
@@ -269,7 +269,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                         m.ValidationTrackingId == _revalidation.ValidationTrackingId.Value)),
                     Times.Once);
 
-                _stateService.Verify(s => s.MarkRevalidationAsEnqueuedAsync(_revalidation), Times.Once);
+                _packageState.Verify(s => s.MarkPackageRevalidationAsEnqueuedAsync(_revalidation), Times.Once);
                 _telemetryService.Verify(t => t.TrackPackageRevalidationStarted(_revalidation.PackageId, _revalidation.PackageNormalizedVersion));
 
                 Assert.Equal(RevalidationResult.RevalidationEnqueued, result);
@@ -280,8 +280,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
         public class FactsBase
         {
-            protected readonly Mock<IRevalidationStateService> _stateService;
-            protected readonly Mock<IRevalidationSharedStateService> _sharedStateService;
+            protected readonly Mock<IRevalidationJobStateService> _jobState;
+            protected readonly Mock<IPackageRevalidationStateService> _packageState;
             protected readonly Mock<ISingletonService> _singletonService;
             protected readonly Mock<IRevalidationThrottler> _throttler;
             protected readonly Mock<IHealthService> _healthService;
@@ -296,8 +296,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
             public FactsBase()
             {
-                _stateService = new Mock<IRevalidationStateService>();
-                _sharedStateService = new Mock<IRevalidationSharedStateService>();
+                _jobState = new Mock<IRevalidationJobStateService>();
+                _packageState = new Mock<IPackageRevalidationStateService>();
                 _singletonService = new Mock<ISingletonService>();
                 _throttler = new Mock<IRevalidationThrottler>();
                 _healthService = new Mock<IHealthService>();
@@ -326,8 +326,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 };
 
                 _target = new RevalidationService(
-                    _stateService.Object,
-                    _sharedStateService.Object,
+                    _jobState.Object,
+                    _packageState.Object,
                     _singletonService.Object,
                     _throttler.Object,
                     _healthService.Object,
@@ -352,18 +352,18 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 bool healthyThrows = false,
                 bool nextThrows = false)
             {
-                _sharedStateService.Setup(s => s.IsInitializedAsync()).ReturnsAsync(isInitialized);
+                _jobState.Setup(s => s.IsInitializedAsync()).ReturnsAsync(isInitialized);
                 _singletonService.Setup(s => s.IsSingletonAsync()).ReturnsAsync(isSingleton);
-                _sharedStateService.Setup(s => s.IsKillswitchActiveAsync()).ReturnsAsync(killswitchActive);
+                _jobState.Setup(s => s.IsKillswitchActiveAsync()).ReturnsAsync(killswitchActive);
                 _throttler.Setup(t => t.IsThrottledAsync()).ReturnsAsync(isThrottled);
                 _healthService.Setup(t => t.IsHealthyAsync()).ReturnsAsync(isHealthy);
                 _revalidationQueue.Setup(q => q.NextOrNullAsync()).ReturnsAsync(next);
 
                 var exception = new Exception();
 
-                if (initializedThrows) _sharedStateService.Setup(s => s.IsInitializedAsync()).ThrowsAsync(exception);
+                if (initializedThrows) _jobState.Setup(s => s.IsInitializedAsync()).ThrowsAsync(exception);
                 if (singletonThrows) _singletonService.Setup(s => s.IsSingletonAsync()).ThrowsAsync(exception);
-                if (killswitchThrows) _sharedStateService.Setup(s => s.IsKillswitchActiveAsync()).ThrowsAsync(exception);
+                if (killswitchThrows) _jobState.Setup(s => s.IsKillswitchActiveAsync()).ThrowsAsync(exception);
                 if (throttledThrows) _throttler.Setup(t => t.IsThrottledAsync()).ThrowsAsync(exception);
                 if (healthyThrows) _healthService.Setup(t => t.IsHealthyAsync()).ThrowsAsync(exception);
                 if (nextThrows) _revalidationQueue.Setup(q => q.NextOrNullAsync()).ThrowsAsync(exception);

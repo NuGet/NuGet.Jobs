@@ -13,7 +13,7 @@ using Xunit;
 
 namespace NuGet.Services.Revalidate.Tests.Services
 {
-    public class RevalidationStateServiceFacts
+    public class PackageRevalidationStateServiceFacts
     {
         public class TheAddPackageRevalidationsAsyncMethod : FactsBase
         {
@@ -51,7 +51,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 });
 
                 // Act & Assert
-                var result = await _target.RemoveRevalidationsAsync(5);
+                var result = await _target.RemovePackageRevalidationsAsync(5);
 
                 Assert.Equal(2, result);
                 Assert.Equal(0, _context.Object.PackageRevalidations.Count());
@@ -70,7 +70,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 });
 
                 // Act & Assert
-                var result = await _target.RemoveRevalidationsAsync(1);
+                var result = await _target.RemovePackageRevalidationsAsync(1);
 
                 Assert.Equal(1, result);
                 Assert.Equal(1, _context.Object.PackageRevalidations.Count());
@@ -116,15 +116,15 @@ namespace NuGet.Services.Revalidate.Tests.Services
         public class FactsBase
         {
             public readonly Mock<IValidationEntitiesContext> _context;
-            public readonly RevalidationStateService _target;
+            public readonly PackageRevalidationStateService _target;
 
             public FactsBase()
             {
                 _context = new Mock<IValidationEntitiesContext>();
 
-                _target = new RevalidationStateService(
+                _target = new PackageRevalidationStateService(
                     _context.Object,
-                    Mock.Of<ILogger<RevalidationStateService>>());
+                    Mock.Of<ILogger<PackageRevalidationStateService>>());
             }
         }
     }

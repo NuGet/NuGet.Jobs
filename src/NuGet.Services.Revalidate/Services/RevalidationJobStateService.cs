@@ -8,16 +8,16 @@ using NuGetGallery;
 
 namespace NuGet.Services.Revalidate
 {
-    public class RevalidationSharedStateService : IRevalidationSharedStateService
+    public class RevalidationJobStateService : IRevalidationJobStateService
     {
-        private readonly NuGetGallery.IRevalidationStateService _state;
+        private readonly IRevalidationStateService _state;
         private readonly RevalidationConfiguration _config;
-        private readonly ILogger<RevalidationSharedStateService> _logger;
+        private readonly ILogger<RevalidationJobStateService> _logger;
 
-        public RevalidationSharedStateService(
-            NuGetGallery.IRevalidationStateService state,
+        public RevalidationJobStateService(
+            IRevalidationStateService state,
             RevalidationConfiguration config,
-            ILogger<RevalidationSharedStateService> logger)
+            ILogger<RevalidationJobStateService> logger)
         {
             _state = state ?? throw new ArgumentNullException(nameof(state));
             _config = config ?? throw new ArgumentNullException(nameof(config));

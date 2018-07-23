@@ -10,7 +10,7 @@ using Xunit;
 
 namespace NuGet.Services.Revalidate.Tests.Services
 {
-    public class RevalidationSharedStateServiceFacts
+    public class RevalidationJobStateServiceFacts
     {
         public class TheIsInitializedAsyncMethod : FactsBase
         {
@@ -248,14 +248,14 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
         public class FactsBase
         {
-            protected readonly Mock<NuGetGallery.IRevalidationStateService> _state;
+            protected readonly Mock<IRevalidationStateService> _state;
             protected readonly RevalidationConfiguration _config;
 
-            protected readonly RevalidationSharedStateService _target;
+            protected readonly RevalidationJobStateService _target;
 
             public FactsBase()
             {
-                _state = new Mock<NuGetGallery.IRevalidationStateService>();
+                _state = new Mock<IRevalidationStateService>();
 
                 _config = new RevalidationConfiguration
                 {
@@ -263,10 +263,10 @@ namespace NuGet.Services.Revalidate.Tests.Services
                     MaxPackageEventRate = 500,
                 };
 
-                _target = new RevalidationSharedStateService(
+                _target = new RevalidationJobStateService(
                     _state.Object,
                     _config,
-                    Mock.Of<ILogger<RevalidationSharedStateService>>());
+                    Mock.Of<ILogger<RevalidationJobStateService>>());
             }
         }
     }

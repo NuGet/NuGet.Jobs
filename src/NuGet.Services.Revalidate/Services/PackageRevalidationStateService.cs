@@ -12,12 +12,12 @@ using NuGet.Services.Validation;
 
 namespace NuGet.Services.Revalidate
 {
-    public class RevalidationStateService : IRevalidationStateService
+    public class PackageRevalidationStateService : IPackageRevalidationStateService
     {
         private readonly IValidationEntitiesContext _context;
-        private readonly ILogger<RevalidationStateService> _logger;
+        private readonly ILogger<PackageRevalidationStateService> _logger;
 
-        public RevalidationStateService(IValidationEntitiesContext context, ILogger<RevalidationStateService> logger)
+        public PackageRevalidationStateService(IValidationEntitiesContext context, ILogger<PackageRevalidationStateService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -47,7 +47,7 @@ namespace NuGet.Services.Revalidate
             }
         }
 
-        public async Task<int> RemoveRevalidationsAsync(int max)
+        public async Task<int> RemovePackageRevalidationsAsync(int max)
         {
             var revalidations = await _context.PackageRevalidations
                 .Take(max)
@@ -80,7 +80,7 @@ namespace NuGet.Services.Revalidate
                 .CountAsync();
         }
 
-        public async Task MarkRevalidationAsEnqueuedAsync(PackageRevalidation revalidation)
+        public async Task MarkPackageRevalidationAsEnqueuedAsync(PackageRevalidation revalidation)
         {
             try
             {

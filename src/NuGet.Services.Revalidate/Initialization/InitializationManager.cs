@@ -15,21 +15,21 @@ namespace NuGet.Services.Revalidate
     {
         private static int BatchSize = 1000;
 
-        private readonly IRevalidationSharedStateService _settings;
-        private readonly IRevalidationStateService _revalidationState;
+        private readonly IRevalidationJobStateService _jobState;
+        private readonly IPackageRevalidationStateService _packageState;
         private readonly IPackageFinder _packageFinder;
         private readonly InitializationConfiguration _config;
         private readonly ILogger<InitializationManager> _logger;
 
         public InitializationManager(
-            IRevalidationSharedStateService settings,
-            IRevalidationStateService revalidationState,
+            IRevalidationJobStateService jobState,
+            IPackageRevalidationStateService packageState,
             IPackageFinder packageFinder,
             InitializationConfiguration config,
             ILogger<InitializationManager> logger)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _revalidationState = revalidationState ?? throw new ArgumentNullException(nameof(revalidationState));
+            _jobState = jobState ?? throw new ArgumentNullException(nameof(jobState));
+            _packageState = packageState ?? throw new ArgumentNullException(nameof(packageState));
             _packageFinder = packageFinder ?? throw new ArgumentNullException(nameof(packageFinder));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -37,7 +37,7 @@ namespace NuGet.Services.Revalidate
 
         public async Task InitializeAsync()
         {
-            if (await _settings.IsInitializedAsync())
+            if (await _jobState.IsInitializedAsync())
             {
                 _logger.LogError("Attempted to initialize the revalidation job when it is already initialized!");
 
@@ -72,12 +72,12 @@ namespace NuGet.Services.Revalidate
             await InitializePackageSetAsync(PackageFinder.DependencySetName, dependencyPackages);
             await InitializePackageSetAsync(PackageFinder.RemainingSetName, remainingPackages);
 
-            await _settings.MarkAsInitializedAsync();
+            await _jobState.MarkAsInitializedAsync();
         }
 
         public async Task VerifyInitializationAsync()
         {
-            if (!await _settings.IsInitializedAsync())
+            if (!await _jobState.IsInitializedAsync())
             {
                 _logger.LogError("Expected revalidation state to be initialized");
 
@@ -85,7 +85,7 @@ namespace NuGet.Services.Revalidate
             }
 
             var expectedCount = _packageFinder.AppropriatePackageCount();
-            var actualCount = await _revalidationState.PackageRevalidationCountAsync();
+            var actualCount = await _packageState.PackageRevalidationCountAsync();
 
             if (actualCount != expectedCount)
             {
@@ -103,7 +103,7 @@ namespace NuGet.Services.Revalidate
 
             do
             {
-                removedRevalidations = await _revalidationState.RemoveRevalidationsAsync(BatchSize);
+                removedRevalidations = await _packageState.RemovePackageRevalidationsAsync(BatchSize);
 
                 if (removedRevalidations > 0)
                 {
@@ -130,7 +130,7 @@ namespace NuGet.Services.Revalidate
 
             for (var chunkIndex = 0; chunkIndex < chunks.Count; chunkIndex++)
             {
-                while (await _settings.IsKillswitchActiveAsync())
+                while (await _jobState.IsKillswitchActiveAsync())
                 {
                     _logger.LogInformation(
                         "Delaying initialization of chunk {Chunk} of {Chunks} for package set {SetName} due to active killswitch",
@@ -205,7 +205,7 @@ namespace NuGet.Services.Revalidate
                 }
             }
 
-            await _revalidationState.AddPackageRevalidationsAsync(revalidations);
+            await _packageState.AddPackageRevalidationsAsync(revalidations);
         }
     }
 }

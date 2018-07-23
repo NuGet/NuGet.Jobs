@@ -8,7 +8,7 @@ namespace NuGet.Services.Revalidate
     /// <summary>
     /// The state shared between the Gallery and the revalidation job.
     /// </summary>
-    public interface IRevalidationSharedStateService
+    public interface IRevalidationJobStateService
     {
         /// <summary>
         /// Check whether the revalidation state has been initialized.
