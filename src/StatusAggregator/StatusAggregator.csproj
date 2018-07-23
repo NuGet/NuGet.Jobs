@@ -71,25 +71,20 @@
     <Compile Include="IStatusExporter.cs" />
     <Compile Include="MessageUpdater.cs" />
     <Compile Include="StatusExporter.cs" />
-    <Compile Include="Table\CursorEntity.cs" />
     <Compile Include="Incidents\Parse\EnvironmentPrefixIncidentParser.cs" />
-    <Compile Include="Table\EventEntity.cs" />
     <Compile Include="Incidents\Parse\IIncidentParser.cs" />
     <Compile Include="Incidents\Incident.cs" />
-    <Compile Include="Table\IncidentEntity.cs" />
     <Compile Include="Incidents\IncidentList.cs" />
     <Compile Include="Incidents\Parse\IncidentParser.cs" />
     <Compile Include="Incidents\IncidentStatus.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Table\ITableWrapper.cs" />
-    <Compile Include="Table\MessageEntity.cs" />
     <Compile Include="Incidents\Parse\OutdatedRegionalSearchServiceInstanceIncidentParser.cs" />
     <Compile Include="Incidents\Parse\OutdatedSearchServiceInstanceIncidentParser.cs" />
     <Compile Include="Incidents\Parse\ParsedIncident.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Incidents\Parse\ValidationDurationIncidentParser.cs" />
-    <Compile Include="Table\TableUtility.cs" />
     <Compile Include="Table\TableWrapper.cs" />
     <Compile Include="Table\TableWrapperExtensions.cs" />
   </ItemGroup>
@@ -105,6 +100,9 @@
   <ItemGroup>
     <PackageReference Include="NuGet.Services.Status">
       <Version>2.26.0-sb-status-34842</Version>
+    </PackageReference>
+    <PackageReference Include="NuGet.Services.Status.Table">
+      <Version>2.28.0-sb-morestatus-35606</Version>
     </PackageReference>
     <PackageReference Include="WindowsAzure.Storage">
       <Version>9.2.0</Version>

@@ -1,4 +1,5 @@
-﻿using StatusAggregator.Incidents;
+﻿using NuGet.Services.Status.Table;
+using StatusAggregator.Incidents;
 using StatusAggregator.Incidents.Parse;
 using StatusAggregator.Table;
 using System;

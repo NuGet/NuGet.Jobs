@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using NuGet.Services.Status.Table;
 using StatusAggregator.Incidents.Parse;
 using StatusAggregator.Table;
 
@@ -21,7 +22,12 @@ namespace StatusAggregator
         public async Task<IncidentEntity> CreateIncident(ParsedIncident parsedIncident)
         {
             Console.WriteLine($"Attempting to save {parsedIncident.Id}");
-            var incidentEntity = new IncidentEntity(parsedIncident);
+            var incidentEntity = new IncidentEntity(
+                parsedIncident.Id, 
+                parsedIncident.AffectedComponentPath, 
+                parsedIncident.AffectedComponentStatus, 
+                parsedIncident.CreationTime, 
+                parsedIncident.MitigationTime);
 
             // Find an event to attach this incident to
             var possibleEvents = _table

@@ -6,6 +6,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NuGet.Services.Status;
+using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
 namespace StatusAggregator

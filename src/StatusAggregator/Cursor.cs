@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
 
