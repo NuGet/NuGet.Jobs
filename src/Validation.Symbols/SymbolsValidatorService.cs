@@ -45,6 +45,11 @@ namespace Validation.Symbols
 
         public async Task<IValidationResult> ValidateSymbolsAsync(string packageId, string packageNormalizedVersion, CancellationToken token)
         {
+            _logger.LogInformation("{ValidatorName} :Start ValidateSymbolsAsync. PackageId: {packageId} PackageNormalizedVersion: {packageNormalizedVersion}",
+                ValidatorName.SymbolsValidator,
+                packageId,
+                packageNormalizedVersion);
+
             Stopwatch sw = new Stopwatch();
             sw.Start();
             var snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
@@ -79,7 +84,7 @@ namespace Validation.Symbols
             }
             finally
             {
-                TryCleanWorkingDirectoryForSeconds(targetDirectory, _cleanWorkingDirectoryTimeSpan);
+                TryCleanWorkingDirectoryForSeconds(targetDirectory, packageId, packageNormalizedVersion, _cleanWorkingDirectoryTimeSpan);
             }
         }
 
@@ -88,13 +93,19 @@ namespace Validation.Symbols
             return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         }
 
-        private void TryCleanWorkingDirectoryForSeconds(string workingDirectory, TimeSpan seconds)
+        private void TryCleanWorkingDirectoryForSeconds(string workingDirectory, string packageId, string packageNormalizedVersion, TimeSpan seconds)
         {
             CancellationTokenSource cts = new CancellationTokenSource(seconds);
+            _logger.LogInformation("{ValidatorName} :Start cleaning working directory {WorkingDirectory}. PackageId: {packageId} PackageNormalizedVersion: {packageNormalizedVersion}",
+                ValidatorName.SymbolsValidator,
+                workingDirectory,
+                packageId,
+                packageNormalizedVersion);
             Task cleanTask = new Task(() =>
             {
                 IOException lastException = new IOException("NoStarted");
-                while (!cts.Token.IsCancellationRequested)
+                bool directoryExists = true;
+                while (!cts.Token.IsCancellationRequested && directoryExists)
                 {
                     try
                     {
@@ -108,9 +119,9 @@ namespace Validation.Symbols
                         lastException = e;
                     }
                 }
-                if(Directory.Exists(workingDirectory))
+                if(directoryExists = Directory.Exists(workingDirectory))
                 {
-                    _logger.LogWarning(0, lastException, "{ValidatorName} :TryCleanWorkingDirectory failed.", ValidatorName.SymbolsValidator);
+                    _logger.LogWarning(0, lastException, "{ValidatorName} :TryCleanWorkingDirectory failed. WorkingDirectory:{WorkingDirectory}", ValidatorName.SymbolsValidator, workingDirectory);
                 }
             }, TaskCreationOptions.LongRunning);
 

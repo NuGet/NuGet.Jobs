@@ -22,6 +22,7 @@ namespace Validation.Symbols
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<SymbolsValidatorConfiguration>(configurationRoot.GetSection(SymbolsConfigurationSectionName));
+            SetupDefaultSubscriptionProcessorConfiguration(services, configurationRoot);
             services.AddTransient<ITelemetryService, TelemetryService>();
             services.AddTransient<ISubscriptionProcessorTelemetryService, TelemetryService>();
             services.AddTransient<IBrokeredMessageSerializer<SymbolsValidatorMessage>, SymbolsValidatorMessageSerializer>();

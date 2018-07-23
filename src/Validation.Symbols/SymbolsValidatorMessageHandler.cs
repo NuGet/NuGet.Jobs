@@ -55,7 +55,7 @@ namespace Validation.Symbols
             else if (validation.State == ValidationStatus.NotStarted)
             {
                 _logger.LogWarning(
-                    "{ValidatorName}:Unexpected status '{ValidatorState}' when 'Incomplete' was expected, requeueing (package id: {PackageId} package version: {PackageVersion} validation id: {ValidationId})",
+                    "{ValidatorName}:Unexpected status '{ValidatorState}' when 'Incomplete' was expected, requeueing package id: {PackageId} package version: {PackageVersion} validation id: {ValidationId})",
                     ValidatorName.SymbolsValidator,
                     validation.State,
                     message.PackageId,
