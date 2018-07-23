@@ -99,7 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Services.Status">
-      <Version>2.26.0-sb-status-34842</Version>
+      <Version>2.28.0-sb-morestatus-35606</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status.Table">
       <Version>2.28.0-sb-morestatus-35606</Version>
