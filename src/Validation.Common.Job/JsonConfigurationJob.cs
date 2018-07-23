@@ -4,12 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Data.Common;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.ApplicationInsights;
@@ -109,12 +107,6 @@ namespace NuGet.Jobs.Validation
             ConfigureAutofacServices(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
-        }
-
-        protected virtual DbConnection CreateSqlConnection<T>()
-            where T : IDbConfiguration
-        {
-            return Task.Run(() => CreateSqlConnectionAsync<T>()).Result;
         }
 
         private void ConfigureDefaultJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)

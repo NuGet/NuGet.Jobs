@@ -92,7 +92,7 @@ namespace NuGet.Jobs
         /// Initializes an <see cref="ISqlConnectionFactory"/>, for use by non-validation jobs.
         /// </summary>
         /// <returns>ConnectionStringBuilder, used for diagnostics.</returns>
-        public SqlConnectionStringBuilder RegisterDatabase(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary, string argName)
+        public SqlConnectionStringBuilder RegisterDatabase(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary, string connectionStringArgName)
         {
             if (serviceContainer == null)
             {
@@ -104,15 +104,15 @@ namespace NuGet.Jobs
                 throw new ArgumentNullException(nameof(jobArgsDictionary));
             }
 
-            if (string.IsNullOrEmpty(argName))
+            if (string.IsNullOrEmpty(connectionStringArgName))
             {
-                throw new ArgumentException("Argument cannot be null or empty.", nameof(argName));
+                throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionStringArgName));
             }
 
             var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
-            var connectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, argName);
+            var connectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, connectionStringArgName);
 
-            return RegisterDatabase(argName, connectionString, secretInjector);
+            return RegisterDatabase(connectionStringArgName, connectionString, secretInjector);
         }
 
         /// <summary>
@@ -146,21 +146,30 @@ namespace NuGet.Jobs
         }
 
         /// <summary>
+        /// Synchronous creation of a SqlConnection, for use by validation jobs.
+        /// </summary>
+        public SqlConnection CreateSqlConnection<T>()
+            where T : IDbConfiguration
+        {
+            return Task.Run(() => CreateSqlConnectionAsync<T>()).Result;
+        }
+
+        /// <summary>
         /// Creates and opens a SqlConnection, for use by non-validation jobs.
         /// </summary>
-        public Task<SqlConnection> OpenSqlConnectionAsync(string argName)
+        public Task<SqlConnection> OpenSqlConnectionAsync(string connectionStringArgName)
         {
-            if (string.IsNullOrEmpty(argName))
+            if (string.IsNullOrEmpty(connectionStringArgName))
             {
-                throw new ArgumentException("Argument cannot be null or empty.", nameof(argName));
+                throw new ArgumentException("Argument cannot be null or empty.", nameof(connectionStringArgName));
             }
 
-            if (!_sqlConnectionFactories.ContainsKey(argName))
+            if (!_sqlConnectionFactories.ContainsKey(connectionStringArgName))
             {
-                throw new InvalidOperationException($"Database {argName} has not been registered.");
+                throw new InvalidOperationException($"Database {connectionStringArgName} has not been registered.");
             }
 
-            return _sqlConnectionFactories[argName].OpenAsync();
+            return _sqlConnectionFactories[connectionStringArgName].OpenAsync();
         }
 
         public abstract void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary);

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Data.Common;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -161,12 +160,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Add(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(NonCachingOptionsSnapshot<>)));
             services.AddSingleton(LoggerFactory);
             services.AddLogging();
-        }
-
-        private DbConnection CreateSqlConnection<T>()
-            where T : IDbConfiguration
-        {
-            return Task.Run(() => CreateSqlConnectionAsync<T>()).Result;
         }
 
         private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
