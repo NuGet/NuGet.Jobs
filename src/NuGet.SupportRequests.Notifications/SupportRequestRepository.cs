@@ -36,7 +36,7 @@ namespace NuGet.SupportRequests.Notifications
 
         internal async Task<SqlConnection> OpenSupportSqlConnectionAsync()
         {
-            var connection = await OpenSupportSqlConnectionAsync();
+            var connection = await _openSupportSqlConnectionAsync();
             connection.InfoMessage += OnSqlConnectionInfoMessage;
 
             return connection;
