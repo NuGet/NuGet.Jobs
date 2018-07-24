@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using NuGet.Services.Incidents;
+using System.Collections.Generic;
 
-namespace StatusAggregator.Incidents.Parse
+namespace StatusAggregator.Parse
 {
     public interface IAggregateIncidentParser
     {

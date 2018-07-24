@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using NuGet.Services.Incidents;
 using NuGet.Services.Status;
 
-namespace StatusAggregator.Incidents.Parse
+namespace StatusAggregator.Parse
 {
     public class ValidationDurationIncidentParser : EnvironmentPrefixIncidentParser
     {

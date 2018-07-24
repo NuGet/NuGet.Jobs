@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -16,15 +15,13 @@ namespace StatusAggregator
 
         private ITableWrapper _table;
 
-        public DateTime Get()
+        public async Task<DateTime> Get()
         {
-            var cursors = _table
-                .CreateQuery<CursorEntity>()
-                .Where(e => e.PartitionKey == CursorEntity.DefaultPartitionKey)
-                .ToList();
+            var cursor = await _table.Retrieve<CursorEntity>(
+                CursorEntity.DefaultPartitionKey, CursorEntity.DefaultRowKey);
 
-            return cursors.Any()
-                ? cursors.Max(c => c.Value)
+            return cursor != null
+                ? cursor.Value
                 : DateTime.MinValue;
         }
 

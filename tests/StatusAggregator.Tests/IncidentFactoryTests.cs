@@ -3,9 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Table;
 using Moq;
+using NuGet.Services.Incidents;
 using NuGet.Services.Status;
-using StatusAggregator.Incidents;
-using StatusAggregator.Incidents.Parse;
+using NuGet.Services.Status.Table;
+using StatusAggregator.Parse;
 using StatusAggregator.Table;
 using Xunit;
 

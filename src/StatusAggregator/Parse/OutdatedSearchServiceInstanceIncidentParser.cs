@@ -1,8 +1,9 @@
-﻿using NuGet.Services.Status;
+﻿using NuGet.Services.Incidents;
+using NuGet.Services.Status;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace StatusAggregator.Incidents.Parse
+namespace StatusAggregator.Parse
 {
     public class OutdatedSearchServiceInstanceIncidentParser : EnvironmentPrefixIncidentParser
     {

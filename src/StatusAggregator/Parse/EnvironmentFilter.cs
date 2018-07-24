@@ -1,9 +1,10 @@
-﻿using System;
+﻿using NuGet.Services.Incidents;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace StatusAggregator.Incidents.Parse
+namespace StatusAggregator.Parse
 {
     public class EnvironmentFilter : IIncidentParsingFilter
     {

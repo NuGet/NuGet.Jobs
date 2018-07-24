@@ -10,8 +10,8 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
-using StatusAggregator.Incidents;
-using StatusAggregator.Incidents.Parse;
+using NuGet.Services.Incidents;
+using StatusAggregator.Parse;
 using StatusAggregator.Table;
 
 namespace StatusAggregator
@@ -42,12 +42,13 @@ namespace StatusAggregator
             var incidentApiTeamId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiTeamId);
             var incidentApiCertificate = GetCertificateFromJson(
                 JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate));
-            var incidentCollector = new IncidentCollector(incidentApiBaseUri, incidentApiCertificate, incidentApiTeamId);
+            var incidentConfiguration = new IncidentApiConfiguration() { BaseUri = incidentApiBaseUri, Certificate = incidentApiCertificate };
+            var incidentClient = new IncidentApiClient(incidentConfiguration);
 
             var environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';');
             var maximumSeverity = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) ?? int.MaxValue;
             var aggregateIncidentParser = new AggregateIncidentParser(GetIncidentParsers(environments, maximumSeverity));
-            var incidentUpdater = new IncidentUpdater(_table, eventUpdater, incidentCollector, aggregateIncidentParser, incidentFactory);
+            var incidentUpdater = new IncidentUpdater(_table, eventUpdater, incidentClient, aggregateIncidentParser, incidentFactory, incidentApiTeamId);
 
             _statusUpdater = new StatusUpdater(cursor, incidentUpdater);
 

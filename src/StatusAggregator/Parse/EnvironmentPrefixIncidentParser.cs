@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace StatusAggregator.Incidents.Parse
+namespace StatusAggregator.Parse
 {
     public abstract class EnvironmentPrefixIncidentParser : IncidentParser
     {

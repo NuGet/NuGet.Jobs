@@ -54,37 +54,32 @@
     <Compile Include="IEventUpdater.cs" />
     <Compile Include="IIncidentFactory.cs" />
     <Compile Include="IIncidentUpdater.cs" />
-    <Compile Include="Incidents\Parse\EnvironmentFilter.cs" />
-    <Compile Include="Incidents\Parse\IIncidentParsingFilter.cs" />
-    <Compile Include="Incidents\Parse\PingdomIncidentParser.cs" />
-    <Compile Include="Incidents\Parse\SeverityFilter.cs" />
+    <Compile Include="Parse\EnvironmentFilter.cs" />
+    <Compile Include="Parse\IIncidentParsingFilter.cs" />
+    <Compile Include="Parse\PingdomIncidentParser.cs" />
+    <Compile Include="Parse\SeverityFilter.cs" />
     <Compile Include="IncidentUpdater.cs" />
     <Compile Include="IStatusUpdater.cs" />
     <Compile Include="IMessageUpdater.cs" />
     <Compile Include="StatusContractResolver.cs" />
     <Compile Include="StatusUpdater.cs" />
-    <Compile Include="Incidents\IIncidentCollector.cs" />
-    <Compile Include="Incidents\IncidentCollector.cs" />
-    <Compile Include="Incidents\Parse\AggregateIncidentParser.cs" />
-    <Compile Include="Incidents\Parse\IAggregateIncidentParser.cs" />
+    <Compile Include="Parse\AggregateIncidentParser.cs" />
+    <Compile Include="Parse\IAggregateIncidentParser.cs" />
     <Compile Include="IncidentFactory.cs" />
     <Compile Include="IStatusExporter.cs" />
     <Compile Include="MessageUpdater.cs" />
     <Compile Include="StatusExporter.cs" />
-    <Compile Include="Incidents\Parse\EnvironmentPrefixIncidentParser.cs" />
-    <Compile Include="Incidents\Parse\IIncidentParser.cs" />
-    <Compile Include="Incidents\Incident.cs" />
-    <Compile Include="Incidents\IncidentList.cs" />
-    <Compile Include="Incidents\Parse\IncidentParser.cs" />
-    <Compile Include="Incidents\IncidentStatus.cs" />
+    <Compile Include="Parse\EnvironmentPrefixIncidentParser.cs" />
+    <Compile Include="Parse\IIncidentParser.cs" />
+    <Compile Include="Parse\IncidentParser.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Table\ITableWrapper.cs" />
-    <Compile Include="Incidents\Parse\OutdatedRegionalSearchServiceInstanceIncidentParser.cs" />
-    <Compile Include="Incidents\Parse\OutdatedSearchServiceInstanceIncidentParser.cs" />
-    <Compile Include="Incidents\Parse\ParsedIncident.cs" />
+    <Compile Include="Parse\OutdatedRegionalSearchServiceInstanceIncidentParser.cs" />
+    <Compile Include="Parse\OutdatedSearchServiceInstanceIncidentParser.cs" />
+    <Compile Include="Parse\ParsedIncident.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Incidents\Parse\ValidationDurationIncidentParser.cs" />
+    <Compile Include="Parse\ValidationDurationIncidentParser.cs" />
     <Compile Include="Table\TableWrapper.cs" />
     <Compile Include="Table\TableWrapperExtensions.cs" />
   </ItemGroup>
@@ -98,6 +93,9 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="NuGet.Services.Incidents">
+      <Version>2.28.0-sb-incidents-35615</Version>
+    </PackageReference>
     <PackageReference Include="NuGet.Services.Status">
       <Version>2.28.0-sb-morestatus-35606</Version>
     </PackageReference>

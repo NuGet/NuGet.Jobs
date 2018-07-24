@@ -21,6 +21,13 @@ namespace StatusAggregator.Table
             return _table.CreateIfNotExistsAsync();
         }
 
+        public async Task<T> Retrieve<T>(string partitionKey, string rowKey) 
+            where T : class, ITableEntity
+        {
+            var operation = TableOperation.Retrieve<T>(partitionKey, rowKey);
+            return (await _table.ExecuteAsync(operation)).Result as T;
+        }
+
         public Task InsertOrReplaceAsync(ITableEntity tableEntity)
         {
             var operation = TableOperation.InsertOrReplace(tableEntity);

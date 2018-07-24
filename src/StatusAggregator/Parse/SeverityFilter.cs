@@ -1,6 +1,7 @@
-﻿using System.Text.RegularExpressions;
+﻿using NuGet.Services.Incidents;
+using System.Text.RegularExpressions;
 
-namespace StatusAggregator.Incidents.Parse
+namespace StatusAggregator.Parse
 {
     public class SeverityFilter : IIncidentParsingFilter
     {

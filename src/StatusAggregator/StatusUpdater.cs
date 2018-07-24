@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
-using StatusAggregator.Incidents;
-using StatusAggregator.Incidents.Parse;
-using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
@@ -23,7 +19,7 @@ namespace StatusAggregator
 
         public async Task Update()
         {
-            var lastCursor = _cursor.Get();
+            var lastCursor = await _cursor.Get();
 
             await _incidentUpdater.RefreshExistingIncidents();
             var nextCursor = await _incidentUpdater.FetchNewIncidents(lastCursor);

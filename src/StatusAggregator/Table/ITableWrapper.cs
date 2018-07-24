@@ -9,6 +9,9 @@ namespace StatusAggregator.Table
     {
         Task CreateIfNotExistsAsync();
 
+        Task<T> Retrieve<T>(string partitionKey, string rowKey) 
+            where T : class, ITableEntity;
+
         Task InsertOrReplaceAsync(ITableEntity tableEntity);
 
         IQueryable<T> CreateQuery<T>() where T : ITableEntity, new();
