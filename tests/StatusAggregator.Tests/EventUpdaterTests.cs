@@ -14,6 +14,8 @@ namespace StatusAggregator.Tests
     public class EventUpdaterTests
     {
         private const string RowKey = "rowkey";
+        private const int EventEndDelayMinutes = 5;
+        private static readonly TimeSpan EventEndDelay = TimeSpan.FromMinutes(EventEndDelayMinutes);
         private static readonly DateTime NextCreationTime = new DateTime(2018, 7, 10);
 
         private static IEnumerable<IncidentEntity> ClosableIncidents => new[]
@@ -24,7 +26,7 @@ namespace StatusAggregator.Tests
 
         private static IEnumerable<IncidentEntity> UnclosableIncidents => new[]
         {
-            CreateIncidentEntity(NextCreationTime + EventUpdater._eventEndDelay), // Incident closed too recently
+            CreateIncidentEntity(NextCreationTime + EventEndDelay), // Incident closed too recently
             CreateIncidentEntity() // Active incident
         };
 
@@ -35,11 +37,17 @@ namespace StatusAggregator.Tests
 
         public EventUpdaterTests()
         {
+            var configuration = new StatusAggregatorConfiguration()
+            {
+                EventEndDelayMinutes = EventEndDelayMinutes
+            };
+
             _tableWrapperMock = new Mock<ITableWrapper>();
             _messageUpdaterMock = new Mock<IMessageUpdater>();
             _eventUpdater = new EventUpdater(
                 _tableWrapperMock.Object, 
-                _messageUpdaterMock.Object, 
+                _messageUpdaterMock.Object,
+                configuration, 
                 Mock.Of<ILogger<EventUpdater>>());
 
             _eventEntity = new EventEntity()
