@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
@@ -26,28 +27,34 @@ namespace StatusAggregator
 
         public async Task<DateTime> Get()
         {
-            var cursor = await _table.Retrieve<CursorEntity>(
-                CursorEntity.DefaultPartitionKey, CursorEntity.DefaultRowKey);
-
-            DateTime value;
-            if (cursor == null)
+            using (_logger.Scope("Fetching cursor."))
             {
-                value = DateTime.MinValue;
-                _logger.LogInformation("Could not fetch cursor.");
-            }
-            else
-            {
-                value = cursor.Value;
-                _logger.LogInformation("Fetched cursor with value {Cursor}.", value);
-            }
+                var cursor = await _table.Retrieve<CursorEntity>(
+                    CursorEntity.DefaultPartitionKey, CursorEntity.DefaultRowKey);
 
-            return value;
+                DateTime value;
+                if (cursor == null)
+                {
+                    value = DateTime.MinValue;
+                    _logger.LogInformation("Could not fetch cursor.");
+                }
+                else
+                {
+                    value = cursor.Value;
+                    _logger.LogInformation("Fetched cursor with value {Cursor}.", value);
+                }
+
+                return value;
+            }
         }
 
         public Task Set(DateTime value)
         {
-            var cursorEntity = new CursorEntity(value);
-            return _table.InsertOrReplaceAsync(cursorEntity);
+            using (_logger.Scope("Updating cursor to {Cursor}.", value))
+            {
+                var cursorEntity = new CursorEntity(value);
+                return _table.InsertOrReplaceAsync(cursorEntity);
+            }
         }
     }
 }
