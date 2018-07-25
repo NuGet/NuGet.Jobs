@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.PortableExecutable;

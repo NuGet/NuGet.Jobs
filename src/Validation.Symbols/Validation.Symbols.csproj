@@ -52,7 +52,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SymbolsFileService.cs" />
-    <Compile Include="SymbolPackageFileMetadataService.cs" />
     <Compile Include="SymbolsValidatorConfiguration.cs" />
     <Compile Include="SymbolsValidatorService.cs" />
     <Compile Include="SymbolsValidatorMessageHandler.cs" />
