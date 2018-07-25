@@ -39,7 +39,7 @@ namespace NuGet.Jobs.Extensions
                 if (!_isDisposed)
                 {
                     _logger.LogInformation("Leaving scope: " + _message, _args);
-                    _scope.Dispose();
+                    _scope?.Dispose(); // ILogger can return a null scope (most notably during testing with a Mock<ILogger>)
                     _isDisposed = true;
                 }
             }

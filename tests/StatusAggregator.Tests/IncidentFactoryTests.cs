@@ -22,7 +22,6 @@ namespace StatusAggregator.Tests
 
         private Mock<ITableWrapper> _tableWrapperMock { get; }
         private Mock<IEventUpdater> _eventUpdaterMock { get; }
-        private Mock<ILogger<IncidentFactory>> _loggerMock { get; }
         private IncidentFactory _incidentFactory { get; }
         private ParsedIncident _parsedIncident { get; }
 
@@ -30,8 +29,10 @@ namespace StatusAggregator.Tests
         {
             _tableWrapperMock = new Mock<ITableWrapper>();
             _eventUpdaterMock = new Mock<IEventUpdater>();
-            _loggerMock = new Mock<ILogger<IncidentFactory>>();
-            _incidentFactory = new IncidentFactory(_tableWrapperMock.Object, _eventUpdaterMock.Object, _loggerMock.Object);
+            _incidentFactory = new IncidentFactory(
+                _tableWrapperMock.Object, 
+                _eventUpdaterMock.Object,
+                Mock.Of<ILogger<IncidentFactory>>());
 
             var incident = new Incident() { Id = Id, Source = new IncidentSourceData() { CreateDate = CreationTime } };
             _parsedIncident = new ParsedIncident(incident, AffectedComponentPath, AffectedComponentStatus);

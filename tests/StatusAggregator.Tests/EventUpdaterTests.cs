@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -29,7 +30,6 @@ namespace StatusAggregator.Tests
 
         private Mock<ITableWrapper> _tableWrapperMock { get; }
         private Mock<IMessageUpdater> _messageUpdaterMock { get; }
-        private Mock<ILogger<EventUpdater>> _loggerMock { get; }
         private EventUpdater _eventUpdater { get; }
         private EventEntity _eventEntity { get; }
 
@@ -37,7 +37,10 @@ namespace StatusAggregator.Tests
         {
             _tableWrapperMock = new Mock<ITableWrapper>();
             _messageUpdaterMock = new Mock<IMessageUpdater>();
-            _eventUpdater = new EventUpdater(_tableWrapperMock.Object, _messageUpdaterMock.Object, _loggerMock.Object);
+            _eventUpdater = new EventUpdater(
+                _tableWrapperMock.Object, 
+                _messageUpdaterMock.Object, 
+                Mock.Of<ILogger<EventUpdater>>());
 
             _eventEntity = new EventEntity()
             {
