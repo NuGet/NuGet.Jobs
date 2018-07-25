@@ -150,7 +150,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 AllowedRepositorySigningCertificates = new List<string> { "fake-thumbprint" },
                 V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl,
-                ExtractRepositorySignatures = true,
+                CommitRepositorySignatures = true,
             };
             _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
             _optionsSnapshot.Setup(x => x.Value).Returns(() => _configuration);

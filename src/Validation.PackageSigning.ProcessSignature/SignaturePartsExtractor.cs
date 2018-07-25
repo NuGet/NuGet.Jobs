@@ -231,7 +231,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 return;
             }
 
-            if (type == PackageSignatureType.Repository && !_configuration.Value.ExtractRepositorySignatures)
+            if (type == PackageSignatureType.Repository && !_configuration.Value.CommitRepositorySignatures)
             {
                 _logger.LogWarning("Skipping initialization of repository signature due to configuration!");
                 return;

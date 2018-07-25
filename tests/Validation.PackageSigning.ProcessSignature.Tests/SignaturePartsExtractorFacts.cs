@@ -159,7 +159,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _configAccessor = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
                 _config = new ProcessSignatureConfiguration
                 {
-                    ExtractRepositorySignatures = true
+                    CommitRepositorySignatures = true
                 };
 
                 _configAccessor.Setup(a => a.Value).Returns(_config);
@@ -639,7 +639,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     .Setup(x => x.PackageSignatures)
                     .Returns(DbSetMockFactory.Create<PackageSignature>());
 
-                _config.ExtractRepositorySignatures = false;
+                _config.CommitRepositorySignatures = false;
 
                 // Act
                 await _target.ExtractAsync(_packageKey, signature, _token);
@@ -658,7 +658,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     .Setup(x => x.PackageSignatures)
                     .Returns(DbSetMockFactory.Create<PackageSignature>());
 
-                _config.ExtractRepositorySignatures = false;
+                _config.CommitRepositorySignatures = false;
 
                 // Act
                 await _target.ExtractAsync(_packageKey, signature, _token);

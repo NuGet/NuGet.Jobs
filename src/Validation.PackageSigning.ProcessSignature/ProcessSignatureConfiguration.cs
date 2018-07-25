@@ -25,6 +25,6 @@ namespace NuGet.Jobs.Validation.PackageSigning
         /// Whether repository signatures should be persisted to the database. Disable this if repository signing
         /// is in test mode and repository signed packages are not published.
         /// </summary>
-        public bool ExtractRepositorySignatures { get; set; }
+        public bool CommitRepositorySignatures { get; set; }
     }
 }
