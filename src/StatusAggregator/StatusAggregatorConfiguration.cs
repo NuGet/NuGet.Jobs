@@ -1,8 +1,5 @@
-﻿using NuGet.Jobs;
-using NuGet.Services.Incidents;
-using NuGet.Services.Status;
+﻿using NuGet.Services.Status;
 using StatusAggregator.Parse;
-using System;
 using System.Collections.Generic;
 
 namespace StatusAggregator
