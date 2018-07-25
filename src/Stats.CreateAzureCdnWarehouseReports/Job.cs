@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -50,7 +51,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
+            var secretInjector = serviceContainer.GetService<ISecretInjector>();
             _sqlCommandTimeoutSeconds = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.CommandTimeOut) ?? DefaultSqlCommandTimeoutSeconds;
 
             var statisticsDatabaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);

@@ -1,4 +1,6 @@
-﻿using NuGet.Services.Incidents;
+﻿using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
+using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
@@ -15,56 +17,81 @@ namespace StatusAggregator
         private readonly IEventUpdater _eventUpdater;
 
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
-        private readonly IIncidentApiClient _incidentClient;
+        private readonly IIncidentApiClient _incidentApiClient;
         private readonly IIncidentFactory _incidentFactory;
 
-        private readonly string _incidentTeamId;
+        private readonly string _incidentApiTeamId;
+
+        private readonly ILogger<IncidentUpdater> _logger;
 
         public IncidentUpdater(
             ITableWrapper table,
             IEventUpdater eventUpdater,
-            IIncidentApiClient incidentClient,
+            IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
             IIncidentFactory incidentFactory,
-            string incidentTeamId)
+            StatusAggregatorConfiguration configuration,
+            ILogger<IncidentUpdater> logger)
         {
             _table = table;
             _eventUpdater = eventUpdater;
-            _incidentClient = incidentClient;
+            _incidentApiClient = incidentApiClient;
             _aggregateIncidentParser = aggregateIncidentParser;
             _incidentFactory = incidentFactory;
-            _incidentTeamId = incidentTeamId;
+            _incidentApiTeamId = configuration.TeamId;
+            _logger = logger;
         }
 
         public async Task RefreshExistingIncidents()
         {
-            var activeIncidentEntities = _table
-                .CreateQuery<IncidentEntity>()
-                .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive);
-
-            foreach (var activeIncidentEntity in activeIncidentEntities)
+            using (_logger.Scope(
+                "Beginning to refresh existing incidents.",
+                "Finished refreshing existing incidents.",
+                "Refreshing existing incidents."))
             {
-                var activeIncident = await _incidentClient.GetIncident(activeIncidentEntity.IncidentApiId);
-                activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
-                await _table.InsertOrReplaceAsync(activeIncidentEntity);
+                var activeIncidentEntities = _table
+                    .CreateQuery<IncidentEntity>()
+                    .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive);
+
+                foreach (var activeIncidentEntity in activeIncidentEntities)
+                {
+                    using (_logger.Scope(
+                        "Beginning to refresh incident.",
+                        "Finished refreshing incident.",
+                        "Refreshing incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
+                    {
+                        var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
+                        activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
+                        _logger.LogInformation("Updated mitigation time of incident to {MitigationTime}", activeIncidentEntity.MitigationTime);
+                        await _table.InsertOrReplaceAsync(activeIncidentEntity);
+                    }
+                }
             }
         }
 
         public async Task<DateTime?> FetchNewIncidents(DateTime cursor)
         {
-            var incidents = (await _incidentClient.GetIncidents(GetRecentIncidentsQuery(cursor)))
-                // The incident API trims the milliseconds from any filter.
-                // Therefore, a query asking for incidents newer than '2018-06-29T00:00:00.5Z' will return an incident from '2018-06-29T00:00:00.25Z'
-                // We must perform a check on the CreateDate ourselves to verify that no old incidents are returned.
-                .Where(i => i.CreateDate > cursor);
-
-            var parsedIncidents = incidents.SelectMany(i => _aggregateIncidentParser.ParseIncident(i));
-            foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.CreationTime))
+            using (_logger.Scope(
+                "Beginning to fetch new incidents.",
+                "Finished fetching new incidents.",
+                "Fetching all new incidents since {Cursor}.", cursor))
             {
-                await _incidentFactory.CreateIncident(parsedIncident);
-            }
+                var incidents = (await _incidentApiClient.GetIncidents(GetRecentIncidentsQuery(cursor)))
+                    // The incident API trims the milliseconds from any filter.
+                    // Therefore, a query asking for incidents newer than '2018-06-29T00:00:00.5Z' will return an incident from '2018-06-29T00:00:00.25Z'
+                    // We must perform a check on the CreateDate ourselves to verify that no old incidents are returned.
+                    .Where(i => i.CreateDate > cursor);
 
-            return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;
+                var parsedIncidents = incidents
+                    .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
+                    .ToList();
+                foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.CreationTime))
+                {
+                    await _incidentFactory.CreateIncident(parsedIncident);
+                }
+
+                return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;
+            }
         }
         
         private string GetRecentIncidentsQuery(DateTime cursor)
@@ -73,16 +100,7 @@ namespace StatusAggregator
                 ? ""
                 : $" and CreateDate gt datetime'{cursor.ToString("o")}'";
 
-            return $"$filter=OwningTeamId eq '{_incidentTeamId}'{cursorPart}";
-        }
-
-        public async Task UpdateActiveEvents(DateTime cursor)
-        {
-            var eventsToCheckClosure = _table.GetActiveEvents();
-            foreach (var eventToCheckClosure in eventsToCheckClosure)
-            {
-                await _eventUpdater.UpdateEvent(eventToCheckClosure, cursor);
-            }
+            return $"$filter=OwningTeamId eq '{_incidentApiTeamId}'{cursorPart}";
         }
     }
 }

@@ -1,29 +1,45 @@
-﻿using NuGet.Services.Incidents;
+﻿using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
+using NuGet.Services.Incidents;
 using System.Collections.Generic;
 
 namespace StatusAggregator.Parse
 {
+    /// <summary>
+    /// Default implementation of <see cref="IAggregateIncidentParser"/> that returns all <see cref="ParsedIncident"/>s returned by its <see cref="IIncidentParser"/>s.
+    /// </summary>
     public class AggregateIncidentParser : IAggregateIncidentParser
     {
         private readonly IEnumerable<IIncidentParser> _incidentParsers;
 
-        public AggregateIncidentParser(IEnumerable<IIncidentParser> incidentParsers)
+        private readonly ILogger<AggregateIncidentParser> _logger;
+
+        public AggregateIncidentParser(
+            IEnumerable<IIncidentParser> incidentParsers,
+            ILogger<AggregateIncidentParser> logger)
         {
             _incidentParsers = incidentParsers;
+            _logger = logger;
         }
 
         public IEnumerable<ParsedIncident> ParseIncident(Incident incident)
         {
-            var parsedIncidents = new List<ParsedIncident>();
-            foreach (var incidentParser in _incidentParsers)
+            using (_logger.Scope(
+                "Beginning to parse incident.",
+                "Finished parsing incident.",
+                "Parsing incident {IncidentId}", incident.Id))
             {
-                if (incidentParser.TryParseIncident(incident, out var parsedIncident))
+                var parsedIncidents = new List<ParsedIncident>();
+                foreach (var incidentParser in _incidentParsers)
                 {
-                    parsedIncidents.Add(parsedIncident);
+                    if (incidentParser.TryParseIncident(incident, out var parsedIncident))
+                    {
+                        parsedIncidents.Add(parsedIncident);
+                    }
                 }
-            }
 
-            return parsedIncidents;
+                return parsedIncidents;
+            }
         }
     }
 }

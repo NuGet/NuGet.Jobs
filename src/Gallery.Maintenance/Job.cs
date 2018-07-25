@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
 
@@ -24,7 +25,7 @@ namespace Gallery.Maintenance
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
+            var secretInjector = serviceContainer.GetService<ISecretInjector>();
             var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryDatabase);
 
             GalleryDatabase = new AzureSqlConnectionFactory(databaseConnectionString, secretInjector);

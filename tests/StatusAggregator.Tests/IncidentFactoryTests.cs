@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 using Moq;
 using NuGet.Services.Incidents;
@@ -20,15 +21,17 @@ namespace StatusAggregator.Tests
         private static DateTime CreationTime = new DateTime(2017, 7, 10);
 
         private Mock<ITableWrapper> _tableWrapperMock { get; }
-        private Mock<IEventUpdater> _eventUpdater { get; }
+        private Mock<IEventUpdater> _eventUpdaterMock { get; }
+        private Mock<ILogger<IncidentFactory>> _loggerMock { get; }
         private IncidentFactory _incidentFactory { get; }
         private ParsedIncident _parsedIncident { get; }
 
         public IncidentFactoryTests()
         {
             _tableWrapperMock = new Mock<ITableWrapper>();
-            _eventUpdater = new Mock<IEventUpdater>();
-            _incidentFactory = new IncidentFactory(_tableWrapperMock.Object, _eventUpdater.Object);
+            _eventUpdaterMock = new Mock<IEventUpdater>();
+            _loggerMock = new Mock<ILogger<IncidentFactory>>();
+            _incidentFactory = new IncidentFactory(_tableWrapperMock.Object, _eventUpdaterMock.Object, _loggerMock.Object);
 
             var incident = new Incident() { Id = Id, Source = new IncidentSourceData() { CreateDate = CreationTime } };
             _parsedIncident = new ParsedIncident(incident, AffectedComponentPath, AffectedComponentStatus);

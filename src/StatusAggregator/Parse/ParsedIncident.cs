@@ -4,6 +4,9 @@ using System;
 
 namespace StatusAggregator.Parse
 {
+    /// <summary>
+    /// Describes how a <see cref="Incident"/> affects a <see cref="ServiceStatus"/>.
+    /// </summary>
     public class ParsedIncident
     {
         public ParsedIncident(

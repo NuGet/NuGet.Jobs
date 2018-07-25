@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
@@ -13,55 +15,83 @@ namespace StatusAggregator
         private readonly ITableWrapper _table;
         private readonly IMessageUpdater _messageUpdater;
 
-        public EventUpdater(ITableWrapper table, IMessageUpdater messageUpdater)
+        private readonly ILogger<EventUpdater> _logger;
+
+        public EventUpdater(
+            ITableWrapper table, 
+            IMessageUpdater messageUpdater, 
+            ILogger<EventUpdater> logger)
         {
             _table = table;
             _messageUpdater = messageUpdater;
+            _logger = logger;
         }
 
-        public async Task<bool> UpdateEvent(EventEntity eventEntity, DateTime nextCreationTime)
+        public async Task UpdateAllActiveEvents(DateTime cursor)
+        {
+            using (_logger.Scope(
+                "Beginning to update all active events.",
+                "Finished updating all active events.",
+                "Updating all active events."))
+            {
+                var activeEvents = _table.GetActiveEvents();
+                foreach (var activeEvent in activeEvents)
+                {
+                    await UpdateEvent(activeEvent, cursor);
+                }
+            }
+        }
+
+        public async Task<bool> UpdateEvent(EventEntity eventEntity, DateTime cursor)
         {
             eventEntity = eventEntity ?? throw new ArgumentNullException(nameof(eventEntity));
 
-            if (!eventEntity.IsActive)
+            using (_logger.Scope(
+                "Beginning to update event.",
+                "Finished updating event.",
+                "Updating event '{EventRowKey}' given cursor {Cursor}.", eventEntity.RowKey, cursor))
             {
-                // Inactive events cannot be updated.
-                return false;
+                if (!eventEntity.IsActive)
+                {
+                    _logger.LogInformation("Event is inactive, cannot update.");
+                    return false;
+                }
+
+                var incidentsLinkedToEventQuery = _table.GetIncidentsLinkedToEvent(eventEntity);
+
+                var incidentsLinkedToEvent = incidentsLinkedToEventQuery.ToList();
+                if (!incidentsLinkedToEvent.Any())
+                {
+                    _logger.LogInformation("Event has no linked incidents and must have been created manually, cannot update.");
+                    return false;
+                }
+
+                var shouldDeactivate = !incidentsLinkedToEventQuery
+                        .Where(i => i.IsActive || i.MitigationTime > cursor - EventEndDelay)
+                        .ToList()
+                        .Any();
+
+                if (shouldDeactivate)
+                {
+                    _logger.LogInformation("Deactivating event because its incidents are inactive and too old.");
+                    var mitigationTime = incidentsLinkedToEvent
+                        .Max(i => i.MitigationTime ?? DateTime.MinValue);
+                    eventEntity.EndTime = mitigationTime;
+
+                    await _messageUpdater.CreateMessageForEventStart(eventEntity, mitigationTime);
+                    await _messageUpdater.CreateMessageForEventEnd(eventEntity);
+
+                    // Update the event
+                    await _table.InsertOrReplaceAsync(eventEntity);
+                }
+                else
+                {
+                    _logger.LogInformation("Event has active or recent incidents so it will not be deactivated.");
+                    await _messageUpdater.CreateMessageForEventStart(eventEntity, cursor);
+                }
+
+                return shouldDeactivate;
             }
-
-            var incidentsLinkedToEventToCloseQuery = _table.GetIncidentsLinkedToEvent(eventEntity);
-
-            var incidentsLinkedToEventToClose = incidentsLinkedToEventToCloseQuery.ToList();
-            if (!incidentsLinkedToEventToClose.Any())
-            {
-                // If an event has no linked incidents it must have been created manually and should not be closed automatically.
-                return false;
-            }
-
-            var shouldClose = !incidentsLinkedToEventToCloseQuery
-                    .Where(i => i.IsActive || i.MitigationTime > nextCreationTime - EventEndDelay)
-                    .ToList()
-                    .Any();
-
-            if (shouldClose)
-            {
-                Console.WriteLine($"Closing {eventEntity.RowKey} because its incidents are inactive and too old");
-                var mitigationTime = incidentsLinkedToEventToClose
-                    .Max(i => i.MitigationTime ?? DateTime.MinValue);
-                eventEntity.EndTime = mitigationTime;
-
-                await _messageUpdater.CreateMessageForEventStart(eventEntity, mitigationTime);
-                await _messageUpdater.CreateMessageForEventEnd(eventEntity);
-
-                // Update the event
-                await _table.InsertOrReplaceAsync(eventEntity);
-            }
-            else
-            {
-                await _messageUpdater.CreateMessageForEventStart(eventEntity, nextCreationTime);
-            }
-
-            return shouldClose;
         }
     }
 }

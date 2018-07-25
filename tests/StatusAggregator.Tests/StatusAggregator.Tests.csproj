@@ -41,7 +41,6 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -63,7 +62,7 @@
       <Version>4.7.145</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Incidents">
-      <Version>2.28.0-sb-incidents-35615</Version>
+      <Version>2.28.0-sb-incidents-35734</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status">
       <Version>2.28.0-sb-morestatus-35606</Version>

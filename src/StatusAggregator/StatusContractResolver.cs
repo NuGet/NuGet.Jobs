@@ -6,6 +6,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace StatusAggregator
 {
+    /// <summary>
+    /// Implementation of <see cref="DefaultContractResolver"/> used by <see cref="StatusExporter"/> such that empty fields and arrays are not serialized.
+    /// </summary>
     public class StatusContractResolver : DefaultContractResolver
     {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
@@ -16,6 +19,7 @@ namespace StatusAggregator
 
             if (propertyType == typeof(string))
             {
+                // Do not serialize strings if they are null or empty.
                 property.ShouldSerialize = instance => !string.IsNullOrEmpty((string)instance);
             }
 
@@ -31,6 +35,7 @@ namespace StatusAggregator
         {
             Func<object, object> getValue;
 
+            // Create a function to get the value of the member using its type.
             switch (member.MemberType)
             {
                 case MemberTypes.Field:
@@ -43,6 +48,7 @@ namespace StatusAggregator
                     return;
             }
 
+            // Do not serialize an IEnumerable if it is null or empty
             property.ShouldSerialize = instance =>
             {
                 var value = (IEnumerable)getValue(instance);

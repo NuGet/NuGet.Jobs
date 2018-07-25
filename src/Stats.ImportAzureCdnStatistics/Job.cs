@@ -10,6 +10,7 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using NuGet.Jobs;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
 using Stats.AzureCdnLogs.Common;
@@ -30,7 +31,7 @@ namespace Stats.ImportAzureCdnStatistics
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
+            var secretInjector = serviceContainer.GetService<ISecretInjector>();
             var statisticsDbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
             _statisticsDbConnectionFactory = new AzureSqlConnectionFactory(statisticsDbConnectionString, secretInjector);
 

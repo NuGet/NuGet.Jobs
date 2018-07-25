@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
@@ -18,75 +18,107 @@ namespace StatusAggregator
 {
     public class Job : JobBase
     {
-        private CloudBlobContainer _container;
-        private ITableWrapper _table;
-
-        private IStatusUpdater _statusUpdater;
-        private IStatusExporter _statusExporter;
+        public IServiceProvider _serviceProvider;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var storageConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusStorageAccount);
-            var storageAccount = CloudStorageAccount.Parse(storageConnectionString);
+            var serviceCollection = new ServiceCollection();
 
-            var tableName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusTableName);
-            _table = new TableWrapper(storageAccount, tableName);
+            AddLogging(serviceCollection);
+            AddConfiguration(serviceCollection, jobArgsDictionary);
+            AddStorage(serviceCollection);
+            AddServices(serviceCollection);
 
-            var cursor = new Cursor(_table);
-
-            var messageUpdater = new MessageUpdater(_table);
-            var eventUpdater = new EventUpdater(_table, messageUpdater);
-            var incidentFactory = new IncidentFactory(_table, eventUpdater);
-
-            var incidentApiBaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri));
-            var incidentApiTeamId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiTeamId);
-            var incidentApiCertificate = GetCertificateFromJson(
-                JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate));
-            var incidentConfiguration = new IncidentApiConfiguration() { BaseUri = incidentApiBaseUri, Certificate = incidentApiCertificate };
-            var incidentClient = new IncidentApiClient(incidentConfiguration);
-
-            var environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';');
-            var maximumSeverity = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) ?? int.MaxValue;
-            var aggregateIncidentParser = new AggregateIncidentParser(GetIncidentParsers(environments, maximumSeverity));
-            var incidentUpdater = new IncidentUpdater(_table, eventUpdater, incidentClient, aggregateIncidentParser, incidentFactory, incidentApiTeamId);
-
-            _statusUpdater = new StatusUpdater(cursor, incidentUpdater);
-
-            var blobClient = storageAccount.CreateCloudBlobClient();
-            var containerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusContainerName);
-            _container = blobClient.GetContainerReference(containerName);
-
-            _statusExporter = new StatusExporter(_container, _table);
+            _serviceProvider = serviceCollection.BuildServiceProvider();
         }
 
-        public override async Task Run()
+        public override Task Run()
         {
-            await _table.CreateIfNotExistsAsync();
-            await _container.CreateIfNotExistsAsync();
-
-            await _statusUpdater.Update();
-            await _statusExporter.Export();
+            return _serviceProvider
+                .GetService<StatusAggregator>()
+                .Run();
         }
 
-        private IEnumerable<IIncidentParser> GetIncidentParsers(IEnumerable<string> environments, int maximumSeverity)
+        private static void AddServices(IServiceCollection serviceCollection)
         {
-            var filters = GetIncidentParsingFilters(maximumSeverity);
+            serviceCollection.AddTransient<ICursor, Cursor>();
+            serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
+            serviceCollection.AddTransient<IMessageUpdater, MessageUpdater>();
+            serviceCollection.AddTransient<IEventUpdater, EventUpdater>();
+            serviceCollection.AddTransient<IIncidentFactory, IncidentFactory>();
+            AddParsing(serviceCollection);
+            serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
+            serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
+            serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
+            serviceCollection.AddTransient<StatusAggregator>();
+        }
 
-            return new IIncidentParser[]
+        private static void AddParsing(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddTransient<IIncidentParsingFilter, SeverityFilter>();
+            serviceCollection.AddTransient<IIncidentParsingFilter, EnvironmentFilter>();
+
+            serviceCollection.AddTransient<IIncidentParser, OutdatedSearchServiceInstanceIncidentParser>();
+            serviceCollection.AddTransient<IIncidentParser, PingdomIncidentParser>();
+            serviceCollection.AddTransient<IIncidentParser, ValidationDurationIncidentParser>();
+
+            serviceCollection.AddTransient<IAggregateIncidentParser, AggregateIncidentParser>();
+        }
+
+        private static void AddStorage(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddSingleton(
+                serviceProvider =>
+                {
+                    var configuration = serviceProvider.GetRequiredService<StatusAggregatorConfiguration>();
+                    return CloudStorageAccount.Parse(configuration.StorageAccount);
+                });
+
+            serviceCollection.AddSingleton<ITableWrapper>(
+                serviceProvider =>
+                {
+                    var storageAccount = serviceProvider.GetRequiredService<CloudStorageAccount>();
+                    var configuration = serviceProvider.GetRequiredService<StatusAggregatorConfiguration>();
+                    return new TableWrapper(storageAccount, configuration.TableName);
+                });
+
+            serviceCollection.AddSingleton(
+                serviceProvider =>
+                {
+                    var storageAccount = serviceProvider.GetRequiredService<CloudStorageAccount>();
+                    var blobClient = storageAccount.CreateCloudBlobClient();
+                    var configuration = serviceProvider.GetRequiredService<StatusAggregatorConfiguration>();
+                    return blobClient.GetContainerReference(configuration.ContainerName);
+                });
+        }
+
+        private static void AddConfiguration(IServiceCollection serviceCollection, IDictionary<string, string> jobArgsDictionary)
+        {
+            var configuration = new StatusAggregatorConfiguration()
             {
-                new ValidationDurationIncidentParser(environments, filters),
-                new OutdatedRegionalSearchServiceInstanceIncidentParser(environments, filters),
-                new OutdatedSearchServiceInstanceIncidentParser(environments, filters),
-                new PingdomIncidentParser(filters)
+                StorageAccount = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusStorageAccount),
+                ContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusContainerName),
+                TableName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusTableName),
+                Environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';'),
+                MaximumSeverity = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) ?? int.MaxValue,
+                TeamId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiTeamId)
             };
+            
+            serviceCollection.AddSingleton(configuration);
+
+            var incidentApiConfiguration = new IncidentApiConfiguration()
+            {
+                BaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri)),
+                Certificate = GetCertificateFromJson(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate))
+            };
+
+            serviceCollection.AddSingleton(incidentApiConfiguration);
         }
 
-        private IEnumerable<IIncidentParsingFilter> GetIncidentParsingFilters(int maximumSeverity)
+        private void AddLogging(IServiceCollection serviceCollection)
         {
-            return new IIncidentParsingFilter[]
-            {
-                new SeverityFilter(maximumSeverity)
-            };
+            serviceCollection.AddSingleton(LoggerFactory);
+            serviceCollection.AddLogging();
         }
 
         private static X509Certificate2 GetCertificateFromJson(string certJson)

@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -19,6 +21,8 @@ namespace StatusAggregator
         private readonly CloudBlobContainer _container;
         private readonly ITableWrapper _table;
 
+        private readonly ILogger<StatusExporter> _logger;
+
         private static readonly JsonSerializerSettings _statusBlobJsonSerializerSettings = new JsonSerializerSettings()
         {
             ContractResolver = new StatusContractResolver(),
@@ -27,55 +31,85 @@ namespace StatusAggregator
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        public StatusExporter(CloudBlobContainer container, ITableWrapper table)
+        public StatusExporter(
+            CloudBlobContainer container, 
+            ITableWrapper table,
+            ILogger<StatusExporter> logger)
         {
             _container = container;
             _table = table;
+            _logger = logger;
         }
 
         public async Task Export()
         {
-            var rootComponent = Components.CreateNuGetServiceRootComponent();
-
-            var recentEvents = _table
-                .CreateQuery<EventEntity>()
-                .Where(e =>
-                    e.PartitionKey == EventEntity.DefaultPartitionKey &&
-                    (e.IsActive || (e.EndTime >= DateTime.UtcNow - EventVisibilityPeriod)))
-                .ToList()
-                .Select(e =>
-                {
-                    var messages = _table.GetMessagesLinkedToEvent(e)
-                        .ToList()
-                        .Select(m => m.AsMessage());
-                    return e.AsEvent(messages);
-                })
-                .Where(e => e.Messages != null && e.Messages.Any());
-
-            // If multiple events are affecting a single region, the event with the highest severity should affect the component.
-            var activeEvents = recentEvents
-                .Where(e => e.EndTime == null || e.EndTime >= DateTime.UtcNow)
-                .GroupBy(e => e.AffectedComponentPath)
-                .Select(g => g.OrderByDescending(e => e.AffectedComponentStatus).First());
-
-            foreach (var activeEvent in activeEvents)
+            using (_logger.Scope(
+                "Beginning to export service status.",
+                "Finished exporting service status.",
+                "Exporting service status."))
             {
-                var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
+                var rootComponent = ComponentFactory.CreateNuGetServiceRootComponent();
 
-                if (currentComponent == null)
+                var recentEvents = _table
+                    .CreateQuery<EventEntity>()
+                    .Where(e =>
+                        e.PartitionKey == EventEntity.DefaultPartitionKey &&
+                        (e.IsActive || (e.EndTime >= DateTime.UtcNow - EventVisibilityPeriod)))
+                    .ToList()
+                    .Select(e =>
+                    {
+                        var messages = _table.GetMessagesLinkedToEvent(e)
+                            .ToList()
+                            .Select(m => m.AsMessage());
+                        return e.AsEvent(messages);
+                    })
+                    .Where(e => e.Messages != null && e.Messages.Any());
+
+                // If multiple events are affecting a single region, the event with the highest severity should affect the component.
+                var activeEvents = recentEvents
+                    .Where(e => e.EndTime == null || e.EndTime >= DateTime.UtcNow)
+                    .GroupBy(e => e.AffectedComponentPath)
+                    .Select(g => g.OrderByDescending(e => e.AffectedComponentStatus).First());
+
+                foreach (var activeEvent in activeEvents)
                 {
-                    continue;
+                    using (_logger.Scope(
+                        "Beginning to apply active event to root component.",
+                        "Finished applying active event to root component.",
+                        "Applying active event affecting '{AffectedComponentPath}' of severity {AffectedComponentStatus} at {StartTime} to root component", 
+                        activeEvent.AffectedComponentPath, activeEvent.AffectedComponentStatus, activeEvent.StartTime))
+                    {
+                        var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
+
+                        if (currentComponent == null)
+                        {
+                            _logger.LogWarning("Couldn't find component corresponding to active event.");
+                            continue;
+                        }
+
+                        currentComponent.Status = activeEvent.AffectedComponentStatus;
+                    }
                 }
 
-                currentComponent.Status = activeEvent.AffectedComponentStatus;
+                string statusJson;
+                using (_logger.Scope(
+                    "Beginning to serialize service status.",
+                    "Finished serializing service status.",
+                    "Serializing service status."))
+                {
+                    var status = new ServiceStatus(rootComponent, recentEvents);
+                    statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
+                }
+
+                using (_logger.Scope(
+                    "Beginning to save service status to blob storage.",
+                    "Finished saving service status to blob storage.",
+                    "Saving service status to blob storage."))
+                {
+                    var blob = _container.GetBlockBlobReference(StatusBlobName);
+                    await blob.UploadTextAsync(statusJson);
+                }
             }
-            
-
-            var status = new ServiceStatus(rootComponent, recentEvents);
-            var statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
-
-            var blob = _container.GetBlockBlobReference(StatusBlobName);
-            await blob.UploadTextAsync(statusJson);
         }
     }
 }

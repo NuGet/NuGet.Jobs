@@ -17,6 +17,7 @@ using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
 using NuGet.Services.Storage;
@@ -47,7 +48,7 @@ namespace Gallery.CredentialExpiration
         {
             _whatIf = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.WhatIf);
 
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
+            var secretInjector = serviceContainer.GetService<ISecretInjector>();
             var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryDatabase);
             _galleryDatabase = new AzureSqlConnectionFactory(databaseConnectionString, secretInjector);
 

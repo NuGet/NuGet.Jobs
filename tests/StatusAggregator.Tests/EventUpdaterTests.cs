@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -28,6 +29,7 @@ namespace StatusAggregator.Tests
 
         private Mock<ITableWrapper> _tableWrapperMock { get; }
         private Mock<IMessageUpdater> _messageUpdaterMock { get; }
+        private Mock<ILogger<EventUpdater>> _loggerMock { get; }
         private EventUpdater _eventUpdater { get; }
         private EventEntity _eventEntity { get; }
 
@@ -35,24 +37,13 @@ namespace StatusAggregator.Tests
         {
             _tableWrapperMock = new Mock<ITableWrapper>();
             _messageUpdaterMock = new Mock<IMessageUpdater>();
-            _eventUpdater = new EventUpdater(_tableWrapperMock.Object, _messageUpdaterMock.Object);
+            _eventUpdater = new EventUpdater(_tableWrapperMock.Object, _messageUpdaterMock.Object, _loggerMock.Object);
 
             _eventEntity = new EventEntity()
             {
                 RowKey = RowKey,
                 StartTime = DateTime.MinValue,
                 EndTime = null
-            };
-        }
-
-        private static IncidentEntity CreateIncidentEntity(DateTime? mitigationTime = null)
-        {
-            return new IncidentEntity()
-            {
-                PartitionKey = IncidentEntity.DefaultPartitionKey,
-                EventRowKey = RowKey,
-                CreationTime = DateTime.MinValue,
-                MitigationTime = mitigationTime
             };
         }
 
@@ -136,6 +127,17 @@ namespace StatusAggregator.Tests
             _messageUpdaterMock.Verify(
                 x => x.CreateMessageForEventEnd(_eventEntity),
                 Times.Once());
+        }
+
+        private static IncidentEntity CreateIncidentEntity(DateTime? mitigationTime = null)
+        {
+            return new IncidentEntity()
+            {
+                PartitionKey = IncidentEntity.DefaultPartitionKey,
+                EventRowKey = RowKey,
+                CreationTime = DateTime.MinValue,
+                MitigationTime = mitigationTime
+            };
         }
     }
 }

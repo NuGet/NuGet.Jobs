@@ -2,7 +2,7 @@
 
 namespace StatusAggregator
 {
-    public static class Components
+    public static class ComponentFactory
     {
         public const string RootName = "NuGet";
         public const string GalleryName = "NuGet.org";
@@ -21,6 +21,9 @@ namespace StatusAggregator
         public const string EaInstanceName = "East Asia";
         public const string SeaInstanceName = "Southeast Asia";
 
+        /// <summary>
+        /// Creates the NuGet service root component.
+        /// </summary>
         public static IComponent CreateNuGetServiceRootComponent()
         {
             return new TreeComponent(

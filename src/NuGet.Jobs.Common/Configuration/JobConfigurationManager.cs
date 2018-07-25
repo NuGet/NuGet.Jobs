@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 
@@ -197,7 +198,7 @@ namespace NuGet.Jobs
 
         private static IDictionary<string, string> InjectSecrets(IServiceContainer serviceContainer, Dictionary<string, string> argsDictionary)
         {
-            var secretReaderFactory = (ISecretReaderFactory)serviceContainer.GetService(typeof(ISecretReaderFactory));
+            var secretReaderFactory = serviceContainer.GetService<ISecretReaderFactory>();
 
             var secretReader = secretReaderFactory.CreateSecretReader(argsDictionary);
             if (secretReader == null)

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
 using NuGet.SupportRequests.Notifications.Notifications;
@@ -39,7 +40,7 @@ namespace NuGet.SupportRequests.Notifications.Tasks
             var smtpUri = jobArgsDictionary[JobArgumentNames.SmtpUri];
             _messagingService = new MessagingService(loggerFactory, smtpUri);
 
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
+            var secretInjector = serviceContainer.GetService<ISecretInjector>();
             var supportDbConnectionString = jobArgsDictionary[JobArgumentNames.SourceDatabase];
             var supportDbConnectionFactory = new AzureSqlConnectionFactory(supportDbConnectionString, secretInjector);
             

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -8,7 +7,9 @@ namespace StatusAggregator.Table
 {
     public class TableWrapper : ITableWrapper
     {
-        public TableWrapper(CloudStorageAccount storageAccount, string tableName)
+        public TableWrapper(
+            CloudStorageAccount storageAccount, 
+            string tableName)
         {
             var tableClient = storageAccount.CreateCloudTableClient();
             _table = tableClient.GetTableReference(tableName);

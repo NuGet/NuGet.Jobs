@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
@@ -10,75 +12,87 @@ namespace StatusAggregator
     public class IncidentFactory : IIncidentFactory
     {
         private readonly ITableWrapper _table;
-
         private readonly IEventUpdater _eventUpdater;
 
-        public IncidentFactory(ITableWrapper table, IEventUpdater eventUpdater)
+        private readonly ILogger<IncidentFactory> _logger;
+
+        public IncidentFactory(
+            ITableWrapper table, 
+            IEventUpdater eventUpdater, 
+            ILogger<IncidentFactory> logger)
         {
             _table = table;
             _eventUpdater = eventUpdater;
+            _logger = logger;
         }
 
         public async Task<IncidentEntity> CreateIncident(ParsedIncident parsedIncident)
         {
-            Console.WriteLine($"Attempting to save {parsedIncident.Id}");
             var incidentEntity = new IncidentEntity(
-                parsedIncident.Id, 
-                parsedIncident.AffectedComponentPath, 
-                parsedIncident.AffectedComponentStatus, 
-                parsedIncident.CreationTime, 
+                parsedIncident.Id,
+                parsedIncident.AffectedComponentPath,
+                parsedIncident.AffectedComponentStatus,
+                parsedIncident.CreationTime,
                 parsedIncident.MitigationTime);
 
-            // Find an event to attach this incident to
-            var possibleEvents = _table
-                .CreateQuery<EventEntity>()
-                .Where(e =>
-                    e.PartitionKey == EventEntity.DefaultPartitionKey &&
-                    // The incident and the event must affect the same component
-                    e.AffectedComponentPath == parsedIncident.AffectedComponentPath &&
-                    // The event must begin before or at the same time as the incident
-                    e.StartTime <= parsedIncident.CreationTime &&
-                    // The event must be active or the event must end after this incident begins
-                    (e.IsActive || (e.EndTime >= parsedIncident.CreationTime)))
-                .ToList();
-
-            Console.WriteLine($"Found {possibleEvents.Count()} possible events to link {parsedIncident.Id} to");
-
-            foreach (var possibleEvent in possibleEvents)
+            using (_logger.Scope(
+                "Beginning to create incident.",
+                "Finished creating incident.",
+                "Creating incident '{IncidentRowKey}'.", incidentEntity.RowKey))
             {
-                if (!_table.GetIncidentsLinkedToEvent(possibleEvent).ToList().Any())
+                // Find an event to attach this incident to
+                var possibleEvents = _table
+                    .CreateQuery<EventEntity>()
+                    .Where(e =>
+                        e.PartitionKey == EventEntity.DefaultPartitionKey &&
+                        // The incident and the event must affect the same component
+                        e.AffectedComponentPath == incidentEntity.AffectedComponentPath &&
+                        // The event must begin before or at the same time as the incident
+                        e.StartTime <= incidentEntity.CreationTime &&
+                        // The event must be active or the event must end after this incident begins
+                        (e.IsActive || (e.EndTime >= incidentEntity.CreationTime)))
+                    .ToList();
+
+                _logger.LogInformation("Found {EventCount} possible events to link incident to.", possibleEvents.Count());
+                EventEntity eventToLinkTo = null;
+                foreach (var possibleEventToLinkTo in possibleEvents)
                 {
-                    Console.WriteLine($"Cannot link {parsedIncident.Id} to {possibleEvent.RowKey} because it is not linked to any incidents");
-                    continue;
+                    if (!_table.GetIncidentsLinkedToEvent(possibleEventToLinkTo).ToList().Any())
+                    {
+                        _logger.LogInformation("Cannot link incident to event '{EventRowKey}' because it is not linked to any incidents.", possibleEventToLinkTo.RowKey);
+                        continue;
+                    }
+
+                    if (await _eventUpdater.UpdateEvent(possibleEventToLinkTo, incidentEntity.CreationTime))
+                    {
+                        _logger.LogInformation("Cannot link incident to event '{EventRowKey}' because it has been deactivated.", possibleEventToLinkTo.RowKey);
+                        continue;
+                    }
+
+                    _logger.LogInformation("Linking incident to event '{EventRowKey}'.", possibleEventToLinkTo.RowKey);
+                    eventToLinkTo = possibleEventToLinkTo;
+                    break;
                 }
 
-                if (await _eventUpdater.UpdateEvent(possibleEvent, parsedIncident.CreationTime))
+                if (eventToLinkTo == null)
                 {
-                    Console.WriteLine($"Cannot link {parsedIncident.Id} to {possibleEvent.RowKey} because its incidents are inactive and too old");
-                    continue;
+                    eventToLinkTo = new EventEntity(incidentEntity);
+                    _logger.LogInformation("Could not find existing event to link to, creating new event '{EventRowKey}' to link incident to.", eventToLinkTo.RowKey);
+                    await _table.InsertOrReplaceAsync(eventToLinkTo);
                 }
 
-                Console.WriteLine($"Linking {parsedIncident.Id} to {possibleEvent.RowKey}");
-                if ((int)parsedIncident.AffectedComponentStatus > possibleEvent.AffectedComponentStatus)
+                incidentEntity.EventRowKey = eventToLinkTo.RowKey;
+                await _table.InsertOrReplaceAsync(incidentEntity);
+
+                if ((int)parsedIncident.AffectedComponentStatus > eventToLinkTo.AffectedComponentStatus)
                 {
-                    Console.WriteLine($"{parsedIncident.Id} is a more severe than {possibleEvent.RowKey}, upgrading severity of event");
-                    possibleEvent.AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
-                    await _table.InsertOrReplaceAsync(possibleEvent);
+                    _logger.LogInformation("Increasing severity of event '{EventRowKey}' because newly linked incident is more severe than the event.", eventToLinkTo.RowKey);
+                    eventToLinkTo.AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
+                    await _table.InsertOrReplaceAsync(eventToLinkTo);
                 }
 
-                incidentEntity.EventRowKey = possibleEvents.First().RowKey;
-                break;
+                return incidentEntity;
             }
-
-            if (string.IsNullOrEmpty(incidentEntity.EventRowKey))
-            {
-                var eventEntity = new EventEntity(incidentEntity);
-                Console.WriteLine($"Could not find existing event to attach {parsedIncident.Id} to, creating new event {eventEntity.RowKey}");
-                await _table.InsertOrReplaceAsync(eventEntity);
-            }
-
-            await _table.InsertOrReplaceAsync(incidentEntity);
-            return incidentEntity;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using NuGet.Services.Incidents;
+﻿using Microsoft.Extensions.Logging;
+using NuGet.Services.Incidents;
 using NuGet.Services.Status;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -9,14 +10,16 @@ namespace StatusAggregator.Parse
     {
         private const string SubtitleRegEx = "A search service instance is using an outdated index!";
 
-        public OutdatedSearchServiceInstanceIncidentParser(IEnumerable<string> environments, IEnumerable<IIncidentParsingFilter> filters)
-            : base(SubtitleRegEx, environments, filters)
+        public OutdatedSearchServiceInstanceIncidentParser(
+            IEnumerable<IIncidentParsingFilter> filters, 
+            ILogger<OutdatedSearchServiceInstanceIncidentParser> logger)
+            : base(SubtitleRegEx, filters, logger)
         {
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
-            affectedComponentPath = ComponentUtility.GetPath(Components.RootName, Components.UploadName);
+            affectedComponentPath = ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.UploadName);
             return true;
         }
 
