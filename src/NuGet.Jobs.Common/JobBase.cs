@@ -35,7 +35,7 @@ namespace NuGet.Jobs
             LoggerFactory = loggerFactory;
             Logger = logger;
         }
-        
+
         public abstract void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary);
 
         public abstract Task Run();
