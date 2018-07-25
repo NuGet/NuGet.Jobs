@@ -24,7 +24,7 @@ namespace StatusAggregator.Tests
 
         private static IEnumerable<IncidentEntity> UnclosableIncidents => new[]
         {
-            CreateIncidentEntity(NextCreationTime + EventUpdater.EventEndDelay), // Incident closed too recently
+            CreateIncidentEntity(NextCreationTime + EventUpdater._eventEndDelay), // Incident closed too recently
             CreateIncidentEntity() // Active incident
         };
 

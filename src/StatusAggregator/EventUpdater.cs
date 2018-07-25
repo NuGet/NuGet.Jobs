@@ -13,7 +13,7 @@ namespace StatusAggregator
 {
     public class EventUpdater : IEventUpdater
     {
-        public static TimeSpan EventEndDelay = TimeSpan.FromMinutes(10);
+        public readonly TimeSpan _eventEndDelay;
 
         private readonly ITableWrapper _table;
         private readonly IMessageUpdater _messageUpdater;
@@ -23,10 +23,12 @@ namespace StatusAggregator
         public EventUpdater(
             ITableWrapper table, 
             IMessageUpdater messageUpdater, 
+            StatusAggregatorConfiguration configuration,
             ILogger<EventUpdater> logger)
         {
             _table = table;
             _messageUpdater = messageUpdater;
+            _eventEndDelay = TimeSpan.FromMinutes(configuration.EventEndDelayMinutes);
             _logger = logger;
         }
 
@@ -65,7 +67,7 @@ namespace StatusAggregator
                 }
 
                 var shouldDeactivate = !incidentsLinkedToEventQuery
-                        .Where(i => i.IsActive || i.MitigationTime > cursor - EventEndDelay)
+                        .Where(i => i.IsActive || i.MitigationTime > cursor - _eventEndDelay)
                         .ToList()
                         .Any();
 

@@ -92,24 +92,47 @@ namespace StatusAggregator
                 });
         }
 
+        private const int _defaultEventStartMessageDelayMinutes = 15;
+        private const int _defaultEventEndDelayMinutes = 10;
+        private const int _defaultEventVisibilityPeriod = 10;
+
         private static void AddConfiguration(IServiceCollection serviceCollection, IDictionary<string, string> jobArgsDictionary)
         {
             var configuration = new StatusAggregatorConfiguration()
             {
-                StorageAccount = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusStorageAccount),
-                ContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusContainerName),
-                TableName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusTableName),
-                Environments = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment).Split(';'),
-                MaximumSeverity = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) ?? int.MaxValue,
-                TeamId = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiTeamId)
+                StorageAccount = 
+                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusStorageAccount),
+                ContainerName = 
+                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusContainerName),
+                TableName = 
+                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusTableName),
+                Environments = 
+                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusEnvironment)
+                    .Split(';'),
+                MaximumSeverity = 
+                    JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusMaximumSeverity) 
+                    ?? int.MaxValue,
+                TeamId = 
+                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiTeamId),
+                EventStartMessageDelayMinutes = 
+                    JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventStartMessageDelayMinutes) 
+                    ?? _defaultEventStartMessageDelayMinutes,
+                EventEndDelayMinutes = 
+                    JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventEndDelayMinutes) 
+                    ?? _defaultEventEndDelayMinutes,
+                EventVisibilityPeriodDays = 
+                    JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventVisibilityPeriodDays) 
+                    ?? _defaultEventVisibilityPeriod,
             };
             
             serviceCollection.AddSingleton(configuration);
 
             var incidentApiConfiguration = new IncidentApiConfiguration()
             {
-                BaseUri = new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri)),
-                Certificate = GetCertificateFromJson(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate))
+                BaseUri = 
+                    new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri)),
+                Certificate = 
+                    GetCertificateFromJson(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate))
             };
 
             serviceCollection.AddSingleton(incidentApiConfiguration);

@@ -19,7 +19,7 @@ namespace StatusAggregator
     public class StatusExporter : IStatusExporter
     {
         private const string StatusBlobName = "status.json";
-        private static TimeSpan EventVisibilityPeriod = TimeSpan.FromDays(7);
+        private readonly TimeSpan _eventVisibilityPeriod;
 
         private readonly CloudBlobContainer _container;
         private readonly ITableWrapper _table;
@@ -37,10 +37,12 @@ namespace StatusAggregator
         public StatusExporter(
             CloudBlobContainer container, 
             ITableWrapper table,
+            StatusAggregatorConfiguration configuration,
             ILogger<StatusExporter> logger)
         {
             _container = container;
             _table = table;
+            _eventVisibilityPeriod = TimeSpan.FromDays(configuration.EventVisibilityPeriodDays);
             _logger = logger;
         }
 
@@ -54,7 +56,7 @@ namespace StatusAggregator
                     .CreateQuery<EventEntity>()
                     .Where(e =>
                         e.PartitionKey == EventEntity.DefaultPartitionKey &&
-                        (e.IsActive || (e.EndTime >= DateTime.UtcNow - EventVisibilityPeriod)))
+                        (e.IsActive || (e.EndTime >= DateTime.UtcNow - _eventVisibilityPeriod)))
                     .ToList()
                     .Select(e =>
                     {

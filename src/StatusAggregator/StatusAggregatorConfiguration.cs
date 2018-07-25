@@ -38,7 +38,26 @@ namespace StatusAggregator
 
         /// <summary>
         /// A team ID to use to query the incident API.
+        /// See <see cref="IncidentUpdater"/>.
         /// </summary>
         public string TeamId { get; set; }
+
+        /// <summary>
+        /// The number of minutes that must pass before a message is created for a recently started event.
+        /// In other words, <see cref="MessageUpdater"/> will wait this amount of time before it creates a start message for an event.
+        /// </summary>
+        public int EventStartMessageDelayMinutes { get; set; }
+
+        /// <summary>
+        /// The number of minutes that must pass before an event whose incidents have all been mitigated is deactivated.
+        /// In other words, <see cref="EventUpdater"/> will wait this amount of time before it deactivates an event with all mitigated incidents.
+        /// </summary>
+        public int EventEndDelayMinutes { get; set; }
+
+        /// <summary>
+        /// The number of days that a deactivated event is visible in the <see cref="ServiceStatus"/>.
+        /// An event is only added to <see cref="ServiceStatus.Events"/> by <see cref="StatusExporter"/> if it is active or it has been deactivated for less than this number of days.
+        /// </summary>
+        public int EventVisibilityPeriodDays { get; set; }
     }
 }

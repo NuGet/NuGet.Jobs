@@ -15,15 +15,19 @@ namespace StatusAggregator
 {
     public class MessageUpdater : IMessageUpdater
     {
-        private static TimeSpan EventStartDelay = TimeSpan.FromMinutes(15);
+        private readonly TimeSpan _eventStartMessageDelay;
 
         private readonly ITableWrapper _table;
 
         private readonly ILogger<MessageUpdater> _logger;
 
-        public MessageUpdater(ITableWrapper table, ILogger<MessageUpdater> logger)
+        public MessageUpdater(
+            ITableWrapper table, 
+            StatusAggregatorConfiguration configuration,
+            ILogger<MessageUpdater> logger)
         {
             _table = table;
+            _eventStartMessageDelay = TimeSpan.FromMinutes(configuration.EventStartMessageDelayMinutes);
             _logger = logger;
         }
 
@@ -31,7 +35,7 @@ namespace StatusAggregator
         {
             using (_logger.Scope("Creating message for start of event."))
             {
-                if (cursor > eventEntity.StartTime + EventStartDelay)
+                if (cursor > eventEntity.StartTime + _eventStartMessageDelay)
                 {
                     if (!_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
                     {

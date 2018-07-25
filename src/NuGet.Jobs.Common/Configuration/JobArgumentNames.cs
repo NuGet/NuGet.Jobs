@@ -125,9 +125,12 @@ namespace NuGet.Jobs
         public const string StatusEnvironment = "StatusEnvironment";
         public const string StatusMaximumSeverity = "StatusMaximumSeverity";
         public const string StatusIncidentApiBaseUri = "StatusIncidentApiBaseUri";
-        public const string StatusIncidentApiTeamId = "StatusIncidentApiTeamId";
         public const string StatusIncidentApiCertificate = "StatusIncidentApiCertificate";
-        
+        public const string StatusIncidentApiTeamId = "StatusIncidentApiTeamId";
+        public const string StatusEventStartMessageDelayMinutes = "StatusEventStartMessageDelayMinutes";
+        public const string StatusEventEndDelayMinutes = "StatusEventEndDelayMinutes";
+        public const string StatusEventVisibilityPeriodDays = "StatusEventVisibilityPeriodDays";
+
         // Arguments specific to Stats.AggregateCdnDownloadsInGallery
         public static string BatchSleepSeconds = "BatchSleepSeconds";
     }
