@@ -64,7 +64,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         "CN=NUGET_DO_NOT_TRUST.root.test.test, OU=Test Organizational Unit Name, O=Test Organization Name, L=Redmond, S=WA, C=US",
                         TestResources.RootThumbprint),
                 },
-                    TimestampEndCertificate = new SubjectAndThumbprint(
+                TimestampEndCertificate = new SubjectAndThumbprint(
                     "CN=Symantec SHA256 TimeStamping Signer - G2, OU=Symantec Trust Network, O=Symantec Corporation, C=US",
                     TestResources.Leaf1TimestampThumbprint),
                     TimestampParentCertificates = new[]
@@ -646,6 +646,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 // Assert
                 Assert.Equal(0, _entitiesContext.Object.PackageSignatures.Count());
+
+                // The repository signature's certificate is still stored on blob storage.
+                VerifyStoredCertificates(Leaf1Certificates);
             }
 
             [Fact]
@@ -666,6 +669,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // Assert
                 Assert.Equal(1, _entitiesContext.Object.PackageSignatures.Count());
                 Assert.Equal(PackageSignatureType.Author, _entitiesContext.Object.PackageSignatures.First().Type);
+
+                // The repository signature's certificate is still stored on blob storage.
+                VerifyStoredCertificates(AuthorAndRepoSignedCertificates);
             }
 
             private void AssignIds()
