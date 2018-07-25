@@ -119,6 +119,17 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
             _certificateStore = new Mock<ICertificateStore>();
 
+            // These dependencies are concrete.
+            _configuration = new ProcessSignatureConfiguration
+            {
+                AllowedRepositorySigningCertificates = new List<string> { "fake-thumbprint" },
+                V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl,
+                CommitRepositorySignatures = true,
+            };
+            _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
+            _optionsSnapshot.Setup(x => x.Value).Returns(() => _configuration);
+            _formatValidator = new SignatureFormatValidator(_optionsSnapshot.Object);
+
             _signaturePartsExtractor = new SignaturePartsExtractor(
                 _certificateStore.Object,
                 _validationEntitiesContext.Object,
@@ -144,17 +155,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 });
 
             _corePackageService = new Mock<ICorePackageService>();
-
-            // These dependencies are concrete.
-            _configuration = new ProcessSignatureConfiguration
-            {
-                AllowedRepositorySigningCertificates = new List<string> { "fake-thumbprint" },
-                V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl,
-                CommitRepositorySignatures = true,
-            };
-            _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
-            _optionsSnapshot.Setup(x => x.Value).Returns(() => _configuration);
-            _formatValidator = new SignatureFormatValidator(_optionsSnapshot.Object);
 
             _telemetryClient = new Mock<ITelemetryClient>();
             _telemetryService = new TelemetryService(_telemetryClient.Object);
