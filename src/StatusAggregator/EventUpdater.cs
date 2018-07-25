@@ -27,11 +27,12 @@ namespace StatusAggregator
             _logger = logger;
         }
 
-        public async Task UpdateAllActiveEvents(DateTime cursor)
+        public async Task UpdateActiveEvents(DateTime cursor)
         {
-            using (_logger.Scope("Updating all active events."))
+            using (_logger.Scope("Updating active events."))
             {
-                var activeEvents = _table.GetActiveEvents();
+                var activeEvents = _table.GetActiveEvents().ToList();
+                _logger.LogInformation("Updating {ActiveEventsCount} active events.", activeEvents.Count());
                 foreach (var activeEvent in activeEvents)
                 {
                     await UpdateEvent(activeEvent, cursor);

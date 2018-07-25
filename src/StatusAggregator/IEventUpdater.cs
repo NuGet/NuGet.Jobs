@@ -13,7 +13,7 @@ namespace StatusAggregator
         /// Updates all active <see cref="EventEntity"/>s.
         /// </summary>
         /// <param name="cursor">The current timestamp processed by the job.</param>
-        Task UpdateAllActiveEvents(DateTime cursor);
+        Task UpdateActiveEvents(DateTime cursor);
 
         /// <summary>
         /// Update <paramref name="eventEntity"/> given <paramref name="cursor"/>.

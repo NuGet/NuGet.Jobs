@@ -31,10 +31,10 @@ namespace StatusAggregator
             {
                 var lastCursor = await _cursor.Get();
 
-                await _incidentUpdater.RefreshExistingIncidents();
+                await _incidentUpdater.RefreshActiveIncidents();
                 var nextCursor = await _incidentUpdater.FetchNewIncidents(lastCursor);
 
-                await _eventUpdater.UpdateAllActiveEvents(nextCursor ?? DateTime.UtcNow);
+                await _eventUpdater.UpdateActiveEvents(nextCursor ?? DateTime.UtcNow);
 
                 if (nextCursor.HasValue)
                 {

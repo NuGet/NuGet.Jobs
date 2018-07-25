@@ -13,7 +13,7 @@ namespace StatusAggregator
         /// <summary>
         /// Update the status of any active <see cref="IncidentEntity"/>s.
         /// </summary>
-        Task RefreshExistingIncidents();
+        Task RefreshActiveIncidents();
 
         /// <summary>
         /// Fetches any new <see cref="Incident"/>s and processes them.

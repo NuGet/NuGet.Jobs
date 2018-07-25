@@ -42,21 +42,23 @@ namespace StatusAggregator
             _logger = logger;
         }
 
-        public async Task RefreshExistingIncidents()
+        public async Task RefreshActiveIncidents()
         {
-            using (_logger.Scope("Refreshing existing incidents."))
+            using (_logger.Scope("Refreshing active incidents."))
             {
                 var activeIncidentEntities = _table
                     .CreateQuery<IncidentEntity>()
-                    .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive);
+                    .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive)
+                    .ToList();
 
+                _logger.LogInformation("Refreshing {ActiveIncidentsCount} active incidents.", activeIncidentEntities.Count());
                 foreach (var activeIncidentEntity in activeIncidentEntities)
                 {
-                    using (_logger.Scope("Refreshing incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
+                    using (_logger.Scope("Refreshing active incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
                     {
                         var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
                         activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
-                        _logger.LogInformation("Updated mitigation time of incident to {MitigationTime}", activeIncidentEntity.MitigationTime);
+                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.MitigationTime);
                         await _table.InsertOrReplaceAsync(activeIncidentEntity);
                     }
                 }
