@@ -11,9 +11,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
-using NuGet.Jobs.Extensions;
-using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
 
 namespace Search.GenerateAuxiliaryData
 {

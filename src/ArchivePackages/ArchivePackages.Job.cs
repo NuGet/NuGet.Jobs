@@ -13,9 +13,6 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
-using NuGet.Jobs.Extensions;
-using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
 
 namespace ArchivePackages
 {

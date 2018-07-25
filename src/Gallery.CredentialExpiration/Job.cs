@@ -15,9 +15,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGet.Jobs;
-using NuGet.Jobs.Extensions;
-using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
 using NuGet.Services.Storage;
 
 namespace Gallery.CredentialExpiration
@@ -43,7 +40,7 @@ namespace Gallery.CredentialExpiration
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             _whatIf = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.WhatIf);
-            
+
             RegisterDatabase(serviceContainer, jobArgsDictionary, JobArgumentNames.GalleryDatabase);
 
             _galleryBrand = JobConfigurationManager.GetArgument(jobArgsDictionary, MyJobArgumentNames.GalleryBrand);

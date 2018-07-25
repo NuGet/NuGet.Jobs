@@ -8,9 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs;
-using NuGet.Jobs.Extensions;
-using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
 using Stats.ImportAzureCdnStatistics;
 
 namespace Stats.RefreshClientDimension

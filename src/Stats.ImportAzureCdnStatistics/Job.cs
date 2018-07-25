@@ -10,9 +10,6 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using NuGet.Jobs;
-using NuGet.Jobs.Extensions;
-using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
 using Stats.AzureCdnLogs.Common;
 using System.Data.SqlClient;
 
