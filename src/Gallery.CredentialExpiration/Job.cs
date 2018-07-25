@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Data.SqlClient;
@@ -15,7 +14,6 @@ using Gallery.CredentialExpiration.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
@@ -35,8 +33,6 @@ namespace Gallery.CredentialExpiration
         private string _galleryBrand;
         private string _galleryAccountUrl;
 
-        private ISqlConnectionFactory _galleryDatabase;
-
         private string _mailFrom;
         private SmtpClient _smtpClient;
 
@@ -47,10 +43,8 @@ namespace Gallery.CredentialExpiration
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             _whatIf = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.WhatIf);
-
-            var secretInjector = serviceContainer.GetService<ISecretInjector>();
-            var databaseConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.GalleryDatabase);
-            _galleryDatabase = new AzureSqlConnectionFactory(databaseConnectionString, secretInjector);
+            
+            RegisterDatabase(serviceContainer, jobArgsDictionary, JobArgumentNames.GalleryDatabase);
 
             _galleryBrand = JobConfigurationManager.GetArgument(jobArgsDictionary, MyJobArgumentNames.GalleryBrand);
             _galleryAccountUrl = JobConfigurationManager.GetArgument(jobArgsDictionary, MyJobArgumentNames.GalleryAccountUrl);
@@ -72,12 +66,17 @@ namespace Gallery.CredentialExpiration
             _storage = storageFactory.Create();
         }
 
+        public Task<SqlConnection> OpenGallerySqlConnectionAsync()
+        {
+            return OpenSqlConnectionAsync(JobArgumentNames.GalleryDatabase);
+        }
+
         public override async Task Run()
         {
             var jobRunTime = DateTimeOffset.UtcNow;
             // Default values
             var jobCursor = new JobRunTimeCursor( jobCursorTime: jobRunTime, maxProcessedCredentialsTime: jobRunTime );
-            var galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, _warnDaysBeforeExpiration, jobCursor), _galleryDatabase);
+            var galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, _warnDaysBeforeExpiration, jobCursor), OpenGallerySqlConnectionAsync);
 
             try
             {
@@ -90,7 +89,7 @@ namespace Gallery.CredentialExpiration
                     // Load from cursor
                     // Throw if the schema is not correct to ensure that not-intended emails are sent.
                     jobCursor = JsonConvert.DeserializeObject<JobRunTimeCursor>(content, new JsonSerializerSettings() { MissingMemberHandling = MissingMemberHandling.Error });
-                    galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, _warnDaysBeforeExpiration, jobCursor), _galleryDatabase);
+                    galleryCredentialExpiration = new GalleryCredentialExpiration(new CredentialExpirationJobMetadata(jobRunTime, _warnDaysBeforeExpiration, jobCursor), OpenGallerySqlConnectionAsync);
                 }
 
                 // Connect to database

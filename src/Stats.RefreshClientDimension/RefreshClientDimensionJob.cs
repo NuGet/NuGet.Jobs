@@ -17,15 +17,12 @@ namespace Stats.RefreshClientDimension
 {
     public class RefreshClientDimensionJob : JobBase
     {
-        private static ISqlConnectionFactory _statisticsDbConnectionFactory;
         private static string _targetClientName;
         private static string _userAgentFilter;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = serviceContainer.GetService<ISecretInjector>();
-            var statisticsDbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
-            _statisticsDbConnectionFactory = new AzureSqlConnectionFactory(statisticsDbConnectionString, secretInjector);
+            RegisterDatabase(serviceContainer, jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
 
             _targetClientName = JobConfigurationManager.TryGetArgument(jobArgsDictionary, "TargetClientName");
             _userAgentFilter = JobConfigurationManager.TryGetArgument(jobArgsDictionary, "UserAgentFilter");
@@ -33,7 +30,7 @@ namespace Stats.RefreshClientDimension
 
         public override async Task Run()
         {
-            using (var connection = await _statisticsDbConnectionFactory.CreateAsync())
+            using (var connection = await OpenSqlConnectionAsync(JobArgumentNames.StatisticsDatabase))
             {
                 IDictionary<string, Tuple<int, int>> linkedUserAgents;
 

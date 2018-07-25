@@ -42,7 +42,6 @@ namespace UpdateLicenseReports
         private Uri _licenseReportService;
         private string _licenseReportUser;
         private string _licenseReportPassword;
-        private ISqlConnectionFactory _packageDbConnectionFactory;
         private int? _retryCount;
         private NetworkCredential _licenseReportCredentials;
 
@@ -62,9 +61,7 @@ namespace UpdateLicenseReports
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = serviceContainer.GetService<ISecretInjector>();
-            var dbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase);
-            _packageDbConnectionFactory = new AzureSqlConnectionFactory(dbConnectionString, secretInjector);
+            RegisterDatabase(serviceContainer, jobArgsDictionary, JobArgumentNames.PackageDatabase);
 
             var retryCountString = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.RetryCount);
             if (string.IsNullOrEmpty(retryCountString))
@@ -112,12 +109,12 @@ namespace UpdateLicenseReports
 
         private async Task<Uri> FetchNextReportUrlAsync()
         {
-            Logger.LogInformation("Fetching next report URL from {DataSource}/{InitialCatalog}",
-                _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
-
             Uri nextLicenseReport = null;
-            using (var connection = await _packageDbConnectionFactory.CreateAsync())
+            using (var connection = await OpenSqlConnectionAsync(JobArgumentNames.PackageDatabase))
             {
+                Logger.LogInformation("Fetching next report URL from {DataSource}/{InitialCatalog}",
+                    connection.DataSource, connection.Database);
+
                 var nextReportUrl = (await connection.QueryAsync<string>(
                     @"SELECT TOP 1 NextLicenseReport FROM GallerySettings")).SingleOrDefault();
 
@@ -131,11 +128,11 @@ namespace UpdateLicenseReports
                 }
 
                 nextLicenseReport = nextLicenseReport ?? _licenseReportService;
-            }
 
-            Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from {DataSource}/{InitialCatalog}",
-                (nextLicenseReport == null ? string.Empty : nextLicenseReport.AbsoluteUri),
-                _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
+                Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from {DataSource}/{InitialCatalog}",
+                    (nextLicenseReport == null ? string.Empty : nextLicenseReport.AbsoluteUri),
+                    connection.DataSource, connection.Database);
+            }
 
             return nextLicenseReport;
         }
@@ -243,7 +240,7 @@ namespace UpdateLicenseReports
                         Logger.LogInformation("Storing next license report URL: {NextReportUrl}", nextLicenseReport.AbsoluteUri);
 
                         // Record the next report to the database so we can check it again if we get aborted before finishing.
-                        using (var connection = await _packageDbConnectionFactory.CreateAsync())
+                        using (var connection = await OpenSqlConnectionAsync(JobArgumentNames.PackageDatabase))
                         {
                             await connection.QueryAsync<int>(@"
                                         UPDATE GallerySettings
@@ -275,7 +272,7 @@ namespace UpdateLicenseReports
 
         private async Task<int> StoreReportAsync(PackageLicenseReport report)
         {
-            using (var connection = await _packageDbConnectionFactory.CreateAsync())
+            using (var connection = await OpenSqlConnectionAsync(JobArgumentNames.PackageDatabase))
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = "AddPackageLicenseReport2";

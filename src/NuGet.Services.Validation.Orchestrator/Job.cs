@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Data.Common;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -25,14 +24,12 @@ using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
-using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
-using NuGet.Services.Sql;
 using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGet.Services.Validation.PackageSigning.ProcessSignature;
@@ -66,6 +63,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageSignatureBindingKey = PackageSigningSectionName;
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
         private const string ScanAndSignBindingKey = ScanAndSignSectionName;
+        private const string ScanBindingKey = "Scan";
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
 
@@ -86,6 +84,12 @@ namespace NuGet.Services.Validation.Orchestrator
 
             var configurationRoot = GetConfigurationRoot(configurationFilename, _validateOnly, out var secretInjector);
             _serviceProvider = GetServiceProvider(configurationRoot, secretInjector);
+            
+            if (!_validateOnly)
+            {
+                RegisterDatabase<GalleryDbConfiguration>(_serviceProvider);
+                RegisterDatabase<ValidationDbConfiguration>(_serviceProvider);
+            }
 
             ConfigurationValidated = false;
         }
@@ -158,15 +162,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddLogging();
         }
 
-        private DbConnection CreateDbConnection<T>(IServiceProvider serviceProvider) where T : IDbConfiguration
-        {
-            var connectionString = serviceProvider.GetRequiredService<IOptionsSnapshot<T>>().Value.ConnectionString;
-            var connectionFactory = new AzureSqlConnectionFactory(connectionString,
-                serviceProvider.GetRequiredService<ISecretInjector>());
-
-            return Task.Run(() => connectionFactory.CreateAsync()).Result;
-        }
-
         private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<ValidationConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
@@ -184,15 +179,15 @@ namespace NuGet.Services.Validation.Orchestrator
 
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
-
+            
             services.AddScoped<NuGetGallery.IEntitiesContext>(serviceProvider =>
                 new NuGetGallery.EntitiesContext(
-                    CreateDbConnection<GalleryDbConfiguration>(serviceProvider),
+                    CreateSqlConnection<GalleryDbConfiguration>(),
                     readOnly: false)
                     );
             services.AddScoped(serviceProvider =>
                 new ValidationEntitiesContext(
-                    CreateDbConnection<ValidationDbConfiguration>(serviceProvider)));
+                    CreateSqlConnection<ValidationDbConfiguration>()));
 
             services.AddScoped<IValidationEntitiesContext>(serviceProvider =>
                 serviceProvider.GetRequiredService<ValidationEntitiesContext>());
@@ -227,7 +222,7 @@ namespace NuGet.Services.Validation.Orchestrator
                         readAccessGeoRedundant: false);
                 });
             services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
-            services.AddTransient<IValidationFileServiceMetadata, PackageValidationFileServiceMetadata>();
+            services.AddTransient<IFileMetadataService, PackageFileMetadataService>();
             services.AddTransient<IValidationFileService, ValidationFileService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();
             services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
@@ -273,6 +268,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IMessageService<Package>, PackageMessageService>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
+            services.AddTransient<ISubscriptionProcessorTelemetryService, TelemetryService>();
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
             services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
             services.AddSingleton(new TelemetryClient());
@@ -362,6 +358,7 @@ namespace NuGet.Services.Validation.Orchestrator
             ConfigurePackageSigningValidators(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
             ConfigureScanAndSignProcessor(containerBuilder);
+            ConfigureScanValidator(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -465,6 +462,21 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<ScanAndSignProcessor>()
                 .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
+                .AsSelf();
+        }
+
+        private static void ConfigureScanValidator(ContainerBuilder builder)
+        {
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.ScanOnly)
+                .Keyed<IValidatorStateService>(ScanBindingKey);
+
+            builder
+                .RegisterType<ScanValidator>()
+                .WithKeyedParameter(typeof(IValidatorStateService), ScanBindingKey)
                 .AsSelf();
         }
 

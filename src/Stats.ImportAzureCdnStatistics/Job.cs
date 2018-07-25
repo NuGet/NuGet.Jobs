@@ -14,6 +14,7 @@ using NuGet.Jobs.Extensions;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Sql;
 using Stats.AzureCdnLogs.Common;
+using System.Data.SqlClient;
 
 namespace Stats.ImportAzureCdnStatistics
 {
@@ -24,16 +25,13 @@ namespace Stats.ImportAzureCdnStatistics
         private string _azureCdnAccountNumber;
         private string _cloudStorageContainerName;
         private AzureCdnPlatform _azureCdnPlatform;
-        private ISqlConnectionFactory _statisticsDbConnectionFactory;
         private CloudStorageAccount _cloudStorageAccount;
         private CloudBlobClient _cloudBlobClient;
         private LogFileProvider _blobLeaseManager;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = serviceContainer.GetService<ISecretInjector>();
-            var statisticsDbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
-            _statisticsDbConnectionFactory = new AzureSqlConnectionFactory(statisticsDbConnectionString, secretInjector);
+            RegisterDatabase(serviceContainer, jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
 
             var azureCdnPlatform = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnPlatform);
             var cloudStorageAccountConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageAccount);
@@ -55,6 +53,11 @@ namespace Stats.ImportAzureCdnStatistics
             _blobLeaseManager = new LogFileProvider(sourceBlobContainer, LoggerFactory);
         }
 
+        public Task<SqlConnection> OpenStatisticsSqlConnectionAsync()
+        {
+            return OpenSqlConnectionAsync(JobArgumentNames.StatisticsDatabase);
+        }
+
         public override async Task Run()
         {
             // Get the target blob container (for archiving decompressed log files)
@@ -66,7 +69,7 @@ namespace Stats.ImportAzureCdnStatistics
             await deadLetterBlobContainer.CreateIfNotExistsAsync();
 
             // Create a parser
-            var warehouse = new Warehouse(LoggerFactory, _statisticsDbConnectionFactory);
+            var warehouse = new Warehouse(OpenStatisticsSqlConnectionAsync, LoggerFactory);
             var statisticsBlobContainerUtility = new StatisticsBlobContainerUtility(
                 targetBlobContainer,
                 deadLetterBlobContainer,

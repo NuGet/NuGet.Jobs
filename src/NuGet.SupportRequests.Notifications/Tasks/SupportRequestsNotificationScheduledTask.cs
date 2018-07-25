@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
@@ -25,6 +26,7 @@ namespace NuGet.SupportRequests.Notifications.Tasks
         protected SupportRequestsNotificationScheduledTask(
             IServiceContainer serviceContainer,
             IDictionary<string, string> jobArgsDictionary,
+            Func<Task<SqlConnection>> openSupportSqlConnectionAsync,
             ILoggerFactory loggerFactory)
         {
             if (jobArgsDictionary == null)
@@ -39,15 +41,12 @@ namespace NuGet.SupportRequests.Notifications.Tasks
 
             var smtpUri = jobArgsDictionary[JobArgumentNames.SmtpUri];
             _messagingService = new MessagingService(loggerFactory, smtpUri);
-
-            var secretInjector = serviceContainer.GetService<ISecretInjector>();
-            var supportDbConnectionString = jobArgsDictionary[JobArgumentNames.SourceDatabase];
-            var supportDbConnectionFactory = new AzureSqlConnectionFactory(supportDbConnectionString, secretInjector);
             
-            _supportRequestRepository = new SupportRequestRepository(loggerFactory, supportDbConnectionFactory);
+            _supportRequestRepository = new SupportRequestRepository(openSupportSqlConnectionAsync, loggerFactory);
         }
 
         protected abstract Task<TNotification> BuildNotification(SupportRequestRepository supportRequestRepository, DateTime referenceTime);
+
         protected abstract string BuildNotificationBody(string template, TNotification notification);
 
         public async Task RunAsync()

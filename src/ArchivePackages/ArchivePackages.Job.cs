@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Data.SqlClient;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading.Tasks;
@@ -54,8 +55,6 @@ namespace ArchivePackages
         /// Blob containing the cursor data. Cursor data comprises of cursorDateTime
         /// </summary>
         public string CursorBlobName { get; set; }
-        
-        private ISqlConnectionFactory _packageDbConnectionFactory;
 
         protected CloudBlobContainer SourceContainer { get; private set; }
 
@@ -63,13 +62,13 @@ namespace ArchivePackages
 
         protected CloudBlobContainer SecondaryDestinationContainer { get; private set; }
 
+        private SqlConnectionStringBuilder PackageDatabase { get; set; }
+
         public Job() : base(JobEventSource.Log) { }
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = serviceContainer.GetService<ISecretInjector>();
-            var packageDbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase);
-            _packageDbConnectionFactory = new AzureSqlConnectionFactory(packageDbConnectionString, secretInjector);
+            PackageDatabase = RegisterDatabase(serviceContainer, jobArgsDictionary, JobArgumentNames.PackageDatabase);
 
             Source = CloudStorageAccount.Parse(
                         JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.Source));
@@ -93,13 +92,18 @@ namespace ArchivePackages
 
         public override async Task Run()
         {
-            JobEventSourceLog.PreparingToArchive(Source.Credentials.AccountName, SourceContainer.Name, PrimaryDestination.Credentials.AccountName, PrimaryDestinationContainer.Name, _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
+            JobEventSourceLog.PreparingToArchive(
+                Source.Credentials.AccountName, SourceContainer.Name,
+                PrimaryDestination.Credentials.AccountName, PrimaryDestinationContainer.Name,
+                PackageDatabase.DataSource, PackageDatabase.InitialCatalog);
+
             await Archive(PrimaryDestinationContainer);
 
             // todo: consider reusing package query for primary and secondary archives
             if (SecondaryDestinationContainer != null)
             {
                 JobEventSourceLog.PreparingToArchive2(SecondaryDestination.Credentials.AccountName, SecondaryDestinationContainer.Name);
+
                 await Archive(SecondaryDestinationContainer);
             }
         }
@@ -125,9 +129,10 @@ namespace ArchivePackages
 
             JobEventSourceLog.CursorData(cursorDateTime.ToString(DateTimeFormatSpecifier));
 
-            JobEventSourceLog.GatheringPackagesToArchiveFromDb(_packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
+            JobEventSourceLog.GatheringPackagesToArchiveFromDb(PackageDatabase.DataSource, PackageDatabase.InitialCatalog);
+
             List<PackageRef> packages;
-            using (var connection = await _packageDbConnectionFactory.CreateAsync())
+            using (var connection = await OpenSqlConnectionAsync(JobArgumentNames.PackageDatabase))
             {
                 packages = (await connection.QueryAsync<PackageRef>(@"
 			    SELECT pr.Id, p.NormalizedVersion AS Version, p.Hash, p.LastEdited, p.Published
@@ -136,7 +141,8 @@ namespace ArchivePackages
 			    WHERE Published > @cursorDateTime OR LastEdited > @cursorDateTime", new { cursorDateTime = cursorDateTime }))
                     .ToList();
             }
-            JobEventSourceLog.GatheredPackagesToArchiveFromDb(packages.Count, _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
+
+            JobEventSourceLog.GatheredPackagesToArchiveFromDb(packages.Count, PackageDatabase.DataSource, PackageDatabase.InitialCatalog);
 
             var archiveSet = packages
                 .AsParallel()

@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGet.Jobs.Validation;
-using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.Validation.Vcs;
@@ -79,6 +78,17 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 return;
             }
 
+            if (!_configuration.RepositorySigningEnabled)
+            {
+                _logger.LogWarning(
+                    "Skipping cleanup of .nupkg for validation ID {ValidationId} ({PackageId} {PackageVersion})",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion);
+
+                return;
+            }
+
             _logger.LogInformation(
                 "Cleaning up the .nupkg URL for validation ID {ValidationId} ({PackageId} {PackageVersion}).",
                 request.ValidationId,
@@ -96,9 +106,9 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
+            var result = await GetProcessorStatusAsync(request);
 
-            return validatorStatus.ToValidationResult();
+            return result.ToValidationResult();
         }
 
         public async Task<IValidationResult> StartAsync(IValidationRequest request)
@@ -108,9 +118,9 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
+            var processorStatus = await GetProcessorStatusAsync(request);
 
-            if (validatorStatus.State != ValidationStatus.NotStarted)
+            if (processorStatus.State != ValidationStatus.NotStarted)
             {
                 _logger.LogWarning(
                     "Scan and Sign validation with validation Id {ValidationId} ({PackageId} {PackageVersion}) has already started.",
@@ -118,7 +128,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                     request.PackageId,
                     request.PackageVersion);
 
-                return validatorStatus.ToValidationResult();
+                return processorStatus.ToValidationResult();
             }
 
             if (await ShouldRepositorySignAsync(request))
@@ -144,9 +154,27 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 await _scanAndSignEnqueuer.EnqueueScanAsync(request.ValidationId, request.NupkgUrl);
             }
 
-            var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
+            var result = await _validatorStateService.TryAddValidatorStatusAsync(request, processorStatus, ValidationStatus.Incomplete);
 
             return result.ToValidationResult();
+        }
+
+        private async Task<ValidatorStatus> GetProcessorStatusAsync(IValidationRequest request)
+        {
+            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
+
+            if (!_configuration.RepositorySigningEnabled && validatorStatus.NupkgUrl != null)
+            {
+                _logger.LogWarning(
+                    "Suppressing .nupkg url as repository signing is disabled for {ValidationId} ({PackageId} {PackageVersion})",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion);
+
+                validatorStatus.NupkgUrl = null;
+            }
+
+            return validatorStatus;
         }
 
         private bool ShouldSkipScan(IValidationRequest request)
@@ -171,13 +199,6 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
         private async Task<bool> ShouldRepositorySignAsync(IValidationRequest request)
         {
-            if (!_configuration.RepositorySigningEnabled)
-            {
-                _logger.LogInformation("Repository signing is disabed. Scanning instead of signing package");
-
-                return false;
-            }
-
             var hasRepositorySignature = await _validationContext
                 .PackageSignatures
                 .Where(s => s.PackageKey == request.PackageKey)

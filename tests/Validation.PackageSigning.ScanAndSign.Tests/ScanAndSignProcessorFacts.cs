@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.Validation;
@@ -51,10 +50,14 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _blobProvider.Verify(x => x.GetBlobFromUrl(It.IsAny<string>()), Times.Never);
         }
 
-        [Fact]
-        public async Task DeletesTheBlobWhenThereIsNupkgUrl()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        public async Task WhenThereIsNupkgUrl_DeletesTheBlobIfRepositorySigningIsEnabled(bool repositorySigningEnabled, bool expectsBlobDeleted)
         {
             // Arrange
+            _config.RepositorySigningEnabled = repositorySigningEnabled;
+
             var request = new ValidationRequest(Guid.NewGuid(), 42, "somepackage", "somversion", "https://nuget.test/package.nupkg");
             var nupkgUrl = "http://example/packages/nuget.versioning.4.6.0.nupkg";
 
@@ -80,8 +83,17 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             // Assert
             _validatorStateServiceMock.Verify(x => x.GetStatusAsync(request), Times.Once);
-            _blobProvider.Verify(x => x.GetBlobFromUrl(nupkgUrl), Times.Once);
-            blob.Verify(x => x.DeleteIfExistsAsync(), Times.Once);
+
+            if (expectsBlobDeleted)
+            {
+                _blobProvider.Verify(x => x.GetBlobFromUrl(nupkgUrl), Times.Once);
+                blob.Verify(x => x.DeleteIfExistsAsync(), Times.Once);
+            }
+            else
+            {
+                _blobProvider.Verify(x => x.GetBlobFromUrl(nupkgUrl), Times.Never);
+                blob.Verify(x => x.DeleteIfExistsAsync(), Times.Never);
+            }
         }
     }
 
@@ -149,6 +161,36 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 .Verify(vss => vss.GetStatusAsync(It.IsAny<ValidationRequest>()), Times.Once);
             _validatorStateServiceMock
                 .Verify(vss => vss.GetStatusAsync(It.IsAny<Guid>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task WhenRepositorySigningIsDisabled_SuppressesNupkgUrl()
+        {
+            _config.RepositorySigningEnabled = false;
+
+            var request = new ValidationRequest(Guid.NewGuid(), 42, "somepackage", "somversion", "https://example.com/package.nupkg");
+            var status = new ValidatorStatus
+            {
+                State = ValidationStatus.Incomplete,
+                NupkgUrl = "https://nuget.test/package.nupkg",
+                ValidatorIssues = new List<ValidatorIssue>()
+            };
+
+            _validatorStateServiceMock
+                .Setup(vss => vss.GetStatusAsync(request))
+                .ReturnsAsync(status);
+
+            var result = await _target.GetResultAsync(request);
+
+            _validatorStateServiceMock
+                .Verify(vss => vss.GetStatusAsync(request), Times.Once);
+            _validatorStateServiceMock
+                .Verify(vss => vss.GetStatusAsync(It.IsAny<ValidationRequest>()), Times.Once);
+            _validatorStateServiceMock
+                .Verify(vss => vss.GetStatusAsync(It.IsAny<Guid>()), Times.Never);
+            Assert.Empty(result.Issues);
+            Assert.Equal(status.State, result.Status);
+            Assert.Null(result.NupkgUrl);
         }
     }
 
@@ -221,7 +263,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         }
 
         [Fact]
-        public async Task EnqueuesScanIfRepositorySigningIsDisabled()
+        public async Task EnqueuesScanAndSignEvenIfRepositorySigningIsDisabled()
         {
             _config.RepositorySigningEnabled = false;
 
@@ -232,13 +274,25 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             var result = await _target.StartAsync(_request);
 
+            _packageServiceMock
+                .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
+
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
+                .Verify(e =>
+                    e.EnqueueScanAndSignAsync(
+                        _request.ValidationId,
+                        _request.NupkgUrl,
+                        _config.V3ServiceIndexUrl,
+                        It.Is<List<string>>(l =>
+                            l.Count() == 2 &&
+                            l.Contains("Billy") &&
+                            l.Contains("Bob"))),
+                    Times.Once);
 
             _validatorStateServiceMock
-                .Verify(vss => vss.TryAddValidatorStatusAsync(_request, _status, ValidationStatus.Incomplete), Times.Once);
+                .Verify(v => v.TryAddValidatorStatusAsync(_request, _status, ValidationStatus.Incomplete), Times.Once);
             _validatorStateServiceMock
-                .Verify(vss => vss.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Once);
+                .Verify(v => v.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Once);
         }
 
         [Fact]
@@ -321,10 +375,13 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 .Verify(vss => vss.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Never);
         }
 
-        [Fact]
-        public async Task WhenPackageFitsCriteriaAndIsNotRepositorySignedAndRepositorySigningEnabled_DoesNotSkipScanAndSign()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+
+        public async Task WhenPackageFitsCriteriaAndIsNotRepositorySigned_DoesNotSkipScanAndSign(bool repositorySigningEnabled)
         {
-            _config.RepositorySigningEnabled = true;
+            _config.RepositorySigningEnabled = repositorySigningEnabled;
 
             _validationContext.Mock();
             _packageServiceMock
@@ -344,30 +401,6 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 .Verify(v =>
                     v.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), ValidationStatus.Incomplete),
                     Times.Once);
-        }
-
-        [Fact]
-        public async Task WhenPackageFitsCriteriaAndIsNotRepositorySignedAndRepositorySigningDisabled_SkipsScan()
-        {
-            _config.RepositorySigningEnabled = false;
-
-            _validationContext.Mock();
-            _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistration);
-
-            _criteriaEvaluatorMock
-                .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
-                .Returns(false);
-
-            var result = await _target.StartAsync(_request);
-
-            Assert.Equal(ValidationStatus.Succeeded, result.Status);
-
-            _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
-            _validatorStateServiceMock
-                .Verify(vss => vss.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Never);
         }
 
         private ValidationRequest _request;

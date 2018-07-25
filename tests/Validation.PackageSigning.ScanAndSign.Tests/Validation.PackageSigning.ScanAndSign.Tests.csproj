@@ -44,6 +44,7 @@
     <Compile Include="ScanAndSignEnqueuerFacts.cs" />
     <Compile Include="ScanAndSignMessageFacts.cs" />
     <Compile Include="ScanAndSignProcessorFacts.cs" />
+    <Compile Include="ScanValidatorFacts.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NuGet.Services.Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj">
@@ -73,6 +74,9 @@
     <PackageReference Include="xunit.runner.visualstudio">
       <Version>2.3.1</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

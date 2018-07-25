@@ -209,7 +209,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
             Assert.Empty(result.Issues);
         }
-
+        
         [Fact(Skip = "This test is flaky, disabling for now.")]
         public async Task RejectsUntrustedSigningCertificate()
         {
