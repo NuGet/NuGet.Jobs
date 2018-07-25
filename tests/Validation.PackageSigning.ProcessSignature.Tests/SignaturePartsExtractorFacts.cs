@@ -10,7 +10,9 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
+using NuGet.Jobs.Validation.PackageSigning;
 using NuGet.Jobs.Validation.PackageSigning.ProcessSignature;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Packaging.Signing;
@@ -116,6 +118,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             private readonly Mock<ICertificateStore> _certificateStore;
             private readonly List<X509Certificate2> _savedCertificates;
             private readonly Mock<IValidationEntitiesContext> _entitiesContext;
+            private readonly Mock<IOptionsSnapshot<ProcessSignatureConfiguration>> _configAccessor;
+            private readonly ProcessSignatureConfiguration _config;
             private readonly Mock<ILogger<SignaturePartsExtractor>> _logger;
             private readonly SignaturePartsExtractor _target;
 
@@ -152,11 +156,20 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     .Setup(x => x.TrustedTimestamps)
                     .Returns(DbSetMockFactory.Create<TrustedTimestamp>());
 
+                _configAccessor = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
+                _config = new ProcessSignatureConfiguration
+                {
+                    ExtractRepositorySignatures = true
+                };
+
+                _configAccessor.Setup(a => a.Value).Returns(_config);
+
                 _logger = new Mock<ILogger<SignaturePartsExtractor>>();
 
                 _target = new SignaturePartsExtractor(
                     _certificateStore.Object,
                     _entitiesContext.Object,
+                    _configAccessor.Object,
                     _logger.Object);
             }
 
@@ -614,6 +627,45 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 Assert.Equal(
                     Leaf1Certificates.Certificates.Count + 1,
                     signature.SignedCms.Certificates.Count + signature.Timestamps.Sum(x => x.SignedCms.Certificates.Count));
+            }
+
+            [Fact]
+            public async Task IfRepositorySignatureExtractionIsDisabled_IgnoresRepositorySignatureOnRepositorySignedPackage()
+            {
+                // Arrange
+                var signature = await TestResources.LoadPrimarySignatureAsync(TestResources.RepoSignedPackageLeaf1);
+
+                _entitiesContext
+                    .Setup(x => x.PackageSignatures)
+                    .Returns(DbSetMockFactory.Create<PackageSignature>());
+
+                _config.ExtractRepositorySignatures = false;
+
+                // Act
+                await _target.ExtractAsync(_packageKey, signature, _token);
+
+                // Assert
+                Assert.Equal(0, _entitiesContext.Object.PackageSignatures.Count());
+            }
+
+            [Fact]
+            public async Task IfRepositorySignatureExtractionIsDisabled_IgnoresRepositorySignatureOnRepositoryCounterSignedPackage()
+            {
+                // Arrange
+                var signature = await TestResources.LoadPrimarySignatureAsync(TestResources.AuthorAndRepoSignedPackageLeaf1);
+
+                _entitiesContext
+                    .Setup(x => x.PackageSignatures)
+                    .Returns(DbSetMockFactory.Create<PackageSignature>());
+
+                _config.ExtractRepositorySignatures = false;
+
+                // Act
+                await _target.ExtractAsync(_packageKey, signature, _token);
+
+                // Assert
+                Assert.Equal(1, _entitiesContext.Object.PackageSignatures.Count());
+                Assert.Equal(PackageSignatureType.Author, _entitiesContext.Object.PackageSignatures.First().Type);
             }
 
             private void AssignIds()

@@ -122,6 +122,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             _signaturePartsExtractor = new SignaturePartsExtractor(
                 _certificateStore.Object,
                 _validationEntitiesContext.Object,
+                _optionsSnapshot.Object,
                 loggerFactory.CreateLogger<SignaturePartsExtractor>());
 
             _packageFileService = new Mock<IProcessorPackageFileService>();
@@ -149,6 +150,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 AllowedRepositorySigningCertificates = new List<string> { "fake-thumbprint" },
                 V3ServiceIndexUrl = TestResources.V3ServiceIndexUrl,
+                ExtractRepositorySignatures = true,
             };
             _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
             _optionsSnapshot.Setup(x => x.Value).Returns(() => _configuration);
