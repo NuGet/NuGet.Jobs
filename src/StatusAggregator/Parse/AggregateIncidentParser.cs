@@ -24,10 +24,7 @@ namespace StatusAggregator.Parse
 
         public IEnumerable<ParsedIncident> ParseIncident(Incident incident)
         {
-            using (_logger.Scope(
-                "Beginning to parse incident.",
-                "Finished parsing incident.",
-                "Parsing incident {IncidentId}", incident.Id))
+            using (_logger.Scope("Parsing incident {IncidentId}", incident.Id))
             {
                 var parsedIncidents = new List<ParsedIncident>();
                 foreach (var incidentParser in _incidentParsers)

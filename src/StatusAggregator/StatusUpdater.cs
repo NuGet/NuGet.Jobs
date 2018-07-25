@@ -27,10 +27,7 @@ namespace StatusAggregator
 
         public async Task Update()
         {
-            using (_logger.Scope(
-                "Beginning to update service status.",
-                "Finished updating service status.",
-                "Updating service status."))
+            using (_logger.Scope("Updating service status."))
             {
                 var lastCursor = await _cursor.Get();
 

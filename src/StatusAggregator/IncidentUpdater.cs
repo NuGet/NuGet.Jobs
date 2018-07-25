@@ -44,10 +44,7 @@ namespace StatusAggregator
 
         public async Task RefreshExistingIncidents()
         {
-            using (_logger.Scope(
-                "Beginning to refresh existing incidents.",
-                "Finished refreshing existing incidents.",
-                "Refreshing existing incidents."))
+            using (_logger.Scope("Refreshing existing incidents."))
             {
                 var activeIncidentEntities = _table
                     .CreateQuery<IncidentEntity>()
@@ -55,10 +52,7 @@ namespace StatusAggregator
 
                 foreach (var activeIncidentEntity in activeIncidentEntities)
                 {
-                    using (_logger.Scope(
-                        "Beginning to refresh incident.",
-                        "Finished refreshing incident.",
-                        "Refreshing incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
+                    using (_logger.Scope("Refreshing incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
                     {
                         var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
                         activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
@@ -71,10 +65,7 @@ namespace StatusAggregator
 
         public async Task<DateTime?> FetchNewIncidents(DateTime cursor)
         {
-            using (_logger.Scope(
-                "Beginning to fetch new incidents.",
-                "Finished fetching new incidents.",
-                "Fetching all new incidents since {Cursor}.", cursor))
+            using (_logger.Scope("Fetching all new incidents since {Cursor}.", cursor))
             {
                 var incidents = (await _incidentApiClient.GetIncidents(GetRecentIncidentsQuery(cursor)))
                     // The incident API trims the milliseconds from any filter.

@@ -29,10 +29,7 @@ namespace StatusAggregator
 
         public async Task UpdateAllActiveEvents(DateTime cursor)
         {
-            using (_logger.Scope(
-                "Beginning to update all active events.",
-                "Finished updating all active events.",
-                "Updating all active events."))
+            using (_logger.Scope("Updating all active events."))
             {
                 var activeEvents = _table.GetActiveEvents();
                 foreach (var activeEvent in activeEvents)
@@ -46,10 +43,7 @@ namespace StatusAggregator
         {
             eventEntity = eventEntity ?? throw new ArgumentNullException(nameof(eventEntity));
 
-            using (_logger.Scope(
-                "Beginning to update event.",
-                "Finished updating event.",
-                "Updating event '{EventRowKey}' given cursor {Cursor}.", eventEntity.RowKey, cursor))
+            using (_logger.Scope("Updating event '{EventRowKey}' given cursor {Cursor}.", eventEntity.RowKey, cursor))
             {
                 if (!eventEntity.IsActive)
                 {

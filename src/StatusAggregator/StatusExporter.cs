@@ -43,10 +43,7 @@ namespace StatusAggregator
 
         public async Task Export()
         {
-            using (_logger.Scope(
-                "Beginning to export service status.",
-                "Finished exporting service status.",
-                "Exporting service status."))
+            using (_logger.Scope("Exporting service status."))
             {
                 var rootComponent = ComponentFactory.CreateNuGetServiceRootComponent();
 
@@ -73,10 +70,7 @@ namespace StatusAggregator
 
                 foreach (var activeEvent in activeEvents)
                 {
-                    using (_logger.Scope(
-                        "Beginning to apply active event to root component.",
-                        "Finished applying active event to root component.",
-                        "Applying active event affecting '{AffectedComponentPath}' of severity {AffectedComponentStatus} at {StartTime} to root component", 
+                    using (_logger.Scope("Applying active event affecting '{AffectedComponentPath}' of severity {AffectedComponentStatus} at {StartTime} to root component", 
                         activeEvent.AffectedComponentPath, activeEvent.AffectedComponentStatus, activeEvent.StartTime))
                     {
                         var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
@@ -92,19 +86,13 @@ namespace StatusAggregator
                 }
 
                 string statusJson;
-                using (_logger.Scope(
-                    "Beginning to serialize service status.",
-                    "Finished serializing service status.",
-                    "Serializing service status."))
+                using (_logger.Scope("Serializing service status."))
                 {
                     var status = new ServiceStatus(rootComponent, recentEvents);
                     statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
                 }
 
-                using (_logger.Scope(
-                    "Beginning to save service status to blob storage.",
-                    "Finished saving service status to blob storage.",
-                    "Saving service status to blob storage."))
+                using (_logger.Scope("Saving service status to blob storage."))
                 {
                     var blob = _container.GetBlockBlobReference(StatusBlobName);
                     await blob.UploadTextAsync(statusJson);

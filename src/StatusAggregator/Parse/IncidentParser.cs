@@ -42,10 +42,7 @@ namespace StatusAggregator.Parse
 
         public bool TryParseIncident(Incident incident, out ParsedIncident parsedIncident)
         {
-            using (_logger.Scope(
-                "Beginning to parse incident with parser.",
-                "Finished parsing incident with parser.",
-                "Parsing incident with parser {IncidentParserType} using {RegExPattern}", 
+            using (_logger.Scope("Parsing incident with parser {IncidentParserType} using {RegExPattern}", 
                 GetType(), _regExPattern))
             {
                 parsedIncident = null;
@@ -62,10 +59,7 @@ namespace StatusAggregator.Parse
             
             if (_filters.Any(f =>
                 {
-                    using (_logger.Scope(
-                        "Beginning filtering incident.",
-                        "Finished filtering incident.",
-                        "Filtering incident using filter {IncidentFilterType}", f.GetType()))
+                    using (_logger.Scope("Filtering incident using filter {IncidentFilterType}", f.GetType()))
                     {
                         var shouldParse = f.ShouldParse(incident, groups);
                         _logger.LogInformation("Filter returned {FilterResult}.", shouldParse);

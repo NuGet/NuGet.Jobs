@@ -35,10 +35,7 @@ namespace StatusAggregator
                 parsedIncident.CreationTime,
                 parsedIncident.MitigationTime);
 
-            using (_logger.Scope(
-                "Beginning to create incident.",
-                "Finished creating incident.",
-                "Creating incident '{IncidentRowKey}'.", incidentEntity.RowKey))
+            using (_logger.Scope("Creating incident '{IncidentRowKey}'.", incidentEntity.RowKey))
             {
                 // Find an event to attach this incident to
                 var possibleEvents = _table

@@ -26,10 +26,7 @@ namespace StatusAggregator
 
         public async Task CreateMessageForEventStart(EventEntity eventEntity, DateTime cursor)
         {
-            using (_logger.Scope(
-                "Beginning to create message for start of event.",
-                "Finished creating message for start of event.",
-                "Creating message for start of event."))
+            using (_logger.Scope("Creating message for start of event."))
             {
                 if (cursor > eventEntity.StartTime + EventStartDelay)
                 {
@@ -46,7 +43,7 @@ namespace StatusAggregator
                     }
                     else
                     {
-                        // If we've already told customers about an event, we don't need to tell them it's now impacting them.
+                        // If we've already told customers about an event, we don't need to tell them about it again.
                         _logger.LogInformation("Event has messages associated with it, cannot create message for its start.");
                     }
                 }
@@ -106,10 +103,7 @@ namespace StatusAggregator
                 throw new ArgumentException("Must pass in an event with an end time!", nameof(eventEntity));
             }
 
-            using (_logger.Scope(
-                "Beginning to create message for end of event.",
-                "Finished creating message for end of event.",
-                "Creating message for end of event."))
+            using (_logger.Scope("Creating message for end of event."))
             {
                 if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
                 {
@@ -119,7 +113,7 @@ namespace StatusAggregator
                     }
                     else
                     {
-                        _logger.LogWarning("Failed to create a message for start of event!");
+                        _logger.LogWarning("Failed to create message!");
                     }
                 }
                 else
@@ -133,7 +127,7 @@ namespace StatusAggregator
         private Task CreateMessage(EventEntity eventEntity, DateTime time, string contents)
         {
             var messageEntity = new MessageEntity(eventEntity, time, contents);
-            _logger.LogInformation("Creating message for start of event with time {MessageTimestamp} and contents {MessageContents}",
+            _logger.LogInformation("Creating message with time {MessageTimestamp} and contents {MessageContents}",
                 messageEntity.Time, messageEntity.Contents);
             return _table.InsertOrReplaceAsync(messageEntity);
         }

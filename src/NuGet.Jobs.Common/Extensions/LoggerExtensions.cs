@@ -7,17 +7,10 @@ namespace NuGet.Jobs.Extensions
     {
         public static IDisposable Scope(
             this ILogger logger, 
-            string beginMessage, 
-            string finishMessage, 
-            string scopeMessage, 
-            params object[] scopeMessageArgs)
+            string message, 
+            params object[] args)
         {
-            return new LoggerScopeHelper(
-                logger,
-                beginMessage,
-                finishMessage,
-                scopeMessage,
-                scopeMessageArgs);
+            return new LoggerScopeHelper(logger, message, args);
         }
 
         private class LoggerScopeHelper : IDisposable
@@ -25,29 +18,27 @@ namespace NuGet.Jobs.Extensions
             private readonly ILogger _logger;
             private readonly IDisposable _scope;
 
-            private readonly string _finishMessage;
+            private readonly string _message;
+            private readonly object[] _args;
 
             private bool _isDisposed = false;
 
             public LoggerScopeHelper(
-                ILogger logger,
-                string beginMessage,
-                string finishMessage,
-                string scopeMessage,
-                object[] scopeMessageArgs)
+                ILogger logger, string message, object[] args)
             {
                 _logger = logger;
-                _scope = logger.BeginScope(scopeMessage, scopeMessageArgs);
-                _finishMessage = finishMessage;
+                _message = message;
+                _args = args;
 
-                _logger.LogInformation(beginMessage);
+                _scope = logger.BeginScope(_message, _args);
+                _logger.LogInformation("Entering scope: " + _message, _args);
             }
 
             public void Dispose()
             {
                 if (!_isDisposed)
                 {
-                    _logger.LogInformation(_finishMessage);
+                    _logger.LogInformation("Leaving scope: " + _message, _args);
                     _scope.Dispose();
                     _isDisposed = true;
                 }
