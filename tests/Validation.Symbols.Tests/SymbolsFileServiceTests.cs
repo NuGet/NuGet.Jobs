@@ -40,7 +40,7 @@ namespace Validation.Symbols.Tests
         {
             // Arrange
             var service = new SymbolsFileService(_packageStorageService.Object, _packageValidationStorageService.Object, _symbolsValidationStorageService.Object);
-
+            _symbolsValidationStorageService.Setup(svss => svss.FileExistsAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
             // Act 
             var stream = await service.DownloadSnupkgFileAsync(PackageId, PackageNormalizedVersion, CancellationToken.None);
 

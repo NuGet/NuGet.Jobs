@@ -48,7 +48,12 @@ namespace Validation.Symbols
                 }
             };
 
-            return await _symbolValidationFileService.DownloadValidationPackageFileAsync(package);
+            if (await _symbolValidationFileService.DoesValidationPackageFileExistAsync(package))
+            {
+                return await _symbolValidationFileService.DownloadValidationPackageFileAsync(package);
+            }
+
+            throw new FileNotFoundException(string.Format("Symbols package {0} {1} not found in the validation container.", packageId, packageNormalizedVersion));
         }
 
         public async Task<Stream> DownloadNupkgFileAsync(string packageId, string packageNormalizedVersion, CancellationToken cancellationToken)

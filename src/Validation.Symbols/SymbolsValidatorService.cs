@@ -49,12 +49,10 @@ namespace Validation.Symbols
                 packageId,
                 packageNormalizedVersion);
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             var snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
             if(snupkgstream == null)
             {
-                _telemetryService.TrackSymbolNotFoundEvent(packageId, packageNormalizedVersion);
+                _telemetryService.TrackSymbolsPackageNotFoundEvent(packageId, packageNormalizedVersion);
                 return ValidationResult.Failed;
             }
             var nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(packageId, packageNormalizedVersion, token);
@@ -66,24 +64,28 @@ namespace Validation.Symbols
             var pdbs = _zipArchiveService.ReadFilesFromZipStream(snupkgstream, SymbolExtension);
             var pes = _zipArchiveService.ReadFilesFromZipStream(nupkgstream, PEExtensions);
 
-            if (!SymbolsHaveMatchingPEFiles(pdbs, pes))
+            using (_telemetryService.TrackSymbolValidationDurationEvent(packageId, packageNormalizedVersion, pdbs.Count))
             {
-                return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
-            }
-            var targetDirectory = GetWorkingDirectory();
-            try
-            {
-                var symbolFiles = _zipArchiveService.ExtractFilesFromZipStream(snupkgstream, targetDirectory);
-                _zipArchiveService.ExtractFilesFromZipStream(nupkgstream, targetDirectory, symbolFiles);
+                if (!SymbolsHaveMatchingPEFiles(pdbs, pes))
+                {
+                    return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
+                }
+                var targetDirectory = GetWorkingDirectory();
+                try
+                {
+                    _logger.LogInformation("Extracting symbols to {TargetDirectory}", targetDirectory);
+                    var symbolFiles = _zipArchiveService.ExtractFilesFromZipStream(snupkgstream, targetDirectory);
 
-                var status = ValidateSymbolMatching(targetDirectory, packageId, packageNormalizedVersion, PEExtensionsPatterns);
-                sw.Stop();
-                _telemetryService.TrackSymbolValidationDurationEvent(packageId, packageNormalizedVersion, sw.ElapsedMilliseconds / 1000, pdbs.Count);
-                return status;
-            }
-            finally
-            {
-                TryCleanWorkingDirectoryForSeconds(targetDirectory, packageId, packageNormalizedVersion, _cleanWorkingDirectoryTimeSpan);
+                    _logger.LogInformation("Extracting dlls to {TargetDirectory}", targetDirectory);
+                    _zipArchiveService.ExtractFilesFromZipStream(nupkgstream, targetDirectory, symbolFiles);
+
+                    var status = ValidateSymbolMatching(targetDirectory, packageId, packageNormalizedVersion);
+                    return status;
+                }
+                finally
+                {
+                    TryCleanWorkingDirectoryForSeconds(targetDirectory, packageId, packageNormalizedVersion, _cleanWorkingDirectoryTimeSpan);
+                }
             }
         }
 
@@ -103,12 +105,13 @@ namespace Validation.Symbols
             Task cleanTask = new Task(() =>
             {
                 IOException lastException = new IOException("NoStarted");
-                bool directoryExists = true;
+                bool directoryExists = Directory.Exists(workingDirectory);
                 while (!cts.Token.IsCancellationRequested && directoryExists)
                 {
+                    directoryExists = Directory.Exists(workingDirectory);
                     try
                     {
-                        if (Directory.Exists(workingDirectory))
+                        if (directoryExists)
                         {
                             Directory.Delete(workingDirectory, true);
                         }
@@ -118,7 +121,7 @@ namespace Validation.Symbols
                         lastException = e;
                     }
                 }
-                if(directoryExists = Directory.Exists(workingDirectory))
+                if(Directory.Exists(workingDirectory))
                 {
                     _logger.LogWarning(0, lastException, "{ValidatorName} :TryCleanWorkingDirectory failed. WorkingDirectory:{WorkingDirectory}", ValidatorName.SymbolsValidator, workingDirectory);
                 }
@@ -135,11 +138,10 @@ namespace Validation.Symbols
         /// <param name="targetDirectory">The directory used during the current validation.</param>
         /// <param name="packageId">Package Id.</param>
         /// <param name="packageNormalizedVersion">PackageNormalized version.</param>
-        /// <param name="peExtensionsPatterns">Extensions patterns used for the known PE files.</param>
         /// <returns></returns>
-        public virtual IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion, string[] peExtensionsPatterns)
+        public virtual IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion)
         {
-            foreach (string extension in peExtensionsPatterns)
+            foreach (string extension in PEExtensionsPatterns)
             {
                 foreach (string peFile in Directory.GetFiles(targetDirectory, extension, SearchOption.AllDirectories))
                 {
@@ -231,7 +233,7 @@ namespace Validation.Symbols
             }
             var symbolsWithoutExtension = ZipArchiveService.RemoveExtension(symbols);
             var PEsWithoutExtensions = ZipArchiveService.RemoveExtension(PEs);
-            return !symbolsWithoutExtension.Where(s => !PEsWithoutExtensions.Contains(s)).Any();
+            return !symbolsWithoutExtension.Except(PEsWithoutExtensions, StringComparer.OrdinalIgnoreCase).Any();
         }
     }
 }

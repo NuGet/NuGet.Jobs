@@ -91,17 +91,17 @@ namespace NuGet.Jobs.Validation
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            throw new NotImplementedException();
+            _logger.Log<TState>(logLevel, eventId, state, exception, formatter);
         }
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            throw new NotImplementedException();
+            return _logger.IsEnabled(logLevel);
         }
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            throw new NotImplementedException();
+            return _logger.BeginScope<TState>(state);
         }
 
         /// <summary>

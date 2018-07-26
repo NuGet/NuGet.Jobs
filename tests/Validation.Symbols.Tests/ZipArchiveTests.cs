@@ -2,10 +2,11 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.IO;
-using System.IO.Compression;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using Xunit;
 
 
@@ -20,7 +21,7 @@ namespace Validation.Symbols.Tests
             {
                 IEnumerable<string> input = null;
                 // Act + Assert
-                Assert.Throws<ArgumentNullException>(() => ZipArchiveService.RemoveExtension(input));
+                Assert.Null(ZipArchiveService.RemoveExtension(input));
             }
 
             [Fact]
@@ -32,7 +33,7 @@ namespace Validation.Symbols.Tests
                 // Act
                 var result = ZipArchiveService.RemoveExtension(input);
 
-                Assert.Equal(expected.Length, result.Count);
+                Assert.Equal(expected.Length, result.Count());
                 foreach(string s in expected)
                 {
                     Assert.Contains(s, result);
@@ -47,7 +48,7 @@ namespace Validation.Symbols.Tests
             {
                 IReadOnlyCollection<ZipArchiveEntry> input = null;
                 // Act + Assert
-                Assert.Throws<ArgumentNullException>(() => ZipArchiveService.ReadFilesFromZipStream(input, ".exe"));
+                Assert.Null(ZipArchiveService.ReadFilesFromZipStream(input, ".exe"));
             }
 
             [Fact]
@@ -61,7 +62,7 @@ namespace Validation.Symbols.Tests
                 var result =  ZipArchiveService.ReadFilesFromZipStream(input, ".pdb");
 
                 // Assert 
-                Assert.Equal(expected.Length, result.Count);
+                Assert.Equal(expected.Length, result.Count());
                 foreach (string s in expected)
                 {
                     Assert.Contains(s, result);
@@ -95,7 +96,7 @@ namespace Validation.Symbols.Tests
                 var result = service.Extract(input, "Dir1");
 
                 // Assert 
-                Assert.Equal(expected.Length, result.Count);
+                Assert.Equal(expected.Length, result.Count());
                 foreach (string s in expected)
                 {
                     Assert.Contains(s, result);
@@ -118,7 +119,7 @@ namespace Validation.Symbols.Tests
                 var result = service.Extract(input, "Dir1", symbolFilter);
 
                 // Assert 
-                Assert.Equal(expected.Length, result.Count);
+                Assert.Equal(expected.Length, result.Count());
                 Assert.True(service.OnExtractInvoked);
                 foreach (string s in expected)
                 {

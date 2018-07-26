@@ -73,10 +73,10 @@ namespace Validation.Symbols.Tests
                     Setup(sfs => sfs.DownloadSnupkgFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).
                     ReturnsAsync(new MemoryStream());
 
-                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), It.IsAny<string[]>())).Returns(new HashSet<string>()
+                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), It.IsAny<string[]>())).Returns(new List<string>()
                 { "foo.dll" });
 
-                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), ".pdb")).Returns(new HashSet<string>()
+                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), ".pdb")).Returns(new List<string>()
                 { "bar.pdb" });
 
                 var service = new SymbolsValidatorService(_symbolsFileService.Object, _zipService.Object, _telemetryService.Object, _logger.Object);
@@ -101,10 +101,10 @@ namespace Validation.Symbols.Tests
                     Setup(sfs => sfs.DownloadSnupkgFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).
                     ReturnsAsync(new MemoryStream());
 
-                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), It.IsAny<string[]>())).Returns(new HashSet<string>()
+                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), It.IsAny<string[]>())).Returns(new List<string>()
                 { "foo.dll" });
 
-                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), It.IsAny<string[]>())).Returns(new HashSet<string>()
+                _zipService.Setup(s => s.ReadFilesFromZipStream(It.IsAny<Stream>(), It.IsAny<string[]>())).Returns(new List<string>()
                 { "foo.pdb" });
 
                 var service = new TestSymbolsValidatorService(_symbolsFileService.Object, _zipService.Object, _telemetryService.Object, _logger.Object);
@@ -186,7 +186,7 @@ namespace Validation.Symbols.Tests
             {
             }
 
-            public override IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion, string[] peExtensionsPatterns)
+            public override IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion)
             {
                 ValidateSymbolMatchingInvoked = true;
                 return ValidationResult.Succeeded;

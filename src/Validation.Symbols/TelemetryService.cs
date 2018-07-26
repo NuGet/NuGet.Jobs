@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.ApplicationInsights;
+using NuGet.Services.Logging;
 
 namespace Validation.Symbols
 {
@@ -11,7 +11,7 @@ namespace Validation.Symbols
     {
         private const string Prefix = "SymbolValidatorJob";
         private const string PackageNotFound = Prefix + "PackageNotFound";
-        private const string SymbolNotFound = Prefix + "SymbolNotFound";
+        private const string SymbolsPackageNotFound = Prefix + "SymbolsPackageNotFound";
         private const string SymbolValidationDuration = Prefix + "SymbolValidationDurationInSeconds";
         private const string MessageDeliveryLag = Prefix + "MessageDeliveryLag";
         private const string MessageEnqueueLag = Prefix + "MessageEnqueueLag";
@@ -19,12 +19,11 @@ namespace Validation.Symbols
         private const string PackageId = "PackageId";
         private const string PackageNormalizedVersion = "PackageNormalizedVersion";
         private const string MessageType = "MessageType";
-        private const string ExecutionTimeSeconds = "ExecutionTimeSeconds";
         private const string SymbolCount = "SymbolCount";
 
-        private readonly TelemetryClient _telemetryClient;
+        private readonly ITelemetryClient _telemetryClient;
 
-        public TelemetryService(TelemetryClient telemetryClient)
+        public TelemetryService(ITelemetryClient telemetryClient)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
         }
@@ -41,10 +40,10 @@ namespace Validation.Symbols
                 });
         }
 
-        public void TrackSymbolNotFoundEvent(string packageId, string packageNormalizedVersion)
+        public void TrackSymbolsPackageNotFoundEvent(string packageId, string packageNormalizedVersion)
         {
             _telemetryClient.TrackMetric(
-                SymbolNotFound,
+                SymbolsPackageNotFound,
                 1,
                 new Dictionary<string, string>
                 {
@@ -53,16 +52,14 @@ namespace Validation.Symbols
                 });
         }
 
-        public void TrackSymbolValidationDurationEvent(string packageId, string packageNormalizedVersion, long executiontimeInSeconds, int symbolCount)
+        public IDisposable TrackSymbolValidationDurationEvent(string packageId, string packageNormalizedVersion, int symbolCount)
         {
-            _telemetryClient.TrackMetric(
+            return _telemetryClient.TrackDuration(
                 SymbolValidationDuration,
-                1,
                 new Dictionary<string, string>
                 {
                     { PackageId, packageId },
                     { PackageNormalizedVersion, packageNormalizedVersion },
-                    { ExecutionTimeSeconds, executiontimeInSeconds.ToString()},
                     { SymbolCount, symbolCount.ToString()}
                 });
         }

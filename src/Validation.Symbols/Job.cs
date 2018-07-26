@@ -36,14 +36,13 @@ namespace Validation.Symbols
                     configurationAccessor.Value.PackageConnectionString,
                     readAccessGeoRedundant: false), c.GetRequiredService<IDiagnosticsService>());
 
-
                 var packageValidationStorageService = new CloudBlobCoreFileStorageService(new CloudBlobClientWrapper(
                     configurationAccessor.Value.ValidationPackageConnectionString,
                     readAccessGeoRedundant: false), c.GetRequiredService<IDiagnosticsService>());
 
                 var symbolValidationStorageService = new CloudBlobCoreFileStorageService(new CloudBlobClientWrapper(
-                   configurationAccessor.Value.ValidationSymbolsConnectionString,
-                   readAccessGeoRedundant: false), c.GetRequiredService<IDiagnosticsService>());
+                    configurationAccessor.Value.ValidationSymbolsConnectionString,
+                    readAccessGeoRedundant: false), c.GetRequiredService<IDiagnosticsService>());
 
                 return new SymbolsFileService(packageStorageService, packageValidationStorageService, symbolValidationStorageService);
             });

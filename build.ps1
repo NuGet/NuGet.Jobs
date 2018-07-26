@@ -150,8 +150,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
             "src/Validation.Common.Job/Validation.Common.Job.csproj",
             "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj",
-	    "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj"
-            
+            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj"
 
         $Projects = `
             "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `

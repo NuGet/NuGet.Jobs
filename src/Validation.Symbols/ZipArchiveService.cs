@@ -2,19 +2,10 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using NuGet.Jobs.Validation;
-using NuGet.Services.Validation;
-using NuGet.Services.Validation.Issues;
 
 namespace Validation.Symbols
 {
@@ -26,7 +17,7 @@ namespace Validation.Symbols
         /// <param name="stream"></param>
         /// <param name="matchingExtensions"></param>
         /// <returns></returns>
-        public HashSet<string> ReadFilesFromZipStream(Stream stream, params string[] matchingExtensions)
+        public List<string> ReadFilesFromZipStream(Stream stream, params string[] matchingExtensions)
         {
             if (stream == null)
             {
@@ -34,11 +25,11 @@ namespace Validation.Symbols
             }
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
             {
-                return ReadFilesFromZipStream(archive.Entries, matchingExtensions);
+                return ReadFilesFromZipStream(archive.Entries, matchingExtensions).ToList();
             }
         }
 
-        public HashSet<string> ExtractFilesFromZipStream(Stream stream, string targetDirectory, HashSet<string> symbolFilter = null)
+        public List<string> ExtractFilesFromZipStream(Stream stream, string targetDirectory, IEnumerable<string> filterFileNames = null)
         {
             if (stream == null)
             {
@@ -46,13 +37,13 @@ namespace Validation.Symbols
             }
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
             {
-                return Extract(archive.Entries, targetDirectory, symbolFilter);
+                return Extract(archive.Entries, targetDirectory, filterFileNames).ToList();
             }
         }
 
-        public HashSet<string> Extract(IReadOnlyCollection<ZipArchiveEntry> entries,
+        public IEnumerable<string> Extract(IReadOnlyCollection<ZipArchiveEntry> entries,
           string targetDirectory,
-          HashSet<string> symbolFilter = null)
+          IEnumerable<string> symbolFilter = null)
         {
             if (entries == null)
             {
@@ -62,21 +53,24 @@ namespace Validation.Symbols
             {
                 throw new ArgumentNullException(nameof(targetDirectory));
             }
-            return new HashSet<string>(entries.
+
+            var symbolFilterWithoutExtensions = RemoveExtension(symbolFilter);
+
+            return entries.
                    Where(e => !string.IsNullOrEmpty(e.Name)).
                    Where((e) =>
                    {
-                       if (symbolFilter == null)
+                       if (symbolFilterWithoutExtensions == null)
                        {
                            return true;
                        }
-                       return RemoveExtension(symbolFilter).Contains(RemoveExtension(e.FullName));
+                       return symbolFilterWithoutExtensions.Contains(RemoveExtension(e.FullName), StringComparer.OrdinalIgnoreCase);
                    }).
                    Select((e) =>
                    {
                        OnExtract(e, targetDirectory);
                        return e.FullName;
-                   }));
+                   });
         }
 
         /// <summary>
@@ -99,17 +93,14 @@ namespace Validation.Symbols
         /// Removes all the file extensions.
         /// </summary>
         /// <param name="source"></param>
-        /// <returns></returns>
-        public static HashSet<string> RemoveExtension(IEnumerable<string> files)
+        /// <returns>The list of files with extensions removed.</returns>
+        public static IEnumerable<string> RemoveExtension(IEnumerable<string> files)
         {
             if(files == null)
             {
-                throw new ArgumentNullException(nameof(files));
+                return null;
             }
-            return new HashSet<string>(files.Select((s) =>
-            {
-                return RemoveExtension(s);
-            }));
+            return files.Select(RemoveExtension);
         }
 
         /// <summary>
@@ -133,16 +124,16 @@ namespace Validation.Symbols
         /// <param name="entries">The <see cref="ZipArchiveEntry"/> collection.</param>
         /// <param name="matchingExtensions">The extensions used for filter.</param>
         /// <returns></returns>
-        public static HashSet<string> ReadFilesFromZipStream(IReadOnlyCollection<ZipArchiveEntry> entries, params string[] matchingExtensions)
+        public static IEnumerable<string> ReadFilesFromZipStream(IReadOnlyCollection<ZipArchiveEntry> entries, params string[] matchingExtensions)
         {
             if (entries == null)
             {
                 throw new ArgumentNullException(nameof(entries));
             }
-            return new HashSet<string>(entries.
-                    Where(e => !string.IsNullOrEmpty(e.Name)).
-                    Where(e => matchingExtensions.Contains(Path.GetExtension(e.FullName.ToLowerInvariant()))).
-                    Select(e => e.FullName));
+            return entries.
+                Where(e => !string.IsNullOrEmpty(e.Name)).
+                Where(e => matchingExtensions.Contains(Path.GetExtension(e.FullName), StringComparer.OrdinalIgnoreCase)).
+                Select(e => e.FullName);
         }
     }
 }

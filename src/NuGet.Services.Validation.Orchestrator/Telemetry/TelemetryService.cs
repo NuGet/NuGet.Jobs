@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
 using NuGetGallery;
