@@ -12,7 +12,7 @@ namespace Validation.Symbols
         public static void Main(string[] args)
         {
             var job = new Job();
-            JobRunner.Run(job, args).GetAwaiter().GetResult();
+            JobRunner.RunOnce(job, args).GetAwaiter().GetResult();
         }
     }
 }
