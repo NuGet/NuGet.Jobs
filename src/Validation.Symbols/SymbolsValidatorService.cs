@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Validation;
+using NuGet.Jobs.Validation.Symbols.Core;
 using NuGet.Services.Validation;
 using NuGet.Services.Validation.Issues;
 

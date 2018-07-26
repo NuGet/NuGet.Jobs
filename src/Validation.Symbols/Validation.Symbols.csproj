@@ -47,7 +47,6 @@
     <Compile Include="ISymbolsFileService.cs" />
     <Compile Include="ISymbolsValidatorService.cs" />
     <Compile Include="ITelemetryService.cs" />
-    <Compile Include="IZipArchiveService.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -56,7 +55,6 @@
     <Compile Include="SymbolsValidatorService.cs" />
     <Compile Include="SymbolsValidatorMessageHandler.cs" />
     <Compile Include="TelemetryService.cs" />
-    <Compile Include="ZipArchiveService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

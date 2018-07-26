@@ -7,7 +7,7 @@ using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Validation.Symbols
+namespace NuGet.Jobs.Validation.Symbols.Core
 {
     public class ZipArchiveService : IZipArchiveService
     {
@@ -23,10 +23,14 @@ namespace Validation.Symbols
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+            List<string> entries;
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
             {
-                return ReadFilesFromZipStream(archive.Entries, matchingExtensions).ToList();
+                entries = ReadFilesFromZipStream(archive.Entries, matchingExtensions).ToList();
             }
+            // Set the position back to 0 in case that the stream advances
+            stream.Position = 0;
+            return entries;
         }
 
         public List<string> ExtractFilesFromZipStream(Stream stream, string targetDirectory, IEnumerable<string> filterFileNames = null)
@@ -35,10 +39,14 @@ namespace Validation.Symbols
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+            List<string> entries;
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
             {
-                return Extract(archive.Entries, targetDirectory, filterFileNames).ToList();
+                entries = Extract(archive.Entries, targetDirectory, filterFileNames).ToList();
             }
+            // Set the position back to 0 in case that the stream advances
+            stream.Position = 0;
+            return entries;
         }
 
         public IEnumerable<string> Extract(IReadOnlyCollection<ZipArchiveEntry> entries,
@@ -129,6 +137,10 @@ namespace Validation.Symbols
             if (entries == null)
             {
                 throw new ArgumentNullException(nameof(entries));
+            }
+            if (matchingExtensions == null)
+            {
+                throw new ArgumentNullException(nameof(matchingExtensions));
             }
             return entries.
                 Where(e => !string.IsNullOrEmpty(e.Name)).

@@ -4,7 +4,7 @@
 using System.IO;
 using System.Collections.Generic;
 
-namespace Validation.Symbols
+namespace NuGet.Jobs.Validation.Symbols.Core
 {
     public interface IZipArchiveService
     {

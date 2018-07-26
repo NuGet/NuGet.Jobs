@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation;
+using NuGet.Jobs.Validation.Symbols.Core;
 using Moq;
 using Xunit;
 

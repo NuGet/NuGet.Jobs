@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using NuGet.Jobs.Validation.Symbols.Core;
 using Xunit;
 
 
@@ -48,7 +49,7 @@ namespace Validation.Symbols.Tests
             {
                 IReadOnlyCollection<ZipArchiveEntry> input = null;
                 // Act + Assert
-                Assert.Null(ZipArchiveService.ReadFilesFromZipStream(input, ".exe"));
+                Assert.Throws<ArgumentNullException>( ()=>ZipArchiveService.ReadFilesFromZipStream(input, ".exe"));
             }
 
             [Fact]
