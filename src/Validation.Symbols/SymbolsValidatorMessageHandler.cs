@@ -19,15 +19,15 @@ namespace Validation.Symbols
     {
         private const int MaxDBSaveRetry = 5;
         private readonly ILogger<SymbolsValidatorMessageHandler> _logger;
-        private readonly ISymbolsValidatorService _symbolService;
+        private readonly ISymbolsValidatorService _symbolValidatorService;
         private readonly IValidatorStateService _validatorStateService;
 
         public SymbolsValidatorMessageHandler(ILogger<SymbolsValidatorMessageHandler> logger,
-            ISymbolsValidatorService symbolService,
+            ISymbolsValidatorService symbolValidatorService,
             IValidatorStateService validatorStateService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _symbolService = symbolService ?? throw new ArgumentNullException(nameof(symbolService));
+            _symbolValidatorService = symbolValidatorService ?? throw new ArgumentNullException(nameof(symbolValidatorService));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
         }
 
@@ -86,7 +86,7 @@ namespace Validation.Symbols
                     return true;
                 }
 
-                var validationResult = await _symbolService.ValidateSymbolsAsync(message.PackageId, message.PackageNormalizedVersion, CancellationToken.None);
+                var validationResult = await _symbolValidatorService.ValidateSymbolsAsync(message.PackageId, message.PackageNormalizedVersion, CancellationToken.None);
 
                 if (validationResult.Status == ValidationStatus.Failed || validationResult.Status == ValidationStatus.Succeeded)
                 {
