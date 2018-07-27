@@ -92,11 +92,14 @@ namespace StatusAggregator
         
         private string GetRecentIncidentsQuery(DateTime cursor)
         {
-            var cursorPart = cursor == DateTime.MinValue
-                ? ""
-                : $" and CreateDate gt datetime'{cursor.ToString("o")}'";
+            var query = $"$filter = OwningTeamId eq '{_incidentApiTeamId}'";
 
-            return $"$filter=OwningTeamId eq '{_incidentApiTeamId}'{cursorPart}";
+            if (cursor != DateTime.MinValue)
+            {
+                query += $" and CreateDate gt datetime'{cursor.ToString("o")}'";
+            }
+
+            return query;
         }
     }
 }
