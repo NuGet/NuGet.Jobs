@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ComponentFactory.cs" />
+    <Compile Include="LogEvents.cs" />
     <Compile Include="StatusAggregatorConfiguration.cs" />
     <Compile Include="Cursor.cs" />
     <Compile Include="EventUpdater.cs" />

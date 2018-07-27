@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -16,6 +17,8 @@ namespace StatusAggregator.Parse
     /// </summary>
     public abstract class IncidentParser : IIncidentParser
     {
+        private readonly static TimeSpan MaxRegexExecutionTime = TimeSpan.FromSeconds(5);
+
         private readonly string _regExPattern;
 
         private readonly IEnumerable<IIncidentParsingFilter> _filters;
@@ -47,7 +50,24 @@ namespace StatusAggregator.Parse
             {
                 parsedIncident = null;
                 var title = incident.Title;
-                var match = Regex.Match(title, _regExPattern);
+
+                Match match = null;
+                try
+                {
+                    match = Regex.Match(title, _regExPattern, RegexOptions.None, MaxRegexExecutionTime);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(LogEvents.RegexFailure, e, "Failed to parse incident using regex!");
+                    return false;
+                }
+
+                if (match == null)
+                {
+                    _logger.LogError("Parsed incident using regex successfully, but was unable to get match information!");
+                    return false;
+                }
+
                 _logger.LogInformation("Incident title is {IncidentTitle}, RegEx match result: {MatchResult}", title, match.Success);
                 return match.Success && TryParseIncident(incident, match.Groups, out parsedIncident);
             }
