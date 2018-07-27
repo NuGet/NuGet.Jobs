@@ -76,7 +76,8 @@ namespace StatusAggregator
                     // The incident API trims the milliseconds from any filter.
                     // Therefore, a query asking for incidents newer than '2018-06-29T00:00:00.5Z' will return an incident from '2018-06-29T00:00:00.25Z'
                     // We must perform a check on the CreateDate ourselves to verify that no old incidents are returned.
-                    .Where(i => i.CreateDate > cursor);
+                    .Where(i => i.CreateDate > cursor)
+                    .ToList();
 
                 var parsedIncidents = incidents
                     .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
@@ -92,7 +93,7 @@ namespace StatusAggregator
         
         private string GetRecentIncidentsQuery(DateTime cursor)
         {
-            var query = $"$filter = OwningTeamId eq '{_incidentApiTeamId}'";
+            var query = $"$filter=OwningTeamId eq '{_incidentApiTeamId}'";
 
             if (cursor != DateTime.MinValue)
             {

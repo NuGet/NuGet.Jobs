@@ -35,7 +35,7 @@ namespace StatusAggregator
         public override Task Run()
         {
             return _serviceProvider
-                .GetService<StatusAggregator>()
+                .GetRequiredService<StatusAggregator>()
                 .Run();
         }
 

@@ -35,73 +35,37 @@ namespace StatusAggregator
         {
             using (_logger.Scope("Creating message for start of event."))
             {
-                if (cursor > eventEntity.StartTime + _eventStartMessageDelay)
-                {
-                    if (!_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
-                    {
-                        if (TryGetContentsForEventStartForEvent(eventEntity, out var contents))
-                        {
-                            await CreateMessage(eventEntity, eventEntity.StartTime, contents);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Failed to create a message for start of event!");
-                        }
-                    }
-                    else
-                    {
-                        // If we've already told customers about an event, we don't need to tell them about it again.
-                        _logger.LogInformation("Event has messages associated with it, cannot create message for its start.");
-                    }
-                }
-                else
+                if (cursor <= eventEntity.StartTime + _eventStartMessageDelay)
                 {
                     // We don't want to show events that are too recent to avoid noisy events.
                     _logger.LogInformation("Event is too recent, cannot create message for its start.");
+                    return;
+                }
+
+                if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
+                {
+                    // If we've already told customers about an event, we don't need to tell them about it again.
+                    _logger.LogInformation("Event has messages associated with it, cannot create message for its start.");
+                    return;
+                }
+
+                if (TryGetContentsForMessageForEventStart(eventEntity, out var contents))
+                {
+                    await CreateMessage(eventEntity, eventEntity.StartTime, contents);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to create a message for start of event!");
                 }
             }
         }
 
-        private bool TryGetContentsForEventStartForEvent(EventEntity eventEntity, out string contents)
+        private const string _messageForEventStartTemplate = "<b>{0} is {1}.</b> You may encounter issues {2}.";
+
+        private bool TryGetContentsForMessageForEventStart(EventEntity eventEntity, out string contents)
         {
-            return TryGetContentsForEventHelper(eventEntity, _innerMessageMapForEventStart, "is", "", out contents);
+            return TryGetContentsForEventHelper(eventEntity, _messageForEventStartTemplate, out contents);
         }
-
-        private const string _youMayEncounterIssues = "You may encounter issues ";
-        private static readonly IEnumerable<InnerMessageForComponentPathPrefix> _innerMessageMapForEventStart = new InnerMessageForComponentPathPrefix[]
-        {
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.GalleryName), 
-                $"{_youMayEncounterIssues}browsing the NuGet Gallery."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName, ComponentFactory.ChinaRegionName),
-                $"{_youMayEncounterIssues}restoring packages from NuGet.org's V3 feed from China."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName),
-                $"{_youMayEncounterIssues}restoring packages from NuGet.org's V3 feed."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V2ProtocolName),
-                $"{_youMayEncounterIssues}restoring packages from NuGet.org's V2 feed."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName),
-                $"{_youMayEncounterIssues}restoring packages."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.ChinaRegionName),
-                $"{_youMayEncounterIssues}searching for packages from China."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName),
-                $"{_youMayEncounterIssues}searching for packages."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.UploadName),
-                "New packages will likely take longer than usual before becoming available for download."),
-        };
 
         public async Task CreateMessageForEventEnd(EventEntity eventEntity)
         {
@@ -112,21 +76,20 @@ namespace StatusAggregator
 
             using (_logger.Scope("Creating message for end of event."))
             {
-                if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
-                {
-                    if (TryGetContentsForEventEndForEvent(eventEntity, out var contents))
-                    {
-                        await CreateMessage(eventEntity, eventEntity.EndTime.Value, contents);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Failed to create message!");
-                    }
-                }
-                else
+                if (!_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
                 {
                     // If we've never told customers about an event, we don't need to tell them it's no longer impacting them.
                     _logger.LogInformation("Event has no messages associated with it, cannot create message for its end.");
+                    return;
+                }
+
+                if (TryGetContentsForMessageForEventEnd(eventEntity, out var contents))
+                {
+                    await CreateMessage(eventEntity, eventEntity.EndTime.Value, contents);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to create message!");
                 }
             }
         }
@@ -139,53 +102,16 @@ namespace StatusAggregator
             return _table.InsertOrReplaceAsync(messageEntity);
         }
 
-        private bool TryGetContentsForEventEndForEvent(EventEntity eventEntity, out string contents)
+        private const string _messageForEventEndTemplate = "<b>{0} is no longer {1}.</b> You should no longer encounter any issues {2}. Thank you for your patience.";
+
+        private bool TryGetContentsForMessageForEventEnd(EventEntity eventEntity, out string contents)
         {
-            return TryGetContentsForEventHelper(eventEntity, _innerMessageMapForEventEnd, "is no longer", " Thank you for your patience.", out contents);
+            return TryGetContentsForEventHelper(eventEntity, _messageForEventEndTemplate, out contents);
         }
-
-        private const string _youShouldNoLongerEncounterAnyIssues = "You should no longer encounter any issues ";
-        private static readonly IEnumerable<InnerMessageForComponentPathPrefix> _innerMessageMapForEventEnd = new InnerMessageForComponentPathPrefix[]
-        {
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.GalleryName),
-                $"{_youShouldNoLongerEncounterAnyIssues}browsing the NuGet Gallery."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName, ComponentFactory.ChinaRegionName),
-                $"{_youShouldNoLongerEncounterAnyIssues}restoring packages from NuGet.org's V3 feed from China."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName),
-                $"{_youShouldNoLongerEncounterAnyIssues}restoring packages from NuGet.org's V3 feed."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V2ProtocolName),
-                $"{_youShouldNoLongerEncounterAnyIssues}restoring packages from NuGet.org's V2 feed."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName),
-                $"{_youShouldNoLongerEncounterAnyIssues}restoring packages."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.ChinaRegionName),
-                $"{_youShouldNoLongerEncounterAnyIssues}searching for packages from China."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName),
-                $"{_youShouldNoLongerEncounterAnyIssues}searching for packages."),
-
-            new InnerMessageForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.UploadName),
-                "New packages should become available for download as quickly as usual."),
-        };
-
-        private static string[] _componentStatusNames = Enum.GetNames(typeof(ComponentStatus));
+        
         private bool TryGetContentsForEventHelper(
             EventEntity eventEntity, 
-            IEnumerable<InnerMessageForComponentPathPrefix> innerMessageMap,
-            string boldedPartInnerString, 
-            string messageSuffix,
+            string messageTemplate,
             out string contents)
         {
             contents = null;
@@ -199,33 +125,68 @@ namespace StatusAggregator
             }
 
             var componentNames = path.Split(Constants.ComponentPathDivider);
-            var name = string.Join(" ", componentNames.Skip(1).Reverse());
-            var boldedPart = $"<b>{name} {boldedPartInnerString} {_componentStatusNames[eventEntity.AffectedComponentStatus].ToLowerInvariant()}.</b>";
+            var componentName = string.Join(" ", componentNames.Skip(1).Reverse());
+            var componentStatus = ((ComponentStatus)eventEntity.AffectedComponentStatus).ToString().ToLowerInvariant();
 
-            string innerContents = innerMessageMap
+            string actionDescription = _actionDescriptionForComponentPathMap
                 .FirstOrDefault(m => m.Matches(path))?
-                .InnerMessage;
+                .ActionDescription;
 
-            if (innerContents == null)
+            if (actionDescription == null)
             {
-                _logger.LogWarning("Could not find an inner message for path {ComponentPath}.", path);
+                _logger.LogWarning("Could not find an action description for path {ComponentPath}.", path);
                 return false;
             }
 
-            contents = $"{boldedPart} {innerContents}{messageSuffix}";
+            contents = string.Format(messageTemplate, componentName, componentStatus, actionDescription);
 
             return !string.IsNullOrEmpty(contents);
         }
 
-        private class InnerMessageForComponentPathPrefix
+        private static readonly IEnumerable<ActionDescriptionForComponentPathPrefix> _actionDescriptionForComponentPathMap = new ActionDescriptionForComponentPathPrefix[]
+        {
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.GalleryName),
+                $"browsing the NuGet Gallery"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName, ComponentFactory.ChinaRegionName),
+                $"restoring packages from NuGet.org's V3 feed from China"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName),
+                $"restoring packages from NuGet.org's V3 feed"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V2ProtocolName),
+                $"restoring packages from NuGet.org's V2 feed"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName),
+                $"restoring packages"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.ChinaRegionName),
+                $"searching for packages from China"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName),
+                $"searching for packages"),
+
+            new ActionDescriptionForComponentPathPrefix(
+                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.UploadName),
+                "uploading new packages"),
+        };
+
+        private class ActionDescriptionForComponentPathPrefix
         {
             public string ComponentPathPrefix { get; }
-            public string InnerMessage { get; }
+            public string ActionDescription { get; }
 
-            public InnerMessageForComponentPathPrefix(string componentPathPrefix, string innerWarning)
+            public ActionDescriptionForComponentPathPrefix(string componentPathPrefix, string actionDescription)
             {
                 ComponentPathPrefix = componentPathPrefix;
-                InnerMessage = innerWarning;
+                ActionDescription = actionDescription;
             }
 
             public bool Matches(string componentPath)
