@@ -50,16 +50,34 @@ namespace Validation.Symbols
                 packageId,
                 packageNormalizedVersion);
 
-            var snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
-            if(snupkgstream == null)
+            Stream snupkgstream;
+            Stream nupkgstream;
+            try
+            {
+                snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
+                if (snupkgstream == null)
+                {
+                    _telemetryService.TrackSymbolsPackageNotFoundEvent(packageId, packageNormalizedVersion);
+                    return ValidationResult.Failed;
+                }
+            }
+            catch(FileNotFoundException)
             {
                 _telemetryService.TrackSymbolsPackageNotFoundEvent(packageId, packageNormalizedVersion);
                 return ValidationResult.Failed;
             }
-            var nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(packageId, packageNormalizedVersion, token);
-            if (nupkgstream == null)
+            try
             {
-                _telemetryService.TrackPackageNotFoundEvent(packageId, packageNormalizedVersion);
+                nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(packageId, packageNormalizedVersion, token);
+                if (nupkgstream == null)
+                {
+                    _telemetryService.TrackPackageNotFoundEvent(packageId, packageNormalizedVersion);
+                    return ValidationResult.Failed;
+                }
+            }
+            catch (FileNotFoundException)
+            {
+                _telemetryService.TrackSymbolsPackageNotFoundEvent(packageId, packageNormalizedVersion);
                 return ValidationResult.Failed;
             }
             var pdbs = _zipArchiveService.ReadFilesFromZipStream(snupkgstream, SymbolExtension);
