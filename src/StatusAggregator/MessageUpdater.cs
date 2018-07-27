@@ -26,9 +26,9 @@ namespace StatusAggregator
             StatusAggregatorConfiguration configuration,
             ILogger<MessageUpdater> logger)
         {
-            _table = table;
-            _eventStartMessageDelay = TimeSpan.FromMinutes(configuration.EventStartMessageDelayMinutes);
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _eventStartMessageDelay = TimeSpan.FromMinutes(configuration?.EventStartMessageDelayMinutes ?? throw new ArgumentNullException(nameof(configuration)));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task CreateMessageForEventStart(EventEntity eventEntity, DateTime cursor)

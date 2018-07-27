@@ -22,10 +22,10 @@ namespace StatusAggregator
             IEventUpdater eventUpdater,
             ILogger<StatusUpdater> logger)
         {
-            _cursor = cursor;
-            _incidentUpdater = incidentUpdater;
-            _eventUpdater = eventUpdater;
-            _logger = logger;
+            _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
+            _incidentUpdater = incidentUpdater ?? throw new ArgumentNullException(nameof(IncidentUpdater));
+            _eventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task Update()

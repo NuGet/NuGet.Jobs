@@ -29,9 +29,9 @@ namespace StatusAggregator.Parse
             string regExPattern, 
             ILogger<IncidentParser> logger)
         {
-            _regExPattern = regExPattern;
+            _regExPattern = regExPattern ?? throw new ArgumentNullException(nameof(regExPattern));
             _filters = Enumerable.Empty<IIncidentParsingFilter>();
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IncidentParser(
@@ -40,7 +40,7 @@ namespace StatusAggregator.Parse
             ILogger<IncidentParser> logger)
             : this(regExPattern, logger)
         {
-            _filters = filters.ToList();
+            _filters = filters?.ToList() ?? throw new ArgumentNullException(nameof(filters));
         }
 
         public bool TryParseIncident(Incident incident, out ParsedIncident parsedIncident)

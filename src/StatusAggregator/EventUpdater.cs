@@ -26,10 +26,10 @@ namespace StatusAggregator
             StatusAggregatorConfiguration configuration,
             ILogger<EventUpdater> logger)
         {
-            _table = table;
-            _messageUpdater = messageUpdater;
-            _eventEndDelay = TimeSpan.FromMinutes(configuration.EventEndDelayMinutes);
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _messageUpdater = messageUpdater ?? throw new ArgumentNullException(nameof(messageUpdater));
+            _eventEndDelay = TimeSpan.FromMinutes(configuration?.EventEndDelayMinutes ?? throw new ArgumentNullException(nameof(configuration)));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task UpdateActiveEvents(DateTime cursor)

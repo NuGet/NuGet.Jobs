@@ -40,10 +40,10 @@ namespace StatusAggregator
             StatusAggregatorConfiguration configuration,
             ILogger<StatusExporter> logger)
         {
-            _container = container;
-            _table = table;
-            _eventVisibilityPeriod = TimeSpan.FromDays(configuration.EventVisibilityPeriodDays);
-            _logger = logger;
+            _container = container ?? throw new ArgumentNullException(nameof(container));
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _eventVisibilityPeriod = TimeSpan.FromDays(configuration?.EventVisibilityPeriodDays ?? throw new ArgumentNullException(nameof(configuration)));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task Export()

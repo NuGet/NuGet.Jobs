@@ -17,8 +17,8 @@ namespace StatusAggregator
             ITableWrapper table,
             ILogger<Cursor> logger)
         {
-            _table = table;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         private readonly ITableWrapper _table;

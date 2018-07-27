@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Incidents;
+using System;
 using System.Text.RegularExpressions;
 
 namespace StatusAggregator.Parse
@@ -20,8 +21,8 @@ namespace StatusAggregator.Parse
             StatusAggregatorConfiguration configuration,
             ILogger<SeverityFilter> logger)
         {
-            _maximumSeverity = configuration.MaximumSeverity;
-            _logger = logger;
+            _maximumSeverity = configuration?.MaximumSeverity ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         
         public bool ShouldParse(Incident incident, GroupCollection groups)

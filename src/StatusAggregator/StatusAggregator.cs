@@ -3,6 +3,7 @@
 
 using Microsoft.WindowsAzure.Storage.Blob;
 using StatusAggregator.Table;
+using System;
 using System.Threading.Tasks;
 
 namespace StatusAggregator
@@ -21,10 +22,10 @@ namespace StatusAggregator
             IStatusUpdater statusUpdater,
             IStatusExporter statusExporter)
         {
-            _container = container;
-            _table = table;
-            _statusUpdater = statusUpdater;
-            _statusExporter = statusExporter;
+            _container = container ?? throw new ArgumentNullException(nameof(container));
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _statusUpdater = statusUpdater ?? throw new ArgumentNullException(nameof(statusUpdater));
+            _statusExporter = statusExporter ?? throw new ArgumentNullException(nameof(statusExporter));
         }
 
         public async Task Run()

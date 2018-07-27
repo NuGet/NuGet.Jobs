@@ -17,6 +17,11 @@ namespace StatusAggregator.Parse
             string affectedComponentPath,
             ComponentStatus affectedComponentStatus)
         {
+            if (incident == null)
+            {
+                throw new ArgumentNullException(nameof(incident));
+            }
+
             Id = incident.Id;
             CreationTime = incident.Source.CreateDate;
             MitigationTime = incident.MitigationData?.Date;

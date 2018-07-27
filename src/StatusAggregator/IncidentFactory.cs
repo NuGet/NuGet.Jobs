@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -23,9 +24,9 @@ namespace StatusAggregator
             IEventUpdater eventUpdater, 
             ILogger<IncidentFactory> logger)
         {
-            _table = table;
-            _eventUpdater = eventUpdater;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _eventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IncidentEntity> CreateIncident(ParsedIncident parsedIncident)

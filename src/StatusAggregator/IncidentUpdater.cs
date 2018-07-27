@@ -36,13 +36,13 @@ namespace StatusAggregator
             StatusAggregatorConfiguration configuration,
             ILogger<IncidentUpdater> logger)
         {
-            _table = table;
-            _eventUpdater = eventUpdater;
-            _incidentApiClient = incidentApiClient;
-            _aggregateIncidentParser = aggregateIncidentParser;
-            _incidentFactory = incidentFactory;
-            _incidentApiTeamId = configuration.TeamId;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _eventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
+            _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
+            _aggregateIncidentParser = aggregateIncidentParser ?? throw new ArgumentNullException(nameof(aggregateIncidentParser));
+            _incidentFactory = incidentFactory ?? throw new ArgumentNullException(nameof(incidentFactory));
+            _incidentApiTeamId = configuration?.TeamId ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task RefreshActiveIncidents()

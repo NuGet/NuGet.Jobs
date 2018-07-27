@@ -26,8 +26,8 @@ namespace StatusAggregator.Parse
             StatusAggregatorConfiguration configuration,
             ILogger<EnvironmentFilter> logger)
         {
-            _environments = configuration.Environments;
-            _logger = logger;
+            _environments = configuration?.Environments ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public bool ShouldParse(Incident incident, GroupCollection groups)

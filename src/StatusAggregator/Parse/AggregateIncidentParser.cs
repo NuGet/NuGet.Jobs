@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
+using System;
 using System.Collections.Generic;
 
 namespace StatusAggregator.Parse
@@ -21,8 +22,8 @@ namespace StatusAggregator.Parse
             IEnumerable<IIncidentParser> incidentParsers,
             ILogger<AggregateIncidentParser> logger)
         {
-            _incidentParsers = incidentParsers;
-            _logger = logger;
+            _incidentParsers = incidentParsers ?? throw new ArgumentNullException(nameof(incidentParsers));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IEnumerable<ParsedIncident> ParseIncident(Incident incident)
