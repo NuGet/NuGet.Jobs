@@ -78,7 +78,7 @@ namespace Validation.Symbols
                 {
                     return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
                 }
-                var targetDirectory = GetWorkingDirectory();
+                var targetDirectory = Settings.GetWorkingDirectory();
                 try
                 {
                     _logger.LogInformation("Extracting symbols to {TargetDirectory}", targetDirectory);
@@ -95,11 +95,6 @@ namespace Validation.Symbols
                     TryCleanWorkingDirectoryForSeconds(targetDirectory, packageId, packageNormalizedVersion, _cleanWorkingDirectoryTimeSpan);
                 }
             }
-        }
-
-        public string GetWorkingDirectory()
-        {
-            return Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         }
 
         private void TryCleanWorkingDirectoryForSeconds(string workingDirectory, string packageId, string packageNormalizedVersion, TimeSpan seconds)

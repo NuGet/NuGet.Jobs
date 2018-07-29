@@ -25,10 +25,9 @@ namespace Validation.Symbols.Tests
             public async Task ValidateSymbolsAsyncWillFailIfSnupkgNotFound()
             {
                 // Arrange
-                Stream nullStream = null;
                 _symbolsFileService.
                     Setup(sfs => sfs.DownloadSnupkgFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).
-                    ReturnsAsync(nullStream);
+                    ThrowsAsync(new FileNotFoundException("Snupkg not found"));
 
                 var service = new SymbolsValidatorService(_symbolsFileService.Object, _zipService.Object, _telemetryService.Object, _logger.Object);
 
@@ -43,10 +42,9 @@ namespace Validation.Symbols.Tests
             public async Task ValidateSymbolsAsyncWillFailIfNupkgNotFound()
             {
                 // Arrange
-                Stream nullStream = null;
                 _symbolsFileService.
                     Setup(sfs => sfs.DownloadNupkgFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).
-                    ReturnsAsync(nullStream);
+                    ThrowsAsync(new FileNotFoundException("Nupkg not found"));
 
                 _symbolsFileService.
                     Setup(sfs => sfs.DownloadSnupkgFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).
