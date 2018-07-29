@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,11 +54,6 @@ namespace Validation.Symbols
             try
             {
                 snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(packageId, packageNormalizedVersion, token);
-                if (snupkgstream == null)
-                {
-                    _telemetryService.TrackSymbolsPackageNotFoundEvent(packageId, packageNormalizedVersion);
-                    return ValidationResult.Failed;
-                }
             }
             catch(FileNotFoundException)
             {
@@ -69,15 +63,10 @@ namespace Validation.Symbols
             try
             {
                 nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(packageId, packageNormalizedVersion, token);
-                if (nupkgstream == null)
-                {
-                    _telemetryService.TrackPackageNotFoundEvent(packageId, packageNormalizedVersion);
-                    return ValidationResult.Failed;
-                }
             }
             catch (FileNotFoundException)
             {
-                _telemetryService.TrackSymbolsPackageNotFoundEvent(packageId, packageNormalizedVersion);
+                _telemetryService.TrackPackageNotFoundEvent(packageId, packageNormalizedVersion);
                 return ValidationResult.Failed;
             }
             var pdbs = _zipArchiveService.ReadFilesFromZipStream(snupkgstream, SymbolExtension);

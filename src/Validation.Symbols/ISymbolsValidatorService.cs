@@ -16,7 +16,7 @@ namespace Validation.Symbols
         /// </summary>
         /// <param name="packageId">The package Id.</param>
         /// <param name="packageNormalizedVersion">The package normalized version.</param>
-        /// <param name="token">A cancellation tokne to be used for cancellation of the async execution.</param>
+        /// <param name="token">A cancellation token to be used for cancellation of the async execution.</param>
         /// <returns></returns>
         Task<IValidationResult> ValidateSymbolsAsync(string packageId, string packageNormalizedVersion, CancellationToken token);
     }
