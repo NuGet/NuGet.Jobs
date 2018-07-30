@@ -45,11 +45,12 @@ namespace StatusAggregator.Parse
 
         public bool TryParseIncident(Incident incident, out ParsedIncident parsedIncident)
         {
-            using (_logger.Scope("Parsing incident with parser {IncidentParserType} using {RegExPattern}", 
-                GetType(), _regExPattern))
+            var title = incident.Title;
+
+            using (_logger.Scope("Using parser {IncidentParserType} with pattern {RegExPattern} to parse incident with title {IncidentTitle}",
+                GetType(), _regExPattern, title))
             {
                 parsedIncident = null;
-                var title = incident.Title;
 
                 Match match = null;
                 try
@@ -68,7 +69,7 @@ namespace StatusAggregator.Parse
                     return false;
                 }
 
-                _logger.LogInformation("Incident title is {IncidentTitle}, RegEx match result: {MatchResult}", title, match.Success);
+                _logger.LogInformation("RegEx match result: {MatchResult}", title, match.Success);
                 return match.Success && TryParseIncident(incident, match.Groups, out parsedIncident);
             }
         }
