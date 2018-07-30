@@ -5,7 +5,10 @@ using NuGet.Services.Status;
 
 namespace StatusAggregator
 {
-    public static class ComponentFactory
+    /// <summary>
+    /// Helps create an <see cref="IComponent"/> that represents the NuGet service as well as paths to its subcomponents.
+    /// </summary>
+    public static class NuGetServiceComponentFactory
     {
         public const string RootName = "NuGet";
         public const string GalleryName = "NuGet.org";
@@ -25,7 +28,7 @@ namespace StatusAggregator
         public const string SeaInstanceName = "Southeast Asia";
 
         /// <summary>
-        /// Creates the NuGet service root component.
+        /// Creates an <see cref="IComponent"/> that represents the NuGet service.
         /// </summary>
         public static IComponent CreateNuGetServiceRootComponent()
         {

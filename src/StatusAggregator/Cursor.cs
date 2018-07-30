@@ -8,7 +8,6 @@ using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
-
 namespace StatusAggregator
 {
     public class Cursor : ICursor
@@ -35,8 +34,9 @@ namespace StatusAggregator
                 DateTime value;
                 if (cursor == null)
                 {
+                    // If we can't find a cursor, the job is likely uninitialized, so start at the beginning of time.
                     value = DateTime.MinValue;
-                    _logger.LogInformation("Could not fetch cursor.");
+                    _logger.LogInformation("Could not fetch cursor, reinitializing cursor at {Cursor}.", value);
                 }
                 else
                 {

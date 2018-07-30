@@ -22,7 +22,7 @@ namespace StatusAggregator.Parse
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
-            affectedComponentPath = ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.UploadName);
+            affectedComponentPath = ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.UploadName);
             return true;
         }
 

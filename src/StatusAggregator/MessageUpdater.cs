@@ -117,7 +117,7 @@ namespace StatusAggregator
             contents = null;
 
             var path = eventEntity.AffectedComponentPath;
-            var component = ComponentFactory.CreateNuGetServiceRootComponent().GetByPath(path);
+            var component = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent().GetByPath(path);
             if (component == null)
             {
                 _logger.LogWarning("Could not find a component with path {ComponentPath}.", path);
@@ -146,35 +146,35 @@ namespace StatusAggregator
         private static readonly IEnumerable<ActionDescriptionForComponentPathPrefix> _actionDescriptionForComponentPathMap = new ActionDescriptionForComponentPathPrefix[]
         {
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.GalleryName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.GalleryName),
                 $"browsing the NuGet Gallery"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName, ComponentFactory.ChinaRegionName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V3ProtocolName, NuGetServiceComponentFactory.ChinaRegionName),
                 $"restoring packages from NuGet.org's V3 feed from China"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V3ProtocolName),
                 $"restoring packages from NuGet.org's V3 feed"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V2ProtocolName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V2ProtocolName),
                 $"restoring packages from NuGet.org's V2 feed"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.RestoreName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName),
                 $"restoring packages"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.ChinaRegionName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.SearchName, NuGetServiceComponentFactory.ChinaRegionName),
                 $"searching for packages from China"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.SearchName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.SearchName),
                 $"searching for packages"),
 
             new ActionDescriptionForComponentPathPrefix(
-                ComponentUtility.GetPath(ComponentFactory.RootName, ComponentFactory.UploadName),
+                ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.UploadName),
                 "uploading new packages"),
         };
 

@@ -37,56 +37,56 @@ namespace StatusAggregator.Parse
             {
                 case "CDN DNS":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V3ProtocolName);
                     break;
                 case "CDN Global":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName, ComponentFactory.GlobalRegionName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V3ProtocolName, NuGetServiceComponentFactory.GlobalRegionName);
                     break;
                 case "CDN China":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V3ProtocolName, ComponentFactory.ChinaRegionName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V3ProtocolName, NuGetServiceComponentFactory.ChinaRegionName);
                     break;
                 case "Gallery DNS":
                 case "Gallery Home":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.GalleryName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.GalleryName);
                     break;
                 case "Gallery USNC /":
                 case "Gallery USNC /Packages":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.GalleryName, ComponentFactory.UsncInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.GalleryName, NuGetServiceComponentFactory.UsncInstanceName);
                     break;
                 case "Gallery USSC /":
                 case "Gallery USSC /Packages":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.GalleryName, ComponentFactory.UsscInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.GalleryName, NuGetServiceComponentFactory.UsscInstanceName);
                     break;
                 case "Gallery USNC /api/v2/Packages()":
                 case "Gallery USNC /api/v2/package/NuGet.GalleryUptime/1.0.0":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V2ProtocolName, ComponentFactory.UsncInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V2ProtocolName, NuGetServiceComponentFactory.UsncInstanceName);
                     break;
                 case "Gallery USSC /api/v2/Packages()":
                 case "Gallery USSC /api/v2/package/NuGet.GalleryUptime/1.0.0":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.RestoreName, ComponentFactory.V2ProtocolName, ComponentFactory.UsscInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.RestoreName, NuGetServiceComponentFactory.V2ProtocolName, NuGetServiceComponentFactory.UsscInstanceName);
                     break;
                 case "Search USNC /query":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.GlobalRegionName, ComponentFactory.UsncInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.SearchName, NuGetServiceComponentFactory.GlobalRegionName, NuGetServiceComponentFactory.UsncInstanceName);
                     break;
                 case "Search USSC /query":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.GlobalRegionName, ComponentFactory.UsscInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.SearchName, NuGetServiceComponentFactory.GlobalRegionName, NuGetServiceComponentFactory.UsscInstanceName);
                     break;
                 case "Search EA /query":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.ChinaRegionName, ComponentFactory.EaInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.SearchName, NuGetServiceComponentFactory.ChinaRegionName, NuGetServiceComponentFactory.EaInstanceName);
                     break;
                 case "Search SEA /query":
                     affectedComponentPath = ComponentUtility.GetPath(
-                        ComponentFactory.RootName, ComponentFactory.SearchName, ComponentFactory.ChinaRegionName, ComponentFactory.SeaInstanceName);
+                        NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.SearchName, NuGetServiceComponentFactory.ChinaRegionName, NuGetServiceComponentFactory.SeaInstanceName);
                     break;
                 default:
                     return false;

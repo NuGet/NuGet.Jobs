@@ -46,11 +46,11 @@ namespace StatusAggregator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Export()
+        public async Task<ServiceStatus> Export()
         {
             using (_logger.Scope("Exporting service status."))
             {
-                var rootComponent = ComponentFactory.CreateNuGetServiceRootComponent();
+                var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
 
                 var recentEvents = _table
                     .CreateQuery<EventEntity>()
@@ -90,10 +90,11 @@ namespace StatusAggregator
                     }
                 }
 
+                ServiceStatus status;
                 string statusJson;
                 using (_logger.Scope("Serializing service status."))
                 {
-                    var status = new ServiceStatus(rootComponent, recentEvents);
+                    status = new ServiceStatus(rootComponent, recentEvents);
                     statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
                 }
 
@@ -102,6 +103,8 @@ namespace StatusAggregator
                     var blob = _container.GetBlockBlobReference(StatusBlobName);
                     await blob.UploadTextAsync(statusJson);
                 }
+
+                return status;
             }
         }
     }

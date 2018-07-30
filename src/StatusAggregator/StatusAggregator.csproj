@@ -46,7 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ComponentFactory.cs" />
+    <Compile Include="NuGetServiceComponentFactory.cs" />
     <Compile Include="LogEvents.cs" />
     <Compile Include="StatusAggregatorConfiguration.cs" />
     <Compile Include="Cursor.cs" />

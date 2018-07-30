@@ -8,6 +8,9 @@ namespace NuGet.Jobs.Extensions
 {
     public static class LoggerExtensions
     {
+        /// <summary>
+        /// Calls <see cref="ILogger.BeginScope{TState}(TState)"/> and logs a message when entering and leaving the scope.
+        /// </summary>
         public static IDisposable Scope(
             this ILogger logger, 
             string message, 
