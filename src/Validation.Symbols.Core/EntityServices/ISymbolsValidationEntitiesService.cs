@@ -15,11 +15,11 @@ namespace NuGet.Jobs.Validation.Symbols.Core
     public interface ISymbolsValidationEntitiesService
     {
         /// <summary>
-        /// Will try to add a new request in the SymbolsServerRequests db
+        /// Will add a new request in the SymbolsServerRequests db
         /// </summary>
         /// <param name="request">The request.</param>
         /// <returns>The request ingested. If the request already exists the request that is persisted is returned.</returns>
-        Task<SymbolsServerRequest> TryAddSymbolsServerRequestAsync(SymbolsServerRequest request);
+        Task<SymbolsServerRequest> AddSymbolsServerRequestAsync(SymbolsServerRequest request);
 
         /// <summary>
         /// Try to update the status.

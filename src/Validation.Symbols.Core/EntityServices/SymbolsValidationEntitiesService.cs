@@ -20,7 +20,7 @@ namespace NuGet.Jobs.Validation.Symbols.Core
             _validationEntitiesContext = validationEntitiesContext ?? throw new ArgumentNullException(nameof(validationEntitiesContext));
         }
 
-        public async Task<SymbolsServerRequest> TryAddSymbolsServerRequestAsync(SymbolsServerRequest request)
+        public async Task<SymbolsServerRequest> AddSymbolsServerRequestAsync(SymbolsServerRequest request)
         {
             if (request == null)
             {

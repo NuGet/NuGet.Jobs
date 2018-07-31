@@ -100,7 +100,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     .Verify(x => x.EnqueueSymbolsValidationMessageAsync(It.IsAny<IValidationRequest>()), Times.Never);
 
                 _symbolsValidationEntitiesService
-                    .Verify(x => x.TryAddSymbolsServerRequestAsync(It.IsAny<SymbolsServerRequest>()), Times.Never);
+                    .Verify(x => x.AddSymbolsServerRequestAsync(It.IsAny<SymbolsServerRequest>()), Times.Never);
 
                 _telemetryService.Verify(
                     x => x.TrackSymbolsMessageEnqueued(It.IsAny<string>(), It.IsAny<Guid>()),
@@ -136,7 +136,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     .Returns(Task.FromResult(0));
 
                 _symbolsValidationEntitiesService
-                    .Setup(x => x.TryAddSymbolsServerRequestAsync(It.IsAny<SymbolsServerRequest>()))
+                    .Setup(x => x.AddSymbolsServerRequestAsync(It.IsAny<SymbolsServerRequest>()))
                     .Callback(() =>
                     {
                         statePersisted = true;
@@ -152,7 +152,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
 
                 _symbolsValidationEntitiesService
                     .Verify(
-                        x => x.TryAddSymbolsServerRequestAsync(It.IsAny<SymbolsServerRequest>()),
+                        x => x.AddSymbolsServerRequestAsync(It.IsAny<SymbolsServerRequest>()),
                         Times.Once);
 
                 _telemetryService.Verify(

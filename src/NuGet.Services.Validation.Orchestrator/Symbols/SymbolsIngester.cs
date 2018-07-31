@@ -81,7 +81,7 @@ namespace NuGet.Services.Validation.Symbols
             await _symbolMessageEnqueuer.EnqueueSymbolsValidationMessageAsync(request);
 
             var newSymbolsRequest = SymbolsValidationEntitiesService.CreateFromValidationRequest(request, SymbolsPackageIngestRequestStatus.Ingesting);
-            var savedSymbolRequest = await _symbolsValidationEntitiesService.TryAddSymbolsServerRequestAsync(newSymbolsRequest);
+            var savedSymbolRequest = await _symbolsValidationEntitiesService.AddSymbolsServerRequestAsync(newSymbolsRequest);
             
             if(savedSymbolRequest.RequestStatusKey != SymbolsPackageIngestRequestStatus.Ingesting)
             {

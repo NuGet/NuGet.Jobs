@@ -28,7 +28,7 @@ namespace Validation.Symbols.Core.Tests
             public void NullChecks()
             {
                 // Arrange + Act + Assert
-                Assert.ThrowsAsync< ArgumentNullException>(() => _target.TryAddSymbolsServerRequestAsync(null));
+                Assert.ThrowsAsync< ArgumentNullException>(() => _target.AddSymbolsServerRequestAsync(null));
             }
 
             [Fact]
@@ -57,7 +57,7 @@ namespace Validation.Symbols.Core.Tests
                     .Returns(DbSetMockFactory.Create(request1));
 
                 // Act 
-                var result = await _target.TryAddSymbolsServerRequestAsync(request2);
+                var result = await _target.AddSymbolsServerRequestAsync(request2);
 
                 // Assert 
                 Assert.Equal(request1.Created, result.Created);
@@ -94,7 +94,7 @@ namespace Validation.Symbols.Core.Tests
                     .ReturnsAsync(7);
 
                 // Act 
-                var result = await _target.TryAddSymbolsServerRequestAsync(request2);
+                var result = await _target.AddSymbolsServerRequestAsync(request2);
 
                 // Assert
                 Assert.Equal(request2.Created, result.Created);
