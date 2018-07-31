@@ -39,7 +39,8 @@ Function Run-Tests {
         "tests\Validation.PackageSigning.Core.Tests\bin\$Configuration\Validation.PackageSigning.Core.Tests.dll", `
         "tests\Validation.Common.Job.Tests\bin\$Configuration\Validation.Common.Job.Tests.dll", `
         "tests\Monitoring.RebootSearchInstance.Tests\bin\$Configuration\NuGet.Monitoring.RebootSearchInstance.Tests.dll",
-        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Tests.dll"
+        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Tests.dll",
+        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Core.Tests"
 
     $TestCount = 0
     
