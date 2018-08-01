@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.Validation;
@@ -267,6 +266,30 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         }
 
         [Fact]
+        public async Task WhenUsernameInvalid_SkipsScanAndSign()
+        {
+            _config.RepositorySigningEnabled = true;
+
+            _validationContext.Mock();
+            _packageServiceMock
+                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
+                .Returns(_packageRegistrationWithInvalidUser);
+
+            var result = await _target.StartAsync(_request);
+
+            _packageServiceMock
+                .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
+
+            _enqueuerMock
+                .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
+
+            _validatorStateServiceMock
+                .Verify(v => v.TryAddValidatorStatusAsync(_request, _status, ValidationStatus.Incomplete), Times.Once);
+            _validatorStateServiceMock
+                .Verify(v => v.TryAddValidatorStatusAsync(It.IsAny<IValidationRequest>(), It.IsAny<ValidatorStatus>(), It.IsAny<ValidationStatus>()), Times.Once);
+        }
+
+        [Fact]
         public async Task EnqueuesScanAndSignEvenIfRepositorySigningIsDisabled()
         {
             _config.RepositorySigningEnabled = false;
@@ -347,13 +370,13 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             });
 
             _packageServiceMock
-                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
-                .Returns(new PackageValidatingEntity(_package));
+                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
+                .Returns(_packageRegistration);
 
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
-                .Verify(p => p.GetOwners(It.IsAny<Package>()), Times.Never);
+                .Verify(p => p.FindPackageRegistrationById(It.IsAny<string>()), Times.Once);
 
             _enqueuerMock
                 .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
@@ -374,12 +397,11 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                     Type = PackageSignatureType.Repository,
                 }
             });
+
             _packageServiceMock
-                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
-                .Returns(new PackageValidatingEntity(_package));
-            _packageServiceMock
-                .Setup(p => p.GetOwners(_package))
-                .Returns(_packageRegistration.Owners.Select(u => u.Username).ToList());
+                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
+                .Returns(_packageRegistration);
+
             _criteriaEvaluatorMock
                 .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))
                 .Returns(false);
@@ -436,6 +458,15 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 new User("Bob"),
             },
             Id = "somepackage"
+        };
+
+        private PackageRegistration _packageRegistrationWithInvalidUser = new PackageRegistration
+        {
+            Owners = new List<User>
+            {
+                new User("Billy"),
+                new User("Satan Claus"),
+            }
         };
 
         public TheStartAsyncMethod()

@@ -25,7 +25,6 @@ using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
-using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Configuration;
@@ -228,6 +227,9 @@ namespace NuGet.Services.Validation.Orchestrator
                         configurationAccessor.Value.ValidationStorageConnectionString,
                         readAccessGeoRedundant: false);
                 });
+            services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
+            services.AddTransient<IFileMetadataService, PackageFileMetadataService>();
+            services.AddTransient<IValidationFileService, ValidationFileService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();
             services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
             services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
