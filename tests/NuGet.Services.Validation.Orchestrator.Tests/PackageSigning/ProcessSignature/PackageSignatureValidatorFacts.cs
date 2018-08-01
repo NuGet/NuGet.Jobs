@@ -103,6 +103,10 @@ namespace NuGet.Services.Validation.PackageSigning
                 // Arrange
                 _config.RepositorySigningEnabled = true;
 
+                _packages
+                    .Setup(p => p.FindPackageRegistrationById(_validationRequest.Object.PackageId))
+                    .Returns(_packageRegistration);
+
                 _validatorStateService
                     .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
                     .ReturnsAsync(new ValidatorStatus
@@ -114,8 +118,10 @@ namespace NuGet.Services.Validation.PackageSigning
                         ValidatorIssues = new List<ValidatorIssue>(),
                     });
 
-                // Act
-                await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+                // Act & Assert
+                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+
+                Assert.Equal("Package signature validator has an unexpected validation result", e.Message);
             }
 
             [Fact]
@@ -123,6 +129,10 @@ namespace NuGet.Services.Validation.PackageSigning
             {
                 // Arrange
                 _config.RepositorySigningEnabled = true;
+
+                _packages
+                    .Setup(p => p.FindPackageRegistrationById(_validationRequest.Object.PackageId))
+                    .Returns(_packageRegistration);
 
                 _validatorStateService
                     .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
@@ -136,8 +146,41 @@ namespace NuGet.Services.Validation.PackageSigning
                         NupkgUrl = "https://nuget.org/a.nupkg"
                     });
 
+                // Act & Assert
+                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+
+                Assert.Equal("Package signature validator has an unexpected validation result", e.Message);
+            }
+
+            [Fact]
+            public async Task WhenRepositorySigningEnabled_IgnoresFailedValidationIfOwnerHasMalformedUsername()
+            {
+                // Arrange
+                _config.RepositorySigningEnabled = true;
+
+                _packages
+                    .Setup(p => p.FindPackageRegistrationById(_validationRequest.Object.PackageId))
+                    .Returns(_packageRegistrationWithBadUsername);
+
+                _validatorStateService
+                    .Setup(x => x.GetStatusAsync(It.IsAny<IValidationRequest>()))
+                    .ReturnsAsync(new ValidatorStatus
+                    {
+                        ValidationId = ValidationId,
+                        PackageKey = PackageKey,
+                        ValidatorName = ValidatorName.PackageSignatureProcessor,
+                        State = ValidationStatus.Failed,
+                        ValidatorIssues = new List<ValidatorIssue>(),
+                    });
+
                 // Act
-                await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+                var result = await _target.GetResultAsync(_validationRequest.Object);
+
+                // Assert
+                Assert.Null(result.NupkgUrl);
+                Assert.Empty(result.Issues);
+                Assert.Equal(ValidationStatus.Succeeded, result.Status);
+
             }
 
             public static IEnumerable<object[]> PossibleValidationStatuses => possibleValidationStatuses.Select(s => new object[] { s });
@@ -444,6 +487,8 @@ namespace NuGet.Services.Validation.PackageSigning
             protected readonly PackageSignatureValidator _target;
 
             protected readonly ScanAndSignConfiguration _config;
+            protected readonly PackageRegistration _packageRegistration;
+            protected readonly PackageRegistration _packageRegistrationWithBadUsername;
 
             public FactsBase(ITestOutputHelper output)
             {
@@ -465,6 +510,22 @@ namespace NuGet.Services.Validation.PackageSigning
                 _validationRequest.Setup(x => x.ValidationId).Returns(ValidationId);
 
                 _configAccessor.Setup(a => a.Value).Returns(_config);
+
+                _packageRegistration = new PackageRegistration
+                {
+                    Owners = new[]
+                    {
+                        new User { Username = "GoodUsername" }
+                    }
+                };
+
+                _packageRegistrationWithBadUsername = new PackageRegistration
+                {
+                    Owners = new[]
+                    {
+                        new User { Username = "Bad Username" }
+                    }
+                };
 
                 _target = new PackageSignatureValidator(
                     _validatorStateService.Object,
