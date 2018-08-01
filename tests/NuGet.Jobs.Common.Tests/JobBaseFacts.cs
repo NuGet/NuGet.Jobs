@@ -21,18 +21,6 @@ namespace NuGet.Jobs.Common.Tests
         private const string DefaultValidationDbConnectionString =
             "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=Validation; Integrated Security=True; MultipleActiveResultSets=True";
 
-        public class TheGetDatabaseKeyMethod
-        {
-            [Fact]
-            public void UsesDistinctCacheKeys()
-            {
-                var galleryKey = JobBase.GetDatabaseKey<GalleryDbConfiguration>();
-                var validationKey = JobBase.GetDatabaseKey<ValidationDbConfiguration>();
-
-                Assert.NotEqual(galleryKey, validationKey);
-            }
-        }
-
         public class TheRegisterDatabaseMethod
         {
             [Fact]
@@ -65,6 +53,32 @@ namespace NuGet.Jobs.Common.Tests
                 // Assert
                 Assert.Equal("(localdb)\\mssqllocaldb", csBuilder.DataSource);
                 Assert.Equal("Validation", csBuilder.InitialCatalog);
+            }
+
+            [Fact]
+            private void DoesNotOverriteRegistrations()
+            {
+                // Arrange
+                var job = new TestJob();
+
+                // Act
+                job.RegisterDatabase<GalleryDbConfiguration>(
+                    job.ServiceContainer,
+                    testConnection: false);
+
+                job.RegisterDatabase<ValidationDbConfiguration>(
+                    job.ServiceContainer,
+                    testConnection: false);
+
+                // Assert
+                var galleryDb = job.GetDatabaseRegistration<GalleryDbConfiguration>();
+                var validationDb = job.GetDatabaseRegistration<ValidationDbConfiguration>();
+
+                Assert.NotNull(galleryDb);
+                Assert.Equal("NuGetGallery", galleryDb.InitialCatalog);
+
+                Assert.NotNull(validationDb);
+                Assert.Equal("Validation", validationDb.InitialCatalog);
             }
         }
 

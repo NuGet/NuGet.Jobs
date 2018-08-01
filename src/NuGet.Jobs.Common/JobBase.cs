@@ -80,6 +80,17 @@ namespace NuGet.Jobs
             }
         }
 
+        public SqlConnectionStringBuilder GetDatabaseRegistration<T>()
+            where T : IDbConfiguration
+        {
+            if (SqlConnectionFactories.TryGetValue(GetDatabaseKey<T>(), out var connectionFactory))
+            {
+                return ((AzureSqlConnectionFactory)connectionFactory).SqlConnectionStringBuilder;
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Initializes an <see cref="ISqlConnectionFactory"/>, for use by validation jobs.
         /// </summary>
@@ -154,7 +165,7 @@ namespace NuGet.Jobs
             return connectionFactory.SqlConnectionStringBuilder;
         }
 
-        internal static string GetDatabaseKey<T>()
+        private static string GetDatabaseKey<T>()
         {
             return typeof(T).Name;
         }
