@@ -436,6 +436,7 @@ namespace NuGet.Services.Validation.PackageSigning
             protected readonly Mock<IValidatorStateService> _validatorStateService;
             protected readonly Mock<IProcessSignatureEnqueuer> _packageSignatureVerifier;
             protected readonly Mock<ISimpleCloudBlobProvider> _blobProvider;
+            protected readonly Mock<ICorePackageService> _packages;
             protected readonly Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _configAccessor;
             protected readonly Mock<ITelemetryService> _telemetryService;
             protected readonly ILogger<PackageSignatureValidator> _logger;
@@ -449,6 +450,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 _validatorStateService = new Mock<IValidatorStateService>();
                 _packageSignatureVerifier = new Mock<IProcessSignatureEnqueuer>();
                 _blobProvider = new Mock<ISimpleCloudBlobProvider>();
+                _packages = new Mock<ICorePackageService>();
                 _config = new ScanAndSignConfiguration();
                 _configAccessor = new Mock<IOptionsSnapshot<ScanAndSignConfiguration>>();
                 _telemetryService = new Mock<ITelemetryService>();
@@ -468,6 +470,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     _validatorStateService.Object,
                     _packageSignatureVerifier.Object,
                     _blobProvider.Object,
+                    _packages.Object,
                     _configAccessor.Object,
                     _telemetryService.Object,
                     _logger);

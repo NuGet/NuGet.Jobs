@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,6 +11,7 @@ using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
+using NuGetGallery;
 
 namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 {
@@ -20,9 +22,12 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
     [ValidatorName(ValidatorName.PackageSignatureValidator)]
     public class PackageSignatureValidator : BaseSignatureProcessor, IValidator
     {
+        private const string UsernameRegex = @"^[A-Za-z0-9][A-Za-z0-9_\.-]+[A-Za-z0-9]$";
+
         private readonly IValidatorStateService _validatorStateService;
         private readonly IProcessSignatureEnqueuer _signatureVerificationEnqueuer;
         private readonly ISimpleCloudBlobProvider _blobProvider;
+        private readonly ICorePackageService _packages;
         private readonly ScanAndSignConfiguration _config;
         private readonly ITelemetryService _telemetryService;
         private readonly ILogger<PackageSignatureValidator> _logger;
@@ -31,6 +36,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             IValidatorStateService validatorStateService,
             IProcessSignatureEnqueuer signatureVerificationEnqueuer,
             ISimpleCloudBlobProvider blobProvider,
+            ICorePackageService packages,
             IOptionsSnapshot<ScanAndSignConfiguration> configAccessor,
             ITelemetryService telemetryService,
             ILogger<PackageSignatureValidator> logger)
@@ -39,6 +45,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _signatureVerificationEnqueuer = signatureVerificationEnqueuer ?? throw new ArgumentNullException(nameof(signatureVerificationEnqueuer));
             _blobProvider = blobProvider ?? throw new ArgumentNullException(nameof(blobProvider));
+            _packages = packages ?? throw new ArgumentNullException(nameof(packages));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -60,35 +67,23 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
         {
             var result = await base.GetResultAsync(request);
 
-            return Validate(result);
+            return Validate(request, result);
         }
 
         public override async Task<IValidationResult> StartAsync(IValidationRequest request)
         {
             var result = await base.StartAsync(request);
 
-            return Validate(result);
+            return Validate(request, result);
         }
 
-        private IValidationResult Validate(IValidationResult result)
+        private IValidationResult Validate(IValidationRequest request, IValidationResult result)
         {
             /// The package signature validator runs after the <see cref="PackageSignatureProcessor" />.
             /// All signature validation issues should be caught and handled by the processor.
             if (result.Status == ValidationStatus.Failed || result.NupkgUrl != null)
             {
-                if (_config.RepositorySigningEnabled)
-                {
-                    _logger.LogCritical(
-                        "Unexpected validation result in package signature validator. This may be caused by an invalid repository " +
-                        "signature. Throwing an exception to force this validation to dead-letter. " +
-                        "Status = {ValidationStatus}, Nupkg URL = {NupkgUrl}, validation issues = {Issues}",
-                        result.Status,
-                        result.NupkgUrl,
-                        result.Issues.Select(i => i.IssueCode));
-
-                    throw new InvalidOperationException("Package signature validator has an unexpected validation result");
-                }
-                else
+                if (!_config.RepositorySigningEnabled)
                 {
                     _logger.LogInformation(
                         "Ignoring invalid validation result in package signature validator as repository signing is disabled. " +
@@ -99,6 +94,28 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 
                     return ValidationResult.Succeeded;
                 }
+
+                if (HasOwnerWithInvalidUsername(request))
+                {
+                    _logger.LogWarning(
+                        "Ignoring invalid validation result in package signature validator as the package has an owner with an invalid username. " +
+                        "Status = {ValidationStatus}, Nupkg URL = {NupkgUrl}, validation issues = {Issues}",
+                        result.Status,
+                        result.NupkgUrl,
+                        result.Issues.Select(i => i.IssueCode));
+
+                    return ValidationResult.Succeeded;
+                }
+
+                _logger.LogCritical(
+                    "Unexpected validation result in package signature validator. This may be caused by an invalid repository " +
+                    "signature. Throwing an exception to force this validation to dead-letter. " +
+                    "Status = {ValidationStatus}, Nupkg URL = {NupkgUrl}, validation issues = {Issues}",
+                    result.Status,
+                    result.NupkgUrl,
+                    result.Issues.Select(i => i.IssueCode));
+
+                throw new InvalidOperationException("Package signature validator has an unexpected validation result");
             }
 
             /// Suppress all validation issues. The <see cref="PackageSignatureProcessor"/> should
@@ -115,6 +132,38 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             }
 
             return result;
+        }
+
+        private bool HasOwnerWithInvalidUsername(IValidationRequest request)
+        {
+            var registration = _packages.FindPackageRegistrationById(request.PackageId);
+
+            if (registration == null)
+            {
+                _logger.LogError("Attempted to validate package that has no package registration");
+
+                throw new InvalidOperationException($"Registration for package id {request.PackageId} does not exist");
+            }
+
+            var owners = registration.Owners.Select(o => o.Username).ToList();
+
+            if (owners.Any(IsInvalidUsername))
+            {
+                _logger.LogWarning(
+                    "Package {PackageId} {PackageVersion} has an owner with an invalid username. {Owners}",
+                    request.PackageId,
+                    request.PackageVersion,
+                    owners);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsInvalidUsername(string username)
+        {
+            return !Regex.IsMatch(username, UsernameRegex, RegexOptions.None, TimeSpan.FromSeconds(5));
         }
     }
 }
