@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Storage;
+using NuGet.Services.Validation.Orchestrator;
 using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
@@ -22,8 +23,6 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
     [ValidatorName(ValidatorName.PackageSignatureValidator)]
     public class PackageSignatureValidator : BaseSignatureProcessor, IValidator
     {
-        private const string UsernameRegex = @"^[A-Za-z0-9][A-Za-z0-9_\.-]+[A-Za-z0-9]$";
-
         private readonly IValidatorStateService _validatorStateService;
         private readonly IProcessSignatureEnqueuer _signatureVerificationEnqueuer;
         private readonly ISimpleCloudBlobProvider _blobProvider;
@@ -95,6 +94,8 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
                     return ValidationResult.Succeeded;
                 }
 
+                // TODO: Remove this.
+                // See: https://github.com/NuGet/Engineering/issues/1592
                 if (HasOwnerWithInvalidUsername(request))
                 {
                     _logger.LogWarning(
@@ -147,7 +148,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
 
             var owners = registration.Owners.Select(o => o.Username).ToList();
 
-            if (owners.Any(IsInvalidUsername))
+            if (owners.Any(UsernameHelper.IsInvalid))
             {
                 _logger.LogWarning(
                     "Package {PackageId} {PackageVersion} has an owner with an invalid username. {Owners}",
@@ -159,11 +160,6 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             }
 
             return false;
-        }
-
-        private bool IsInvalidUsername(string username)
-        {
-            return !Regex.IsMatch(username, UsernameRegex, RegexOptions.None, TimeSpan.FromSeconds(5));
         }
     }
 }
