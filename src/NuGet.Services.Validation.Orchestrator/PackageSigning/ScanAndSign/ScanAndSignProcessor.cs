@@ -20,8 +20,6 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 {
     public class ScanAndSignProcessor<T> : IProcessor where T : class, IEntity
     {
-        private const string UsernameRegex = @"^[A-Za-z0-9][A-Za-z0-9_\.-]+[A-Za-z0-9]$";
-
         private readonly IValidationEntitiesContext _validationContext;
         private readonly IValidatorStateService _validatorStateService;
         private readonly IEntityService<T> _galleryService;
@@ -218,7 +216,9 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 return false;
             }
 
-            if (owners.Any(IsInvalidUsername))
+            // TODO: Remove this check.
+            // See: https://github.com/NuGet/Engineering/issues/1582
+            if (owners.Any(UsernameHelper.IsInvalid))
             {
                 _logger.LogWarning(
                     "Package {PackageId} {PackageVersion} has an owner with an invalid username. Scanning instead of signing. {Owners}",
@@ -242,11 +242,6 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 throw new InvalidOperationException($"Registration for package id {request.PackageId} does not exist");
             }
             return _galleryService.GetOwners(package.EntityRecord);
-        }
-
-        private bool IsInvalidUsername(string username)
-        {
-            return !Regex.IsMatch(username, UsernameRegex, RegexOptions.None, TimeSpan.FromSeconds(5));
         }
     }
 }

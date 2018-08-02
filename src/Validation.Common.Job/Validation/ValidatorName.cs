@@ -15,5 +15,6 @@ namespace NuGet.Jobs.Validation
         public const string SymbolScan = "SymbolScan";
 
         public const string SymbolsValidator = "SymbolsValidator";
+        public const string SymbolsIngester = "SymbolsIngester";
     }
 }
