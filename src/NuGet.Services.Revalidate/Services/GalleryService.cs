@@ -12,13 +12,17 @@ namespace NuGet.Services.Revalidate
 {
     public class GalleryService : IGalleryService
     {
+        private static readonly string GalleryEventsQuery = HttpUtility.UrlPathEncode(
+            "customMetrics | " +
+            "where name == \"PackagePush\" or name == \"PackageUnlisted\" or name == \"PackageListed\" | " +
+            "summarize sum(value)");
+
         private readonly HttpClient _httpClient;
         private readonly ApplicationInsightsConfiguration _appInsightsConfig;
         private readonly ILogger<GalleryService> _logger;
 
         public GalleryService(
             HttpClient httpClient,
-            RevalidationConfiguration config,
             ApplicationInsightsConfiguration appInsightsConfig,
             ILogger<GalleryService> logger)
         {
@@ -31,11 +35,6 @@ namespace NuGet.Services.Revalidate
         {
             try
             {
-                var query = HttpUtility.UrlPathEncode(
-                    "customMetrics | " +
-                    "where name == \"PackagePush\" or name == \"PackageUnlisted\" or name == \"PackageListed\" | " +
-                    "summarize sum(value)");
-
                 using (var request = new HttpRequestMessage())
                 {
                     request.RequestUri = new Uri($"https://api.applicationinsights.io/v1/apps/{_appInsightsConfig.AppId}/query?timespan=PT1H&query={query}");
@@ -50,9 +49,9 @@ namespace NuGet.Services.Revalidate
                         var json = await response.Content.ReadAsStringAsync();
                         var data = JsonConvert.DeserializeObject<QueryResult>(json);
 
-                        if (data.Tables == null || data.Tables.Length != 1 ||
-                            data.Tables[0].Rows == null || data.Tables[0].Rows.Length != 1 ||
-                            data.Tables[0].Rows[0] == null || data.Tables[0].Rows[0].Length != 1)
+                        if (data?.Tables?.Length != 1 ||
+                            data.Tables[0]?.Rows?.Length != 1 ||
+                            data.Tables[0].Rows[0]?.Length != 1)
                         {
                             throw new InvalidOperationException("Malformed response content");
                         }
