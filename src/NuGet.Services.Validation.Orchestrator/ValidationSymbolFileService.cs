@@ -52,6 +52,5 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             await CopyValidationPackageToPackageFileAsync(validationSet);
         }
-
     }
 }
