@@ -51,6 +51,7 @@
     <Compile Include="DiskMailSender.cs" />
     <Compile Include="Configuration\EmailConfiguration.cs" />
     <Compile Include="Error.cs" />
+    <Compile Include="SymbolMessageService .cs" />
     <Compile Include="PackageSigning\ScanAndSign\SymbolCriteriaEvaluator.cs" />
     <Compile Include="PackageSigning\ScanAndSign\SymbolScanValidator.cs" />
     <Compile Include="PackageSigning\ScanAndSign\PackageScanAndSignProcessor.cs" />
@@ -58,6 +59,7 @@
     <Compile Include="Services\IEntityService.cs" />
     <Compile Include="IMessageService.cs" />
     <Compile Include="IPackageStatusProcessor.cs" />
+    <Compile Include="Services\SymbolPackageEntityService.cs" />
     <Compile Include="Symbols\ISymbolsMessageEnqueuer.cs" />
     <Compile Include="Symbols\SymbolsMessageEnqueuer.cs" />
     <Compile Include="Symbols\SymbolsValidator.cs" />
@@ -95,9 +97,11 @@
     <Compile Include="Telemetry\TelemetryService.cs" />
     <Compile Include="Configuration\ValidationConfiguration.cs" />
     <Compile Include="Configuration\ValidationConfigurationItem.cs" />
+    <Compile Include="ValidatingEntitites\SymbolPackageValidatingEntity.cs" />
     <Compile Include="ValidatingEntitites\PackageValidatingEntity.cs" />
     <Compile Include="ValidationFailureBehavior.cs" />
     <Compile Include="SymbolValidationMessageHandler.cs" />
+    <Compile Include="ValidationSymbolFileService.cs" />
     <Compile Include="ValidationPackageFileService.cs" />
     <Compile Include="ValidationSetProcessorResult.cs" />
     <Compile Include="Vcs\IPackageCriteria.cs" />
@@ -118,6 +122,9 @@
   <ItemGroup>
     <None Include="App.config">
       <SubType>Designer</SubType>
+    </None>
+    <None Include="symbolsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

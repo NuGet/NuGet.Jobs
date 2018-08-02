@@ -28,11 +28,6 @@ namespace NuGet.Services.Validation.Orchestrator
             return p == null ? null : new PackageValidatingEntity(p);
         }
 
-        public IValidatingEntity<Package> FindByKey(int key)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task UpdateStatusAsync(Package entity, PackageStatus newStatus, bool commitChanges = true)
         {
             await _galleryEntityService.UpdatePackageStatusAsync(entity, newStatus, commitChanges);

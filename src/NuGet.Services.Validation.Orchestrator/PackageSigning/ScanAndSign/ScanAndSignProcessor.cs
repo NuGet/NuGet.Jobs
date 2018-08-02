@@ -234,19 +234,14 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
         private List<string> FindPackageOwners(IValidationRequest request)
         {
-            var registration = _packageService.FindPackageRegistrationById(request.PackageId);
-
-            if (registration == null)
+            var package = _galleryService.FindPackageByIdAndVersionStrict(request.PackageId, request.PackageVersion);
+            if (package == null)
             {
                 _logger.LogError("Attempted to validate package that has no package registration");
 
                 throw new InvalidOperationException($"Registration for package id {request.PackageId} does not exist");
             }
-
-            return registration
-                .Owners
-                .Select(o => o.Username)
-                .ToList();
+            return _galleryService.GetOwners(package.EntityRecord);
         }
 
         private bool IsInvalidUsername(string username)

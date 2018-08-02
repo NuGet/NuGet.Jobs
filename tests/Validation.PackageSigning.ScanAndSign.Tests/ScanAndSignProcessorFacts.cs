@@ -272,13 +272,13 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
 
             _validationContext.Mock();
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistrationWithInvalidUser);
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistrationWithInvalidUser.Owners.Select(u=>u.Username).ToList());
 
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
-                .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
+                .Verify(p => p.GetOwners(_package), Times.Once);
 
             _enqueuerMock
                 .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
@@ -370,13 +370,13 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             });
 
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistration);
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistration.Owners.Select(u => u.Username).ToList());
 
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
-                .Verify(p => p.FindPackageRegistrationById(It.IsAny<string>()), Times.Once);
+                .Verify(p => p.GetOwners(It.IsAny<Package>()), Times.Once);
 
             _enqueuerMock
                 .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
@@ -399,8 +399,8 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             });
 
             _packageServiceMock
-                .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
-                .Returns(_packageRegistration);
+                .Setup(p => p.GetOwners(_package))
+                .Returns(_packageRegistration.Owners.Select(u=>u.Username).ToList());
 
             _criteriaEvaluatorMock
                 .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))

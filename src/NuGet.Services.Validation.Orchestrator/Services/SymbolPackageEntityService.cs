@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using NuGetGallery;
 
@@ -13,35 +14,46 @@ namespace NuGet.Services.Validation.Orchestrator
     /// </summary>
     public class SymbolEntityService : IEntityService<SymbolPackage>
     {
-        public SymbolEntityService(ICorePackageService galleryEntityService)
+        ICoreSymbolPackageService _galleryEntityService;
+        public SymbolEntityService(ICoreSymbolPackageService galleryEntityService)
         {
+            _galleryEntityService = galleryEntityService ?? throw new ArgumentNullException(nameof(galleryEntityService));
         }
 
+        /// <summary>
+        /// Only the package symbols that are in validating state will be sent to the symbols valiation/ingestion. 
+        /// </summary>
+        /// <param name="id">The id of the package.</param>
+        /// <param name="version">The version of the package.</param>
+        /// <returns></returns>
         public IValidatingEntity<SymbolPackage> FindPackageByIdAndVersionStrict(string id, string version)
         {
-            throw new NotImplementedException();
-        }
-
-        public IValidatingEntity<SymbolPackage> FindByKey(int key)
-        {
-            throw new NotImplementedException();
+            var symbolPackage = _galleryEntityService.FindSymbolPackagesByIdAndVersion(id, version).
+                Where(s => s.StatusKey == PackageStatus.Validating).FirstOrDefault();
+            return symbolPackage == null ? null : new SymbolPackageValidatingEntity(symbolPackage);
         }
 
         public async Task UpdateStatusAsync(SymbolPackage entity, PackageStatus newStatus, bool commitChanges = true)
         {
-            await Task.Delay(1);
-            throw new NotImplementedException();
+            if (newStatus == PackageStatus.Available)
+            {
+                var previousAvailableSymbolPackage = _galleryEntityService.FindSymbolPackagesByIdAndVersion(entity.Package.PackageRegistration.Id, entity.Package.NormalizedVersion).
+                    Where(s => s.StatusKey == PackageStatus.Available).FirstOrDefault();
+                await _galleryEntityService.UpdateStatusAsync(previousAvailableSymbolPackage, PackageStatus.Deleted, false);
+            }
+
+            await _galleryEntityService.UpdateStatusAsync(entity, newStatus, commitChanges);
         }
 
         public async Task UpdateMetadataAsync(SymbolPackage entity, object metadata, bool commitChanges = true)
         {
-            await Task.Delay(1);
-            throw new NotImplementedException();
+            await Task.Yield();
         }
 
-        public List<string> GetOwners(SymbolPackage Entity)
+        public List<string> GetOwners(SymbolPackage entity)
         {
-            throw new NotImplementedException();
+            if (entity == null) { throw new ArgumentNullException(nameof(entity)); }
+            return entity.Package.PackageRegistration.Owners.Select(o=>o.Username).ToList();
         }
     }
 }

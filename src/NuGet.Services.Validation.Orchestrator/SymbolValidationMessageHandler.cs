@@ -22,7 +22,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private readonly IValidationSetProcessor _validationSetProcessor;
         private readonly IValidationOutcomeProcessor<SymbolPackage> _validationOutcomeProcessor;
         private readonly ITelemetryService _telemetryService;
-        private readonly ILogger<PackageValidationMessageHandler> _logger;
+        private readonly ILogger<SymbolValidationMessageHandler> _logger;
 
         public SymbolValidationMessageHandler(
             IOptionsSnapshot<ValidationConfiguration> validationConfigsAccessor,
@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidationSetProcessor validationSetProcessor,
             IValidationOutcomeProcessor<SymbolPackage> validationOutcomeProcessor,
             ITelemetryService telemetryService,
-            ILogger<PackageValidationMessageHandler> logger)
+            ILogger<SymbolValidationMessageHandler> logger)
         {
             if (validationConfigsAccessor == null)
             {
@@ -68,7 +68,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 throw new ArgumentNullException(nameof(message));
             }
 
-            using (_logger.BeginScope("Handling message for {PackageId} {PackageVersion} validation set {ValidationSetId}",
+            using (_logger.BeginScope("Handling symbol message for {PackageId} {PackageVersion} validation set {ValidationSetId}",
                 message.PackageId,
                 message.PackageNormalizedVersion,
                 message.ValidationTrackingId))
@@ -80,7 +80,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     // no package in DB yet. Might have received message a bit early, need to retry later
                     if (message.DeliveryCount - 1 >= _configs.MissingPackageRetryCount)
                     {
-                        _logger.LogWarning("Could not find package {PackageId} {PackageNormalizedVersion} in DB after {DeliveryCount} tries, dropping message",
+                        _logger.LogWarning("Could not find symbols for package {PackageId} {PackageNormalizedVersion} in DB after {DeliveryCount} tries, dropping message",
                             message.PackageId,
                             message.PackageNormalizedVersion,
                             message.DeliveryCount);
@@ -94,25 +94,12 @@ namespace NuGet.Services.Validation.Orchestrator
                     }
                     else
                     {
-                        _logger.LogInformation("Could not find package {PackageId} {PackageNormalizedVersion} in DB, retrying",
+                        _logger.LogInformation("Could not find symbols for package {PackageId} {PackageNormalizedVersion} in DB, retrying",
                             message.PackageId,
                             message.PackageNormalizedVersion);
 
                         return false;
                     }
-                }
-
-                // Immediately halt validation of a soft deleted package.
-                if (package.Status == PackageStatus.Deleted)
-                {
-                    _logger.LogWarning(
-                        "Package {PackageId} {PackageNormalizedVersion} (package key {PackageKey}) is soft deleted. Dropping message for validation set {ValidationSetId}.",
-                        message.PackageId,
-                        message.PackageNormalizedVersion,
-                        package.Key,
-                        message.ValidationTrackingId);
-
-                    return true;
                 }
 
                 var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message, package);
