@@ -67,6 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageSignatureBindingKey = PackageSigningSectionName;
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
         private const string ScanAndSignBindingKey = ScanAndSignSectionName;
+        private const string SymbolsScanBindingKey = "SymbolsScan";
         private const string ScanBindingKey = "Scan";
         private const string ValidationStorageBindingKey = "ValidationStorage";
         private const string OrchestratorBindingKey = "Orchestrator";
@@ -106,7 +107,6 @@ namespace NuGet.Services.Validation.Orchestrator
                 Logger.LogInformation("Configuration validation successful");
                 return;
             }
-
             var runner = GetRequiredService<OrchestrationRunner>();
             await runner.RunOrchestrationAsync();
         }
@@ -373,6 +373,8 @@ namespace NuGet.Services.Validation.Orchestrator
             ConfigurePackageCertificatesValidator(containerBuilder);
             ConfigureScanAndSignProcessor(containerBuilder);
             ConfigureScanValidator(containerBuilder);
+
+            ConfigureSymbolScanValidator(containerBuilder);
             ConfigureSymbolsValidator(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
@@ -479,10 +481,33 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<PackageScanAndSignProcessor>()
                 .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
                 .AsSelf();
+        }
+
+        private static void ConfigureSymbolScanValidator(ContainerBuilder builder)
+        {
+            builder
+                .Register(c =>
+                {
+                    var configuration = c.Resolve<IOptionsSnapshot<ScanAndSignConfiguration>>().Value.ServiceBus;
+                    return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+                })
+                .Keyed<ITopicClient>(SymbolsScanBindingKey);
+
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.SymbolScan)
+                .Keyed<IValidatorStateService>(SymbolsScanBindingKey);
+
+            builder
+                .RegisterType<ScanAndSignEnqueuer>()
+                .WithKeyedParameter(typeof(ITopicClient), SymbolsScanBindingKey)
+                .As<IScanAndSignEnqueuer>();
 
             builder
                 .RegisterType<SymbolScanValidator>()
-                .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
+                .WithKeyedParameter(typeof(IValidatorStateService), SymbolsScanBindingKey)
                 .AsSelf();
         }
 

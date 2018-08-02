@@ -4,14 +4,16 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGet.Jobs.Validation;
-using NuGet.Jobs.Validation.PackageSigning.Storage;
+using NuGet.Services.Validation.Orchestrator;
+using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-
-namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
+namespace NuGet.Services.Validation.Symbols
 {
     [ValidatorName(ValidatorName.SymbolScan)]
     public class SymbolScanValidator : ScanAndSignProcessor<SymbolPackage>
@@ -33,6 +35,11 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 configurationAccessor,
                 logger)
         {
+        }
+
+        public override async Task<bool> ShouldRepositorySignAsync(IValidationRequest request, List<string> owners)
+        {
+            return await Task.FromResult(false);
         }
     }
 }

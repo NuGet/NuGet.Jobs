@@ -51,9 +51,9 @@
     <Compile Include="DiskMailSender.cs" />
     <Compile Include="Configuration\EmailConfiguration.cs" />
     <Compile Include="Error.cs" />
-    <Compile Include="SymbolMessageService .cs" />
-    <Compile Include="PackageSigning\ScanAndSign\SymbolCriteriaEvaluator.cs" />
-    <Compile Include="PackageSigning\ScanAndSign\SymbolScanValidator.cs" />
+    <Compile Include="SymbolMessageService.cs" />
+    <Compile Include="Symbols\SymbolCriteriaEvaluator.cs" />
+    <Compile Include="Symbols\SymbolScanValidator.cs" />
     <Compile Include="PackageSigning\ScanAndSign\PackageScanAndSignProcessor.cs" />
     <Compile Include="PackageSigning\Scan\ScanValidator.cs" />
     <Compile Include="Services\IEntityService.cs" />

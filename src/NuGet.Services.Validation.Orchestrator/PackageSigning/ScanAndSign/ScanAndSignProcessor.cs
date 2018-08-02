@@ -55,17 +55,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                 throw new ArgumentException($"{nameof(configurationAccessor.Value)} property is null", nameof(configurationAccessor));
             }
             _configuration = configurationAccessor.Value;
-
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            configurationAccessor = configurationAccessor ?? throw new ArgumentNullException(nameof(configurationAccessor));
-
-            if (configurationAccessor.Value == null)
-            {
-                throw new ArgumentException($"{nameof(configurationAccessor.Value)} property is null", nameof(configurationAccessor));
-            }
-
-            _configuration = configurationAccessor.Value;
         }
 
         public async Task CleanUpAsync(IValidationRequest request)
@@ -198,7 +188,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             return false;
         }
 
-        private async Task<bool> ShouldRepositorySignAsync(IValidationRequest request, List<string> owners)
+        public virtual async Task<bool> ShouldRepositorySignAsync(IValidationRequest request, List<string> owners)
         {
             var hasRepositorySignature = await _validationContext
                 .PackageSignatures

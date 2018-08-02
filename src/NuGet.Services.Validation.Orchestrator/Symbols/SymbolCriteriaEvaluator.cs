@@ -9,9 +9,16 @@ namespace NuGet.Services.Validation
 {
     public class SymbolCriteriaEvaluator : ICriteriaEvaluator<SymbolPackage>
     {
+        private readonly ICriteriaEvaluator<Package> _packageCriteriaEvaluator;
+
+        public SymbolCriteriaEvaluator(ICriteriaEvaluator<Package> packageCriteriaEvaluator)
+        {
+            _packageCriteriaEvaluator = packageCriteriaEvaluator ?? throw new ArgumentNullException(nameof(packageCriteriaEvaluator));
+        }
+
         public bool IsMatch(ICriteria criteria, SymbolPackage entity)
         {
-            throw new NotImplementedException();
+            return _packageCriteriaEvaluator.IsMatch(criteria, entity.Package);
         }
     }
 }

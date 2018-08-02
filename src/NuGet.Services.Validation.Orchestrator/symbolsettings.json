@@ -2,9 +2,18 @@
   "Configuration": {
     "Validations": [
       {
+        "name": "SymbolScan",
+        "TrackAfter": "1:00:00:00",
+        "requiredValidations": [
+        ],
+        "ShouldStart": true,
+        "FailureBehavior": "MustSucceed"
+      },
+      {
         "name": "SymbolsValidator",
         "trackAfter": "00:50:00",
         "requiredValidations": [
+          "SymbolScan"
         ],
         "shouldStart": "true",
         "failureBehavior": "MustSucceed"
