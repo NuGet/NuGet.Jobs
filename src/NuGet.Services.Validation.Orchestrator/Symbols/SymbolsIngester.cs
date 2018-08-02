@@ -55,7 +55,7 @@ namespace NuGet.Services.Validation.Symbols
         /// 2. Only if a ingestion was not started queue the message to be processed.
         /// 3. After the message is queued, update the SymbolServerRequests table.
         /// </summary>
-        /// <param name="request">The request to be send to the ingester job queue.</param>
+        /// <param name="request">The request to be sent to the ingester job queue.</param>
         /// <returns>The operation status as <see cref="IValidationResult"/>.</returns>
         public async Task<IValidationResult> StartAsync(IValidationRequest request)
         {
@@ -95,7 +95,7 @@ namespace NuGet.Services.Validation.Symbols
             else
             {
                 _logger.LogInformation(
-                 "The symbols ingestion request added to the data base. RequestStatus:{Status} for {PackageId} {PackageNormalizedVersion} {SymbolsPackageKey}.",
+                 "The symbols ingestion request added to the database. RequestStatus:{Status} for {PackageId} {PackageNormalizedVersion} {SymbolsPackageKey}.",
                  newSymbolsRequest.RequestStatusKey,
                  request.PackageId,
                  request.PackageVersion,
