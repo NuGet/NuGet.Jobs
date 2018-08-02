@@ -37,7 +37,7 @@ namespace NuGet.Services.Revalidate
             {
                 using (var request = new HttpRequestMessage())
                 {
-                    request.RequestUri = new Uri($"https://api.applicationinsights.io/v1/apps/{_appInsightsConfig.AppId}/query?timespan=PT1H&query={query}");
+                    request.RequestUri = new Uri($"https://api.applicationinsights.io/v1/apps/{_appInsightsConfig.AppId}/query?timespan=PT1H&query={GalleryEventsQuery}");
                     request.Method = HttpMethod.Get;
 
                     request.Headers.Add("x-api-key", _appInsightsConfig.ApiKey);
