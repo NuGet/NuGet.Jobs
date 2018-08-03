@@ -54,8 +54,6 @@ namespace StatusAggregator.Parse
                                         NuGetServiceComponentFactory.GalleryName,
                                         NuGetServiceComponentFactory.UsscInstanceName);
                                     break;
-                                default:
-                                    break;
                             }
                             break;
                         case "nugetapidev.trafficmanager.net":
@@ -97,8 +95,6 @@ namespace StatusAggregator.Parse
                                         NuGetServiceComponentFactory.GalleryName,
                                         NuGetServiceComponentFactory.UsscInstanceName);
                                     break;
-                                default:
-                                    break;
                             }
                             break;
                     }
@@ -120,8 +116,6 @@ namespace StatusAggregator.Parse
                                         NuGetServiceComponentFactory.RootName,
                                         NuGetServiceComponentFactory.GalleryName,
                                         NuGetServiceComponentFactory.UsscInstanceName);
-                                    break;
-                                default:
                                     break;
                             }
                             break;
