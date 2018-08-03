@@ -12,7 +12,7 @@ using NuGetGallery;
 namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 {
     /// <summary>
-    /// Need this class to register with DI bot SymbolScanValidator and PackageScanAndSignProcessor
+    /// Need this class to register with DI both SymbolScanValidator and PackageScanAndSignProcessor
     /// </summary>
     [ValidatorName(ValidatorName.ScanAndSign)]
     public class PackageScanAndSignProcessor : ScanAndSignProcessor<Package>

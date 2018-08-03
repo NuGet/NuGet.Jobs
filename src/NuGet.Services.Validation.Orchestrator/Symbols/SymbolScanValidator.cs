@@ -37,9 +37,9 @@ namespace NuGet.Services.Validation.Symbols
         {
         }
 
-        public override async Task<bool> ShouldRepositorySignAsync(IValidationRequest request, List<string> owners)
+        public override Task<bool> ShouldRepositorySignAsync(IValidationRequest request, List<string> owners)
         {
-            return await Task.FromResult(false);
+            return Task.FromResult(false);
         }
     }
 }

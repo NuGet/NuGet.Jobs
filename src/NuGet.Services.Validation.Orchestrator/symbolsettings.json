@@ -17,6 +17,15 @@
         ],
         "shouldStart": "true",
         "failureBehavior": "MustSucceed"
+      },
+      {
+        "name": "SymbolsIngester",
+        "trackAfter": "00:50:00",
+        "requiredValidations": [
+          "SymbolsValidator"
+        ],
+        "shouldStart": "true",
+        "failureBehavior": "MustSucceed"
       }
     ],
     "ValidationStorageConnectionString": "",

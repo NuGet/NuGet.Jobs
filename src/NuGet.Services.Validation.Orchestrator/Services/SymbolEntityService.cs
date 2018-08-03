@@ -35,19 +35,29 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task UpdateStatusAsync(SymbolPackage entity, PackageStatus newStatus, bool commitChanges = true)
         {
+            if(entity == null)
+            {
+                throw new ArgumentException(nameof(entity));
+            }
+            if(newStatus == entity.StatusKey)
+            {
+                return;
+            }
             if (newStatus == PackageStatus.Available)
             {
                 var previousAvailableSymbolPackage = _galleryEntityService.FindSymbolPackagesByIdAndVersion(entity.Package.PackageRegistration.Id, entity.Package.NormalizedVersion).
-                    Where(s => s.StatusKey == PackageStatus.Available).FirstOrDefault();
+                    FirstOrDefault(s => s.StatusKey == PackageStatus.Available);
                 await _galleryEntityService.UpdateStatusAsync(previousAvailableSymbolPackage, PackageStatus.Deleted, false);
             }
-
             await _galleryEntityService.UpdateStatusAsync(entity, newStatus, commitChanges);
         }
 
+
         public async Task UpdateMetadataAsync(SymbolPackage entity, object metadata, bool commitChanges = true)
         {
-            await Task.Yield();
+            // No action for symbols 
+            // For each new symbol a new entry will be added to db and the file symbols will be overwriten
+            await Task.CompletedTask;
         }
 
         public List<string> GetOwners(SymbolPackage entity)

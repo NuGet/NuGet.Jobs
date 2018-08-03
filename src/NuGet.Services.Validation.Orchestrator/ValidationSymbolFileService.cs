@@ -22,7 +22,7 @@ namespace NuGet.Services.Validation.Orchestrator
             IFileDownloader fileDownloader,
             ITelemetryService telemetryService,
             ILogger<ValidationFileService> logger,
-            IFileMetadataService fileMetadataService) : base(fileStorageService, fileDownloader,telemetryService, logger, fileMetadataService)
+            IFileMetadataService fileMetadataService) : base(fileStorageService, fileDownloader, telemetryService, logger, fileMetadataService)
         {
         }
 

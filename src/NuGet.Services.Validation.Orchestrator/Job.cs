@@ -75,6 +75,9 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string SymbolsValidatorSectionName = "SymbolsValidator";
         private const string SymbolsValidationBindingKey = SymbolsValidatorSectionName;
 
+        private const string SymbolsIngesterSectionName = "SymbolsIngester";
+        private const string SymbolsIngesterBindingKey = SymbolsIngesterSectionName;
+
         private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
         private bool _validateOnly;
@@ -107,6 +110,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 Logger.LogInformation("Configuration validation successful");
                 return;
             }
+
             var runner = GetRequiredService<OrchestrationRunner>();
             await runner.RunOrchestrationAsync();
         }
@@ -188,6 +192,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<ScanAndSignEnqueuerConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
 
             services.Configure<SymbolsValidationConfiguration>(configurationRoot.GetSection(SymbolsValidatorSectionName));
+            services.Configure<SymbolsIngesterConfiguration>(configurationRoot.GetSection(SymbolsIngesterSectionName));
 
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
@@ -376,6 +381,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             ConfigureSymbolScanValidator(containerBuilder);
             ConfigureSymbolsValidator(containerBuilder);
+            ConfigureSymbolsIngester(containerBuilder);
 
             return new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -577,6 +583,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IValidationSetProvider<SymbolPackage>, ValidationSetProvider<SymbolPackage>>();
             services.AddTransient<IMessageService<SymbolPackage>, SymbolPackageMessageService>();
             services.AddTransient<IBrokeredMessageSerializer<SymbolsValidatorMessage>, SymbolsValidatorMessageSerializer>();
+            services.AddTransient<ISymbolsValidationEntitiesService, SymbolsValidationEntitiesService>();
         }
 
         private static void ConfigureSymbolsValidator(ContainerBuilder builder)
@@ -607,6 +614,37 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<SymbolsValidator>()
                 .WithKeyedParameter(typeof(IValidatorStateService), SymbolsValidationBindingKey)
                 .WithKeyedParameter(typeof(ISymbolsMessageEnqueuer), SymbolsValidationBindingKey)
+                .AsSelf();
+        }
+
+        private static void ConfigureSymbolsIngester(ContainerBuilder builder)
+        {
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.SymbolsIngester)
+                .Keyed<IValidatorStateService>(SymbolsIngesterBindingKey);
+
+            // Configure the symbols enqueuer
+            builder
+                .Register(c =>
+                {
+                    var configuration = c.Resolve<IOptionsSnapshot<SymbolsIngesterConfiguration>>().Value.ServiceBus;
+                    return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+                })
+                .Keyed<ITopicClient>(SymbolsIngesterBindingKey);
+
+            builder
+                .RegisterType<SymbolsMessageEnqueuer>()
+                .WithKeyedParameter(typeof(ITopicClient), SymbolsIngesterBindingKey)
+                .Keyed<ISymbolsMessageEnqueuer>(SymbolsIngesterBindingKey)
+                .As<ISymbolsMessageEnqueuer>();
+
+            builder
+                .RegisterType<SymbolsIngester>()
+                .WithKeyedParameter(typeof(IValidatorStateService), SymbolsIngesterBindingKey)
+                .WithKeyedParameter(typeof(ISymbolsMessageEnqueuer), SymbolsIngesterBindingKey)
                 .AsSelf();
         }
 
