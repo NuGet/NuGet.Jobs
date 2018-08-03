@@ -32,66 +32,81 @@ namespace StatusAggregator.Parse
             var target = groups[TargetGroupName].Value;
             _logger.LogInformation("Target is {Target}.", target);
 
-            switch (domain)
+            var environment = groups[EnvironmentFilter.EnvironmentGroupName].Value;
+            switch (environment.ToLowerInvariant())
             {
-                case "devnugettest.trafficmanager.net":
-                    switch (target)
+                case "dev":
+                case "test":
+                    switch (domain)
                     {
-                        case "nuget-dev-use2-gallery.cloudapp.net":
-                            affectedComponentPath = ComponentUtility.GetPath(
-                                NuGetServiceComponentFactory.RootName, 
-                                NuGetServiceComponentFactory.GalleryName, 
-                                NuGetServiceComponentFactory.UsncInstanceName);
-                            break;
-                        case "nuget-dev-ussc-gallery.cloudapp.net":
-                            affectedComponentPath = ComponentUtility.GetPath(
-                                NuGetServiceComponentFactory.RootName,
-                                NuGetServiceComponentFactory.GalleryName,
-                                NuGetServiceComponentFactory.UsscInstanceName);
-                            break;
-                        default:
+                        case "devnugettest.trafficmanager.net":
+                            switch (target)
+                            {
+                                case "nuget-dev-use2-gallery.cloudapp.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.GalleryName,
+                                        NuGetServiceComponentFactory.UsncInstanceName);
+                                    break;
+                                case "nuget-dev-ussc-gallery.cloudapp.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.GalleryName,
+                                        NuGetServiceComponentFactory.UsscInstanceName);
+                                    break;
+                                default:
+                                    break;
+                            }
                             break;
                     }
                     break;
-                case "nuget-int-test-failover.trafficmanager.net":
-                    switch (target)
+                case "int":
+                    switch (domain)
                     {
-                        case "nuget-int-0-v2gallery.cloudapp.net":
-                            affectedComponentPath = ComponentUtility.GetPath(
-                                NuGetServiceComponentFactory.RootName,
-                                NuGetServiceComponentFactory.GalleryName,
-                                NuGetServiceComponentFactory.UsncInstanceName);
-                            break;
-                        case "nuget-int-ussc-gallery.cloudapp.net":
-                            affectedComponentPath = ComponentUtility.GetPath(
-                                NuGetServiceComponentFactory.RootName,
-                                NuGetServiceComponentFactory.GalleryName,
-                                NuGetServiceComponentFactory.UsscInstanceName);
-                            break;
-                        default:
+                        case "nuget-int-test-failover.trafficmanager.net":
+                            switch (target)
+                            {
+                                case "nuget-int-0-v2gallery.cloudapp.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.GalleryName,
+                                        NuGetServiceComponentFactory.UsncInstanceName);
+                                    break;
+                                case "nuget-int-ussc-gallery.cloudapp.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.GalleryName,
+                                        NuGetServiceComponentFactory.UsscInstanceName);
+                                    break;
+                                default:
+                                    break;
+                            }
                             break;
                     }
                     break;
-                case "nuget-prod-v2gallery.trafficmanager.net":
-                    switch (target)
+                case "prod":
+                    switch (domain)
                     {
-                        case "nuget-prod-0-v2gallery.cloudapp.net":
-                            affectedComponentPath = ComponentUtility.GetPath(
-                                NuGetServiceComponentFactory.RootName,
-                                NuGetServiceComponentFactory.GalleryName,
-                                NuGetServiceComponentFactory.UsncInstanceName);
-                            break;
-                        case "nuget-prod-ussc-gallery.cloudapp.net":
-                            affectedComponentPath = ComponentUtility.GetPath(
-                                NuGetServiceComponentFactory.RootName,
-                                NuGetServiceComponentFactory.GalleryName,
-                                NuGetServiceComponentFactory.UsscInstanceName);
-                            break;
-                        default:
+                        case "nuget-prod-v2gallery.trafficmanager.net":
+                            switch (target)
+                            {
+                                case "nuget-prod-0-v2gallery.cloudapp.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.GalleryName,
+                                        NuGetServiceComponentFactory.UsncInstanceName);
+                                    break;
+                                case "nuget-prod-ussc-gallery.cloudapp.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.GalleryName,
+                                        NuGetServiceComponentFactory.UsscInstanceName);
+                                    break;
+                                default:
+                                    break;
+                            }
                             break;
                     }
-                    break;
-                default:
                     break;
             }
 
