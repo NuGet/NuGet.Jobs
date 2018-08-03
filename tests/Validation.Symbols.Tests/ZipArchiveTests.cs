@@ -117,7 +117,7 @@ namespace Validation.Symbols.Tests
                 var service = new TestZipArchiveService();
 
                 // Act
-                var result = service.Extract(input, "Dir1", symbolFilter);
+                var result = service.Extract(input, "Dir1", null, symbolFilter);
 
                 // Assert 
                 Assert.Equal(expected.Length, result.Count());
