@@ -58,6 +58,25 @@ namespace StatusAggregator.Parse
                                     break;
                             }
                             break;
+                        case "nugetapidev.trafficmanager.net":
+                            switch (target)
+                            {
+                                case "az635243.vo.msecnd.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.RestoreName,
+                                        NuGetServiceComponentFactory.V3ProtocolName,
+                                        NuGetServiceComponentFactory.GlobalRegionName);
+                                    break;
+                                case "nugetdevcnredirect.trafficmanager.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.RestoreName,
+                                        NuGetServiceComponentFactory.V3ProtocolName,
+                                        NuGetServiceComponentFactory.ChinaRegionName);
+                                    break;
+                            }
+                            break;
                     }
                     break;
                 case "int":
@@ -103,6 +122,25 @@ namespace StatusAggregator.Parse
                                         NuGetServiceComponentFactory.UsscInstanceName);
                                     break;
                                 default:
+                                    break;
+                            }
+                            break;
+                        case "nugetapiprod.trafficmanager.net":
+                            switch (target)
+                            {
+                                case "az320820.vo.msecnd.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.RestoreName,
+                                        NuGetServiceComponentFactory.V3ProtocolName,
+                                        NuGetServiceComponentFactory.GlobalRegionName);
+                                    break;
+                                case "nugetprodcnredirect.trafficmanager.net":
+                                    affectedComponentPath = ComponentUtility.GetPath(
+                                        NuGetServiceComponentFactory.RootName,
+                                        NuGetServiceComponentFactory.RestoreName,
+                                        NuGetServiceComponentFactory.V3ProtocolName,
+                                        NuGetServiceComponentFactory.ChinaRegionName);
                                     break;
                             }
                             break;
