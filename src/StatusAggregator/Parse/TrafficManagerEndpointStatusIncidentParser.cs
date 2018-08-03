@@ -50,7 +50,7 @@ namespace StatusAggregator.Parse
                                 NuGetServiceComponentFactory.UsscInstanceName);
                             break;
                         default:
-                            return false;
+                            break;
                     }
                     break;
                 case "nuget-int-test-failover.trafficmanager.net":
@@ -69,7 +69,7 @@ namespace StatusAggregator.Parse
                                 NuGetServiceComponentFactory.UsscInstanceName);
                             break;
                         default:
-                            return false;
+                            break;
                     }
                     break;
                 case "nuget-prod-v2gallery.trafficmanager.net":
@@ -88,14 +88,14 @@ namespace StatusAggregator.Parse
                                 NuGetServiceComponentFactory.UsscInstanceName);
                             break;
                         default:
-                            return false;
+                            break;
                     }
                     break;
                 default:
-                    return false;
+                    break;
             }
 
-            return true;
+            return affectedComponentPath != null;
         }
 
         protected override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
