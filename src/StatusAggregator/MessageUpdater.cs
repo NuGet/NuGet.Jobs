@@ -64,7 +64,7 @@ namespace StatusAggregator
 
         private bool TryGetContentsForMessageForEventStart(EventEntity eventEntity, out string contents)
         {
-            return TryGetContentsForEventHelper(eventEntity, _messageForEventStartTemplate, out contents);
+            return TryGetContentsForMessageForEventHelper(eventEntity, _messageForEventStartTemplate, out contents);
         }
 
         public async Task CreateMessageForEventEnd(EventEntity eventEntity)
@@ -94,6 +94,43 @@ namespace StatusAggregator
             }
         }
 
+        private const string _messageForEventEndTemplate = "**{0} is no longer {1}.** You should no longer encounter any issues {2}. Thank you for your patience.";
+
+        private bool TryGetContentsForMessageForEventEnd(EventEntity eventEntity, out string contents)
+        {
+            return TryGetContentsForMessageForEventHelper(eventEntity, _messageForEventEndTemplate, out contents);
+        }
+
+        public async Task CreateMessageForEventSeverityIncrease(EventEntity eventEntity, IncidentEntity incidentWithIncreasedSeverity)
+        {
+            using (_logger.Scope("Creating message for severity increase of event."))
+            {
+                if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
+                {
+                    if (TryGetContentsForMessageForEventSeverityIncrease(eventEntity, out var contents))
+                    {
+                        await CreateMessage(eventEntity, incidentWithIncreasedSeverity.CreationTime, contents);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to create message!");
+                    }
+                }
+                else
+                {
+                    // If we haven't told customers about an incident yet and its severity has increased, we should just show the same message as when an event starts.
+                    await CreateMessageForEventStart(eventEntity, incidentWithIncreasedSeverity.CreationTime);
+                }
+            }
+        }
+
+        private const string _messageForEventSeverityIncreaseTemplate = "**{0} is now {1}.** You may encounter issues {2}.";
+
+        private bool TryGetContentsForMessageForEventSeverityIncrease(EventEntity eventEntity, out string contents)
+        {
+            return TryGetContentsForMessageForEventHelper(eventEntity, _messageForEventSeverityIncreaseTemplate, out contents);
+        }
+
         private Task CreateMessage(EventEntity eventEntity, DateTime time, string contents)
         {
             var messageEntity = new MessageEntity(eventEntity, time, contents);
@@ -101,15 +138,8 @@ namespace StatusAggregator
                 messageEntity.Time, messageEntity.Contents);
             return _table.InsertOrReplaceAsync(messageEntity);
         }
-
-        private const string _messageForEventEndTemplate = "**{0} is no longer {1}.** You should no longer encounter any issues {2}. Thank you for your patience.";
-
-        private bool TryGetContentsForMessageForEventEnd(EventEntity eventEntity, out string contents)
-        {
-            return TryGetContentsForEventHelper(eventEntity, _messageForEventEndTemplate, out contents);
-        }
         
-        private bool TryGetContentsForEventHelper(
+        private bool TryGetContentsForMessageForEventHelper(
             EventEntity eventEntity, 
             string messageTemplate,
             out string contents)

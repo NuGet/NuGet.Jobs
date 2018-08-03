@@ -22,5 +22,10 @@ namespace StatusAggregator
         /// Posts a <see cref="MessageEntity"/> for the end of <paramref name="eventEntity"/>.
         /// </summary>
         Task CreateMessageForEventEnd(EventEntity eventEntity);
+
+        /// <summary>
+        /// Posts a <see cref="MessageEntity"/> for when <paramref name="eventEntity"/> increases in severity as the result of linking <paramref name="incidentWithIncreasedSeverity"/> to it.
+        /// </summary>
+        Task CreateMessageForEventSeverityIncrease(EventEntity eventEntity, IncidentEntity incidentWithIncreasedSeverity);
     }
 }

@@ -84,12 +84,7 @@ namespace StatusAggregator
                 incidentEntity.EventRowKey = eventToLinkTo.RowKey;
                 await _table.InsertOrReplaceAsync(incidentEntity);
 
-                if ((int)parsedIncident.AffectedComponentStatus > eventToLinkTo.AffectedComponentStatus)
-                {
-                    _logger.LogInformation("Increasing severity of event '{EventRowKey}' because newly linked incident is more severe than the event.", eventToLinkTo.RowKey);
-                    eventToLinkTo.AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
-                    await _table.InsertOrReplaceAsync(eventToLinkTo);
-                }
+                await _eventUpdater.LinkEventToIncident(eventToLinkTo, incidentEntity);
 
                 return incidentEntity;
             }

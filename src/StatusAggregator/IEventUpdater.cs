@@ -25,5 +25,10 @@ namespace StatusAggregator
         /// <param name="cursor">The current timestamp processed by the job.</param>
         /// <returns>Whether or not <paramref name="eventEntity"/> was deactivated.</returns>
         Task<bool> UpdateEvent(EventEntity eventEntity, DateTime cursor);
+
+        /// <summary>
+        /// Handles linking <paramref name="linkedEvent"/> to <paramref name="linkedIncident"/>.
+        /// </summary>
+        Task LinkEventToIncident(EventEntity linkedEvent, IncidentEntity linkedIncident);
     }
 }

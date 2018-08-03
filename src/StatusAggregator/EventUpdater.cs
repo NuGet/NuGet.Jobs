@@ -93,5 +93,16 @@ namespace StatusAggregator
                 return shouldDeactivate;
             }
         }
+
+        public async Task LinkEventToIncident(EventEntity linkedEvent, IncidentEntity linkedIncident)
+        {
+            // If the linked incident is a higher severity than the linked event, increase the severity of the event.
+            if (linkedIncident.AffectedComponentStatus > linkedEvent.AffectedComponentStatus)
+            {
+                _logger.LogInformation("Increasing severity of event '{EventRowKey}' because newly linked incident is more severe than the event.", linkedEvent.RowKey);
+                linkedEvent.AffectedComponentStatus = linkedIncident.AffectedComponentStatus;
+                await _messageUpdater.CreateMessageForEventSeverityIncrease(linkedEvent, linkedIncident);
+            }
+        }
     }
 }
