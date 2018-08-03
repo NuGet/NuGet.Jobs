@@ -197,6 +197,21 @@ namespace NuGet.Jobs
         }
 
         /// <summary>
+        /// Opens a SqlConnection.
+        /// </summary>
+        public Task<SqlConnection> OpenSqlConnectionAsync<T>()
+            where T : IDbConfiguration
+        {
+            var name = GetDatabaseKey<T>();
+            if (!SqlConnectionFactories.ContainsKey(name))
+            {
+                throw new InvalidOperationException($"Database {name} has not been registered.");
+            }
+
+            return SqlConnectionFactories[name].OpenAsync();
+        }
+
+        /// <summary>
         /// Creates and opens a SqlConnection, for use by non-validation jobs.
         /// </summary>
         public Task<SqlConnection> OpenSqlConnectionAsync(string connectionStringArgName)
