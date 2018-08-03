@@ -77,6 +77,8 @@ namespace NuGet.Jobs
             {
                 Logger.LogError(0, e, "Failed to connect to database {DataSource}/{InitialCatalog}",
                     connectionFactory.DataSource, connectionFactory.InitialCatalog);
+
+                throw;
             }
         }
 
