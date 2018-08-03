@@ -27,119 +27,15 @@ namespace StatusAggregator.Parse
             affectedComponentPath = null;
 
             var domain = groups[DomainGroupName].Value;
-            _logger.LogInformation("Domain is {Domain}.", domain);
-
             var target = groups[TargetGroupName].Value;
-            _logger.LogInformation("Target is {Target}.", target);
-
             var environment = groups[EnvironmentFilter.EnvironmentGroupName].Value;
-            switch (environment.ToLowerInvariant())
+            _logger.LogInformation("Domain is {Domain}, target is {Target}, environment is {Environment}.", domain, target, environment);
+
+            if (EnvironmentToDomainToTargetToPath.TryGetValue(environment, out var domainToTargetToPath) &&
+                domainToTargetToPath.TryGetValue(domain, out var targetToPath) &&
+                targetToPath.TryGetValue(target, out var path))
             {
-                case "dev":
-                case "test":
-                    switch (domain)
-                    {
-                        case "devnugettest.trafficmanager.net":
-                            switch (target)
-                            {
-                                case "nuget-dev-use2-gallery.cloudapp.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.GalleryName,
-                                        NuGetServiceComponentFactory.UsncInstanceName);
-                                    break;
-                                case "nuget-dev-ussc-gallery.cloudapp.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.GalleryName,
-                                        NuGetServiceComponentFactory.UsscInstanceName);
-                                    break;
-                            }
-                            break;
-                        case "nugetapidev.trafficmanager.net":
-                            switch (target)
-                            {
-                                case "az635243.vo.msecnd.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.RestoreName,
-                                        NuGetServiceComponentFactory.V3ProtocolName,
-                                        NuGetServiceComponentFactory.GlobalRegionName);
-                                    break;
-                                case "nugetdevcnredirect.trafficmanager.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.RestoreName,
-                                        NuGetServiceComponentFactory.V3ProtocolName,
-                                        NuGetServiceComponentFactory.ChinaRegionName);
-                                    break;
-                            }
-                            break;
-                    }
-                    break;
-                case "int":
-                    switch (domain)
-                    {
-                        case "nuget-int-test-failover.trafficmanager.net":
-                            switch (target)
-                            {
-                                case "nuget-int-0-v2gallery.cloudapp.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.GalleryName,
-                                        NuGetServiceComponentFactory.UsncInstanceName);
-                                    break;
-                                case "nuget-int-ussc-gallery.cloudapp.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.GalleryName,
-                                        NuGetServiceComponentFactory.UsscInstanceName);
-                                    break;
-                            }
-                            break;
-                    }
-                    break;
-                case "prod":
-                    switch (domain)
-                    {
-                        case "nuget-prod-v2gallery.trafficmanager.net":
-                            switch (target)
-                            {
-                                case "nuget-prod-0-v2gallery.cloudapp.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.GalleryName,
-                                        NuGetServiceComponentFactory.UsncInstanceName);
-                                    break;
-                                case "nuget-prod-ussc-gallery.cloudapp.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.GalleryName,
-                                        NuGetServiceComponentFactory.UsscInstanceName);
-                                    break;
-                            }
-                            break;
-                        case "nugetapiprod.trafficmanager.net":
-                            switch (target)
-                            {
-                                case "az320820.vo.msecnd.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.RestoreName,
-                                        NuGetServiceComponentFactory.V3ProtocolName,
-                                        NuGetServiceComponentFactory.GlobalRegionName);
-                                    break;
-                                case "nugetprodcnredirect.trafficmanager.net":
-                                    affectedComponentPath = ComponentUtility.GetPath(
-                                        NuGetServiceComponentFactory.RootName,
-                                        NuGetServiceComponentFactory.RestoreName,
-                                        NuGetServiceComponentFactory.V3ProtocolName,
-                                        NuGetServiceComponentFactory.ChinaRegionName);
-                                    break;
-                            }
-                            break;
-                    }
-                    break;
+                affectedComponentPath = path;
             }
 
             return affectedComponentPath != null;
@@ -150,5 +46,130 @@ namespace StatusAggregator.Parse
             affectedComponentStatus = ComponentStatus.Down;
             return true;
         }
+
+        private static readonly string GalleryUsncPath =
+            ComponentUtility.GetPath(
+                NuGetServiceComponentFactory.RootName,
+                NuGetServiceComponentFactory.GalleryName,
+                NuGetServiceComponentFactory.UsncInstanceName);
+
+        private static readonly string GalleryUsscPath =
+            ComponentUtility.GetPath(
+                NuGetServiceComponentFactory.RootName,
+                NuGetServiceComponentFactory.GalleryName,
+                NuGetServiceComponentFactory.UsscInstanceName);
+
+        private static readonly string RestoreV3GlobalPath =
+            ComponentUtility.GetPath(
+                NuGetServiceComponentFactory.RootName,
+                NuGetServiceComponentFactory.RestoreName,
+                NuGetServiceComponentFactory.V3ProtocolName,
+                NuGetServiceComponentFactory.GlobalRegionName);
+
+        private static readonly string RestoreV3ChinaPath =
+            ComponentUtility.GetPath(
+                NuGetServiceComponentFactory.RootName,
+                NuGetServiceComponentFactory.RestoreName,
+                NuGetServiceComponentFactory.V3ProtocolName,
+                NuGetServiceComponentFactory.ChinaRegionName);
+
+        private static readonly IDictionary<string, IDictionary<string, string>> DevDomainToTargetToPath =
+            new Dictionary<string, IDictionary<string, string>>
+            {
+                {
+                    "devnugettest.trafficmanager.net",
+                    new Dictionary<string, string>
+                    {
+                        {
+                            "nuget-dev-use2-gallery.cloudapp.net",
+                            GalleryUsncPath
+                        },
+
+                        {
+                            "nuget-dev-ussc-gallery.cloudapp.net",
+                            GalleryUsncPath
+                        }
+                    }
+                },
+
+                {
+                    "nugetapidev.trafficmanager.net",
+                    new Dictionary<string, string>
+                    {
+                        {
+                            "az635243.vo.msecnd.net",
+                            RestoreV3GlobalPath
+                        },
+                        {
+                            "nugetdevcnredirect.trafficmanager.net",
+                            RestoreV3ChinaPath
+                        }
+                    }
+                }
+            };
+
+        private static readonly IDictionary<string, IDictionary<string, string>> IntDomainToTargetToPath =
+            new Dictionary<string, IDictionary<string, string>>
+            {
+                {
+                    "nuget-int-test-failover.trafficmanager.net",
+                    new Dictionary<string, string>
+                    {
+                        {
+                            "nuget-int-0-v2gallery.cloudapp.net",
+                            GalleryUsncPath
+                        },
+
+                        {
+                            "nuget-int-ussc-gallery.cloudapp.net",
+                            GalleryUsncPath
+                        }
+                    }
+                }
+            };
+
+        private static readonly IDictionary<string, IDictionary<string, string>> ProdDomainToTargetToPath =
+            new Dictionary<string, IDictionary<string, string>>
+            {
+                {
+                    "nuget-prod-v2gallery.trafficmanager.net",
+                    new Dictionary<string, string>
+                    {
+                        {
+                            "nuget-prod-0-v2gallery.cloudapp.net",
+                            GalleryUsncPath
+                        },
+
+                        {
+                            "nuget-prod-ussc-gallery.cloudapp.net",
+                            GalleryUsncPath
+                        }
+                    }
+                },
+
+                {
+                    "nugetapiprod.trafficmanager.net",
+                    new Dictionary<string, string>
+                    {
+                        {
+                            "az320820.vo.msecnd.net",
+                            RestoreV3GlobalPath
+                        },
+                        {
+                            "nugetprodcnredirect.trafficmanager.net",
+                            RestoreV3ChinaPath
+                        }
+                    }
+                }
+            };
+
+        private static readonly IDictionary<string, IDictionary<string, IDictionary<string, string>>> EnvironmentToDomainToTargetToPath = 
+            new Dictionary<string, IDictionary<string, IDictionary<string, string>>>
+            {
+                { "dev", DevDomainToTargetToPath },
+                { "test", DevDomainToTargetToPath },
+                { "int", IntDomainToTargetToPath },
+                { "prod", ProdDomainToTargetToPath }
+            };
     }
 }
