@@ -51,9 +51,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="App.config" />
     <None Include="Scripts\*" />
     <None Include="ArchivePackages.nuspec" />
     <None Include="Settings\dev.json" />
