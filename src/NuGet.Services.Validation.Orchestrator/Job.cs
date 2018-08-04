@@ -110,7 +110,6 @@ namespace NuGet.Services.Validation.Orchestrator
                 Logger.LogInformation("Configuration validation successful");
                 return;
             }
-
             var runner = GetRequiredService<OrchestrationRunner>();
             await runner.RunOrchestrationAsync();
         }
@@ -595,7 +594,6 @@ namespace NuGet.Services.Validation.Orchestrator
                     (pi, ctx) => ValidatorName.SymbolsValidator)
                 .Keyed<IValidatorStateService>(SymbolsValidationBindingKey);
 
-            // Configure the symbols enqueuer
             builder
                 .Register(c =>
                 {
@@ -607,6 +605,9 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<SymbolsMessageEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), SymbolsValidationBindingKey)
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(TimeSpan?),
+                    (pi, ctx) => ctx.Resolve<IOptionsSnapshot<SymbolsValidationConfiguration>>().Value.MessageDelay)
                 .Keyed<ISymbolsMessageEnqueuer>(SymbolsValidationBindingKey)
                 .As<ISymbolsMessageEnqueuer>();
 
@@ -626,7 +627,6 @@ namespace NuGet.Services.Validation.Orchestrator
                     (pi, ctx) => ValidatorName.SymbolsIngester)
                 .Keyed<IValidatorStateService>(SymbolsIngesterBindingKey);
 
-            // Configure the symbols enqueuer
             builder
                 .Register(c =>
                 {
@@ -638,6 +638,9 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .RegisterType<SymbolsMessageEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), SymbolsIngesterBindingKey)
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(TimeSpan?),
+                    (pi, ctx) => ctx.Resolve<IOptionsSnapshot<SymbolsIngesterConfiguration>>().Value.MessageDelay)
                 .Keyed<ISymbolsMessageEnqueuer>(SymbolsIngesterBindingKey)
                 .As<ISymbolsMessageEnqueuer>();
 
