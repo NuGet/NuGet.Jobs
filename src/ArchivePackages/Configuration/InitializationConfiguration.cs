@@ -11,7 +11,7 @@ namespace ArchivePackages
         public string Source { get; set; }
 
         /// <summary>
-        /// Source storage container name.
+        /// Source storage container name (defaults to "packages").
         /// </summary>
         public string SourceContainerName { get; set; }
 
@@ -21,28 +21,18 @@ namespace ArchivePackages
         public string PrimaryDestination { get; set; }
 
         /// <summary>
-        /// Secondary archive destination.
+        /// Secondary archive destination (optional).
         /// </summary>
         public string SecondaryDestination { get; set; }
 
         /// <summary>
-        /// Source storage container name.
+        /// Destination storage container name (defaults to "ng-backups").
         /// </summary>
         public string DestinationContainerName { get; set; }
 
         /// <summary>
-        /// Cursor blob name.
+        /// Cursor blob name (defaults to "cursor.json").
         /// </summary>
         public string CursorBlob { get; set; }
-
-        /// <summary>
-        /// Sleep interval between job run iterations.
-        /// </summary>
-        public int Sleep { get; set; }
-
-        /// <summary>
-        /// Application insights instrumentation key.
-        /// </summary>
-        public string InstrumentationKey { get; set; }
     }
 }

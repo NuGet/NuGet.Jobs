@@ -37,9 +37,7 @@ namespace NuGet.Jobs.Validation
         protected override void ConfigureDefaultJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             base.ConfigureDefaultJobServices(services, configurationRoot);
-
-            //services.AddSingleton(new TelemetryClient());
-            //services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
+            
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();

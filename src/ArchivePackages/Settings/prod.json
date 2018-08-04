@@ -8,7 +8,7 @@
   },
 
   "GalleryDb": {
-    "ConnectionString": "Data Source=tcp:amejn8fzzh.database.windows.net;Initial Catalog=NuGetGallery;User ID=$$Prod-GalleryDBReadOnly-UserName$$;Password=$$Prod-GalleryDBReadOnly-Password$$;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    "ConnectionString": "Data Source=tcp:#{Jobs.archivepackages.GalleryDatabaseAddress};Initial Catalog=NuGetGallery;User ID=$$Prod-GalleryDBReadOnly-UserName$$;Password=$$Prod-GalleryDBReadOnly-Password$$;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
   },
 
   "KeyVault_VaultName": "#{Deployment.Azure.KeyVault.VaultName}",

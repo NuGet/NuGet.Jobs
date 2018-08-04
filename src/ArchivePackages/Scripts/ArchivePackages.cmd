@@ -7,7 +7,7 @@ cd bin
 
 	title #{Jobs.archivepackages.Title}
 
-	start /w archivepackages.exe -Configuration "#{Jobs.archivepackages.Configuration}"
+	start /w archivepackages.exe -Configuration "#{Jobs.archivepackages.Configuration}" -Sleep "#{Jobs.archivepackages.Sleep}" -InstrumentationKey "#{Jobs.archivepackages.ApplicationInsightsInstrumentationKey}"
 
 	echo "Finished #{Jobs.archivepackages.Title}"
 
