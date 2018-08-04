@@ -2,9 +2,7 @@
   "Initialization": {
     "Source": "DefaultEndpointsProtocol=https;AccountName=nugetgallery;AccountKey=$$Prod-NuGetGalleryStorage-Key$$",
     "PrimaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetgallery;AccountKey=$$Prod-NuGetGalleryStorage-Key$$",
-    "SecondaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetprod1;AccountKey=$$Prod-NuGetProd1Storage-Key$$",
-    "Sleep": "600000",
-    "InstrumentationKey": "$$Prod-ApplicationInsightsV2Gallery-InstrumentationKey$$"
+    "SecondaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetprod1;AccountKey=$$Prod-NuGetProd1Storage-Key$$"
   },
 
   "GalleryDb": {

@@ -2,9 +2,7 @@
   "Initialization": {
     "Source": "DefaultEndpointsProtocol=https;AccountName=nugetint0;AccountKey=$$Int-NuGetInt0Storage-Key$$",
     "PrimaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetint0;AccountKey=$$Int-NuGetInt0Storage-Key$$",
-    "SecondaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetint1;AccountKey=$$Int-NuGetInt1Storage-Key$$",
-    "Sleep": "600000",
-    "InstrumentationKey": "$$Int-ApplicationInsightsV2Gallery-InstrumentationKey$$"
+    "SecondaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetint1;AccountKey=$$Int-NuGetInt1Storage-Key$$"
   },
 
   "GalleryDb": {

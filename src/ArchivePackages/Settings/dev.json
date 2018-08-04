@@ -2,9 +2,7 @@
   "Initialization": {
     "Source": "DefaultEndpointsProtocol=https;AccountName=nugetdevlegacy;AccountKey=$$Dev-NuGetDevLegacyStorage-Key$$",
     "PrimaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetdevlegacy;AccountKey=$$Dev-NuGetDevLegacyStorage-Key$$",
-    "SecondaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetdev1;AccountKey=$$Dev-NuGetDev1Storage-Key$$",
-    "Sleep": "600000",
-    "InstrumentationKey": "$$Dev-ApplicationInsightsV2Gallery-InstrumentationKey$$"
+    "SecondaryDestination": "DefaultEndpointsProtocol=https;AccountName=nugetdev1;AccountKey=$$Dev-NuGetDev1Storage-Key$$"
   },
 
   "GalleryDb": {
