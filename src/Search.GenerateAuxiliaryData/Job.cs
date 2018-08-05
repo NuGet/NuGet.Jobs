@@ -4,20 +4,21 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using Autofac;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
+using NuGet.Jobs.Configuration;
 using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
 
 namespace Search.GenerateAuxiliaryData
 {
-    internal class Job
-        : JobBase
+    public class Job : JsonConfigurationJob
     {
         private const string DefaultContainerName = "ng-search-data";
 
@@ -43,37 +44,66 @@ namespace Search.GenerateAuxiliaryData
         private CloudBlobContainer _destContainer;
         private CloudBlobContainer _statisticsContainer;
 
+        private InitializationConfiguration Configuration { get; set; }
+
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
+            base.Init(serviceContainer, jobArgsDictionary);
+
+            Configuration = _serviceProvider.GetRequiredService<InitializationConfiguration>();
+
             var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
 
-            var packageDbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase);
-            var packageDbConnectionFactory = new AzureSqlConnectionFactory(packageDbConnectionString, secretInjector);
+            var statisticsStorageAccount = CloudStorageAccount.Parse(Configuration.AzureCdnCloudStorageAccount);
 
-            var statisticsDbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatisticsDatabase);
-            var statisticsDbConnectionFactory = new AzureSqlConnectionFactory(statisticsDbConnectionString, secretInjector);
+            var statisticsReportsContainerName = Configuration.AzureCdnCloudStorageContainerName;
 
-            var statisticsStorageAccount = CloudStorageAccount.Parse(
-                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageAccount));
+            var destination = CloudStorageAccount.Parse(Configuration.PrimaryDestination);
 
-            var statisticsReportsContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageContainerName);
-
-            var destination = CloudStorageAccount.Parse(
-                    JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PrimaryDestination));
-
-            var destinationContainerName =
-                            JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.DestinationContainerName)
-                            ?? DefaultContainerName;
+            var destinationContainerName = Configuration.DestinationContainerName ?? DefaultContainerName;
 
             _destContainer = destination.CreateCloudBlobClient().GetContainerReference(destinationContainerName);
             _statisticsContainer = statisticsStorageAccount.CreateCloudBlobClient().GetContainerReference(statisticsReportsContainerName);
 
             _exportersToRun = new List<Exporter> {
-                new VerifiedPackagesExporter(LoggerFactory.CreateLogger<VerifiedPackagesExporter>(), packageDbConnectionFactory, _destContainer, ScriptVerifiedPackages, OutputNameVerifiedPackages),
-                new NestedJArrayExporter(LoggerFactory.CreateLogger<NestedJArrayExporter>(), packageDbConnectionFactory, _destContainer, ScriptCuratedFeed, OutputNameCuratedFeed, Col0CuratedFeed, Col1CuratedFeed),
-                new NestedJArrayExporter(LoggerFactory.CreateLogger<NestedJArrayExporter>(), packageDbConnectionFactory, _destContainer, ScriptOwners, OutputNameOwners, Col0Owners, Col1Owners),
-                new RankingsExporter(LoggerFactory.CreateLogger<RankingsExporter>(), statisticsDbConnectionFactory, _destContainer, ScriptRankingsTotal, OutputNameRankings),
-                new BlobStorageExporter(LoggerFactory.CreateLogger<BlobStorageExporter>(), _statisticsContainer, StatisticsReportName, _destContainer, StatisticsReportName)
+                new VerifiedPackagesExporter(
+                    LoggerFactory.CreateLogger<VerifiedPackagesExporter>(),
+                    OpenSqlConnectionAsync<GalleryDbConfiguration>,
+                    _destContainer,
+                    ScriptVerifiedPackages,
+                    OutputNameVerifiedPackages),
+
+                new NestedJArrayExporter(
+                    LoggerFactory.CreateLogger<NestedJArrayExporter>(),
+                    OpenSqlConnectionAsync<GalleryDbConfiguration>,
+                    _destContainer,
+                    ScriptCuratedFeed,
+                    OutputNameCuratedFeed,
+                    Col0CuratedFeed,
+                    Col1CuratedFeed),
+
+                new NestedJArrayExporter(
+                    LoggerFactory.CreateLogger<NestedJArrayExporter>(),
+                    OpenSqlConnectionAsync<GalleryDbConfiguration>,
+                    _destContainer,
+                    ScriptOwners,
+                    OutputNameOwners,
+                    Col0Owners,
+                    Col1Owners),
+
+                new RankingsExporter(
+                    LoggerFactory.CreateLogger<RankingsExporter>(),
+                    OpenSqlConnectionAsync<StatisticsDbConfiguration>,
+                    _destContainer,
+                    ScriptRankingsTotal,
+                    OutputNameRankings),
+
+                new BlobStorageExporter(
+                    LoggerFactory.CreateLogger<BlobStorageExporter>(),
+                    _statisticsContainer,
+                    StatisticsReportName,
+                    _destContainer,
+                    StatisticsReportName)
             };
         }
 
@@ -99,6 +129,15 @@ namespace Search.GenerateAuxiliaryData
             {
                 throw new ExporterException($"{failedExporters.Count()} tasks failed: {string.Join(", ", failedExporters)}");
             }
+        }
+
+        protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
+        {
+        }
+
+        protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
+        {
+            ConfigureInitializationSection<InitializationConfiguration>(services, configurationRoot);
         }
     }
 }
