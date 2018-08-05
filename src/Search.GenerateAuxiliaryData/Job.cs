@@ -11,10 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
-using NuGet.Services.KeyVault;
 
 namespace Search.GenerateAuxiliaryData
 {
@@ -41,8 +39,6 @@ namespace Search.GenerateAuxiliaryData
         private const string StatisticsReportName = "downloads.v1.json";
 
         private List<Exporter> _exportersToRun;
-        private CloudBlobContainer _destContainer;
-        private CloudBlobContainer _statisticsContainer;
 
         private InitializationConfiguration Configuration { get; set; }
 
@@ -52,31 +48,26 @@ namespace Search.GenerateAuxiliaryData
 
             Configuration = _serviceProvider.GetRequiredService<InitializationConfiguration>();
 
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
+            var destinationContainer = CloudStorageAccount.Parse(Configuration.PrimaryDestination)
+                .CreateCloudBlobClient()
+                .GetContainerReference(Configuration.DestinationContainerName ?? DefaultContainerName);
 
-            var statisticsStorageAccount = CloudStorageAccount.Parse(Configuration.AzureCdnCloudStorageAccount);
-
-            var statisticsReportsContainerName = Configuration.AzureCdnCloudStorageContainerName;
-
-            var destination = CloudStorageAccount.Parse(Configuration.PrimaryDestination);
-
-            var destinationContainerName = Configuration.DestinationContainerName ?? DefaultContainerName;
-
-            _destContainer = destination.CreateCloudBlobClient().GetContainerReference(destinationContainerName);
-            _statisticsContainer = statisticsStorageAccount.CreateCloudBlobClient().GetContainerReference(statisticsReportsContainerName);
+            var statisticsContainer = CloudStorageAccount.Parse(Configuration.AzureCdnCloudStorageAccount)
+                .CreateCloudBlobClient()
+                .GetContainerReference(Configuration.AzureCdnCloudStorageContainerName);
 
             _exportersToRun = new List<Exporter> {
                 new VerifiedPackagesExporter(
                     LoggerFactory.CreateLogger<VerifiedPackagesExporter>(),
                     OpenSqlConnectionAsync<GalleryDbConfiguration>,
-                    _destContainer,
+                    destinationContainer,
                     ScriptVerifiedPackages,
                     OutputNameVerifiedPackages),
 
                 new NestedJArrayExporter(
                     LoggerFactory.CreateLogger<NestedJArrayExporter>(),
                     OpenSqlConnectionAsync<GalleryDbConfiguration>,
-                    _destContainer,
+                    destinationContainer,
                     ScriptCuratedFeed,
                     OutputNameCuratedFeed,
                     Col0CuratedFeed,
@@ -85,7 +76,7 @@ namespace Search.GenerateAuxiliaryData
                 new NestedJArrayExporter(
                     LoggerFactory.CreateLogger<NestedJArrayExporter>(),
                     OpenSqlConnectionAsync<GalleryDbConfiguration>,
-                    _destContainer,
+                    destinationContainer,
                     ScriptOwners,
                     OutputNameOwners,
                     Col0Owners,
@@ -94,15 +85,15 @@ namespace Search.GenerateAuxiliaryData
                 new RankingsExporter(
                     LoggerFactory.CreateLogger<RankingsExporter>(),
                     OpenSqlConnectionAsync<StatisticsDbConfiguration>,
-                    _destContainer,
+                    destinationContainer,
                     ScriptRankingsTotal,
                     OutputNameRankings),
 
                 new BlobStorageExporter(
                     LoggerFactory.CreateLogger<BlobStorageExporter>(),
-                    _statisticsContainer,
+                    statisticsContainer,
                     StatisticsReportName,
-                    _destContainer,
+                    destinationContainer,
                     StatisticsReportName)
             };
         }

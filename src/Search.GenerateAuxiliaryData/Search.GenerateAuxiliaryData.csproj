@@ -56,18 +56,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="Scripts\Functions.ps1" />
-    <None Include="Scripts\nssm.exe" />
-    <None Include="Scripts\PostDeploy.ps1" />
-    <None Include="Scripts\PreDeploy.ps1" />
-    <None Include="Scripts\Search.GenerateAuxiliaryData.Asia.cmd" />
-    <None Include="Scripts\Search.GenerateAuxiliaryData.cmd" />
+    <None Include="Scripts\*" />
     <None Include="Search.GenerateAuxiliaryData.nuspec" />
-    <None Include="Settings\dev-asia.json" />
-    <None Include="Settings\dev.json" />
-    <None Include="Settings\int.json" />
-    <None Include="Settings\prod-asia.json" />
-    <None Include="Settings\prod.json" />
+    <None Include="Settings\*" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="SqlScripts\CuratedFeed.sql" />
