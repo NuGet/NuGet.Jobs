@@ -9,19 +9,32 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Autofac;
 using Dapper;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using NuGet.Jobs;
-using NuGet.Services.KeyVault;
-using NuGet.Services.Sql;
+using NuGet.Jobs.Configuration;
 
 namespace UpdateLicenseReports
 {
-    internal class Job : JobBase
+    internal class Job : JsonConfigurationJob
     {
-        private const int _defaultRetryCount = 4;
+        private const string LicenseServiceSampleResponseFile = @"TestData\LicenseServiceSampleResponse.json";
+
+        private const int DefaultRetryCount = 4;
+
+        public InitializationConfiguration Configuration { get; set; }
+
+        public Uri LicenseService { get; set; }
+
+        public NetworkCredential LicenseServiceCredentials { get; set; }
+
+        public int RetryCount { get; set; }
+
         private static readonly JSchema _sonatypeSchema = JSchema.Parse(@"{ 'type': 'object',
             'properties': {
                 'next'   : { 'type' : 'string' },
@@ -37,13 +50,6 @@ namespace UpdateLicenseReports
                             'reportUrl' : { 'type' : 'string' },
                             'comment'   : { 'type' : 'string' }
                         } } } } }");
-
-        private Uri _licenseReportService;
-        private string _licenseReportUser;
-        private string _licenseReportPassword;
-        private ISqlConnectionFactory _packageDbConnectionFactory;
-        private int? _retryCount;
-        private NetworkCredential _licenseReportCredentials;
 
         private static PackageLicenseReport CreateReport(JObject messageEvent)
         {
@@ -61,40 +67,20 @@ namespace UpdateLicenseReports
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var secretInjector = (ISecretInjector)serviceContainer.GetService(typeof(ISecretInjector));
-            var dbConnectionString = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.PackageDatabase);
-            _packageDbConnectionFactory = new AzureSqlConnectionFactory(dbConnectionString, secretInjector);
+            base.Init(serviceContainer, jobArgsDictionary);
 
-            var retryCountString = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.RetryCount);
-            if (string.IsNullOrEmpty(retryCountString))
+            Configuration = _serviceProvider.GetRequiredService<InitializationConfiguration>();
+
+            if (!Configuration.Test)
             {
-                _retryCount = _defaultRetryCount;
-            }
-            else
-            {
-                _retryCount = Convert.ToInt32(retryCountString);
+                LicenseService = new Uri(Configuration.LicenseReportService);
+
+                LicenseServiceCredentials = new NetworkCredential(
+                    Configuration.LicenseReportUser ?? string.Empty,
+                    Configuration.LicenseReportPassword ?? string.Empty);
             }
 
-            _licenseReportService = new Uri(JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportService));
-            _licenseReportUser = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportUser);
-            _licenseReportPassword = JobConfigurationManager.TryGetArgument(jobArgsDictionary, JobArgumentNames.LicenseReportPassword);
-
-            // Build credentials
-            if (!string.IsNullOrEmpty(_licenseReportUser))
-            {
-                if (!string.IsNullOrEmpty(_licenseReportPassword))
-                {
-                    _licenseReportCredentials = new NetworkCredential(_licenseReportUser, _licenseReportPassword);
-                }
-                else
-                {
-                    _licenseReportCredentials = new NetworkCredential(_licenseReportUser, string.Empty);
-                }
-            }
-            else if (!string.IsNullOrEmpty(_licenseReportPassword))
-            {
-                _licenseReportCredentials = new NetworkCredential(string.Empty, _licenseReportPassword);
-            }
+            RetryCount = Configuration.RetryCount ?? DefaultRetryCount;
         }
 
         public override async Task Run()
@@ -111,12 +97,12 @@ namespace UpdateLicenseReports
 
         private async Task<Uri> FetchNextReportUrlAsync()
         {
-            Logger.LogInformation("Fetching next report URL from {DataSource}/{InitialCatalog}",
-                _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
-
             Uri nextLicenseReport = null;
-            using (var connection = await _packageDbConnectionFactory.CreateAsync())
+            using (var connection = await OpenSqlConnectionAsync<GalleryDbConfiguration>())
             {
+                Logger.LogInformation("Fetching next report URL from {DataSource}/{InitialCatalog}",
+                    connection.DataSource, connection.Database);
+
                 var nextReportUrl = (await connection.QueryAsync<string>(
                     @"SELECT TOP 1 NextLicenseReport FROM GallerySettings")).SingleOrDefault();
 
@@ -129,29 +115,40 @@ namespace UpdateLicenseReports
                     Logger.LogInformation("Next Report URL '{NextReportUrl}' is invalid. Using default", nextReportUrl);
                 }
 
-                nextLicenseReport = nextLicenseReport ?? _licenseReportService;
-            }
+                nextLicenseReport = nextLicenseReport ?? LicenseService;
 
-            Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from {DataSource}/{InitialCatalog}",
-                (nextLicenseReport == null ? string.Empty : nextLicenseReport.AbsoluteUri),
-                _packageDbConnectionFactory.DataSource, _packageDbConnectionFactory.InitialCatalog);
+                Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from {DataSource}/{InitialCatalog}",
+                    (nextLicenseReport == null ? string.Empty : nextLicenseReport.AbsoluteUri),
+                    connection.DataSource, connection.Database);
+            }
 
             return nextLicenseReport;
         }
+        private Task<string> DownloadNextReportAsync(Uri nextLicenseReport)
+        {
+            return Configuration.Test
+                ? Task.FromResult(GetExampleReportAsync())
+                : DownloadNextReportFromServiceAsync(nextLicenseReport);
+        }
 
-        private async Task<bool> ProcessReportsAsync(Uri nextLicenseReport)
+        private string GetExampleReportAsync()
+        {
+            return File.ReadAllText(LicenseServiceSampleResponseFile);
+        }
+
+        private async Task<string> DownloadNextReportFromServiceAsync(Uri nextLicenseReport)
         {
             HttpWebResponse response = null;
             var tries = 0;
 
             Logger.LogInformation("Downloading license report {ReportUrl}", nextLicenseReport.AbsoluteUri);
 
-            while (tries < _retryCount.Value && response == null)
+            while (tries < RetryCount && response == null)
             {
                 var request = (HttpWebRequest)WebRequest.Create(nextLicenseReport);
-                if (_licenseReportCredentials != null)
+                if (LicenseServiceCredentials != null)
                 {
-                    request.Credentials = _licenseReportCredentials;
+                    request.Credentials = LicenseServiceCredentials;
                 }
 
                 WebException thrown = null;
@@ -166,7 +163,7 @@ namespace UpdateLicenseReports
                     {
                         // Try again in 10 seconds
                         tries++;
-                        if (tries < _retryCount.Value)
+                        if (tries < RetryCount)
                         {
                             thrown = ex;
                         }
@@ -197,67 +194,10 @@ namespace UpdateLicenseReports
                 {
                     Logger.LogInformation("Reading license report {ReportUrl}", nextLicenseReport.AbsoluteUri);
 
-                    string content;
                     using (var reader = new StreamReader(response.GetResponseStream()))
                     {
-                        content = await reader.ReadToEndAsync();
+                        return await reader.ReadToEndAsync();
                     }
-
-                    Logger.LogInformation("Read license report {ReportUrl}", nextLicenseReport.AbsoluteUri);
-
-                    var sonatypeMessage = JObject.Parse(content);
-                    if (!sonatypeMessage.IsValid(_sonatypeSchema))
-                    {
-                        Logger.LogInformation("Invalid license report in {ReportUrl}. {Error}", nextLicenseReport.AbsoluteUri, Strings.UpdateLicenseReportsJob_JsonDoesNotMatchSchema);
-                        return false;
-                    }
-
-                    var events = sonatypeMessage["events"].Cast<JObject>().ToList();
-                    foreach (var messageEvent in events)
-                    {
-                        var report = CreateReport(messageEvent);
-
-                        Logger.LogInformation("Storing license report for {PackageId} {PackageVersion}", report.PackageId, report.Version);
-
-                        if (await StoreReportAsync(report) == -1)
-                        {
-                            Logger.LogInformation("Unable to store report for {PackageId} {PackageVersion}. Package does not exist in database.", report.PackageId, report.Version);
-                        }
-                        else
-                        {
-                            Logger.LogInformation("Stored license report for {PackageId} {PackageVersion}", report.PackageId, report.Version);
-                        }
-                    }
-
-                    // Store the next URL
-                    if (sonatypeMessage["next"].Value<string>().Length > 0)
-                    {
-                        var nextReportUrl = sonatypeMessage["next"].Value<string>();
-                        if (!Uri.TryCreate(nextReportUrl, UriKind.Absolute, out nextLicenseReport))
-                        {
-                            Logger.LogInformation("Invalid next report URL: {NextReportUrl}", nextReportUrl);
-                            return false;
-                        }
-
-                        Logger.LogInformation("Storing next license report URL: {NextReportUrl}", nextLicenseReport.AbsoluteUri);
-
-                        // Record the next report to the database so we can check it again if we get aborted before finishing.
-                        using (var connection = await _packageDbConnectionFactory.CreateAsync())
-                        {
-                            await connection.QueryAsync<int>(@"
-                                        UPDATE GallerySettings
-                                        SET NextLicenseReport = @nextLicenseReport",
-                                new { nextLicenseReport = nextLicenseReport.AbsoluteUri });
-                        }
-
-                        return true; // Continue and read the next report later
-                    }
-                    else
-                    {
-                        nextLicenseReport = null;
-                    }
-
-                    Logger.LogInformation("Processing license report {NextReportUrl}", nextLicenseReport.AbsoluteUri);
                 }
                 else if (response.StatusCode != HttpStatusCode.NoContent)
                 {
@@ -267,14 +207,88 @@ namespace UpdateLicenseReports
                 {
                     Logger.LogInformation("HTTP {StatusCode} error requesting {NextReportUrl}: {StatusDescription}", response.StatusCode, nextLicenseReport.AbsoluteUri, response.StatusDescription);
                 }
+            }
 
+            return null;
+        }
+
+        private async Task<bool> ProcessReportsAsync(Uri nextLicenseReport)
+        {
+            var content = await DownloadNextReportAsync(nextLicenseReport);
+
+            if (content == null)
+            {
                 return false;
             }
+
+            Logger.LogInformation("Read license report {ReportUrl}", nextLicenseReport.AbsoluteUri);
+
+            var sonatypeMessage = JObject.Parse(content);
+            if (!sonatypeMessage.IsValid(_sonatypeSchema))
+            {
+                Logger.LogInformation("Invalid license report in {ReportUrl}. {Error}", nextLicenseReport.AbsoluteUri, Strings.UpdateLicenseReportsJob_JsonDoesNotMatchSchema);
+                return false;
+            }
+
+            var events = sonatypeMessage["events"].Cast<JObject>().ToList();
+            foreach (var messageEvent in events)
+            {
+                var report = CreateReport(messageEvent);
+
+                if (Configuration.Test)
+                {
+                    Logger.LogInformation("Test complete for {PackageId} {PackageVersion}.", report.PackageId, report.Version);
+                    return false;
+                }
+
+                Logger.LogInformation("Storing license report for {PackageId} {PackageVersion}", report.PackageId, report.Version);
+
+                if (await StoreReportAsync(report) == -1)
+                {
+                    Logger.LogInformation("Unable to store report for {PackageId} {PackageVersion}. Package does not exist in database.", report.PackageId, report.Version);
+                }
+                else
+                {
+                    Logger.LogInformation("Stored license report for {PackageId} {PackageVersion}", report.PackageId, report.Version);
+                }
+            }
+
+            // Store the next URL
+            if (sonatypeMessage["next"].Value<string>().Length > 0)
+            {
+                var nextReportUrl = sonatypeMessage["next"].Value<string>();
+                if (!Uri.TryCreate(nextReportUrl, UriKind.Absolute, out nextLicenseReport))
+                {
+                    Logger.LogInformation("Invalid next report URL: {NextReportUrl}", nextReportUrl);
+                    return false;
+                }
+
+                Logger.LogInformation("Storing next license report URL: {NextReportUrl}", nextLicenseReport.AbsoluteUri);
+
+                // Record the next report to the database so we can check it again if we get aborted before finishing.
+                using (var connection = await OpenSqlConnectionAsync<GalleryDbConfiguration>())
+                {
+                    await connection.QueryAsync<int>(@"
+                                UPDATE GallerySettings
+                                SET NextLicenseReport = @nextLicenseReport",
+                        new { nextLicenseReport = nextLicenseReport.AbsoluteUri });
+                }
+
+                return true; // Continue and read the next report later
+            }
+            else
+            {
+                nextLicenseReport = null;
+            }
+
+            Logger.LogInformation("Processing license report {NextReportUrl}", nextLicenseReport.AbsoluteUri);
+
+            return true;
         }
 
         private async Task<int> StoreReportAsync(PackageLicenseReport report)
         {
-            using (var connection = await _packageDbConnectionFactory.CreateAsync())
+            using (var connection = await OpenSqlConnectionAsync<GalleryDbConfiguration>())
             using (var command = connection.CreateCommand())
             {
                 command.CommandText = "AddPackageLicenseReport2";
@@ -299,35 +313,13 @@ namespace UpdateLicenseReports
             }
         }
 
-        private class PackageLicenseReport
+        protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
         {
-            public int Sequence { get; set; }
-
-            public string PackageId { get; set; }
-
-            public string Version { get; set; }
-
-            public string ReportUrl { get; set; }
-
-            public string Comment { get; set; }
-
-            public ICollection<string> Licenses { get; private set; }
-
-            public PackageLicenseReport(int sequence)
-            {
-                Sequence = sequence;
-                PackageId = null;
-                Version = null;
-                ReportUrl = null;
-                Comment = null;
-                Licenses = new LinkedList<string>();
-            }
-
-            public override string ToString()
-            {
-                return string.Format("{{ {0}, {1}, [ {2} ] }}", Sequence, string.Join(", ", PackageId, Version, ReportUrl, Comment), string.Join(", ", Licenses));
-            }
         }
 
+        protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
+        {
+            ConfigureInitializationSection<InitializationConfiguration>(services, configurationRoot);
+        }
     }
 }
