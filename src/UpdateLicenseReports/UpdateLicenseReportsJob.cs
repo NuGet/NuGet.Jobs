@@ -14,6 +14,7 @@ using Dapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using NuGet.Jobs;
@@ -21,13 +22,13 @@ using NuGet.Jobs.Configuration;
 
 namespace UpdateLicenseReports
 {
-    internal class Job : JsonConfigurationJob
+    internal class UpdateLicenseReportsJob : JsonConfigurationJob
     {
         private const string LicenseServiceSampleResponseFile = @"TestData\LicenseServiceSampleResponse.json";
 
         private const int DefaultRetryCount = 4;
 
-        public InitializationConfiguration Configuration { get; set; }
+        public UpdateLicenseReportsConfiguration Configuration { get; set; }
 
         public Uri LicenseService { get; set; }
 
@@ -69,7 +70,7 @@ namespace UpdateLicenseReports
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
-            Configuration = _serviceProvider.GetRequiredService<InitializationConfiguration>();
+            Configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<UpdateLicenseReportsConfiguration>>().Value;
 
             if (!Configuration.Test)
             {
@@ -319,7 +320,7 @@ namespace UpdateLicenseReports
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            ConfigureInitializationSection<InitializationConfiguration>(services, configurationRoot);
+            ConfigureInitializationSection<UpdateLicenseReportsConfiguration>(services, configurationRoot);
         }
     }
 }

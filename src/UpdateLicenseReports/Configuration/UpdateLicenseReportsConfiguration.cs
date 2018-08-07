@@ -3,7 +3,7 @@
 
 namespace UpdateLicenseReports
 {
-    public class InitializationConfiguration
+    public class UpdateLicenseReportsConfiguration
     {
         public string LicenseReportService { get; set; }
 

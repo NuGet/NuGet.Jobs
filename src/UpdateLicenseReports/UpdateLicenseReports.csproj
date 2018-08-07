@@ -46,9 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Configuration\InitializationConfiguration.cs" />
+    <Compile Include="Configuration\UpdateLicenseReportsConfiguration.cs" />
     <Compile Include="PackageLicenseReport.cs" />
-    <Compile Include="UpdateLicenseReports.Job.cs" />
+    <Compile Include="UpdateLicenseReportsJob.cs" />
     <Compile Include="UpdateLicenseReports.Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
