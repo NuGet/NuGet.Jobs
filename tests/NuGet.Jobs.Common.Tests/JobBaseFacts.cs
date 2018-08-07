@@ -56,7 +56,7 @@ namespace NuGet.Jobs.Common.Tests
             }
 
             [Fact]
-            private void DoesNotOverriteRegistrations()
+            private void DoesNotOverwriteRegistrations()
             {
                 // Arrange
                 var job = new TestJob();
