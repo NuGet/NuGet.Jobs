@@ -14,6 +14,7 @@ using Gallery.CredentialExpiration.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGet.Jobs;
@@ -37,7 +38,7 @@ namespace Gallery.CredentialExpiration
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
-            Configuration = _serviceProvider.GetRequiredService<InitializationConfiguration>();
+            Configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<InitializationConfiguration>>().Value;
 
             SmtpClient = CreateSmtpClient(Configuration.SmtpUri);
             
