@@ -22,17 +22,17 @@ namespace Stats.RollUpDownloadFacts
         private const string _startTemplateRecordsDeletion = "Package Dimension ID ";
         private const string _endTemplateFactDownloadDeletion = " records from [dbo].[Fact_Download]";
         private const int DefaultMinAgeInDays = 43;
-        private static int _minAgeInDays;
 
-        public RollUpDownloadFactsConfiguration Configuration { get; set; }
+        private RollUpDownloadFactsConfiguration _configuration;
+        private int _minAgeInDays;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
-            Configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<RollUpDownloadFactsConfiguration>>().Value;
+            _configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<RollUpDownloadFactsConfiguration>>().Value;
 
-            _minAgeInDays = Configuration.MinAgeInDays ?? DefaultMinAgeInDays;
+            _minAgeInDays = _configuration.MinAgeInDays ?? DefaultMinAgeInDays;
             Logger.LogInformation("Min age in days: {MinAgeInDays}", _minAgeInDays);
         }
 
