@@ -28,14 +28,6 @@ namespace UpdateLicenseReports
 
         private const int DefaultRetryCount = 4;
 
-        public UpdateLicenseReportsConfiguration Configuration { get; set; }
-
-        public Uri LicenseService { get; set; }
-
-        public NetworkCredential LicenseServiceCredentials { get; set; }
-
-        public int RetryCount { get; set; }
-
         private static readonly JSchema _sonatypeSchema = JSchema.Parse(@"{ 'type': 'object',
             'properties': {
                 'next'   : { 'type' : 'string' },
@@ -66,22 +58,27 @@ namespace UpdateLicenseReports
             return report;
         }
 
+        private UpdateLicenseReportsConfiguration _configuration;
+        private Uri _licenseService;
+        private NetworkCredential _licenseServiceCredentials;
+        private int _retryCount;
+
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
-            Configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<UpdateLicenseReportsConfiguration>>().Value;
+            _configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<UpdateLicenseReportsConfiguration>>().Value;
 
-            if (!Configuration.Test)
+            if (!_configuration.Test)
             {
-                LicenseService = new Uri(Configuration.LicenseReportService);
+                _licenseService = new Uri(_configuration.LicenseReportService);
 
-                LicenseServiceCredentials = new NetworkCredential(
-                    Configuration.LicenseReportUser ?? string.Empty,
-                    Configuration.LicenseReportPassword ?? string.Empty);
+                _licenseServiceCredentials = new NetworkCredential(
+                    _configuration.LicenseReportUser ?? string.Empty,
+                    _configuration.LicenseReportPassword ?? string.Empty);
             }
 
-            RetryCount = Configuration.RetryCount ?? DefaultRetryCount;
+            _retryCount = _configuration.RetryCount ?? DefaultRetryCount;
         }
 
         public override async Task Run()
@@ -116,7 +113,7 @@ namespace UpdateLicenseReports
                     Logger.LogInformation("Next Report URL '{NextReportUrl}' is invalid. Using default", nextReportUrl);
                 }
 
-                nextLicenseReport = nextLicenseReport ?? LicenseService;
+                nextLicenseReport = nextLicenseReport ?? _licenseService;
 
                 Logger.LogInformation("Fetched next report URL '{NextReportUrl}' from {DataSource}/{InitialCatalog}",
                     (nextLicenseReport == null ? string.Empty : nextLicenseReport.AbsoluteUri),
@@ -127,7 +124,7 @@ namespace UpdateLicenseReports
         }
         private Task<string> DownloadNextReportAsync(Uri nextLicenseReport)
         {
-            return Configuration.Test
+            return _configuration.Test
                 ? Task.FromResult(GetExampleReportAsync())
                 : DownloadNextReportFromServiceAsync(nextLicenseReport);
         }
@@ -144,12 +141,12 @@ namespace UpdateLicenseReports
 
             Logger.LogInformation("Downloading license report {ReportUrl}", nextLicenseReport.AbsoluteUri);
 
-            while (tries < RetryCount && response == null)
+            while (tries < _retryCount && response == null)
             {
                 var request = (HttpWebRequest)WebRequest.Create(nextLicenseReport);
-                if (LicenseServiceCredentials != null)
+                if (_licenseServiceCredentials != null)
                 {
-                    request.Credentials = LicenseServiceCredentials;
+                    request.Credentials = _licenseServiceCredentials;
                 }
 
                 WebException thrown = null;
@@ -164,7 +161,7 @@ namespace UpdateLicenseReports
                     {
                         // Try again in 10 seconds
                         tries++;
-                        if (tries < RetryCount)
+                        if (tries < _retryCount)
                         {
                             thrown = ex;
                         }
@@ -236,7 +233,7 @@ namespace UpdateLicenseReports
             {
                 var report = CreateReport(messageEvent);
 
-                if (Configuration.Test)
+                if (_configuration.Test)
                 {
                     Logger.LogInformation("Test complete for {PackageId} {PackageVersion}.", report.PackageId, report.Version);
                     return false;
