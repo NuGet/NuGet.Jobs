@@ -21,41 +21,38 @@ namespace Stats.ImportAzureCdnStatistics
 {
     public class ImportAzureCdnStatisticsJob : JsonConfigurationJob
     {
-        private ImportAzureCdnStatisticsConfiguration Configuration { get; set; }
-
-        private AzureCdnPlatform AzureCdnPlatform { get; set; }
-
-        public CloudBlobClient CloudBlobClient { get; set; }
-
-        private LogFileProvider BlobLeaseManager { get; set; }
+        private ImportAzureCdnStatisticsConfiguration _configuration;
+        private AzureCdnPlatform _azureCdnPlatform;
+        private CloudBlobClient _cloudBlobClient;
+        private LogFileProvider _blobLeaseManager;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
-            Configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<ImportAzureCdnStatisticsConfiguration>>().Value;
+            _configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<ImportAzureCdnStatisticsConfiguration>>().Value;
 
-            AzureCdnPlatform = ValidateAzureCdnPlatform(Configuration.AzureCdnPlatform);
+            _azureCdnPlatform = ValidateAzureCdnPlatform(_configuration.AzureCdnPlatform);
 
-            var cloudStorageAccount = ValidateAzureCloudStorageAccount(Configuration.AzureCdnCloudStorageAccount);
-            CloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            CloudBlobClient.DefaultRequestOptions.RetryPolicy = new ExponentialRetry(TimeSpan.FromSeconds(10), 5);
+            var cloudStorageAccount = ValidateAzureCloudStorageAccount(_configuration.AzureCdnCloudStorageAccount);
+            _cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
+            _cloudBlobClient.DefaultRequestOptions.RetryPolicy = new ExponentialRetry(TimeSpan.FromSeconds(10), 5);
 
-            BlobLeaseManager = new LogFileProvider(
-                CloudBlobClient.GetContainerReference(Configuration.AzureCdnCloudStorageContainerName),
+            _blobLeaseManager = new LogFileProvider(
+                _cloudBlobClient.GetContainerReference(_configuration.AzureCdnCloudStorageContainerName),
                 LoggerFactory);
         }
 
         public override async Task Run()
         {
             // Get the target blob container (for archiving decompressed log files)
-            var targetBlobContainer = CloudBlobClient.GetContainerReference(
-                Configuration.AzureCdnCloudStorageContainerName + "-archive");
+            var targetBlobContainer = _cloudBlobClient.GetContainerReference(
+                _configuration.AzureCdnCloudStorageContainerName + "-archive");
             await targetBlobContainer.CreateIfNotExistsAsync();
 
             // Get the dead-letter table (corrupted or failed blobs will end up there)
-            var deadLetterBlobContainer = CloudBlobClient.GetContainerReference(
-                Configuration.AzureCdnCloudStorageContainerName + "-deadletter");
+            var deadLetterBlobContainer = _cloudBlobClient.GetContainerReference(
+                _configuration.AzureCdnCloudStorageContainerName + "-deadletter");
             await deadLetterBlobContainer.CreateIfNotExistsAsync();
 
             // Create a parser
@@ -69,28 +66,28 @@ namespace Stats.ImportAzureCdnStatistics
 
             // Get the next to-be-processed raw log file using the cdn raw log file name prefix
             var prefix = string.Format(CultureInfo.InvariantCulture, "{0}_{1}_",
-                AzureCdnPlatform.GetRawLogFilePrefix(),
-                Configuration.AzureCdnAccountNumber);
+                _azureCdnPlatform.GetRawLogFilePrefix(),
+                _configuration.AzureCdnAccountNumber);
 
             // Get next raw log file to be processed
             IReadOnlyCollection<string> alreadyAggregatedLogFiles = null;
-            if (Configuration.AggregatesOnly)
+            if (_configuration.AggregatesOnly)
             {
                 // We only want to process aggregates for the log files.
                 // Get the list of files we already processed so we can skip them.
                 alreadyAggregatedLogFiles = await warehouse.GetAlreadyAggregatedLogFilesAsync();
             }
 
-            var leasedLogFiles = await BlobLeaseManager.LeaseNextLogFilesToBeProcessedAsync(prefix, alreadyAggregatedLogFiles);
+            var leasedLogFiles = await _blobLeaseManager.LeaseNextLogFilesToBeProcessedAsync(prefix, alreadyAggregatedLogFiles);
             foreach (var leasedLogFile in leasedLogFiles)
             {
                 var packageTranslator = new PackageTranslator("packagetranslations.json");
                 var packageStatisticsParser = new PackageStatisticsParser(packageTranslator, LoggerFactory);
-                await logProcessor.ProcessLogFileAsync(leasedLogFile, packageStatisticsParser, Configuration.AggregatesOnly);
+                await logProcessor.ProcessLogFileAsync(leasedLogFile, packageStatisticsParser, _configuration.AggregatesOnly);
 
-                if (Configuration.AggregatesOnly)
+                if (_configuration.AggregatesOnly)
                 {
-                    BlobLeaseManager.TrackLastProcessedBlobUri(leasedLogFile.Uri);
+                    _blobLeaseManager.TrackLastProcessedBlobUri(leasedLogFile.Uri);
                 }
 
                 leasedLogFile.Dispose();
