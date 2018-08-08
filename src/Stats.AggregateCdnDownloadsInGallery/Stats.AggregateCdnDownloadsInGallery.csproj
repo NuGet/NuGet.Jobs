@@ -52,9 +52,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="Scripts\*" />
-    <None Include="Settings\dev.json" />
-    <None Include="Settings\int.json" />
-    <None Include="Settings\prod.json" />
+    <None Include="Settings\*" />
     <None Include="Stats.AggregateCdnDownloadsInGallery.nuspec" />
   </ItemGroup>
   <ItemGroup>
@@ -80,7 +78,6 @@
       <Version>9.0.1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\build\sign.targets" Condition="Exists('..\..\build\sign.targets')" />
 </Project>
