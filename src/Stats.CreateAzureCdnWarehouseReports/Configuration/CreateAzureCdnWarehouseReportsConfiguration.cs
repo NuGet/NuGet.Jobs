@@ -9,7 +9,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
         public string AzureCdnCloudStorageContainerName { get; set; }
 
-        public string DataStorageAcount { get; set; }
+        public string DataStorageAccount { get; set; }
 
         public string DataContainerName { get; set; }
 

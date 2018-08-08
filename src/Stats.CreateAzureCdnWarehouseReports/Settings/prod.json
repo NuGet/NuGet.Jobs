@@ -2,7 +2,7 @@
   "Initialization": {
     "AzureCdnCloudStorageAccount": "DefaultEndpointsProtocol=https;AccountName=nugetgallery;AccountKey=$$Prod-NuGetGalleryStorage-Key$$",
     "AzureCdnCloudStorageContainerName": "nuget-cdnstats",
-    "DataStorageAcount": "DefaultEndpointsProtocol=https;AccountName=nugetprod0;AccountKey=$$Prod-NuGetProd0Storage-Key$$",
+    "DataStorageAccount": "DefaultEndpointsProtocol=https;AccountName=nugetprod0;AccountKey=$$Prod-NuGetProd0Storage-Key$$",
     "DataContainerName": "ng-search-data",
     "CommandTimeOut": "7200",
     "PerPackageReportDegreeOfParallelism": "64"

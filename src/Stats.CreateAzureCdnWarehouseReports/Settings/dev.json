@@ -2,7 +2,7 @@
   "Initialization": {
     "AzureCdnCloudStorageAccount": "DefaultEndpointsProtocol=https;AccountName=nugetdevlegacy;AccountKey=$$Dev-NuGetDevLegacyStorage-Key$$",
     "AzureCdnCloudStorageContainerName": "nuget-cdnstats",
-    "DataStorageAcount": "DefaultEndpointsProtocol=https;AccountName=nugetdev0;AccountKey=$$Dev-NuGetDev0Storage-Key$$",
+    "DataStorageAccount": "DefaultEndpointsProtocol=https;AccountName=nugetdev0;AccountKey=$$Dev-NuGetDev0Storage-Key$$",
     "DataContainerName": "ng-search-data",
     "CommandTimeOut": "7200",
     "PerPackageReportDegreeOfParallelism": "64"

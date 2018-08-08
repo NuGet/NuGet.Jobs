@@ -69,8 +69,8 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 nameof(configuration.AzureCdnCloudStorageContainerName));
 
             _dataStorageAccount = ValidateAzureCloudStorageAccount(
-                configuration.DataStorageAcount,
-                nameof(configuration.DataStorageAcount));
+                configuration.DataStorageAccount,
+                nameof(configuration.DataStorageAccount));
 
             _reportName = ValidateReportName(
                 configuration.ReportName,
