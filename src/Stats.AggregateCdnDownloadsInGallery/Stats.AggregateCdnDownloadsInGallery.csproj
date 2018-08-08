@@ -42,8 +42,9 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\AggregateCdnDownloadsConfiguration.cs" />
     <Compile Include="DownloadCountData.cs" />
-    <Compile Include="Job.cs" />
+    <Compile Include="AggregateCdnDownloadsJob.cs" />
     <Compile Include="PackageRegistrationData.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -51,6 +52,9 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="Scripts\*" />
+    <None Include="Settings\dev.json" />
+    <None Include="Settings\int.json" />
+    <None Include="Settings\prod.json" />
     <None Include="Stats.AggregateCdnDownloadsInGallery.nuspec" />
   </ItemGroup>
   <ItemGroup>
@@ -75,10 +79,8 @@
     <PackageReference Include="Newtonsoft.Json">
       <Version>9.0.1</Version>
     </PackageReference>
-    <PackageReference Include="NuGet.Services.Sql">
-      <Version>2.27.0</Version>
-    </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\build\sign.targets" Condition="Exists('..\..\build\sign.targets')" />
 </Project>
