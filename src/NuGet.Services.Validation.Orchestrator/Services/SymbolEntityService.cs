@@ -63,7 +63,13 @@ namespace NuGet.Services.Validation.Orchestrator
         public List<string> GetOwners(SymbolPackage entity)
         {
             if (entity == null) { throw new ArgumentNullException(nameof(entity)); }
-            return entity.Package.PackageRegistration.Owners.Select(o=>o.Username).ToList();
+            return entity
+                .Package
+                .PackageRegistration
+                .Owners
+                .Select(o=>o.Username)
+                .OrderBy(u => u, StringComparer.InvariantCultureIgnoreCase)
+                .ToList();
         }
     }
 }
