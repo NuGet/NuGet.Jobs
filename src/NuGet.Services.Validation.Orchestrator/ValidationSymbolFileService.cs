@@ -41,8 +41,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             using (var packageStream = await _fileDownloader.DownloadAsync(packageUri, CancellationToken.None))
             {
-                // ToDo: https://github.com/NuGet/NuGetGallery/issues/6251
-                await SavePackageFileAsync(packageFromValidationSet, packageStream);
+                await SavePackageFileAsync(packageFromValidationSet, packageStream, overwrite: true);
             }
         }
 
