@@ -240,7 +240,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                .Returns(new PackageValidatingEntity(_package));
             _packageServiceMock
                 .Setup(p => p.GetOwners(_package))
-                .Returns(_packageRegistration.Owners.Select(u => u.Username).ToList());
+                .Returns(_packageRegistration.Owners.Select(u => u.Username).OrderBy(o=>o, StringComparer.InvariantCultureIgnoreCase).ToList());
 
             var result = await _target.StartAsync(_request);
 
@@ -274,6 +274,9 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             _config.RepositorySigningEnabled = true;
 
             _validationContext.Mock();
+            _packageServiceMock
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
             _packageServiceMock
                 .Setup(p => p.GetOwners(_package))
                 .Returns(_packageRegistrationWithInvalidUser.Owners.Select(u=>u.Username).ToList());
@@ -317,10 +320,12 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                         _request.NupkgUrl,
                         _config.V3ServiceIndexUrl,
                         It.Is<List<string>>(l =>
-                            l.Count() == 2 &&
-                            l.Contains("Billy") &&
-                            l.Contains("Bob"))),
-                    Times.Once);
+                            l.Count() == 4 &&
+                            l.Contains("Zorro") &&
+                            l.Contains("Bob") &&
+                            l.Contains("Annie") &&
+                            l.Contains("zack"))),
+                        Times.Once);
 
             _validatorStateServiceMock
                 .Verify(v => v.TryAddValidatorStatusAsync(_request, _status, ValidationStatus.Incomplete), Times.Once);
@@ -373,6 +378,9 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             });
 
             _packageServiceMock
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
+            _packageServiceMock
                 .Setup(p => p.GetOwners(_package))
                 .Returns(_packageRegistration.Owners.Select(u => u.Username).ToList());
 
@@ -401,6 +409,9 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 }
             });
 
+            _packageServiceMock
+                .Setup(p => p.FindPackageByIdAndVersionStrict(_package.PackageRegistration.Id, _package.Version))
+                .Returns(new PackageValidatingEntity(_package));
             _packageServiceMock
                 .Setup(p => p.GetOwners(_package))
                 .Returns(_packageRegistration.Owners.Select(u=>u.Username).ToList());
