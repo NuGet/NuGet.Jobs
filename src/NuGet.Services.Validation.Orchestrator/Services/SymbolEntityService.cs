@@ -68,6 +68,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .PackageRegistration
                 .Owners
                 .Select(o=>o.Username)
+                .ToList()
                 .OrderBy(u => u, StringComparer.InvariantCultureIgnoreCase)
                 .ToList();
         }
