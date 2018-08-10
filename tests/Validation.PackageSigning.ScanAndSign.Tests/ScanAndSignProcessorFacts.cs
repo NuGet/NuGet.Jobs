@@ -311,9 +311,11 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                         _request.NupkgUrl,
                         _config.V3ServiceIndexUrl,
                         It.Is<List<string>>(l =>
-                            l.Count() == 2 &&
-                            l.Contains("Billy") &&
-                            l.Contains("Bob"))),
+                            l.Count() == 4 &&
+                            l[0] == "Annie" &&
+                            l[1] == "Bob" &&
+                            l[2] == "zack" &&
+                            l[3] == "Zorro")),
                     Times.Once);
 
             _validatorStateServiceMock
