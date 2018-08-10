@@ -39,19 +39,26 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 throw new ArgumentException(nameof(entity));
             }
-            if(newStatus == entity.StatusKey)
+
+            if (newStatus == entity.StatusKey)
             {
                 return;
             }
+
             if (newStatus == PackageStatus.Available)
             {
-                var previousAvailableSymbolPackage = _galleryEntityService.FindSymbolPackagesByIdAndVersion(entity.Package.PackageRegistration.Id, entity.Package.NormalizedVersion).
-                    FirstOrDefault(s => s.StatusKey == PackageStatus.Available);
-                await _galleryEntityService.UpdateStatusAsync(previousAvailableSymbolPackage, PackageStatus.Deleted, false);
+                var previousAvailableSymbolPackage = _galleryEntityService
+                    .FindSymbolPackagesByIdAndVersion(entity.Package.PackageRegistration.Id, entity.Package.NormalizedVersion)
+                    .FirstOrDefault(s => s.StatusKey == PackageStatus.Available);
+
+                if (previousAvailableSymbolPackage != null)
+                {
+                    await _galleryEntityService.UpdateStatusAsync(previousAvailableSymbolPackage, PackageStatus.Deleted, false);
+                }
             }
+
             await _galleryEntityService.UpdateStatusAsync(entity, newStatus, commitChanges);
         }
-
 
         public async Task UpdateMetadataAsync(SymbolPackage entity, object metadata, bool commitChanges = true)
         {
