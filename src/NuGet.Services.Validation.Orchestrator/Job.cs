@@ -154,7 +154,7 @@ namespace NuGet.Services.Validation.Orchestrator
             ConfigureLibraries(services);
             ConfigureJobServices(services, configurationRoot);
 
-            return CreateProvider(services);
+            return CreateProvider(services, configurationRoot);
         }
 
         private void ConfigureLibraries(IServiceCollection services)
@@ -224,8 +224,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IPackageValidationEnqueuer, PackageValidationEnqueuer>();
             services.AddTransient<IValidatorProvider, ValidatorProvider>();
             services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
-            // Only one Orchestrator Message Handler will be registered.
-            ConfigureOrchestratorMessageHandler(services, configurationRoot);
             services.AddTransient<IServiceBusMessageSerializer, ServiceBusMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<PackageValidationMessageData>, PackageValidationMessageDataSerializationAdapter>();
             services.AddTransient<ICriteriaEvaluator<Package>, PackageCriteriaEvaluator>();
@@ -240,6 +238,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 });
             services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();
+            services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
             services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
             services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
             services.AddTransient<IValidationSetProcessor, ValidationSetProcessor>();
@@ -305,12 +304,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 return client;
             });
-
-            ConfigureFileServices(services, configurationRoot);
-            ConfigureOrchestratorSymbolTypes(services);
         }
 
-        private static IServiceProvider CreateProvider(IServiceCollection services)
+        private static IServiceProvider CreateProvider(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             var containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(services);
@@ -373,16 +369,52 @@ namespace NuGet.Services.Validation.Orchestrator
                     IMessageHandler<PackageValidationMessageData>>(
                         OrchestratorBindingKey);
 
+            var validatingType = configurationRoot.GetSection(RunnerConfigurationSectionName).GetValue("ValidatingType", ValidatingType.Package);
+            switch (validatingType)
+            {
+                case ValidatingType.Package:
+                    ConfigureAllThingsPackageOrchestrator(services, containerBuilder);
+                    break;
+                case ValidatingType.SymbolPackage:
+                    ConfigureAllThingsSymbolOrchestrator(services, containerBuilder);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException($"Not known type.{validatingType}");
+            }
+
+            return new AutofacServiceProvider(containerBuilder.Build());
+        }
+
+        private static void ConfigureAllThingsSymbolOrchestrator(IServiceCollection services, ContainerBuilder containerBuilder)
+        {
+            // Configure message handler
+            services.AddTransient<IMessageHandler<PackageValidationMessageData>, SymbolValidationMessageHandler>();
+
+            // Configure file services
+            services.AddTransient<IFileMetadataService, SymbolPackageFileMetadataService>();
+            services.AddTransient<IValidationFileService, ValidationSymbolFileService>();
+
+            // Configure Validators
+            ConfigureOrchestratorSymbolTypes(services);
+            ConfigureSymbolScanValidator(containerBuilder);
+            ConfigureSymbolsValidator(containerBuilder);
+            ConfigureSymbolsIngester(containerBuilder);
+        }
+
+        private static void ConfigureAllThingsPackageOrchestrator(IServiceCollection services, ContainerBuilder containerBuilder)
+        {
+            // Configure message handler
+            services.AddTransient<IMessageHandler<PackageValidationMessageData>, PackageValidationMessageHandler>();
+
+            // Configure file services
+            services.AddTransient<IFileMetadataService, PackageFileMetadataService>();
+            services.AddTransient<IValidationFileService, ValidationFileService>();
+
+            // Configure Validators
             ConfigurePackageSigningValidators(containerBuilder);
             ConfigurePackageCertificatesValidator(containerBuilder);
             ConfigureScanAndSignProcessor(containerBuilder);
             ConfigureScanValidator(containerBuilder);
-
-            ConfigureSymbolScanValidator(containerBuilder);
-            ConfigureSymbolsValidator(containerBuilder);
-            ConfigureSymbolsIngester(containerBuilder);
-
-            return new AutofacServiceProvider(containerBuilder.Build());
         }
 
         private static void ConfigurePackageSigningValidators(ContainerBuilder builder)
@@ -529,46 +561,6 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<ScanValidator>()
                 .WithKeyedParameter(typeof(IValidatorStateService), ScanBindingKey)
                 .AsSelf();
-        }
-
-        private static void ConfigureOrchestratorMessageHandler(IServiceCollection services, IConfigurationRoot configurationRoot)
-        {
-            var validatingType = configurationRoot.GetSection(RunnerConfigurationSectionName).GetValue("ValidatingType", ValidatingType.Package);
-            switch (validatingType)
-            {
-                case ValidatingType.Package:
-                    services.AddTransient<IMessageHandler<PackageValidationMessageData>, PackageValidationMessageHandler>();
-                    break;
-                case ValidatingType.SymbolPackage:
-                    services.AddTransient<IMessageHandler<PackageValidationMessageData>, SymbolValidationMessageHandler>();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException($"Not known type.{validatingType}");
-            }
-        }
-
-        /// <summary>
-        /// Configure the initialization of the File Service.
-        /// </summary>
-        /// <param name="services"></param>
-        /// <param name="configurationRoot"></param>
-        private static void ConfigureFileServices(IServiceCollection services, IConfigurationRoot configurationRoot)
-        {
-            services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
-            var validatingType = configurationRoot.GetSection(RunnerConfigurationSectionName).GetValue("ValidatingType", ValidatingType.Package);
-            switch (validatingType)
-            {
-                case ValidatingType.Package:
-                    services.AddTransient<IFileMetadataService, PackageFileMetadataService>();
-                    services.AddTransient<IValidationFileService, ValidationFileService>();
-                    break;
-                case ValidatingType.SymbolPackage:
-                    services.AddTransient<IFileMetadataService, SymbolPackageFileMetadataService>();
-                    services.AddTransient<IValidationFileService, ValidationSymbolFileService>();
-                    break;
-                default:
-                    throw new NotImplementedException($"Not known type.{validatingType}");
-            }
         }
 
         private static void ConfigureOrchestratorSymbolTypes(IServiceCollection services)
