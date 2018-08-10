@@ -232,7 +232,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             protected readonly Mock<IScanAndSignEnqueuer> _enqueuerMock;
             protected readonly Mock<ISimpleCloudBlobProvider> _blobProvider;
             protected readonly Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _optionsMock;
-            protected readonly Mock<ILogger<PackageScanAndSignProcessor>> _loggerMock;
+            protected readonly Mock<ILogger<ScanAndSignProcessor>> _loggerMock;
             protected readonly ScanAndSignConfiguration _config;
             protected readonly ScanValidator _target;
 
@@ -243,10 +243,10 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 _packageServiceMock = new Mock<ICorePackageService>();
                 _criteriaEvaluatorMock = new Mock<ICriteriaEvaluator<Package>>();
                 _enqueuerMock = new Mock<IScanAndSignEnqueuer>();
-                _loggerMock = new Mock<ILogger<PackageScanAndSignProcessor>>();
+                _loggerMock = new Mock<ILogger<ScanAndSignProcessor>>();
                 _blobProvider = new Mock<ISimpleCloudBlobProvider>();
                 _optionsMock = new Mock<IOptionsSnapshot<ScanAndSignConfiguration>>();
-                _loggerMock = new Mock<ILogger<PackageScanAndSignProcessor>>();
+                _loggerMock = new Mock<ILogger<ScanAndSignProcessor>>();
 
                 _criteriaEvaluatorMock
                     .Setup(ce => ce.IsMatch(It.IsAny<ICriteria>(), It.IsAny<Package>()))

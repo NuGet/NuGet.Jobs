@@ -483,7 +483,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .As<IScanAndSignEnqueuer>();
 
             builder
-                .RegisterType<PackageScanAndSignProcessor>()
+                .RegisterType<ScanAndSignProcessor>()
                 .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
                 .AsSelf();
         }

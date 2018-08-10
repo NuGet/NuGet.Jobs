@@ -54,7 +54,6 @@
     <Compile Include="SymbolMessageService.cs" />
     <Compile Include="Symbols\SymbolCriteriaEvaluator.cs" />
     <Compile Include="Symbols\SymbolScanValidator.cs" />
-    <Compile Include="PackageSigning\ScanAndSign\PackageScanAndSignProcessor.cs" />
     <Compile Include="PackageSigning\Scan\ScanValidator.cs" />
     <Compile Include="Services\IEntityService.cs" />
     <Compile Include="IMessageService.cs" />

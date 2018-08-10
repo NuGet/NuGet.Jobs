@@ -10,36 +10,122 @@ using NuGet.Jobs.Validation.Storage;
 using NuGet.Jobs.Validation.ScanAndSign;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery;
-using System.Collections.Generic;
 using System.Threading.Tasks;
+using System;
+using System.Linq;
 
 namespace NuGet.Services.Validation.Symbols
 {
     [ValidatorName(ValidatorName.SymbolScan)]
-    public class SymbolScanValidator : ScanAndSignProcessor<SymbolPackage>
+    public class SymbolScanValidator : BaseValidator, IValidator
     {
+        private readonly IValidationEntitiesContext _validationContext;
+        private readonly IValidatorStateService _validatorStateService;
+        private readonly ICoreSymbolPackageService _symbolPackageService;
+        private readonly ICriteriaEvaluator<Package> _criteriaEvaluator;
+        private readonly IScanAndSignEnqueuer _scanAndSignEnqueuer;
+        private readonly ScanAndSignConfiguration _configuration;
+        private readonly ILogger<ScanAndSignProcessor> _logger;
+
         public SymbolScanValidator(
             IValidationEntitiesContext validationContext,
             IValidatorStateService validatorStateService,
-            IEntityService<SymbolPackage> galleryService,
-            ICriteriaEvaluator<SymbolPackage> criteriaEvaluator,
+            ICoreSymbolPackageService packageService,
+            ICriteriaEvaluator<Package> criteriaEvaluator,
             IScanAndSignEnqueuer scanAndSignEnqueuer,
-            ISimpleCloudBlobProvider blobProvider,
             IOptionsSnapshot<ScanAndSignConfiguration> configurationAccessor,
-            ILogger<ScanAndSignProcessor<SymbolPackage>> logger) : base (validationContext,
-                validatorStateService,
-                galleryService,
-                criteriaEvaluator,
-                scanAndSignEnqueuer,
-                blobProvider,
-                configurationAccessor,
-                logger)
+            ILogger<ScanAndSignProcessor> logger)
         {
+            _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
+            _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
+            _symbolPackageService = packageService ?? throw new ArgumentNullException(nameof(packageService));
+            _criteriaEvaluator = criteriaEvaluator ?? throw new ArgumentNullException(nameof(criteriaEvaluator));
+            _scanAndSignEnqueuer = scanAndSignEnqueuer ?? throw new ArgumentNullException(nameof(scanAndSignEnqueuer));
+
+            if (configurationAccessor == null)
+            {
+                throw new ArgumentNullException(nameof(configurationAccessor));
+            }
+            if (configurationAccessor.Value == null)
+            {
+                throw new ArgumentException($"{nameof(configurationAccessor.Value)} property is null", nameof(configurationAccessor));
+            }
+            _configuration = configurationAccessor.Value;
+
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            configurationAccessor = configurationAccessor ?? throw new ArgumentNullException(nameof(configurationAccessor));
+
+            if (configurationAccessor.Value == null)
+            {
+                throw new ArgumentException($"{nameof(configurationAccessor.Value)} property is null", nameof(configurationAccessor));
+            }
+
+            _configuration = configurationAccessor.Value;
         }
 
-        public override Task<bool> ShouldRepositorySignAsync(IValidationRequest request, List<string> owners)
+        public async Task<IValidationResult> GetResultAsync(IValidationRequest request)
         {
-            return Task.FromResult(false);
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
+
+            return validatorStatus.ToValidationResult();
+        }
+
+        public async Task<IValidationResult> StartAsync(IValidationRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var validatorStatus = await _validatorStateService.GetStatusAsync(request);
+
+            if (validatorStatus.State != ValidationStatus.NotStarted)
+            {
+                _logger.LogWarning(
+                    "Scan only validation with validation Id {ValidationId} ({PackageId} {PackageVersion}) has already started.",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion);
+
+                return validatorStatus.ToValidationResult();
+            }
+
+            if (ShouldSkipScan(request))
+            {
+                return ValidationResult.Succeeded;
+            }
+
+            await _scanAndSignEnqueuer.EnqueueScanAsync(request.ValidationId, request.NupkgUrl);
+
+            var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
+
+            return result.ToValidationResult();
+        }
+
+        private bool ShouldSkipScan(IValidationRequest request)
+        {
+            var symbolPackage = _symbolPackageService
+                .FindSymbolPackagesByIdAndVersion(request.PackageId,request.PackageVersion)
+                .FirstOrDefault(sp => sp.StatusKey == PackageStatus.Validating);
+
+            if (!_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, symbolPackage.Package))
+            {
+                _logger.LogInformation(
+                    "The scan for {ValidationId} ({PackageId} {PackageVersion}) was skipped due to package criteria configuration.",
+                    request.ValidationId,
+                    request.PackageId,
+                    request.PackageVersion);
+
+                return true;
+            }
+
+            return false;
         }
     }
 }
