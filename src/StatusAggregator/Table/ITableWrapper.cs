@@ -12,10 +12,22 @@ namespace StatusAggregator.Table
     {
         Task CreateIfNotExistsAsync();
 
-        Task<T> Retrieve<T>(string partitionKey, string rowKey) 
+        Task<T> RetrieveAsync<T>(string partitionKey, string rowKey) 
             where T : class, ITableEntity;
 
+        Task InsertAsync(ITableEntity tableEntity);
+
         Task InsertOrReplaceAsync(ITableEntity tableEntity);
+
+        Task ReplaceAsync(ITableEntity tableEntity);
+
+        Task MergeAsync(ITableEntity tableEntity);
+
+        Task DeleteAsync(string partitionKey, string rowKey);
+
+        Task DeleteAsync(string partitionKey, string rowKey, string eTag);
+
+        Task DeleteAsync(ITableEntity tableEntity);
 
         IQueryable<T> CreateQuery<T>() where T : ITableEntity, new();
     }

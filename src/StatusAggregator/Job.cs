@@ -11,6 +11,8 @@ using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
+using NuGet.Services.Status.Table.Manual;
+using StatusAggregator.Manual;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 
@@ -48,9 +50,22 @@ namespace StatusAggregator
             serviceCollection.AddTransient<IIncidentFactory, IncidentFactory>();
             AddParsing(serviceCollection);
             serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
+            AddManualStatusChangeHandling(serviceCollection);
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
             serviceCollection.AddTransient<StatusAggregator>();
+        }
+
+        private static void AddManualStatusChangeHandling(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddTransient<IManualStatusChangeHandler<AddStatusEventManualChangeEntity>, AddStatusEventManualChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeHandler<EditStatusEventManualChangeEntity>, EditStatusEventManualChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeHandler<DeleteStatusEventManualChangeEntity>, DeleteStatusEventManualChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeHandler<AddStatusMessageManualChangeEntity>, AddStatusMessageManualChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeHandler<EditStatusMessageManualChangeEntity>, EditStatusMessageManualChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeHandler<DeleteStatusMessageManualChangeEntity>, DeleteStatusMessageManualChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeHandler, ManualStatusChangeHandler>();
+            serviceCollection.AddTransient<IManualStatusChangeUpdater, ManualStatusChangeUpdater>();
         }
 
         private static void AddParsing(IServiceCollection serviceCollection)
