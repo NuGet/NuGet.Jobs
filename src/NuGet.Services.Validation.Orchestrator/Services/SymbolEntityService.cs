@@ -66,18 +66,5 @@ namespace NuGet.Services.Validation.Orchestrator
             // For each new symbol a new entry will be added to db and the file symbols will be overwriten
             await Task.CompletedTask;
         }
-
-        public List<string> GetOwners(SymbolPackage entity)
-        {
-            if (entity == null) { throw new ArgumentNullException(nameof(entity)); }
-            return entity
-                .Package
-                .PackageRegistration
-                .Owners
-                .Select(o=>o.Username)
-                .ToList()
-                .OrderBy(u => u, StringComparer.InvariantCultureIgnoreCase)
-                .ToList();
-        }
     }
 }

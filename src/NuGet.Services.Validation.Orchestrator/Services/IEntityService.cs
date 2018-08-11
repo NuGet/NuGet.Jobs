@@ -38,12 +38,5 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="commitChanges">True if the changes will be commited to the database.</param>
         /// <returns></returns>
         Task UpdateMetadataAsync(T entity, object metadata, bool commitChanges = true);
-
-        /// <summary>
-        /// Find the the owners of this entity.
-        /// </summary>
-        /// <param name="Entity">The <see cref="NuGetGallery.IEntity"/>The entity to get teh owners for.</param>
-        /// <returns>The list of owners. An empty list if there are not any owners.</returns>
-        List<string> GetOwners(T Entity);
     }
 }

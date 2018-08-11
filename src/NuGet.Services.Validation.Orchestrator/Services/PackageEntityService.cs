@@ -46,17 +46,5 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
             }
         }
-
-        public List<string> GetOwners(Package entity)
-        {
-            if( entity == null) { throw new NullReferenceException(nameof(entity)); }
-            return entity
-                .PackageRegistration
-                .Owners
-                .Select(u => u.Username)
-                .ToList()
-                .OrderBy(u => u, StringComparer.InvariantCultureIgnoreCase)
-                .ToList();
-        }
     }
 }

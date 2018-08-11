@@ -265,61 +265,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
             }
         }
 
-        public class TheGetOwnersMethod : FactsBase
-        {
-            public TheGetOwnersMethod(ITestOutputHelper output) : base(output)
-            {
-            }
-
-            [Fact]
-            public void GetOwnersMethodNullCheck()
-            {
-                // Act + Assert
-                Assert.Throws<ArgumentNullException>(() => _target.GetOwners(null));
-            }
-
-            [Fact]
-            public void GetOwnersReturnOwners()
-            {
-                // Arrange
-                string packageId = "Test";
-                string packageVersion = "1.1.0";
-                int packageKey = 1;
-                List<User> owners = new List<User>()
-                {
-                    new User()
-                    {
-                        Username = "bob"
-                    }
-                };
-
-                Package p = new Package()
-                {
-                    NormalizedVersion = packageVersion,
-                    PackageRegistration = new PackageRegistration()
-                    {
-                        Id = packageId,
-                        Owners = owners
-                    },
-                    Key = packageKey
-                };
-                SymbolPackage s = new SymbolPackage()
-                {
-                    Package = p,
-                    PackageKey = p.Key,
-                    Key = 1,
-                    StatusKey = PackageStatus.Available
-                };
-
-                // Act 
-                var ownersResult = _target.GetOwners(s);
-
-                // Assert
-                Assert.Single(ownersResult);
-                Assert.Equal("bob", ownersResult[0]);
-            }
-        }
-
         public abstract class FactsBase
         {
             protected readonly Mock<ICoreSymbolPackageService> _coreSymbolPackageService;
