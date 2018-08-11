@@ -111,9 +111,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.Null(ex);
 
             CoreMessageServiceMock
-                .Verify(cms => cms.SendPackageAddedNotice(Package, expectedPackageUrl, expectedSupportUrl, ValidSettingsUrl, null), Times.Once());
+                .Verify(cms => cms.SendPackageAddedNotice(Package, expectedPackageUrl, expectedSupportUrl, ValidSettingsUrl), Times.Once());
             CoreMessageServiceMock
-                .Verify(cms => cms.SendPackageAddedNotice(It.IsAny<Package>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>()), Times.Once());
+                .Verify(cms => cms.SendPackageAddedNotice(It.IsAny<Package>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once());
         }
 
         [Fact]

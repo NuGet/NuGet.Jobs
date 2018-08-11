@@ -25,7 +25,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
         {
             protected readonly Mock<IValidationEntitiesContext> _validationContext;
             protected readonly Mock<ICoreSymbolPackageService> _galleryService;
-            protected readonly Mock<ICriteriaEvaluator<Package>> _criteriaEvaluator;
+            protected readonly Mock<ICriteriaEvaluator<SymbolPackage>> _criteriaEvaluator;
             protected readonly Mock<IScanAndSignEnqueuer> _scanAndSignEnqueuer;
             protected readonly Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _configurationAccessor;
             protected readonly Mock<IValidatorStateService> _validatorStateService;
@@ -36,7 +36,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
             {
                 _validationContext = new Mock<IValidationEntitiesContext>();
                 _galleryService = new Mock<ICoreSymbolPackageService>();
-                _criteriaEvaluator = new Mock<ICriteriaEvaluator<Package>>();
+                _criteriaEvaluator = new Mock<ICriteriaEvaluator<SymbolPackage>>();
                 _scanAndSignEnqueuer = new Mock<IScanAndSignEnqueuer>();
                 _configurationAccessor = new Mock<IOptionsSnapshot<ScanAndSignConfiguration>>();
                 _validatorStateService = new Mock<IValidatorStateService>();
