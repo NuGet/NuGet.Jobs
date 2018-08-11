@@ -15,14 +15,18 @@ namespace StatusAggregator.Manual
         private readonly ILogger<ManualStatusChangeUpdater> _logger;
 
         public ManualStatusChangeUpdater(
+            string name,
             ITableWrapper table,
             IManualStatusChangeHandler handler,
             ILogger<ManualStatusChangeUpdater> logger)
         {
+            Name = name;
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
+        public string Name { get; }
 
         public async Task<DateTime?> ProcessNewManualChanges(DateTime cursor)
         {
@@ -44,7 +48,7 @@ namespace StatusAggregator.Manual
                 _logger.LogInformation("Processing {ManualChangesCount} manual status changes.", manualChanges.Count());
                 foreach (var manualChange in manualChanges)
                 {
-                    await _handler.Handle(manualChange);
+                    await _handler.Handle(_table, manualChange);
                 }
 
                 return manualChanges.Any() ? manualChanges.Max(c => c.ChangeTimestamp) : (DateTime?)null;

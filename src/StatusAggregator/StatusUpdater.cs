@@ -5,17 +5,18 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using StatusAggregator.Manual;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace StatusAggregator
 {
     public class StatusUpdater : IStatusUpdater
     {
-        private const string ManualCursorName = "manual";
+        private const string ManualCursorBaseName = "manual";
         private const string IncidentCursorName = "incident";
 
         private readonly ICursor _cursor;
-        private readonly IManualStatusChangeUpdater _manualStatusChangeUpdater;
+        private readonly IEnumerable<IManualStatusChangeUpdater> _manualStatusChangeUpdaters;
         private readonly IIncidentUpdater _incidentUpdater;
         private readonly IEventUpdater _eventUpdater;
 
@@ -23,13 +24,13 @@ namespace StatusAggregator
 
         public StatusUpdater(
             ICursor cursor,
-            IManualStatusChangeUpdater manualStatusChangeUpdater,
+            IEnumerable<IManualStatusChangeUpdater> manualStatusChangeUpdaters,
             IIncidentUpdater incidentUpdater,
             IEventUpdater eventUpdater,
             ILogger<StatusUpdater> logger)
         {
             _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
-            _manualStatusChangeUpdater = manualStatusChangeUpdater ?? throw new ArgumentNullException(nameof(manualStatusChangeUpdater));
+            _manualStatusChangeUpdaters = manualStatusChangeUpdaters ?? throw new ArgumentNullException(nameof(manualStatusChangeUpdaters));
             _incidentUpdater = incidentUpdater ?? throw new ArgumentNullException(nameof(incidentUpdater));
             _eventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -39,7 +40,10 @@ namespace StatusAggregator
         {
             using (_logger.Scope("Updating service status."))
             {
-                await ProcessCursor(ManualCursorName, _manualStatusChangeUpdater.ProcessNewManualChanges);
+                foreach (var manualStatusChangeUpdater in _manualStatusChangeUpdaters)
+                {
+                    await ProcessCursor($"{ManualCursorBaseName}{manualStatusChangeUpdater.Name}", manualStatusChangeUpdater.ProcessNewManualChanges);
+                }
 
                 await ProcessCursor(IncidentCursorName, async (value) =>
                 {
