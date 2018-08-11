@@ -311,6 +311,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                         _request.NupkgUrl,
                         _config.V3ServiceIndexUrl,
                         It.Is<List<string>>(l =>
+                            // Ensure that the owners are lexicographically ordered.
                             l.Count() == 4 &&
                             l[0] == "Annie" &&
                             l[1] == "Bob" &&
