@@ -11,7 +11,7 @@
       },
       {
         "name": "SymbolsValidator",
-        "trackAfter": "00:50:00",
+        "trackAfter": "00:10:00",
         "requiredValidations": [
           "SymbolScan"
         ],
@@ -20,7 +20,7 @@
       },
       {
         "name": "SymbolsIngester",
-        "trackAfter": "00:50:00",
+        "trackAfter": "00:10:00",
         "requiredValidations": [
           "SymbolsValidator"
         ],
