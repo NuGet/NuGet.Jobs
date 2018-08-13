@@ -15,9 +15,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
     {
         public class TheFindPackageByIdAndVersionStrictMethod : FactsBase
         {
-            public TheFindPackageByIdAndVersionStrictMethod(ITestOutputHelper output) : base(output)
-            {
-            }
+            public TheFindPackageByIdAndVersionStrictMethod(ITestOutputHelper output) : base(output) { }
 
             [Fact]
             public void FindPackageByIdAndVersionStrictReturnsTheValidatingSymbolPackage()
