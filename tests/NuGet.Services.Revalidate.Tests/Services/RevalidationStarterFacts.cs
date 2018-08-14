@@ -263,7 +263,6 @@ namespace NuGet.Services.Revalidate.Tests.Services
             }
 
             protected void Setup(
-                bool isInitialized = true,
                 bool isSingleton = true,
                 bool killswitchActive = false,
                 bool isThrottled = false,
@@ -276,7 +275,6 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 bool healthyThrows = false,
                 bool nextThrows = false)
             {
-                _jobState.Setup(s => s.IsInitializedAsync()).ReturnsAsync(isInitialized);
                 _singletonService.Setup(s => s.IsSingletonAsync()).ReturnsAsync(isSingleton);
                 _jobState.Setup(s => s.IsKillswitchActiveAsync()).ReturnsAsync(killswitchActive);
                 _throttler.Setup(t => t.IsThrottledAsync()).ReturnsAsync(isThrottled);
@@ -285,7 +283,6 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
                 var exception = new Exception();
 
-                if (initializedThrows) _jobState.Setup(s => s.IsInitializedAsync()).ThrowsAsync(exception);
                 if (singletonThrows) _singletonService.Setup(s => s.IsSingletonAsync()).ThrowsAsync(exception);
                 if (killswitchThrows) _jobState.Setup(s => s.IsKillswitchActiveAsync()).ThrowsAsync(exception);
                 if (throttledThrows) _throttler.Setup(t => t.IsThrottledAsync()).ThrowsAsync(exception);
