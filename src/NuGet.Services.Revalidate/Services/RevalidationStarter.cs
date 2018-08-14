@@ -5,7 +5,6 @@ using NuGet.Services.Validation;
 
 namespace NuGet.Services.Revalidate
 {
-    // TODO: DI
     public class RevalidationStarter : IRevalidationStarter
     {
         private readonly IRevalidationJobStateService _jobState;
