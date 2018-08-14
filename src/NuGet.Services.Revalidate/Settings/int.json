@@ -26,7 +26,7 @@
 
     "Queue": {
       "MaximumAttempts": 5,
-      "SleepBetweenAttempts": "00:05:00"
+      "SleepBetweenAttempts": "00:00:30"
     }
   },
 
