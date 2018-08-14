@@ -514,7 +514,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             {
                 _logger.LogInformation(
                     "Signed package {PackageId} {PackageVersion} is blocked for validation {ValidationId} since it " +
-                    "is not author signed: {SignatureType}",
+                    "is neither author nor repository signed: {SignatureType}",
                     context.Message.PackageId,
                     context.Message.PackageVersion,
                     context.Message.ValidationId,
