@@ -149,10 +149,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
             protected readonly Mock<ICoreSymbolPackageService> _galleryService;
             protected readonly Mock<ICriteriaEvaluator<SymbolPackage>> _criteriaEvaluatorMock;
             protected readonly Mock<IScanAndSignEnqueuer> _scanAndSignEnqueuer;
-            protected readonly Mock<IOptionsSnapshot<ScanAndSignConfiguration>> _configurationAccessor;
+            protected readonly Mock<IOptionsSnapshot<SymbolScanOnlyConfiguration>> _configurationAccessor;
             protected readonly Mock<IValidatorStateService> _validatorStateServiceMock;
             protected readonly Mock<ILogger<ScanAndSignProcessor>> _loggerMock;
-            protected readonly ScanAndSignConfiguration _config;
+            protected readonly SymbolScanOnlyConfiguration _config;
             protected readonly SymbolScanValidator _target;
 
             public SymbolScanValidatorFactsBase()
@@ -161,15 +161,15 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 _galleryService = new Mock<ICoreSymbolPackageService>();
                 _criteriaEvaluatorMock = new Mock<ICriteriaEvaluator<SymbolPackage>>();
                 _scanAndSignEnqueuer = new Mock<IScanAndSignEnqueuer>();
-                _configurationAccessor = new Mock<IOptionsSnapshot<ScanAndSignConfiguration>>();
+                _configurationAccessor = new Mock<IOptionsSnapshot<SymbolScanOnlyConfiguration>>();
                 _validatorStateServiceMock = new Mock<IValidatorStateService>();
                 _loggerMock = new Mock<ILogger<ScanAndSignProcessor>>();
 
-                _config = new ScanAndSignConfiguration();
+                _config = new SymbolScanOnlyConfiguration();
                 _config.V3ServiceIndexUrl = "http://awesome.v3/service/index.json";
 
                 _configurationAccessor.Setup(o => o.Value).Returns(_config);
-                _configurationAccessor.Setup(c => c.Value).Returns(new ScanAndSignConfiguration());
+                _configurationAccessor.Setup(c => c.Value).Returns(new SymbolScanOnlyConfiguration());
 
                 _target = new SymbolScanValidator(
                     _validationContext.Object,

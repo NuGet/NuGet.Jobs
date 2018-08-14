@@ -73,9 +73,9 @@ namespace NuGet.Services.Validation.Orchestrator
                 message.PackageNormalizedVersion,
                 message.ValidationTrackingId))
             {
-                var package = _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
+                var symbolPackageEntity = _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
 
-                if (package == null)
+                if (symbolPackageEntity == null)
                 {
                     // no package in DB yet. Might have received message a bit early, need to retry later
                     if (message.DeliveryCount - 1 >= _configs.MissingPackageRetryCount)
@@ -102,7 +102,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     }
                 }
 
-                var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message, package);
+                var validationSet = await _validationSetProvider.TryGetOrCreateValidationSetAsync(message, symbolPackageEntity);
 
                 if (validationSet == null)
                 {
@@ -114,8 +114,9 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
 
                 var processorStats = await _validationSetProcessor.ProcessValidationsAsync(validationSet);
-                await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, package, processorStats);
+                await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, symbolPackageEntity, processorStats);
             }
+
             return true;
         }
     }

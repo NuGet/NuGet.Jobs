@@ -5,7 +5,6 @@ using System;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-
     public class OrchestrationRunnerConfiguration
     {
         /// <summary>

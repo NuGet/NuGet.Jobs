@@ -54,6 +54,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageSigningSectionName = "PackageSigning";
         private const string PackageCertificatesSectionName = "PackageCertificates";
         private const string ScanAndSignSectionName = "ScanAndSign";
+        private const string SymbolScanOnlySectionName = "SymbolScanOnly";
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
         private const string GalleryDbConfigurationSectionName = "GalleryDb";
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
@@ -188,6 +189,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<SmtpConfiguration>(configurationRoot.GetSection(SmtpConfigurationSectionName));
             services.Configure<EmailConfiguration>(configurationRoot.GetSection(EmailConfigurationSectionName));
             services.Configure<ScanAndSignConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
+            services.Configure<SymbolScanOnlyConfiguration>(configurationRoot.GetSection(SymbolScanOnlySectionName));
             services.Configure<ScanAndSignEnqueuerConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
 
             services.Configure<SymbolsValidationConfiguration>(configurationRoot.GetSection(SymbolsValidatorSectionName));
@@ -374,7 +376,9 @@ namespace NuGet.Services.Validation.Orchestrator
                         OrchestratorBindingKey);
 
             // Configure Validators
-            var validatingType = configurationRoot.GetSection(RunnerConfigurationSectionName).GetValue("ValidatingType", ValidatingType.Package);
+            var validatingType = configurationRoot
+                .GetSection(RunnerConfigurationSectionName)
+                .GetValue(nameof(OrchestrationRunnerConfiguration.ValidatingType), ValidatingType.Package);
             switch (validatingType)
             {
                 case ValidatingType.Package:
@@ -389,7 +393,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     ConfigureSymbolsIngester(containerBuilder);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException($"Not known type.{validatingType}");
+                    throw new NotImplementedException($"Unknown type: {validatingType}");
             }
 
             return new AutofacServiceProvider(containerBuilder.Build());
@@ -471,7 +475,6 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static void ConfigureScanAndSignProcessor(ContainerBuilder builder)
         {
-
             builder
                 .Register(c =>
                 {
@@ -503,7 +506,7 @@ namespace NuGet.Services.Validation.Orchestrator
             builder
                 .Register(c =>
                 {
-                    var configuration = c.Resolve<IOptionsSnapshot<ScanAndSignConfiguration>>().Value.ServiceBus;
+                    var configuration = c.Resolve<IOptionsSnapshot<SymbolScanOnlyConfiguration>>().Value.ServiceBus;
                     return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
                 })
                 .Keyed<ITopicClient>(SymbolsScanBindingKey);
@@ -543,7 +546,9 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private static void ConfigureOrchestratorMessageHandler(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            var validatingType = configurationRoot.GetSection(RunnerConfigurationSectionName).GetValue("ValidatingType", ValidatingType.Package);
+            var validatingType = configurationRoot
+                .GetSection(RunnerConfigurationSectionName)
+                .GetValue(nameof(OrchestrationRunnerConfiguration.ValidatingType), ValidatingType.Package);
             switch (validatingType)
             {
                 case ValidatingType.Package:
@@ -553,7 +558,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     services.AddTransient<IMessageHandler<PackageValidationMessageData>, SymbolValidationMessageHandler>();
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException($"Not known type.{validatingType}");
+                    throw new NotImplementedException($"Unknown type: {validatingType}");
             }
         }
 
@@ -565,7 +570,9 @@ namespace NuGet.Services.Validation.Orchestrator
         private static void ConfigureFileServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
-            var validatingType = configurationRoot.GetSection(RunnerConfigurationSectionName).GetValue("ValidatingType", ValidatingType.Package);
+            var validatingType = configurationRoot
+                .GetSection(RunnerConfigurationSectionName)
+                .GetValue(nameof(OrchestrationRunnerConfiguration.ValidatingType), ValidatingType.Package);
             switch (validatingType)
             {
                 case ValidatingType.Package:
@@ -577,7 +584,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     services.AddTransient<IValidationFileService, ValidationSymbolFileService>();
                     break;
                 default:
-                    throw new NotImplementedException($"Not known type.{validatingType}");
+                    throw new NotImplementedException($"Unknown type: {validatingType}");
             }
         }
 

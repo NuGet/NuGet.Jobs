@@ -27,7 +27,6 @@ namespace NuGet.Services.Validation.Orchestrator
         protected readonly ILogger<ValidationFileService> _logger;
         protected IFileMetadataService _fileMetadataService;
 
-
         public ValidationFileService(
             ICoreFileStorageService fileStorageService,
             IFileDownloader fileDownloader,
@@ -155,7 +154,6 @@ namespace NuGet.Services.Validation.Orchestrator
             return CopyFileAsync(
                 _fileMetadataService.ValidationFolderName,
                 fileName,
-
                 _fileMetadataService.FileFolderName,
                 fileName,
                 AccessConditionWrapper.GenerateIfNotExistsCondition());

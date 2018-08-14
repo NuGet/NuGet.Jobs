@@ -24,7 +24,7 @@ namespace NuGet.Services.Validation.Symbols
         private readonly ICoreSymbolPackageService _symbolPackageService;
         private readonly ICriteriaEvaluator<SymbolPackage> _criteriaEvaluator;
         private readonly IScanAndSignEnqueuer _scanAndSignEnqueuer;
-        private readonly ScanAndSignConfiguration _configuration;
+        private readonly SymbolScanOnlyConfiguration _configuration;
         private readonly ILogger<ScanAndSignProcessor> _logger;
 
         public SymbolScanValidator(
@@ -33,7 +33,7 @@ namespace NuGet.Services.Validation.Symbols
             ICoreSymbolPackageService packageService,
             ICriteriaEvaluator<SymbolPackage> criteriaEvaluator,
             IScanAndSignEnqueuer scanAndSignEnqueuer,
-            IOptionsSnapshot<ScanAndSignConfiguration> configurationAccessor,
+            IOptionsSnapshot<SymbolScanOnlyConfiguration> configurationAccessor,
             ILogger<ScanAndSignProcessor> logger)
         {
             _validationContext = validationContext ?? throw new ArgumentNullException(nameof(validationContext));
@@ -114,7 +114,7 @@ namespace NuGet.Services.Validation.Symbols
                 .FindSymbolPackagesByIdAndVersion(request.PackageId,request.PackageVersion)
                 .FirstOrDefault(sp => sp.StatusKey == PackageStatus.Validating);
 
-            if (!_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, symbolPackage))
+            if (symbolPackage != null && !_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, symbolPackage))
             {
                 _logger.LogInformation(
                     "The scan for {ValidationId} ({PackageId} {PackageVersion}) was skipped due to package criteria configuration.",

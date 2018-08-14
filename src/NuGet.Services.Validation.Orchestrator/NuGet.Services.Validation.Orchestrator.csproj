@@ -52,6 +52,7 @@
     <Compile Include="Configuration\EmailConfiguration.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="SymbolMessageService.cs" />
+    <Compile Include="Symbols\SymbolScanOnlyConfiguration.cs" />
     <Compile Include="Symbols\SymbolCriteriaEvaluator.cs" />
     <Compile Include="Symbols\SymbolScanValidator.cs" />
     <Compile Include="PackageSigning\Scan\ScanValidator.cs" />

@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NuGetGallery;
@@ -21,15 +20,18 @@ namespace NuGet.Services.Validation.Orchestrator
         }
 
         /// <summary>
-        /// Only the package symbols that are in validating state will be sent to the symbols valiation/ingestion. 
+        /// Only the package symbols that are in validating state will be sent to the symbols validation/ingestion. 
         /// </summary>
         /// <param name="id">The id of the package.</param>
         /// <param name="version">The version of the package.</param>
         /// <returns></returns>
         public IValidatingEntity<SymbolPackage> FindPackageByIdAndVersionStrict(string id, string version)
         {
-            var symbolPackage = _galleryEntityService.FindSymbolPackagesByIdAndVersion(id, version).
-                Where(s => s.StatusKey == PackageStatus.Validating).FirstOrDefault();
+            var symbolPackage = _galleryEntityService
+                .FindSymbolPackagesByIdAndVersion(id, version)
+                .Where(s => s.StatusKey == PackageStatus.Validating)
+                .FirstOrDefault();
+
             return symbolPackage == null ? null : new SymbolPackageValidatingEntity(symbolPackage);
         }
 
@@ -53,7 +55,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 if (previousAvailableSymbolPackage != null)
                 {
-                    await _galleryEntityService.UpdateStatusAsync(previousAvailableSymbolPackage, PackageStatus.Deleted, false);
+                    await _galleryEntityService.UpdateStatusAsync(previousAvailableSymbolPackage, PackageStatus.Deleted, commitChanges: false);
                 }
             }
 
