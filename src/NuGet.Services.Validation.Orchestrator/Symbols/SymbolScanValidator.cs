@@ -13,6 +13,7 @@ using NuGetGallery;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using System.IO;
 
 namespace NuGet.Services.Validation.Symbols
 {
@@ -114,7 +115,12 @@ namespace NuGet.Services.Validation.Symbols
                 .FindSymbolPackagesByIdAndVersion(request.PackageId,request.PackageVersion)
                 .FirstOrDefault(sp => sp.StatusKey == PackageStatus.Validating);
 
-            if (symbolPackage != null && !_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, symbolPackage))
+            if (symbolPackage == null)
+            {
+                throw new InvalidDataException($"The expected symbol package for {request.PackageId} {request.PackageVersion} not found!");
+            }
+
+            if (!_criteriaEvaluator.IsMatch(_configuration.PackageCriteria, symbolPackage))
             {
                 _logger.LogInformation(
                     "The scan for {ValidationId} ({PackageId} {PackageVersion}) was skipped due to package criteria configuration.",

@@ -14,7 +14,7 @@ using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery;
 using Xunit;
-using Tests.ContextHelpers;
+using System.IO;
 
 namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
 {
@@ -119,6 +119,16 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
 
                 Assert.Equal(_status.State, result.Status);
                 Assert.Equal(_status.NupkgUrl, result.NupkgUrl);
+            }
+
+            [Fact]
+            public async Task ThrowsWhenValidatingSymbolPackageNotFound()
+            {
+                _galleryService
+                    .Setup(x => x.FindSymbolPackagesByIdAndVersion(It.IsAny<string>(), It.IsAny<string>()))
+                    .Returns(new List<SymbolPackage>());
+
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await _target.StartAsync(_request));
             }
 
             private ValidationRequest _request;
