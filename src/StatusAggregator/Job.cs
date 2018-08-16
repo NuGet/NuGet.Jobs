@@ -95,8 +95,8 @@ namespace StatusAggregator
         {
             var statusStorageConnectionBuilders = new StatusStorageConnectionBuilder[]
             {
-                new StatusStorageConnectionBuilder(configuration => configuration.StorageAccount, PrimaryStorageAccountKey),
-                new StatusStorageConnectionBuilder(configuration => configuration.StorageAccountSecondary, "Secondary")
+                new StatusStorageConnectionBuilder(PrimaryStorageAccountKey, configuration => configuration.StorageAccount),
+                new StatusStorageConnectionBuilder("Secondary", configuration => configuration.StorageAccountSecondary)
             };
 
             // Add the primary storage to the container as default
@@ -124,6 +124,7 @@ namespace StatusAggregator
                 })
                 .As<CloudBlobContainer>();
 
+            // We need to listen to manual status change updates from the primary storage.
             containerBuilder
                 .RegisterType<ManualStatusChangeUpdater>()
                 .WithParameter(new NamedParameter("name", PrimaryStorageAccountKey))

@@ -47,11 +47,6 @@ namespace StatusAggregator.Table
             return ExecuteOperationAsync(TableOperation.Replace(tableEntity));
         }
 
-        public Task MergeAsync(ITableEntity tableEntity)
-        {
-            return ExecuteOperationAsync(TableOperation.Merge(tableEntity));
-        }
-
         public Task DeleteAsync(string partitionKey, string rowKey)
         {
             return DeleteAsync(partitionKey, rowKey, TableUtility.ETagWildcard);

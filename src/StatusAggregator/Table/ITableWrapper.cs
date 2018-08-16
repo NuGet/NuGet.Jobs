@@ -21,8 +21,6 @@ namespace StatusAggregator.Table
 
         Task ReplaceAsync(ITableEntity tableEntity);
 
-        Task MergeAsync(ITableEntity tableEntity);
-
         Task DeleteAsync(string partitionKey, string rowKey);
 
         Task DeleteAsync(string partitionKey, string rowKey, string eTag);

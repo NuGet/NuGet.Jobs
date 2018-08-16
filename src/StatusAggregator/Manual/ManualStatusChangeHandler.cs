@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -88,6 +91,9 @@ namespace StatusAggregator
             Task GetTask(ITableWrapper table, ManualStatusChangeEntity entity);
         }
 
+        /// <summary>
+        /// Maps a <see cref="ManualStatusChangeEntity"/> to a <see cref="IManualStatusChangeHandler{T}"/>.
+        /// </summary>
         private class ManualStatusChangeProcessor<T> : IManualStatusChangeProcessor
             where T : ManualStatusChangeEntity
         {
