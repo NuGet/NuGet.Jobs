@@ -54,7 +54,8 @@ namespace StatusAggregator.Manual
                     await _handler.Handle(_table, manualChange);
                 }
 
-                return manualChanges.Any() ? manualChanges.Max(c => c.ChangeTimestamp) : (DateTime?)null;
+                var nextCursor = manualChanges.Any() ? manualChanges.Max(c => c.Timestamp) : (DateTimeOffset?)null;
+                return nextCursor?.UtcDateTime;
             }
         }
     }

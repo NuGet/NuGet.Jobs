@@ -89,14 +89,17 @@ namespace StatusAggregator
             serviceCollection.AddTransient<IAggregateIncidentParser, AggregateIncidentParser>();
         }
 
+        private const string StorageAccountNameParameter = "name";
+
         private const string PrimaryStorageAccountKey = "Primary";
+        private const string SecondaryStorageAccountKey = "Primary";
 
         private static void AddStorage(ContainerBuilder containerBuilder)
         {
             var statusStorageConnectionBuilders = new StatusStorageConnectionBuilder[]
             {
                 new StatusStorageConnectionBuilder(PrimaryStorageAccountKey, configuration => configuration.StorageAccount),
-                new StatusStorageConnectionBuilder("Secondary", configuration => configuration.StorageAccountSecondary)
+                new StatusStorageConnectionBuilder(SecondaryStorageAccountKey, configuration => configuration.StorageAccountSecondary)
             };
 
             // Add the primary storage to the container as default
@@ -127,7 +130,7 @@ namespace StatusAggregator
             // We need to listen to manual status change updates from the primary storage.
             containerBuilder
                 .RegisterType<ManualStatusChangeUpdater>()
-                .WithParameter(new NamedParameter("name", PrimaryStorageAccountKey))
+                .WithParameter(new NamedParameter(StorageAccountNameParameter, PrimaryStorageAccountKey))
                 .As<IManualStatusChangeUpdater>();
 
             // Add secondary storages to the container by name
@@ -158,7 +161,7 @@ namespace StatusAggregator
                 // We need to listen to manual status change updates from each storage.
                 containerBuilder
                     .RegisterType<ManualStatusChangeUpdater>()
-                    .WithParameter(new NamedParameter("name", name))
+                    .WithParameter(new NamedParameter(StorageAccountNameParameter, name))
                     .WithParameter(new ResolvedParameter(
                         (pi, ctx) => pi.ParameterType == typeof(ITableWrapper),
                         (pi, ctx) => ctx.ResolveNamed<ITableWrapper>(name)))

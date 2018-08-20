@@ -14,7 +14,7 @@ namespace StatusAggregator
 {
     public class ManualStatusChangeHandler : IManualStatusChangeHandler
     {
-        private IDictionary<ManualStatusChangeType, IManualStatusChangeProcessor> _processorForType;
+        private readonly IDictionary<ManualStatusChangeType, IManualStatusChangeProcessor> _processorForType;
 
         private readonly ILogger<ManualStatusChangeHandler> _logger;
 
@@ -33,39 +33,45 @@ namespace StatusAggregator
             {
                 {
                     ManualStatusChangeType.AddStatusEvent,
-                    new ManualStatusChangeProcessor<AddStatusEventManualChangeEntity>(addStatusEventManualChangeHandler)
+                    new ManualStatusChangeProcessor<AddStatusEventManualChangeEntity>(
+                        addStatusEventManualChangeHandler ?? throw new ArgumentNullException(nameof(addStatusEventManualChangeHandler)))
                 },
 
                 {
                     ManualStatusChangeType.EditStatusEvent,
-                    new ManualStatusChangeProcessor<EditStatusEventManualChangeEntity>(editStatusEventManualChangeHandler)
+                    new ManualStatusChangeProcessor<EditStatusEventManualChangeEntity>(
+                        editStatusEventManualChangeHandler ?? throw new ArgumentNullException(nameof(editStatusEventManualChangeHandler)))
                 },
 
                 {
                     ManualStatusChangeType.DeleteStatusEvent,
-                    new ManualStatusChangeProcessor<DeleteStatusEventManualChangeEntity>(deleteStatusEventManualChangeHandler)
+                    new ManualStatusChangeProcessor<DeleteStatusEventManualChangeEntity>(
+                        deleteStatusEventManualChangeHandler ?? throw new ArgumentNullException(nameof(deleteStatusEventManualChangeHandler)))
                 },
 
                 {
                     ManualStatusChangeType.AddStatusMessage,
-                    new ManualStatusChangeProcessor<AddStatusMessageManualChangeEntity>(addStatusMessageManualChangeHandler)
+                    new ManualStatusChangeProcessor<AddStatusMessageManualChangeEntity>(
+                        addStatusMessageManualChangeHandler ?? throw new ArgumentNullException(nameof(addStatusMessageManualChangeHandler)))
                 },
 
                 {
                     ManualStatusChangeType.EditStatusMessage,
-                    new ManualStatusChangeProcessor<EditStatusMessageManualChangeEntity>(editStatusMessageManualChangeHandler)
+                    new ManualStatusChangeProcessor<EditStatusMessageManualChangeEntity>(
+                        editStatusMessageManualChangeHandler ?? throw new ArgumentNullException(nameof(editStatusMessageManualChangeHandler)))
                 },
 
                 {
                     ManualStatusChangeType.DeleteStatusMessage,
-                    new ManualStatusChangeProcessor<DeleteStatusMessageManualChangeEntity>(deleteStatusMessageManualChangeHandler)
+                    new ManualStatusChangeProcessor<DeleteStatusMessageManualChangeEntity>(
+                        deleteStatusMessageManualChangeHandler ?? throw new ArgumentNullException(nameof(deleteStatusMessageManualChangeHandler)))
                 }
             };
         }
 
         public async Task Handle(ITableWrapper table, ManualStatusChangeEntity entity)
         {
-            using (_logger.Scope("Handling manual status change at timestamp {ChangeTimestamp} with type {ChangeType}", entity.ChangeTimestamp, entity.Type.ToString()))
+            using (_logger.Scope("Handling manual status change at timestamp {ChangeTimestamp} with type {ChangeType}", entity.Timestamp, entity.Type))
             {
                 try
                 {
@@ -76,7 +82,7 @@ namespace StatusAggregator
                     }
                     else
                     {
-                        throw new ArgumentException("Invalid change type! Cannot process manual status change!", nameof(entity));
+                        throw new ArgumentException("Invalid change type {ChangeType}! Cannot process manual status change!");
                     }
                 }
                 catch (Exception e)

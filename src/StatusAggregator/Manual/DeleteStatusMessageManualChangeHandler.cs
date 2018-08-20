@@ -10,14 +10,12 @@ namespace StatusAggregator.Manual
     public class DeleteStatusMessageManualChangeHandler : IManualStatusChangeHandler<DeleteStatusMessageManualChangeEntity>
     {
         private readonly ITableWrapper _table;
-        private readonly ILogger<DeleteStatusMessageManualChangeHandler> _logger;
 
         public DeleteStatusMessageManualChangeHandler(
             ITableWrapper table,
             ILogger<DeleteStatusMessageManualChangeHandler> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public Task Handle(DeleteStatusMessageManualChangeEntity entity)

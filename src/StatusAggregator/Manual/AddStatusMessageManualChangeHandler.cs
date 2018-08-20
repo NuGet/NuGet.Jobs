@@ -10,14 +10,12 @@ namespace StatusAggregator.Manual
     public class AddStatusMessageManualChangeHandler : IManualStatusChangeHandler<AddStatusMessageManualChangeEntity>
     {
         private readonly ITableWrapper _table;
-        private readonly ILogger<AddStatusMessageManualChangeEntity> _logger;
 
         public AddStatusMessageManualChangeHandler(
             ITableWrapper table,
             ILogger<AddStatusMessageManualChangeEntity> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task Handle(AddStatusMessageManualChangeEntity entity)
