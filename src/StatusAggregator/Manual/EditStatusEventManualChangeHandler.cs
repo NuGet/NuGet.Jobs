@@ -26,7 +26,7 @@ namespace StatusAggregator.Manual
             var eventRowKey = EventEntity.GetRowKey(entity.EventAffectedComponentPath, entity.EventStartTime);
             var eventEntity = await _table.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey);
             eventEntity.AffectedComponentStatus = entity.EventAffectedComponentStatus;
-            ManualStatusChangeUtility.UpdateEventIsActive(eventEntity, entity.EventIsActive, entity.ChangeTimestamp);
+            ManualStatusChangeUtility.UpdateEventIsActive(eventEntity, entity.EventIsActive, entity.Timestamp.UtcDateTime);
 
             await _table.ReplaceAsync(eventEntity);
         }

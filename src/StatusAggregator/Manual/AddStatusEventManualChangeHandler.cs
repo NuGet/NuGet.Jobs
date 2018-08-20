@@ -23,7 +23,7 @@ namespace StatusAggregator.Manual
 
         public async Task Handle(AddStatusEventManualChangeEntity entity)
         {
-            var time = entity.ChangeTimestamp;
+            var time = entity.Timestamp.UtcDateTime;
 
             var eventEntity = new EventEntity(
                 entity.EventAffectedComponentPath ?? throw new ArgumentNullException($"{nameof(entity)}.{nameof(entity.EventAffectedComponentPath)}"),
