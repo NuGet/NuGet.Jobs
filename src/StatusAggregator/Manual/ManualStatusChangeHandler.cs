@@ -71,7 +71,7 @@ namespace StatusAggregator
 
         public async Task Handle(ITableWrapper table, ManualStatusChangeEntity entity)
         {
-            using (_logger.Scope("Handling manual status change at timestamp {ChangeTimestamp} with type {ChangeType}", entity.Timestamp, entity.Type))
+            using (_logger.Scope("Handling manual status change at timestamp {ChangeTimestamp} with type {ChangeType}", entity.Timestamp, entity.Type.ToString()))
             {
                 try
                 {
