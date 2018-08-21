@@ -43,7 +43,7 @@ namespace StatusAggregator.Manual
                 // If we are fetching manual changes for the first time, don't filter on the timestamp.
                 if (cursor > DateTime.MinValue)
                 {
-                    manualChangesQuery = manualChangesQuery.Where(c => c.Timestamp.UtcDateTime > cursor);
+                    manualChangesQuery = manualChangesQuery.Where(c => c.Timestamp > new DateTimeOffset(cursor, TimeSpan.Zero));
                 }
                 
                 var manualChanges = manualChangesQuery.ToList();

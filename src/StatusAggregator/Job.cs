@@ -91,55 +91,27 @@ namespace StatusAggregator
 
         private const string StorageAccountNameParameter = "name";
 
-        private const string PrimaryStorageAccountKey = "Primary";
-        private const string SecondaryStorageAccountKey = "Primary";
+        private const string PrimaryStorageAccountName = "Primary";
+        private const string SecondaryStorageAccountName = "Secondary";
 
         private static void AddStorage(ContainerBuilder containerBuilder)
         {
             var statusStorageConnectionBuilders = new StatusStorageConnectionBuilder[]
             {
-                new StatusStorageConnectionBuilder(PrimaryStorageAccountKey, configuration => configuration.StorageAccount),
-                new StatusStorageConnectionBuilder(SecondaryStorageAccountKey, configuration => configuration.StorageAccountSecondary)
+                new StatusStorageConnectionBuilder(PrimaryStorageAccountName, configuration => configuration.StorageAccount),
+                new StatusStorageConnectionBuilder(SecondaryStorageAccountName, configuration => configuration.StorageAccountSecondary)
             };
-
-            // Add the primary storage to the container as default
-            containerBuilder
-                .Register(ctx =>
-                {
-                    var statusStorageConnectionBuilder = statusStorageConnectionBuilders.Single(b => b.Name == PrimaryStorageAccountKey);
-                    return GetCloudStorageAccount(ctx, statusStorageConnectionBuilder);
-                })
-                .As<CloudStorageAccount>();
-
-            containerBuilder
-                .Register(ctx =>
-                {
-                    var storageAccount = ctx.Resolve<CloudStorageAccount>();
-                    return GetTableWrapper(ctx, storageAccount);
-                })
-                .As<ITableWrapper>();
-
-            containerBuilder
-                .Register(ctx =>
-                {
-                    var storageAccount = ctx.Resolve<CloudStorageAccount>();
-                    return GetCloudBlobContainer(ctx, storageAccount);
-                })
-                .As<CloudBlobContainer>();
-
-            // We need to listen to manual status change updates from the primary storage.
-            containerBuilder
-                .RegisterType<ManualStatusChangeUpdater>()
-                .WithParameter(new NamedParameter(StorageAccountNameParameter, PrimaryStorageAccountKey))
-                .As<IManualStatusChangeUpdater>();
-
-            // Add secondary storages to the container by name
-            foreach (var statusStorageConnectionBuilder in statusStorageConnectionBuilders.Where(b => b.Name != PrimaryStorageAccountKey))
+            
+            // Add all storages to the container by name.
+            foreach (var statusStorageConnectionBuilder in 
+                // Register the primary storage last, so it will be the default and will be used unless a specific storage is referenced.
+                statusStorageConnectionBuilders.OrderBy(b => b.Name == PrimaryStorageAccountName))
             {
                 var name = statusStorageConnectionBuilder.Name;
                 
                 containerBuilder
                     .Register(ctx => GetCloudStorageAccount(ctx, statusStorageConnectionBuilder))
+                    .As<CloudStorageAccount>()
                     .Named<CloudStorageAccount>(name);
 
                 containerBuilder
@@ -148,6 +120,7 @@ namespace StatusAggregator
                         var storageAccount = ctx.ResolveNamed<CloudStorageAccount>(name);
                         return GetTableWrapper(ctx, storageAccount);
                     })
+                    .As<ITableWrapper>()
                     .Named<ITableWrapper>(name);
 
                 containerBuilder
@@ -156,6 +129,7 @@ namespace StatusAggregator
                         var storageAccount = ctx.ResolveNamed<CloudStorageAccount>(name);
                         return GetCloudBlobContainer(ctx, storageAccount);
                     })
+                    .As<CloudBlobContainer>()
                     .Named<CloudBlobContainer>(name);
 
                 // We need to listen to manual status change updates from each storage.
@@ -165,7 +139,8 @@ namespace StatusAggregator
                     .WithParameter(new ResolvedParameter(
                         (pi, ctx) => pi.ParameterType == typeof(ITableWrapper),
                         (pi, ctx) => ctx.ResolveNamed<ITableWrapper>(name)))
-                    .As<IManualStatusChangeUpdater>();
+                    .As<IManualStatusChangeUpdater>()
+                    .Named<IManualStatusChangeUpdater>(name);
             }
         }
 
