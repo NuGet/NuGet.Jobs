@@ -25,8 +25,8 @@ namespace StatusAggregator
             string name,
             Func<StatusAggregatorConfiguration, string> getConnectionString)
         {
-            Name = name;
-            GetConnectionString = getConnectionString;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            GetConnectionString = getConnectionString ?? throw new ArgumentNullException(nameof(getConnectionString));
         }
     }
 }
