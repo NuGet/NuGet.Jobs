@@ -118,13 +118,13 @@
       <Version>1.1.1</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Incidents">
-      <Version>2.28.0-sb-tablegeo-38564</Version>
+      <Version>2.28.0-master-38796</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status">
-      <Version>2.28.0-sb-tablegeo-38564</Version>
+      <Version>2.28.0-master-38796</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status.Table">
-      <Version>2.28.0-sb-tablegeo-38564</Version>
+      <Version>2.28.0-master-38796</Version>
     </PackageReference>
     <PackageReference Include="WindowsAzure.Storage">
       <Version>9.2.0</Version>
