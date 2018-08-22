@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.Extensions.Logging;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Table;
@@ -15,8 +14,7 @@ namespace StatusAggregator.Manual
         private readonly ITableWrapper _table;
 
         public AddStatusEventManualChangeHandler(
-            ITableWrapper table,
-            ILogger<AddStatusEventManualChangeHandler> logger)
+            ITableWrapper table)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
         }
@@ -26,7 +24,7 @@ namespace StatusAggregator.Manual
             var time = entity.Timestamp.UtcDateTime;
 
             var eventEntity = new EventEntity(
-                entity.EventAffectedComponentPath ?? throw new ArgumentNullException($"{nameof(entity)}.{nameof(entity.EventAffectedComponentPath)}"),
+                entity.EventAffectedComponentPath,
                 entity.EventAffectedComponentStatus,
                 time,
                 entity.EventIsActive ? (DateTime?)null : time);
@@ -34,7 +32,7 @@ namespace StatusAggregator.Manual
             var messageEntity = new MessageEntity(
                 eventEntity,
                 time,
-                entity.MessageContents ?? throw new ArgumentNullException($"{nameof(entity)}.{nameof(entity.MessageContents)}"));
+                entity.MessageContents);
 
             await _table.InsertAsync(messageEntity);
             await _table.InsertAsync(eventEntity);

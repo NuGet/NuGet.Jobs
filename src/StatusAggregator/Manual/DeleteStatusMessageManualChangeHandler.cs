@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.Extensions.Logging;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Table;
@@ -15,8 +14,7 @@ namespace StatusAggregator.Manual
         private readonly ITableWrapper _table;
 
         public DeleteStatusMessageManualChangeHandler(
-            ITableWrapper table,
-            ILogger<DeleteStatusMessageManualChangeHandler> logger)
+            ITableWrapper table)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
         }
