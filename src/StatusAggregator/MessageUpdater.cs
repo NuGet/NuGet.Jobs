@@ -51,6 +51,10 @@ namespace StatusAggregator
 
                 var incidentsLinkedToEventQuery = _table.GetIncidentsLinkedToEvent(eventEntity);
 
+                // We are querying twice here because table storage ignores rows where a column specified by a query is null.
+                // MitigationTime is null when IsActive is true.
+                // If we do not query separately here, rows where IsActive is true will be ignored in query results.
+
                 var hasCurrentlyActiveIncidents = incidentsLinkedToEventQuery
                     .Where(i => i.IsActive)
                     .ToList()
