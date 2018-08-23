@@ -49,6 +49,28 @@ namespace StatusAggregator
                     return;
                 }
 
+                var incidentsLinkedToEventQuery = _table.GetIncidentsLinkedToEvent(eventEntity);
+
+                var hasCurrentlyActiveIncidents = incidentsLinkedToEventQuery
+                    .Where(i => i.IsActive)
+                    .ToList()
+                    .Any();
+
+                var hasIncidentsActiveAtCursorTime = incidentsLinkedToEventQuery
+                    .Where(i => i.MitigationTime >= cursor)
+                    .ToList()
+                    .Any();
+
+                var hasActiveIncidents = hasCurrentlyActiveIncidents || hasIncidentsActiveAtCursorTime;
+                if (!hasActiveIncidents)
+                {
+                    // If we haven't told customers about an event and it doesn't have any active incidents, it must have be linked to an incident that fired and was quickly mitigated.
+                    // This event will be deactivated if it is not linked to an active incident soon.
+                    // We will create a message when it is linked to another active incident.
+                    _logger.LogInformation("Event has no active incidents, cannot create message for its start.");
+                    return;
+                }
+
                 if (TryGetContentsForMessageForEventStart(eventEntity, out var contents))
                 {
                     await CreateMessage(eventEntity, eventEntity.StartTime, contents);
