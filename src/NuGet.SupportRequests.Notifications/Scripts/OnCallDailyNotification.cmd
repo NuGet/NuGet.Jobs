@@ -7,10 +7,10 @@ echo "Starting job - NuGet - SupportRequests.Notifications.OnCallDailyNotificati
 title "NuGet - SupportRequests.Notifications.OnCallDailyNotification.cmd"
 
 start /w nuget.supportrequests.notifications.exe ^
-	-Task "OnCallDailyNotification" ^
+    -Task "OnCallDailyNotification" ^
     -Configuration "#{Jobs.supportrequests.notifications.Configuration}" ^
-	-InstrumentationKey "#{Jobs.supportrequests.notifications.InstrumentationKey}" ^
-	-verbose true ^
-	-Once
+    -InstrumentationKey "#{Jobs.supportrequests.notifications.InstrumentationKey}" ^
+    -verbose true ^
+    -Once
 
 echo "Finished job - NuGet - SupportRequests.Notifications.OnCallDailyNotification.cmd"
