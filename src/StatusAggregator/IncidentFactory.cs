@@ -15,17 +15,17 @@ namespace StatusAggregator
     public class IncidentFactory : IIncidentFactory
     {
         private readonly ITableWrapper _table;
-        private readonly IEventUpdater _eventUpdater;
+        private readonly IIncidentGroupUpdater _incidentGroupUpdater;
 
         private readonly ILogger<IncidentFactory> _logger;
 
         public IncidentFactory(
             ITableWrapper table, 
-            IEventUpdater eventUpdater, 
+            IIncidentGroupUpdater incidentGroupUpdater, 
             ILogger<IncidentFactory> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _eventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
+            _incidentGroupUpdater = incidentGroupUpdater ?? throw new ArgumentNullException(nameof(incidentGroupUpdater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -40,55 +40,55 @@ namespace StatusAggregator
 
             using (_logger.Scope("Creating incident '{IncidentRowKey}'.", incidentEntity.RowKey))
             {
-                // Find an event to attach this incident to
-                var possibleEvents = _table
-                    .CreateQuery<EventEntity>()
+                // Find a group to attach this incident to
+                var possibleIncidentGroups = _table
+                    .CreateQuery<IncidentGroupEntity>()
                     .Where(e =>
-                        e.PartitionKey == EventEntity.DefaultPartitionKey &&
-                        // The incident and the event must affect the same component
+                        e.PartitionKey == IncidentGroupEntity.DefaultPartitionKey &&
+                        // The incident and the group must affect the same component
                         e.AffectedComponentPath == incidentEntity.AffectedComponentPath &&
-                        // The event must begin before or at the same time as the incident
+                        // The group must begin before or at the same time as the incident
                         e.StartTime <= incidentEntity.CreationTime &&
-                        // The event must be active or the event must end after this incident begins
+                        // The group must be active or the group must end after this incident begins
                         (e.IsActive || (e.EndTime >= incidentEntity.CreationTime)))
                     .ToList();
 
-                _logger.LogInformation("Found {EventCount} possible events to link incident to.", possibleEvents.Count());
-                EventEntity eventToLinkTo = null;
-                foreach (var possibleEventToLinkTo in possibleEvents)
+                _logger.LogInformation("Found {GroupCount} possible groups to link incident to.", possibleIncidentGroups.Count());
+                IncidentGroupEntity groupToLinkTo = null;
+                foreach (var possibleGroupToLinkTo in possibleIncidentGroups)
                 {
-                    if (!_table.GetIncidentsLinkedToEvent(possibleEventToLinkTo).ToList().Any())
+                    if (!_table.GetIncidentsLinkedToGroup(possibleGroupToLinkTo).ToList().Any())
                     {
-                        _logger.LogInformation("Cannot link incident to event '{EventRowKey}' because it is not linked to any incidents.", possibleEventToLinkTo.RowKey);
+                        _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it is not linked to any incidents.", possibleGroupToLinkTo.RowKey);
                         continue;
                     }
 
-                    if (await _eventUpdater.UpdateEvent(possibleEventToLinkTo, incidentEntity.CreationTime))
+                    if (await _incidentGroupUpdater.UpdateIncidentGroup(possibleGroupToLinkTo, incidentEntity.CreationTime))
                     {
-                        _logger.LogInformation("Cannot link incident to event '{EventRowKey}' because it has been deactivated.", possibleEventToLinkTo.RowKey);
+                        _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it has been deactivated.", possibleGroupToLinkTo.RowKey);
                         continue;
                     }
 
-                    _logger.LogInformation("Linking incident to event '{EventRowKey}'.", possibleEventToLinkTo.RowKey);
-                    eventToLinkTo = possibleEventToLinkTo;
+                    _logger.LogInformation("Linking incident to group '{GroupRowKey}'.", possibleGroupToLinkTo.RowKey);
+                    groupToLinkTo = possibleGroupToLinkTo;
                     break;
                 }
 
-                if (eventToLinkTo == null)
+                if (groupToLinkTo == null)
                 {
-                    eventToLinkTo = new EventEntity(incidentEntity);
-                    _logger.LogInformation("Could not find existing event to link to, creating new event '{EventRowKey}' to link incident to.", eventToLinkTo.RowKey);
-                    await _table.InsertOrReplaceAsync(eventToLinkTo);
+                    groupToLinkTo = new IncidentGroupEntity(incidentEntity);
+                    _logger.LogInformation("Could not find existing group to link to, creating new group '{GroupRowKey}' to link incident to.", groupToLinkTo.RowKey);
+                    await _table.InsertOrReplaceAsync(groupToLinkTo);
                 }
 
-                incidentEntity.EventRowKey = eventToLinkTo.RowKey;
+                incidentEntity.IncidentGroupRowKey = groupToLinkTo.RowKey;
                 await _table.InsertOrReplaceAsync(incidentEntity);
 
-                if ((int)parsedIncident.AffectedComponentStatus > eventToLinkTo.AffectedComponentStatus)
+                if ((int)parsedIncident.AffectedComponentStatus > groupToLinkTo.AffectedComponentStatus)
                 {
-                    _logger.LogInformation("Increasing severity of event '{EventRowKey}' because newly linked incident is more severe than the event.", eventToLinkTo.RowKey);
-                    eventToLinkTo.AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
-                    await _table.InsertOrReplaceAsync(eventToLinkTo);
+                    _logger.LogInformation("Increasing severity of group '{GroupRowKey}' because newly linked incident is more severe than the group.", groupToLinkTo.RowKey);
+                    groupToLinkTo.AffectedComponentStatus = (int)parsedIncident.AffectedComponentStatus;
+                    await _table.InsertOrReplaceAsync(groupToLinkTo);
                 }
 
                 return incidentEntity;

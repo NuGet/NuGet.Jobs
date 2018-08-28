@@ -55,7 +55,7 @@ namespace StatusAggregator
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
             serviceCollection.AddTransient<IMessageUpdater, MessageUpdater>();
-            serviceCollection.AddTransient<IEventUpdater, EventUpdater>();
+            serviceCollection.AddTransient<IIncidentGroupUpdater, IncidentGroupUpdater>();
             serviceCollection.AddTransient<IIncidentFactory, IncidentFactory>();
             AddParsing(serviceCollection);
             serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
@@ -190,7 +190,7 @@ namespace StatusAggregator
                 EventStartMessageDelayMinutes = 
                     JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventStartMessageDelayMinutes) 
                     ?? _defaultEventStartMessageDelayMinutes,
-                EventEndDelayMinutes = 
+                GroupEndDelayMinutes = 
                     JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventEndDelayMinutes) 
                     ?? _defaultEventEndDelayMinutes,
                 EventVisibilityPeriodDays = 

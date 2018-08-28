@@ -55,9 +55,9 @@ namespace StatusAggregator
 
         /// <summary>
         /// The number of minutes that must pass before an event whose incidents have all been mitigated is deactivated.
-        /// In other words, <see cref="EventUpdater"/> will wait this amount of time before it deactivates an event with all mitigated incidents.
+        /// In other words, <see cref="IncidentGroupUpdater"/> will wait this amount of time before it deactivates an event with all mitigated incidents.
         /// </summary>
-        public int EventEndDelayMinutes { get; set; }
+        public int GroupEndDelayMinutes { get; set; }
 
         /// <summary>
         /// The number of days that a deactivated event is visible in the <see cref="ServiceStatus"/>.

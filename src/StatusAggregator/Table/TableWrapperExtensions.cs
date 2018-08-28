@@ -14,13 +14,29 @@ namespace StatusAggregator.Table
                 .CreateQuery<EventEntity>()
                 .Where(e => e.PartitionKey == EventEntity.DefaultPartitionKey && e.IsActive);
         }
+        public static IQueryable<IncidentGroupEntity> GetActiveGroups(this ITableWrapper table)
+        {
+            return table
+                .CreateQuery<IncidentGroupEntity>()
+                .Where(g => g.PartitionKey == IncidentGroupEntity.DefaultPartitionKey && g.IsActive);
+        }
 
-        public static IQueryable<IncidentEntity> GetIncidentsLinkedToEvent(this ITableWrapper table, EventEntity eventEntity)
+        public static IQueryable<IncidentEntity> GetIncidentsLinkedToGroup(this ITableWrapper table, IncidentGroupEntity groupEntity)
         {
             return table
                 .CreateQuery<IncidentEntity>()
                 .Where(i =>
                     i.PartitionKey == IncidentEntity.DefaultPartitionKey &&
+                    i.IsLinkedToIncidentGroup &&
+                    i.IncidentGroupRowKey == groupEntity.RowKey);
+        }
+
+        public static IQueryable<IncidentGroupEntity> GetIncidentGroupsLinkedToEvent(this ITableWrapper table, EventEntity eventEntity)
+        {
+            return table
+                .CreateQuery<IncidentGroupEntity>()
+                .Where(i =>
+                    i.PartitionKey == IncidentGroupEntity.DefaultPartitionKey &&
                     i.IsLinkedToEvent &&
                     i.EventRowKey == eventEntity.RowKey);
         }

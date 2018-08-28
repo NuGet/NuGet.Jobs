@@ -18,7 +18,7 @@ namespace StatusAggregator
         private readonly ICursor _cursor;
         private readonly IEnumerable<IManualStatusChangeUpdater> _manualStatusChangeUpdaters;
         private readonly IIncidentUpdater _incidentUpdater;
-        private readonly IEventUpdater _eventUpdater;
+        private readonly IIncidentGroupUpdater _eventUpdater;
 
         private readonly ILogger<StatusUpdater> _logger;
 
@@ -26,7 +26,7 @@ namespace StatusAggregator
             ICursor cursor,
             IEnumerable<IManualStatusChangeUpdater> manualStatusChangeUpdaters,
             IIncidentUpdater incidentUpdater,
-            IEventUpdater eventUpdater,
+            IIncidentGroupUpdater eventUpdater,
             ILogger<StatusUpdater> logger)
         {
             _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));

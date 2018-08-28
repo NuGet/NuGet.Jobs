@@ -21,14 +21,14 @@ namespace StatusAggregator.Tests
         private static DateTime CreationTime = new DateTime(2017, 7, 10);
 
         private Mock<ITableWrapper> _tableWrapperMock { get; }
-        private Mock<IEventUpdater> _eventUpdaterMock { get; }
+        private Mock<IIncidentGroupUpdater> _eventUpdaterMock { get; }
         private IncidentFactory _incidentFactory { get; }
         private ParsedIncident _parsedIncident { get; }
 
         public IncidentFactoryTests()
         {
             _tableWrapperMock = new Mock<ITableWrapper>();
-            _eventUpdaterMock = new Mock<IEventUpdater>();
+            _eventUpdaterMock = new Mock<IIncidentGroupUpdater>();
             _incidentFactory = new IncidentFactory(
                 _tableWrapperMock.Object, 
                 _eventUpdaterMock.Object,

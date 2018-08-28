@@ -16,7 +16,7 @@ namespace StatusAggregator
     public class IncidentUpdater : IIncidentUpdater
     {
         private readonly ITableWrapper _table;
-        private readonly IEventUpdater _eventUpdater;
+        private readonly IIncidentGroupUpdater _eventUpdater;
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
         private readonly IIncidentFactory _incidentFactory;
@@ -26,7 +26,7 @@ namespace StatusAggregator
 
         public IncidentUpdater(
             ITableWrapper table,
-            IEventUpdater eventUpdater,
+            IIncidentGroupUpdater eventUpdater,
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
             IIncidentFactory incidentFactory,
