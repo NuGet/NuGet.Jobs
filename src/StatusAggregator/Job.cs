@@ -16,6 +16,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
+using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Manual;
 using StatusAggregator.Parse;
@@ -39,6 +40,7 @@ namespace StatusAggregator
             containerBuilder.Populate(serviceCollection);
 
             AddStorage(containerBuilder);
+            AddUpdaters(containerBuilder);
 
             _serviceProvider = new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -55,10 +57,8 @@ namespace StatusAggregator
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
             serviceCollection.AddTransient<IMessageUpdater, MessageUpdater>();
-            serviceCollection.AddTransient<IIncidentGroupUpdater, IncidentGroupUpdater>();
-            serviceCollection.AddTransient<IIncidentFactory, IncidentFactory>();
             AddParsing(serviceCollection);
-            serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
+            serviceCollection.AddTransient<IIncidentCollector, IncidentCollector>();
             AddManualStatusChangeHandling(serviceCollection);
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
@@ -163,6 +163,51 @@ namespace StatusAggregator
             return blobClient.GetContainerReference(configuration.ContainerName);
         }
 
+        private const string AggregatedEntityFactoryBindingKey = "AggregatedEntityFactory";
+
+        private static void AddUpdaters(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterType<IncidentFactory>()
+                .Named<IEntityFactory<IncidentEntity, ParsedIncident>>(AggregatedEntityFactoryBindingKey);
+
+            containerBuilder
+                .RegisterType<IncidentGroupFactory>()
+                .Named<IEntityFactory<IncidentGroupEntity, IncidentEntity>>(AggregatedEntityFactoryBindingKey);
+
+            containerBuilder
+                .RegisterType<EventFactory>()
+                .As<IEntityFactory<EventEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<AggregatedEntityFactory<IncidentEntity, IncidentGroupEntity, ParsedIncident>>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(IEntityFactory<IncidentEntity, ParsedIncident>),
+                    (pi, ctx) => ctx.ResolveNamed<IEntityFactory<IncidentEntity, ParsedIncident>>(AggregatedEntityFactoryBindingKey))
+                .As<IEntityFactory<IncidentEntity, ParsedIncident>>();
+
+            containerBuilder
+                .RegisterType<AggregatedEntityFactory<IncidentGroupEntity, EventEntity, IncidentEntity>>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(IEntityFactory<IncidentGroupEntity, IncidentEntity>),
+                    (pi, ctx) => ctx.ResolveNamed<IEntityFactory<IncidentGroupEntity, IncidentEntity>>(AggregatedEntityFactoryBindingKey))
+                .As<IEntityFactory<IncidentGroupEntity, IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<NullEntityUpdater<IncidentEntity>>()
+                .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, IncidentEntity>>()
+                .As<IComponentAffectingEntityUpdater>()
+                .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<EntityAggregationUpdater<EventEntity, IncidentGroupEntity>>()
+                .As<IComponentAffectingEntityUpdater>()
+                .As<IComponentAffectingEntityUpdater<EventEntity>>();
+        }
+
         private const int _defaultEventStartMessageDelayMinutes = 15;
         private const int _defaultEventEndDelayMinutes = 10;
         private const int _defaultEventVisibilityPeriod = 10;
@@ -190,7 +235,7 @@ namespace StatusAggregator
                 EventStartMessageDelayMinutes = 
                     JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventStartMessageDelayMinutes) 
                     ?? _defaultEventStartMessageDelayMinutes,
-                GroupEndDelayMinutes = 
+                EventEndDelayMinutes = 
                     JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, JobArgumentNames.StatusEventEndDelayMinutes) 
                     ?? _defaultEventEndDelayMinutes,
                 EventVisibilityPeriodDays = 

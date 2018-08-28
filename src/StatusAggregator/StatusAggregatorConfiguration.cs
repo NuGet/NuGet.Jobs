@@ -43,7 +43,7 @@ namespace StatusAggregator
 
         /// <summary>
         /// A team ID to use to query the incident API.
-        /// See <see cref="IncidentUpdater"/>.
+        /// See <see cref="IncidentCollector"/>.
         /// </summary>
         public string TeamId { get; set; }
 
@@ -57,7 +57,7 @@ namespace StatusAggregator
         /// The number of minutes that must pass before an event whose incidents have all been mitigated is deactivated.
         /// In other words, <see cref="IncidentGroupUpdater"/> will wait this amount of time before it deactivates an event with all mitigated incidents.
         /// </summary>
-        public int GroupEndDelayMinutes { get; set; }
+        public int EventEndDelayMinutes { get; set; }
 
         /// <summary>
         /// The number of days that a deactivated event is visible in the <see cref="ServiceStatus"/>.

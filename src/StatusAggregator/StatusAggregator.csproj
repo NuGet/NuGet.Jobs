@@ -46,9 +46,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EventUpdater.cs" />
+    <Compile Include="AggregatedEntityFactory.cs" />
+    <Compile Include="EntityAggregationUpdater.cs" />
+    <Compile Include="EventFactory.cs" />
+    <Compile Include="IEntityFactory.cs" />
+    <Compile Include="IComponentAffectingEntityUpdater.cs" />
     <Compile Include="IEventUpdater.cs" />
-    <Compile Include="IIncidentGroupFactory.cs" />
+    <Compile Include="IIncidentCollector.cs" />
+    <Compile Include="IncidentCollector.cs" />
+    <Compile Include="IncidentFactory.cs" />
     <Compile Include="IncidentGroupFactory.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandler.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandler.cs" />
@@ -63,19 +69,15 @@
     <Compile Include="Manual\ManualStatusChangeUtility.cs" />
     <Compile Include="NuGetServiceComponentFactory.cs" />
     <Compile Include="LogEvents.cs" />
+    <Compile Include="NullEntityUpdater.cs" />
     <Compile Include="Parse\TrafficManagerEndpointStatusIncidentParser.cs" />
     <Compile Include="StatusAggregatorConfiguration.cs" />
     <Compile Include="Cursor.cs" />
-    <Compile Include="IncidentGroupUpdater.cs" />
     <Compile Include="ICursor.cs" />
-    <Compile Include="IIncidentGroupUpdater.cs" />
-    <Compile Include="IIncidentFactory.cs" />
-    <Compile Include="IIncidentUpdater.cs" />
     <Compile Include="Parse\EnvironmentFilter.cs" />
     <Compile Include="Parse\IIncidentParsingFilter.cs" />
     <Compile Include="Parse\PingdomIncidentParser.cs" />
     <Compile Include="Parse\SeverityFilter.cs" />
-    <Compile Include="IncidentUpdater.cs" />
     <Compile Include="IStatusUpdater.cs" />
     <Compile Include="IMessageUpdater.cs" />
     <Compile Include="StatusAggregator.cs" />
@@ -84,7 +86,6 @@
     <Compile Include="StatusUpdater.cs" />
     <Compile Include="Parse\AggregateIncidentParser.cs" />
     <Compile Include="Parse\IAggregateIncidentParser.cs" />
-    <Compile Include="IncidentFactory.cs" />
     <Compile Include="IStatusExporter.cs" />
     <Compile Include="MessageUpdater.cs" />
     <Compile Include="StatusExporter.cs" />
@@ -125,10 +126,10 @@
       <Version>2.28.0-master-38796</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status">
-      <Version>2.28.0-sb-aggregateevent-39100</Version>
+      <Version>2.28.0-sb-aggregateevent-39269</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status.Table">
-      <Version>2.28.0-sb-aggregateevent-39100</Version>
+      <Version>2.28.0-sb-aggregateevent-39269</Version>
     </PackageReference>
     <PackageReference Include="WindowsAzure.Storage">
       <Version>9.2.0</Version>

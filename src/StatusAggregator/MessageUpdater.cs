@@ -42,7 +42,7 @@ namespace StatusAggregator
                     return;
                 }
 
-                if (_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
+                if (_table.GetLinkedEntities<MessageEntity>(eventEntity).ToList().Any())
                 {
                     // If we've already told customers about an event, we don't need to tell them about it again.
                     _logger.LogInformation("Event has messages associated with it, cannot create message for its start.");
@@ -76,7 +76,7 @@ namespace StatusAggregator
 
             using (_logger.Scope("Creating message for end of event."))
             {
-                if (!_table.GetMessagesLinkedToEvent(eventEntity).ToList().Any())
+                if (!_table.GetLinkedEntities<MessageEntity>(eventEntity).ToList().Any())
                 {
                     // If we've never told customers about an event, we don't need to tell them it's no longer impacting them.
                     _logger.LogInformation("Event has no messages associated with it, cannot create message for its end.");

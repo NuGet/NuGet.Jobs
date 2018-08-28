@@ -13,28 +13,25 @@ using System.Threading.Tasks;
 
 namespace StatusAggregator
 {
-    public class IncidentUpdater : IIncidentUpdater
+    public class IncidentCollector : IIncidentCollector
     {
         private readonly ITableWrapper _table;
-        private readonly IIncidentGroupUpdater _eventUpdater;
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly IIncidentFactory _incidentFactory;
-        private readonly ILogger<IncidentUpdater> _logger;
+        private readonly IEntityFactory<IncidentEntity, ParsedIncident> _incidentFactory;
+        private readonly ILogger<IncidentCollector> _logger;
 
         private readonly string _incidentApiTeamId;
 
-        public IncidentUpdater(
+        public IncidentCollector(
             ITableWrapper table,
-            IIncidentGroupUpdater eventUpdater,
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
-            IIncidentFactory incidentFactory,
+            IEntityFactory<IncidentEntity, ParsedIncident> incidentFactory,
             StatusAggregatorConfiguration configuration,
-            ILogger<IncidentUpdater> logger)
+            ILogger<IncidentCollector> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _eventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
             _aggregateIncidentParser = aggregateIncidentParser ?? throw new ArgumentNullException(nameof(aggregateIncidentParser));
             _incidentFactory = incidentFactory ?? throw new ArgumentNullException(nameof(incidentFactory));
@@ -57,8 +54,8 @@ namespace StatusAggregator
                     using (_logger.Scope("Refreshing active incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
                     {
                         var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
-                        activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
-                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.MitigationTime);
+                        activeIncidentEntity.EndTime = activeIncident.MitigationData?.Date;
+                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.EndTime);
                         await _table.InsertOrReplaceAsync(activeIncidentEntity);
                     }
                 }
@@ -81,7 +78,7 @@ namespace StatusAggregator
                     .ToList();
                 foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.CreationTime))
                 {
-                    await _incidentFactory.CreateIncident(parsedIncident);
+                    await _incidentFactory.Create(parsedIncident);
                 }
 
                 return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;

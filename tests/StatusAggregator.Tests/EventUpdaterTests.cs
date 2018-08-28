@@ -39,7 +39,7 @@ namespace StatusAggregator.Tests
         {
             var configuration = new StatusAggregatorConfiguration()
             {
-                GroupEndDelayMinutes = EventEndDelayMinutes
+                EventEndDelayMinutes = EventEndDelayMinutes
             };
 
             _tableWrapperMock = new Mock<ITableWrapper>();

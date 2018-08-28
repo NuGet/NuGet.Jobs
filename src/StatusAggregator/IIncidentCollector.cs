@@ -11,7 +11,7 @@ namespace StatusAggregator
     /// <summary>
     /// Handles updating any active <see cref="IncidentEntity"/>s.
     /// </summary>
-    public interface IIncidentUpdater
+    public interface IIncidentCollector
     {
         /// <summary>
         /// Update the status of any active <see cref="IncidentEntity"/>s.
