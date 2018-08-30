@@ -23,7 +23,7 @@ namespace StatusAggregator
                 input.CreationTime,
                 input.MitigationTime);
 
-            await _table.InsertAsync(entity);
+            await _table.InsertOrReplaceAsync(entity);
 
             return entity;
         }

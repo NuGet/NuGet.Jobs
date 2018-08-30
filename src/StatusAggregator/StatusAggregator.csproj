@@ -52,6 +52,7 @@
     <Compile Include="EventFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdateHandler.cs" />
     <Compile Include="IComponentAffectingEntityUpdateListener.cs" />
+    <Compile Include="IEntityAggregationLinkHandler.cs" />
     <Compile Include="IEntityFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdater.cs" />
     <Compile Include="IEventUpdater.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="IncidentCollector.cs" />
     <Compile Include="IncidentFactory.cs" />
     <Compile Include="IncidentGroupFactory.cs" />
+    <Compile Include="IncidentGroupLinkHandler.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandler.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandler.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandler.cs" />
@@ -75,6 +77,7 @@
     <Compile Include="MessageType.cs" />
     <Compile Include="NuGetServiceComponentFactory.cs" />
     <Compile Include="LogEvents.cs" />
+    <Compile Include="NullEntityAggregationLinkHandler.cs" />
     <Compile Include="NullEntityUpdater.cs" />
     <Compile Include="Parse\TrafficManagerEndpointStatusIncidentParser.cs" />
     <Compile Include="StatusAggregatorConfiguration.cs" />

@@ -16,9 +16,7 @@ namespace StatusAggregator
         public async Task<IncidentGroupEntity> Create(IncidentEntity input)
         {
             var entity = new IncidentGroupEntity(input);
-
-            await _table.InsertAsync(entity);
-
+            await _table.InsertOrReplaceAsync(entity);
             return entity;
         }
     }

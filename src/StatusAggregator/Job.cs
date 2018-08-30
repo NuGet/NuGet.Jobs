@@ -194,8 +194,8 @@ namespace StatusAggregator
                 .As<IEntityFactory<IncidentGroupEntity, IncidentEntity>>();
 
             containerBuilder
-                .RegisterType<NullEntityUpdater<IncidentEntity>>()
-                .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
+                .RegisterGeneric(typeof(NullEntityUpdater<>))
+                .As(typeof(IComponentAffectingEntityUpdateHandler<>));
 
             containerBuilder
                 .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, IncidentEntity>>()
@@ -214,6 +214,14 @@ namespace StatusAggregator
             containerBuilder
                 .RegisterGeneric(typeof(ComponentAffectingEntityUpdater<>))
                 .As(typeof(IComponentAffectingEntityUpdater<>));
+
+            containerBuilder
+                .RegisterGeneric(typeof(NullEntityAggregationLinkHandler<,>))
+                .As(typeof(IEntityAggregationLinkHandler<,>));
+
+            containerBuilder
+                .RegisterType<IncidentGroupLinkHandler>()
+                .As<IEntityAggregationLinkHandler<IncidentGroupEntity, IncidentEntity>>();
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

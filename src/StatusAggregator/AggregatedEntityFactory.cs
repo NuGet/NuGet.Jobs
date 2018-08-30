@@ -19,6 +19,7 @@ namespace StatusAggregator
         private readonly IEntityFactory<TAggregatedEntity, TInput> _entityFactory;
         private readonly IEntityFactory<TEntityAggregation, TAggregatedEntity> _aggregationFactory;
         private readonly IComponentAffectingEntityUpdater<TEntityAggregation> _aggregationUpdater;
+        private readonly IEntityAggregationLinkHandler<TEntityAggregation, TAggregatedEntity> _aggregationStatusHandler;
 
         private readonly ILogger<AggregatedEntityFactory<TAggregatedEntity, TEntityAggregation, TInput>> _logger;
 
@@ -27,12 +28,14 @@ namespace StatusAggregator
             IEntityFactory<TAggregatedEntity, TInput> entityFactory,
             IEntityFactory<TEntityAggregation, TAggregatedEntity> aggregationFactory,
             IComponentAffectingEntityUpdater<TEntityAggregation> aggregationUpdater,
+            IEntityAggregationLinkHandler<TEntityAggregation, TAggregatedEntity> aggregationStatusHandler,
             ILogger<AggregatedEntityFactory<TAggregatedEntity, TEntityAggregation, TInput>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _entityFactory = entityFactory ?? throw new ArgumentNullException(nameof(entityFactory));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));
+            _aggregationStatusHandler = aggregationStatusHandler ?? throw new ArgumentNullException(nameof(aggregationStatusHandler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -97,7 +100,9 @@ namespace StatusAggregator
                 }
 
                 aggregatedEntity.ParentRowKey = groupToLinkTo.RowKey;
-                await _table.InsertOrReplaceAsync(aggregatedEntity);
+                await _table.ReplaceAsync(aggregatedEntity);
+
+                await _aggregationStatusHandler.OnLink(groupToLinkTo, aggregatedEntity);
 
                 return aggregatedEntity;
             }

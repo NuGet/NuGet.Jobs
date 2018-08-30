@@ -21,7 +21,7 @@ namespace StatusAggregator
             var topLevelComponentPathParts = pathParts.Take(2).ToArray();
             var path = ComponentUtility.GetPath(topLevelComponentPathParts);
             var entity = new EventEntity(input, path);
-            await _table.InsertAsync(entity);
+            await _table.InsertOrReplaceAsync(entity);
             return entity;
         }
     }
