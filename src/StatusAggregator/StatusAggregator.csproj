@@ -52,7 +52,7 @@
     <Compile Include="EventFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdateHandler.cs" />
     <Compile Include="IComponentAffectingEntityUpdateListener.cs" />
-    <Compile Include="IEntityAggregationLinkHandler.cs" />
+    <Compile Include="IEntityAggregationLinkListener.cs" />
     <Compile Include="IEntityFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdater.cs" />
     <Compile Include="IEventUpdater.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="IncidentCollector.cs" />
     <Compile Include="IncidentFactory.cs" />
     <Compile Include="IncidentGroupFactory.cs" />
-    <Compile Include="IncidentGroupLinkHandler.cs" />
+    <Compile Include="IncidentGroupLinkListener.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandler.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandler.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandler.cs" />

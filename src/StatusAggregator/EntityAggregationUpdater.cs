@@ -10,7 +10,7 @@ using StatusAggregator.Table;
 namespace StatusAggregator
 {
     public class EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity> 
-        : IComponentAffectingEntityUpdateHandler, IComponentAffectingEntityUpdateHandler<TEntityAggregation>
+        : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
         where TEntityAggregation : ITableEntity, IEntityAggregation, new()
         where TAggregatedEntity : ITableEntity, IAggregatedEntity, new()
     {
@@ -33,19 +33,6 @@ namespace StatusAggregator
             _groupEndDelay = TimeSpan.FromMinutes(configuration?.EventEndDelayMinutes 
                 ?? throw new ArgumentNullException(nameof(configuration)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public async Task UpdateAllActive(DateTime cursor)
-        {
-            using (_logger.Scope("Updating active groups."))
-            {
-                var activeGroups = _table.GetActiveEntities<TEntityAggregation>().ToList();
-                _logger.LogInformation("Updating {ActiveGroupsCount} active groups.", activeGroups.Count());
-                foreach (var activeGroup in activeGroups)
-                {
-                    await Update(activeGroup, cursor);
-                }
-            }
         }
 
         public async Task<bool> Update(TEntityAggregation groupEntity, DateTime cursor)

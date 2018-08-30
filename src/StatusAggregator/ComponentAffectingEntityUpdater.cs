@@ -1,40 +1,52 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
     public class ComponentAffectingEntityUpdater<T> : IComponentAffectingEntityUpdater, IComponentAffectingEntityUpdater<T>
         where T : ITableEntity, IComponentAffectingEntity, new()
     {
-        private readonly IComponentAffectingEntityUpdateHandler _handler;
-        private readonly IComponentAffectingEntityUpdateHandler<T> _handlerT;
-        private readonly IEnumerable<IComponentAffectingEntityUpdateListener<T>> _listeners;
+        private readonly ITableWrapper _table;
+        private readonly IComponentAffectingEntityUpdateHandler<T> _handler;
+        private readonly IComponentAffectingEntityUpdateListener<T> _listener;
+
+        private readonly ILogger<ComponentAffectingEntityUpdater<T>> _logger;
 
         public ComponentAffectingEntityUpdater(
-            IComponentAffectingEntityUpdateHandler handler,
-            IComponentAffectingEntityUpdateHandler<T> handlerT,
-            IEnumerable<IComponentAffectingEntityUpdateListener<T>> listeners)
+            ITableWrapper table,
+            IComponentAffectingEntityUpdateHandler<T> handler,
+            IComponentAffectingEntityUpdateListener<T> listener,
+            ILogger<ComponentAffectingEntityUpdater<T>> logger)
         {
+            _table = table;
             _handler = handler;
-            _handlerT = handlerT;
-            _listeners = listeners;
+            _listener = listener;
+            _logger = logger;
         }
 
-        public Task UpdateAllActive(DateTime cursor)
+        public async Task UpdateAllActive(DateTime cursor)
         {
-            return _handler.UpdateAllActive(cursor);
+            using (_logger.Scope("Updating active groups."))
+            {
+                var activeGroups = _table.GetActiveEntities<T>().ToList();
+                _logger.LogInformation("Updating {ActiveGroupsCount} active groups.", activeGroups.Count());
+                foreach (var activeGroup in activeGroups)
+                {
+                    await _handler.Update(activeGroup, cursor);
+                }
+            }
         }
 
         public async Task<bool> Update(T groupEntity, DateTime cursor)
         {
-            var result = await _handlerT.Update(groupEntity, cursor);
-            foreach (var listener in _listeners)
-            {
-                await listener.OnUpdate(groupEntity, cursor);
-            }
+            var result = await _handler.Update(groupEntity, cursor);
+            await _listener.OnUpdate(groupEntity, cursor);
 
             return result;
         }

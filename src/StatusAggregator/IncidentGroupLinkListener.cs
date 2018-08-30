@@ -4,11 +4,11 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
-    public class IncidentGroupLinkHandler : IEntityAggregationLinkHandler<IncidentGroupEntity, IncidentEntity>
+    public class IncidentGroupLinkListener : IEntityAggregationLinkHandler<IncidentGroupEntity, IncidentEntity>
     {
         private readonly ITableWrapper _table;
 
-        public IncidentGroupLinkHandler(ITableWrapper table)
+        public IncidentGroupLinkListener(ITableWrapper table)
         {
             _table = table;
         }

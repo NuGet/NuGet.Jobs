@@ -199,12 +199,10 @@ namespace StatusAggregator
 
             containerBuilder
                 .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, IncidentEntity>>()
-                .As<IComponentAffectingEntityUpdateHandler>()
                 .As<IComponentAffectingEntityUpdateHandler<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<EntityAggregationUpdater<EventEntity, IncidentGroupEntity>>()
-                .As<IComponentAffectingEntityUpdateHandler>()
                 .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
 
             containerBuilder
@@ -220,7 +218,7 @@ namespace StatusAggregator
                 .As(typeof(IEntityAggregationLinkHandler<,>));
 
             containerBuilder
-                .RegisterType<IncidentGroupLinkHandler>()
+                .RegisterType<IncidentGroupLinkListener>()
                 .As<IEntityAggregationLinkHandler<IncidentGroupEntity, IncidentEntity>>();
         }
 

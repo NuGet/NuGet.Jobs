@@ -5,11 +5,6 @@ using NuGet.Services.Status.Table;
 
 namespace StatusAggregator
 {
-    public interface IComponentAffectingEntityUpdateHandler
-    {
-        Task UpdateAllActive(DateTime cursor);
-    }
-
     public interface IComponentAffectingEntityUpdateHandler<T>
         where T : ITableEntity, IComponentAffectingEntity, new()
     {
