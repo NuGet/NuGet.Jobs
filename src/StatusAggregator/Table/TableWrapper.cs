@@ -25,10 +25,10 @@ namespace StatusAggregator.Table
             return _table.CreateIfNotExistsAsync();
         }
 
-        public async Task<T> RetrieveAsync<T>(string partitionKey, string rowKey) 
+        public async Task<T> RetrieveAsync<T>(string rowKey) 
             where T : class, ITableEntity
         {
-            var operation = TableOperation.Retrieve<T>(partitionKey, rowKey);
+            var operation = TableOperation.Retrieve<T>(TableUtility.GetPartitionKey<T>(), rowKey);
             return (await _table.ExecuteAsync(operation)).Result as T;
         }
 
@@ -71,7 +71,8 @@ namespace StatusAggregator.Table
         {
             return _table
                 .CreateQuery<T>()
-                .AsQueryable();
+                .AsQueryable()
+                .Where(e => e.PartitionKey == TableUtility.GetPartitionKey<T>());
         }
     }
 }

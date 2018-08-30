@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Jobs.Extensions;
+using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
@@ -41,39 +40,53 @@ namespace StatusAggregator
         {
             var aggregatedEntity = await _entityFactory.Create(input);
 
-            using (_logger.Scope("Creating incident '{IncidentRowKey}'.", aggregatedEntity.RowKey))
+            TEntityAggregation groupToLinkTo = null;
+            using (_logger.Scope("Creating entity '{EntityRowKey}'.", aggregatedEntity.RowKey))
             {
-                // Find an aggregation to link to
-                var possibleAggregations = _table
-                    .CreateQuery<TEntityAggregation>()
-                    .Where(e =>
-                        // The aggregation must affect the same component
-                        e.AffectedComponentPath == aggregatedEntity.AffectedComponentPath &&
-                        // The aggregation must begin before or at the same time
-                        e.StartTime <= aggregatedEntity.StartTime &&
-                        // The aggregation must be active or the aggregation must end after this incident begins
-                        (e.IsActive || (e.EndTime >= aggregatedEntity.StartTime)))
-                    .ToList();
-
-                _logger.LogInformation("Found {GroupCount} possible groups to link incident to.", possibleAggregations.Count());
-                TEntityAggregation groupToLinkTo = null;
-                foreach (var possibleGroupToLinkTo in possibleAggregations)
+                var pathParts = ComponentUtility.GetNames(aggregatedEntity.AffectedComponentPath);
+                for (var i = 1; i <= pathParts.Length; i++)
                 {
-                    if (!_table.GetLinkedEntities<TAggregatedEntity>(possibleGroupToLinkTo).ToList().Any())
+                    var possiblePath =
+                        string.Join(
+                            Constants.ComponentPathDivider.ToString(),
+                            pathParts.Take(i).ToArray());
+                    
+                    // Find an aggregation to link to
+                    var possibleAggregations = _table
+                        .CreateQuery<TEntityAggregation>()
+                        .Where(e =>
+                            // The aggregation must affect the same component or a parent component
+                            e.AffectedComponentPath == possiblePath &&
+                            // The aggregation must begin before or at the same time
+                            e.StartTime <= aggregatedEntity.StartTime &&
+                            // The aggregation must be active or the aggregation must end after this incident begins
+                            (e.IsActive || (e.EndTime >= aggregatedEntity.StartTime)))
+                        .ToList();
+
+                    _logger.LogInformation("Found {GroupCount} possible groups to link incident to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
+                    foreach (var possibleGroupToLinkTo in possibleAggregations)
                     {
-                        _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it is not linked to any incidents.", possibleGroupToLinkTo.RowKey);
-                        continue;
+                        if (!_table.GetLinkedEntities<TAggregatedEntity>(possibleGroupToLinkTo).ToList().Any())
+                        {
+                            _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it is not linked to any incidents.", possibleGroupToLinkTo.RowKey);
+                            continue;
+                        }
+
+                        if (await _aggregationUpdater.Update(possibleGroupToLinkTo, aggregatedEntity.StartTime))
+                        {
+                            _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it has been deactivated.", possibleGroupToLinkTo.RowKey);
+                            continue;
+                        }
+
+                        _logger.LogInformation("Linking incident to group '{GroupRowKey}'.", possibleGroupToLinkTo.RowKey);
+                        groupToLinkTo = possibleGroupToLinkTo;
+                        break;
                     }
 
-                    if (await _aggregationUpdater.Update(possibleGroupToLinkTo, aggregatedEntity.StartTime))
+                    if (groupToLinkTo != null)
                     {
-                        _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it has been deactivated.", possibleGroupToLinkTo.RowKey);
-                        continue;
+                        break;
                     }
-
-                    _logger.LogInformation("Linking incident to group '{GroupRowKey}'.", possibleGroupToLinkTo.RowKey);
-                    groupToLinkTo = possibleGroupToLinkTo;
-                    break;
                 }
 
                 if (groupToLinkTo == null)

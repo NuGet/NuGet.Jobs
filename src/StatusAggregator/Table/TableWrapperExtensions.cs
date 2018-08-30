@@ -14,9 +14,7 @@ namespace StatusAggregator.Table
         {
             return table
                 .CreateQuery<T>()
-                .Where(e => 
-                    e.PartitionKey == TableUtility.GetPartitionKey<T>() &&
-                    e.IsActive);
+                .Where(e => e.IsActive);
         }
 
         public static IQueryable<T> GetLinkedEntities<T>(this ITableWrapper table, ITableEntity entity)
@@ -24,9 +22,7 @@ namespace StatusAggregator.Table
         {
             return table
                 .CreateQuery<T>()
-                .Where(e => 
-                    e.PartitionKey == TableUtility.GetPartitionKey<T>() && 
-                    e.ParentRowKey == entity.RowKey);
+                .Where(e => e.ParentRowKey == entity.RowKey);
         }
     }
 }

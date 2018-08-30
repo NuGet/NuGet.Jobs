@@ -36,8 +36,7 @@ namespace StatusAggregator.Manual
             using (_logger.Scope("Processing manual status changes."))
             {
                 var manualChangesQuery = _table
-                    .CreateQuery<ManualStatusChangeEntity>()
-                    .Where(c => c.PartitionKey == ManualStatusChangeEntity.DefaultPartitionKey);
+                    .CreateQuery<ManualStatusChangeEntity>();
 
                 // Table storage throws on queries with DateTime values that are too low.
                 // If we are fetching manual changes for the first time, don't filter on the timestamp.

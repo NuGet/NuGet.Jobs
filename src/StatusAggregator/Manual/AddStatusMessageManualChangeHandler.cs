@@ -26,7 +26,7 @@ namespace StatusAggregator.Manual
             var eventRowKey = EventEntity.GetRowKey(entity.EventAffectedComponentPath, entity.EventStartTime);
             var messageEntity = new MessageEntity(eventRowKey, time, entity.MessageContents);
 
-            var eventEntity = await _table.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey);
+            var eventEntity = await _table.RetrieveAsync<EventEntity>(eventRowKey);
             if (eventEntity == null)
             {
                 throw new ArgumentException("Cannot create a message for an event that does not exist.");

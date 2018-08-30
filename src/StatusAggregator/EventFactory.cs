@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
@@ -15,7 +17,10 @@ namespace StatusAggregator
 
         public async Task<EventEntity> Create(IncidentGroupEntity input)
         {
-            var entity = new EventEntity(input);
+            var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
+            var topLevelComponentPathParts = pathParts.Take(2).ToArray();
+            var path = ComponentUtility.GetPath(topLevelComponentPathParts);
+            var entity = new EventEntity(input, path);
             await _table.InsertAsync(entity);
             return entity;
         }

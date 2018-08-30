@@ -54,9 +54,7 @@ namespace StatusAggregator
 
                 var recentEvents = _table
                     .CreateQuery<EventEntity>()
-                    .Where(e =>
-                        e.PartitionKey == EventEntity.DefaultPartitionKey &&
-                        (e.IsActive || (e.EndTime >= DateTime.UtcNow - _eventVisibilityPeriod)))
+                    .Where(e => (e.IsActive || (e.EndTime >= DateTime.UtcNow - _eventVisibilityPeriod)))
                     .ToList()
                     .Select(e =>
                     {

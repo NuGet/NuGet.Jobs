@@ -49,7 +49,7 @@ namespace StatusAggregator
 
         /// <summary>
         /// The number of minutes that must pass before a message is created for a recently started event.
-        /// In other words, <see cref="MessageUpdater"/> will wait this amount of time before it creates a start message for an event.
+        /// In other words, <see cref="MessageEventUpdateListener"/> will wait this amount of time before it creates a start message for an event.
         /// </summary>
         public int EventStartMessageDelayMinutes { get; set; }
 

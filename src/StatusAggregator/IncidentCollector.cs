@@ -44,8 +44,7 @@ namespace StatusAggregator
             using (_logger.Scope("Refreshing active incidents."))
             {
                 var activeIncidentEntities = _table
-                    .CreateQuery<IncidentEntity>()
-                    .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive)
+                    .GetActiveEntities<IncidentEntity>()
                     .ToList();
 
                 _logger.LogInformation("Refreshing {ActiveIncidentsCount} active incidents.", activeIncidentEntities.Count());

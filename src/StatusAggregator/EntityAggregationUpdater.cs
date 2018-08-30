@@ -10,20 +10,20 @@ using StatusAggregator.Table;
 namespace StatusAggregator
 {
     public class EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity> 
-        : IComponentAffectingEntityUpdater, IComponentAffectingEntityUpdater<TEntityAggregation>
+        : IComponentAffectingEntityUpdateHandler, IComponentAffectingEntityUpdateHandler<TEntityAggregation>
         where TEntityAggregation : ITableEntity, IEntityAggregation, new()
         where TAggregatedEntity : ITableEntity, IAggregatedEntity, new()
     {
         public readonly TimeSpan _groupEndDelay;
 
         private readonly ITableWrapper _table;
-        private readonly IComponentAffectingEntityUpdater<TAggregatedEntity> _aggregatedEntityUpdater;
+        private readonly IComponentAffectingEntityUpdateHandler<TAggregatedEntity> _aggregatedEntityUpdater;
 
         private readonly ILogger<EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity>> _logger;
 
         public EntityAggregationUpdater(
             ITableWrapper table,
-            IComponentAffectingEntityUpdater<TAggregatedEntity> aggregatedEntityUpdater,
+            IComponentAffectingEntityUpdateHandler<TAggregatedEntity> aggregatedEntityUpdater,
             StatusAggregatorConfiguration configuration,
             ILogger<EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity>> logger)
         {

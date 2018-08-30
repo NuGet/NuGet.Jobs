@@ -56,10 +56,10 @@ namespace StatusAggregator
         {
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
-            serviceCollection.AddTransient<IMessageUpdater, MessageUpdater>();
             AddParsing(serviceCollection);
             serviceCollection.AddTransient<IIncidentCollector, IncidentCollector>();
             AddManualStatusChangeHandling(serviceCollection);
+            serviceCollection.AddTransient<IMessageBuilder, MessageBuilder>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
             serviceCollection.AddTransient<StatusAggregator>();
@@ -195,17 +195,25 @@ namespace StatusAggregator
 
             containerBuilder
                 .RegisterType<NullEntityUpdater<IncidentEntity>>()
-                .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
+                .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
 
             containerBuilder
                 .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, IncidentEntity>>()
-                .As<IComponentAffectingEntityUpdater>()
-                .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
+                .As<IComponentAffectingEntityUpdateHandler>()
+                .As<IComponentAffectingEntityUpdateHandler<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<EntityAggregationUpdater<EventEntity, IncidentGroupEntity>>()
-                .As<IComponentAffectingEntityUpdater>()
-                .As<IComponentAffectingEntityUpdater<EventEntity>>();
+                .As<IComponentAffectingEntityUpdateHandler>()
+                .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
+
+            containerBuilder
+                .RegisterType<MessageEventUpdateListener>()
+                .As<IComponentAffectingEntityUpdateListener<EventEntity>>();
+
+            containerBuilder
+                .RegisterGeneric(typeof(ComponentAffectingEntityUpdater<>))
+                .As(typeof(IComponentAffectingEntityUpdater<>));
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

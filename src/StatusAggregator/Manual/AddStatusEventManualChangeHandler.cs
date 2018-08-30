@@ -26,7 +26,6 @@ namespace StatusAggregator.Manual
 
             var eventEntity = new EventEntity(
                 entity.EventAffectedComponentPath,
-                (ComponentStatus)entity.EventAffectedComponentStatus,
                 time,
                 entity.EventIsActive ? (DateTime?)null : time);
 
