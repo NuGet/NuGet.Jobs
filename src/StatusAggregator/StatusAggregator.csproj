@@ -55,7 +55,6 @@
     <Compile Include="IEntityAggregationLinkListener.cs" />
     <Compile Include="IEntityFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdater.cs" />
-    <Compile Include="IEventUpdater.cs" />
     <Compile Include="IIncidentCollector.cs" />
     <Compile Include="IncidentCollector.cs" />
     <Compile Include="IncidentFactory.cs" />
