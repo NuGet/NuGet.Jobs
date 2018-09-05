@@ -2,14 +2,13 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
-    public class EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity> 
+    public class EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity> 
         : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity
         where TAggregatedEntity : ChildComponentAffectingEntity<TEntityAggregation>, new()
@@ -17,15 +16,15 @@ namespace StatusAggregator
         public readonly TimeSpan _groupEndDelay;
 
         private readonly ITableWrapper _table;
-        private readonly IComponentAffectingEntityUpdateHandler<TAggregatedEntity> _aggregatedEntityUpdater;
+        private readonly IComponentAffectingEntityUpdater<TAggregatedEntity> _aggregatedEntityUpdater;
 
-        private readonly ILogger<EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity>> _logger;
+        private readonly ILogger<EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity>> _logger;
 
-        public EntityAggregationUpdater(
+        public EntityAggregationUpdateHandler(
             ITableWrapper table,
-            IComponentAffectingEntityUpdateHandler<TAggregatedEntity> aggregatedEntityUpdater,
+            IComponentAffectingEntityUpdater<TAggregatedEntity> aggregatedEntityUpdater,
             StatusAggregatorConfiguration configuration,
-            ILogger<EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity>> logger)
+            ILogger<EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregatedEntityUpdater = aggregatedEntityUpdater 

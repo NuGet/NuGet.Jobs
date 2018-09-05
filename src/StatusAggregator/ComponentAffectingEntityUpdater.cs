@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,19 +14,19 @@ namespace StatusAggregator
     {
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdateHandler<T> _handler;
-        private readonly IComponentAffectingEntityUpdateListener<T> _listener;
+        private readonly IEnumerable<IComponentAffectingEntityUpdateListener<T>> _listeners;
 
         private readonly ILogger<ComponentAffectingEntityUpdater<T>> _logger;
 
         public ComponentAffectingEntityUpdater(
             ITableWrapper table,
             IComponentAffectingEntityUpdateHandler<T> handler,
-            IComponentAffectingEntityUpdateListener<T> listener,
+            IEnumerable<IComponentAffectingEntityUpdateListener<T>> listeners,
             ILogger<ComponentAffectingEntityUpdater<T>> logger)
         {
             _table = table;
             _handler = handler;
-            _listener = listener;
+            _listeners = listeners;
             _logger = logger;
         }
 
@@ -45,7 +46,10 @@ namespace StatusAggregator
         public async Task<bool> Update(T groupEntity, DateTime cursor)
         {
             var result = await _handler.Update(groupEntity, cursor);
-            await _listener.OnUpdate(groupEntity, cursor);
+            foreach (var listener in _listeners)
+            {
+                await listener.OnUpdate(groupEntity, cursor);
+            }
 
             return result;
         }

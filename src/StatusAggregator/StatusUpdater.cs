@@ -35,6 +35,11 @@ namespace StatusAggregator
             _manualStatusChangeCollectors = collectors.Where(c => !IsIncidentCollector(c));
 
             _aggregationUpdaters = aggregationUpdaters ?? throw new ArgumentNullException(nameof(aggregationUpdaters));
+            if (!_aggregationUpdaters.Any())
+            {
+                throw new ArgumentException(nameof(aggregationUpdaters));
+            }
+
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -48,7 +53,10 @@ namespace StatusAggregator
                 }
 
                 var incidentCursor = await _incidentCollector.FetchLatest();
-                await Task.WhenAll(_aggregationUpdaters.Select(u => u.UpdateAllActive(incidentCursor)));
+                foreach (var aggregationUpdater in _aggregationUpdaters)
+                {
+                    await aggregationUpdater.UpdateAllActive(incidentCursor);
+                }
             }
         }
 

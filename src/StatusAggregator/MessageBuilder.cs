@@ -43,7 +43,7 @@ namespace StatusAggregator
                 return null;
             }
 
-            var messageEntity = new MessageEntity(eventEntity, time, contents);
+            var messageEntity = new MessageEntity(eventEntity, time, contents, type);
             _logger.LogInformation("Creating message with time {MessageTimestamp} and contents '{MessageContents}'.",
                 messageEntity.Time, messageEntity.Contents);
             await _table.InsertAsync(messageEntity);

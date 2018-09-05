@@ -30,7 +30,7 @@ namespace StatusAggregator.Manual
                 throw new ArgumentException("Cannot create a message for an event that does not exist.");
             }
             
-            var messageEntity = new MessageEntity(eventEntity, time, entity.MessageContents);
+            var messageEntity = new MessageEntity(eventEntity, time, entity.MessageContents, MessageType.Manual);
 
             await _table.InsertAsync(messageEntity);
             if (ManualStatusChangeUtility.UpdateEventIsActive(eventEntity, entity.EventIsActive, time))

@@ -32,7 +32,8 @@ namespace StatusAggregator.Manual
             var messageEntity = new MessageEntity(
                 eventEntity,
                 time,
-                entity.MessageContents);
+                entity.MessageContents,
+                MessageType.Manual);
 
             await _table.InsertAsync(messageEntity);
             await _table.InsertAsync(eventEntity);

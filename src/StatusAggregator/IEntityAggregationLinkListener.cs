@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Services.Status.Table;
 
 namespace StatusAggregator

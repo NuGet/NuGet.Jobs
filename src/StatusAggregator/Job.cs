@@ -191,20 +191,12 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
 
             containerBuilder
-                .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, IncidentEntity>>()
+                .RegisterType<EntityAggregationUpdateHandler<IncidentGroupEntity, IncidentEntity>>()
                 .As<IComponentAffectingEntityUpdateHandler<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<EntityAggregationUpdater<EventEntity, IncidentGroupEntity>>()
+                .RegisterType<EntityAggregationUpdateHandler<EventEntity, IncidentGroupEntity>>()
                 .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
-
-            containerBuilder
-                .RegisterType<AggregatedEntityUpdateListener<IncidentEntity, IncidentGroupEntity>>()
-                .As<IComponentAffectingEntityUpdateListener<IncidentEntity>>();
-
-            containerBuilder
-                .RegisterType<AggregatedEntityUpdateListener<IncidentGroupEntity, EventEntity>>()
-                .As<IComponentAffectingEntityUpdateListener<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<MessageEventUpdateListener>()
@@ -216,12 +208,10 @@ namespace StatusAggregator
 
             containerBuilder
                 .RegisterType<ComponentAffectingEntityUpdater<IncidentEntity>>()
-                .As<IComponentAffectingEntityUpdater>()
                 .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
 
             containerBuilder
                 .RegisterType<ComponentAffectingEntityUpdater<IncidentGroupEntity>>()
-                .As<IComponentAffectingEntityUpdater>()
                 .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
 
             containerBuilder
