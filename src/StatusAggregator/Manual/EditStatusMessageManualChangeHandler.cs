@@ -35,6 +35,7 @@ namespace StatusAggregator.Manual
             }
 
             messageEntity.Contents = entity.MessageContents;
+            messageEntity.Type = (int)MessageType.Manual;
 
             await _table.ReplaceAsync(messageEntity);
         }

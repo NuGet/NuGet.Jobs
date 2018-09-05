@@ -34,7 +34,7 @@ namespace StatusAggregator
             if (existingMessage != null)
             {
                 _logger.LogInformation("Message already exists, will not recreate.");
-                return null;
+                return existingMessage;
             }
 
             if (!TryGetContentsForMessageHelper(type, component, status, out var contents))
@@ -55,7 +55,22 @@ namespace StatusAggregator
             var existingMessage = await _table.RetrieveAsync<MessageEntity>(MessageEntity.GetRowKey(eventEntity, time));
             if (existingMessage == null)
             {
-                _logger.LogInformation("Cannot update message that doesn't exist.");
+                _logger.LogWarning("Cannot update message that doesn't exist.");
+                return;
+            }
+
+            var existingMessageType = (MessageType)existingMessage.Type;
+            if (existingMessageType != type)
+            {
+                if (existingMessageType == MessageType.Manual)
+                {
+                    _logger.LogInformation("Message was changed manually, cannot update.");
+                }
+                else
+                {
+                    _logger.LogWarning("Cannot update message, has unexpected type {UnexpectedType}.", existingMessageType);
+                }
+
                 return;
             }
 

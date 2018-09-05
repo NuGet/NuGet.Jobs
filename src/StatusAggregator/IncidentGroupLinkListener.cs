@@ -13,12 +13,12 @@ namespace StatusAggregator
             _table = table;
         }
 
-        public async Task OnLink(IncidentGroupEntity entityAggregation, IncidentEntity aggregatedEntity)
+        public async Task OnLink(IncidentGroupEntity groupEntity, IncidentEntity incidentEntity)
         {
-            if (aggregatedEntity.AffectedComponentStatus > entityAggregation.AffectedComponentStatus)
+            if (incidentEntity.AffectedComponentStatus > groupEntity.AffectedComponentStatus)
             {
-                entityAggregation.AffectedComponentStatus = aggregatedEntity.AffectedComponentStatus;
-                await _table.ReplaceAsync(entityAggregation);
+                groupEntity.AffectedComponentStatus = incidentEntity.AffectedComponentStatus;
+                await _table.ReplaceAsync(groupEntity);
             }
         }
     }

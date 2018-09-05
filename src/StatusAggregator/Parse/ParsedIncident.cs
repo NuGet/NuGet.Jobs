@@ -35,6 +35,6 @@ namespace StatusAggregator.Parse
         public int AffectedComponentStatus { get; }
         public DateTime StartTime { get; }
         public DateTime? EndTime { get; }
-        public bool IsActive => EndTime != null;
+        public bool IsActive => EndTime == null;
     }
 }
