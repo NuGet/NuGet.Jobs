@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Table;
+using NuGet.Services.Status.Table;
+using StatusAggregator.Parse;
 
 namespace StatusAggregator
 {
-    public interface IEntityFactory<TEntity, TInput>
-        where TEntity : ITableEntity, new()
+    public interface IEntityFactory<TEntity>
+        where TEntity : TableEntity
     {
-        Task<TEntity> Create(TInput input);
+        Task<TEntity> Create(ParsedIncident input);
     }
 }

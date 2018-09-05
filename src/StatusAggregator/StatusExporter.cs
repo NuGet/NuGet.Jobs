@@ -58,7 +58,7 @@ namespace StatusAggregator
                     .ToList()
                     .Select(e =>
                     {
-                        var messages = _table.GetLinkedEntities<MessageEntity>(e)
+                        var messages = _table.GetLinkedEntities<MessageEntity, EventEntity>(e)
                             .ToList()
                             .Select(m => m.AsMessage());
                         return e.AsEvent(messages);

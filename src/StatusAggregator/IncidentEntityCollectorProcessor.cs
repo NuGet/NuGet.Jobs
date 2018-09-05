@@ -13,23 +13,25 @@ using System.Threading.Tasks;
 
 namespace StatusAggregator
 {
-    public class IncidentCollector : IIncidentCollector
+    public class IncidentEntityCollectorProcessor : IEntityCollectorProcessor
     {
+        public const string IncidentsCollectorName = "incidents";
+
         private readonly ITableWrapper _table;
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly IEntityFactory<IncidentEntity, ParsedIncident> _incidentFactory;
-        private readonly ILogger<IncidentCollector> _logger;
+        private readonly IEntityFactory<IncidentEntity> _incidentFactory;
+        private readonly ILogger<IncidentEntityCollectorProcessor> _logger;
 
         private readonly string _incidentApiTeamId;
 
-        public IncidentCollector(
+        public IncidentEntityCollectorProcessor(
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
-            IEntityFactory<IncidentEntity, ParsedIncident> incidentFactory,
+            IEntityFactory<IncidentEntity> incidentFactory,
             StatusAggregatorConfiguration configuration,
-            ILogger<IncidentCollector> logger)
+            ILogger<IncidentEntityCollectorProcessor> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
@@ -39,29 +41,9 @@ namespace StatusAggregator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task RefreshActiveIncidents()
-        {
-            using (_logger.Scope("Refreshing active incidents."))
-            {
-                var activeIncidentEntities = _table
-                    .GetActiveEntities<IncidentEntity>()
-                    .ToList();
+        public string Name => IncidentsCollectorName;
 
-                _logger.LogInformation("Refreshing {ActiveIncidentsCount} active incidents.", activeIncidentEntities.Count());
-                foreach (var activeIncidentEntity in activeIncidentEntities)
-                {
-                    using (_logger.Scope("Refreshing active incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
-                    {
-                        var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
-                        activeIncidentEntity.EndTime = activeIncident.MitigationData?.Date;
-                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.EndTime);
-                        await _table.InsertOrReplaceAsync(activeIncidentEntity);
-                    }
-                }
-            }
-        }
-
-        public async Task<DateTime?> FetchNewIncidents(DateTime cursor)
+        public async Task<DateTime?> FetchSince(DateTime cursor)
         {
             using (_logger.Scope("Fetching all new incidents since {Cursor}.", cursor))
             {
@@ -75,7 +57,7 @@ namespace StatusAggregator
                 var parsedIncidents = incidents
                     .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
                     .ToList();
-                foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.CreationTime))
+                foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.StartTime))
                 {
                     await _incidentFactory.Create(parsedIncident);
                 }

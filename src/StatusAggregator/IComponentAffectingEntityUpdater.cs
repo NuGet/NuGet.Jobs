@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Services.Status.Table;
 
 namespace StatusAggregator
@@ -11,8 +10,8 @@ namespace StatusAggregator
     }
 
     public interface IComponentAffectingEntityUpdater<T>
-        where T : ITableEntity, IComponentAffectingEntity, new()
+        where T : ComponentAffectingEntity
     {
-        Task<bool> Update(T groupEntity, DateTime cursor);
+        Task<bool> Update(T entity, DateTime cursor);
     }
 }

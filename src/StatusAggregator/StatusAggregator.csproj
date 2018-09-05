@@ -46,17 +46,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AggregatedEntityFactory.cs" />
+    <Compile Include="AggregatedEntityUpdateListener.cs" />
+    <Compile Include="EntityFactoryAggregator.cs" />
     <Compile Include="ComponentAffectingEntityUpdater.cs" />
     <Compile Include="EntityAggregationUpdater.cs" />
+    <Compile Include="EntityCollector.cs" />
     <Compile Include="EventFactory.cs" />
+    <Compile Include="IAggregatedEntityFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdateHandler.cs" />
     <Compile Include="IComponentAffectingEntityUpdateListener.cs" />
     <Compile Include="IEntityAggregationLinkListener.cs" />
+    <Compile Include="IEntityCollector.cs" />
+    <Compile Include="IEntityCollectorProcessor.cs" />
     <Compile Include="IEntityFactory.cs" />
     <Compile Include="IComponentAffectingEntityUpdater.cs" />
-    <Compile Include="IIncidentCollector.cs" />
-    <Compile Include="IncidentCollector.cs" />
+    <Compile Include="IncidentEntityCollectorProcessor.cs" />
+    <Compile Include="IncidentEntityUpdateHandler.cs" />
     <Compile Include="IncidentFactory.cs" />
     <Compile Include="IncidentGroupFactory.cs" />
     <Compile Include="IncidentGroupLinkListener.cs" />
@@ -67,17 +72,14 @@
     <Compile Include="Manual\EditStatusEventManualChangeHandler.cs" />
     <Compile Include="Manual\EditStatusMessageManualChangeHandler.cs" />
     <Compile Include="Manual\IManualStatusChangeHandler.cs" />
-    <Compile Include="Manual\IManualStatusChangeUpdater.cs" />
     <Compile Include="Manual\ManualStatusChangeHandler.cs" />
-    <Compile Include="Manual\ManualStatusChangeUpdater.cs" />
+    <Compile Include="Manual\ManualStatusChangeCollectorProcessor.cs" />
     <Compile Include="Manual\ManualStatusChangeUtility.cs" />
     <Compile Include="IMessageBuilder.cs" />
     <Compile Include="MessageBuilder.cs" />
     <Compile Include="MessageType.cs" />
     <Compile Include="NuGetServiceComponentFactory.cs" />
     <Compile Include="LogEvents.cs" />
-    <Compile Include="NullEntityAggregationLinkHandler.cs" />
-    <Compile Include="NullEntityUpdater.cs" />
     <Compile Include="Parse\TrafficManagerEndpointStatusIncidentParser.cs" />
     <Compile Include="StatusAggregatorConfiguration.cs" />
     <Compile Include="Cursor.cs" />
@@ -133,10 +135,10 @@
       <Version>2.28.0-master-38796</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status">
-      <Version>2.28.0-sb-aggregateevent-39399</Version>
+      <Version>2.28.0-sb-aggregateevent-39748</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status.Table">
-      <Version>2.28.0-sb-aggregateevent-39399</Version>
+      <Version>2.28.0-sb-aggregateevent-39748</Version>
     </PackageReference>
     <PackageReference Include="WindowsAzure.Storage">
       <Version>9.2.0</Version>

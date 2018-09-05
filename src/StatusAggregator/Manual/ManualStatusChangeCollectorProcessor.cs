@@ -11,19 +11,22 @@ using System.Threading.Tasks;
 
 namespace StatusAggregator.Manual
 {
-    public class ManualStatusChangeUpdater : IManualStatusChangeUpdater
+    public class ManualStatusChangeCollectorProcessor : IEntityCollectorProcessor
     {
+        public const string ManualCollectorNamePrefix = "manual";
+
         private readonly ITableWrapper _table;
         private readonly IManualStatusChangeHandler _handler;
-        private readonly ILogger<ManualStatusChangeUpdater> _logger;
+        private readonly ILogger<ManualStatusChangeCollectorProcessor> _logger;
 
-        public ManualStatusChangeUpdater(
+        public ManualStatusChangeCollectorProcessor(
             string name,
             ITableWrapper table,
             IManualStatusChangeHandler handler,
-            ILogger<ManualStatusChangeUpdater> logger)
+            ILogger<ManualStatusChangeCollectorProcessor> logger)
         {
-            Name = name;
+            Name = ManualCollectorNamePrefix + 
+                (name ?? throw new ArgumentNullException(nameof(name)));
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -31,7 +34,7 @@ namespace StatusAggregator.Manual
 
         public string Name { get; }
 
-        public async Task<DateTime?> ProcessNewManualChanges(DateTime cursor)
+        public async Task<DateTime?> FetchSince(DateTime cursor)
         {
             using (_logger.Scope("Processing manual status changes."))
             {

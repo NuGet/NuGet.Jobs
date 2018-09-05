@@ -1,52 +1,51 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Parse;
 using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
-    class AggregatedEntityFactory<TAggregatedEntity, TEntityAggregation, TInput> 
-        : IEntityFactory<TAggregatedEntity, TInput>
-        where TAggregatedEntity : class, ITableEntity, IAggregatedEntity, new()
-        where TEntityAggregation : class, ITableEntity, IEntityAggregation, new()
+    public class EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation> 
+        : IEntityFactory<TAggregatedEntity>
+        where TAggregatedEntity : ChildComponentAffectingEntity<TEntityAggregation>, new()
+        where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
-        private readonly IEntityFactory<TAggregatedEntity, TInput> _entityFactory;
-        private readonly IEntityFactory<TEntityAggregation, TAggregatedEntity> _aggregationFactory;
+        private readonly IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation> _aggregatedEntityFactory;
+        private readonly IEntityFactory<TEntityAggregation> _aggregationFactory;
         private readonly IComponentAffectingEntityUpdater<TEntityAggregation> _aggregationUpdater;
-        private readonly IEntityAggregationLinkHandler<TEntityAggregation, TAggregatedEntity> _aggregationStatusHandler;
+        private readonly IEnumerable<IEntityAggregationLinkListener<TAggregatedEntity, TEntityAggregation>> _aggregationLinkListeners;
 
-        private readonly ILogger<AggregatedEntityFactory<TAggregatedEntity, TEntityAggregation, TInput>> _logger;
+        private readonly ILogger<EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation>> _logger;
 
-        public AggregatedEntityFactory(
+        public EntityFactoryAggregator(
             ITableWrapper table,
-            IEntityFactory<TAggregatedEntity, TInput> entityFactory,
-            IEntityFactory<TEntityAggregation, TAggregatedEntity> aggregationFactory,
+            IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation> entityFactory,
+            IEntityFactory<TEntityAggregation> aggregationFactory,
             IComponentAffectingEntityUpdater<TEntityAggregation> aggregationUpdater,
-            IEntityAggregationLinkHandler<TEntityAggregation, TAggregatedEntity> aggregationStatusHandler,
-            ILogger<AggregatedEntityFactory<TAggregatedEntity, TEntityAggregation, TInput>> logger)
+            IEnumerable<IEntityAggregationLinkListener<TAggregatedEntity, TEntityAggregation>> aggregationLinkListeners,
+            ILogger<EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _entityFactory = entityFactory ?? throw new ArgumentNullException(nameof(entityFactory));
+            _aggregatedEntityFactory = entityFactory ?? throw new ArgumentNullException(nameof(entityFactory));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));
-            _aggregationStatusHandler = aggregationStatusHandler ?? throw new ArgumentNullException(nameof(aggregationStatusHandler));
+            _aggregationLinkListeners = aggregationLinkListeners ?? throw new ArgumentNullException(nameof(aggregationLinkListeners));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<TAggregatedEntity> Create(TInput input)
+        public async Task<TAggregatedEntity> Create(ParsedIncident input)
         {
-            var aggregatedEntity = await _entityFactory.Create(input);
-
             TEntityAggregation groupToLinkTo = null;
-            using (_logger.Scope("Creating entity '{EntityRowKey}'.", aggregatedEntity.RowKey))
+            using (_logger.Scope("Creating entity."))
             {
-                var pathParts = ComponentUtility.GetNames(aggregatedEntity.AffectedComponentPath);
+                var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
                 for (var i = 1; i <= pathParts.Length; i++)
                 {
                     var possiblePath =
@@ -61,21 +60,21 @@ namespace StatusAggregator
                             // The aggregation must affect the same component or a parent component
                             e.AffectedComponentPath == possiblePath &&
                             // The aggregation must begin before or at the same time
-                            e.StartTime <= aggregatedEntity.StartTime &&
+                            e.StartTime <= input.StartTime &&
                             // The aggregation must be active or the aggregation must end after this incident begins
-                            (e.IsActive || (e.EndTime >= aggregatedEntity.StartTime)))
+                            (e.IsActive || (e.EndTime >= input.StartTime)))
                         .ToList();
 
                     _logger.LogInformation("Found {GroupCount} possible groups to link incident to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
                     foreach (var possibleGroupToLinkTo in possibleAggregations)
                     {
-                        if (!_table.GetLinkedEntities<TAggregatedEntity>(possibleGroupToLinkTo).ToList().Any())
+                        if (!_table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(possibleGroupToLinkTo).ToList().Any())
                         {
                             _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it is not linked to any incidents.", possibleGroupToLinkTo.RowKey);
                             continue;
                         }
 
-                        if (await _aggregationUpdater.Update(possibleGroupToLinkTo, aggregatedEntity.StartTime))
+                        if (await _aggregationUpdater.Update(possibleGroupToLinkTo, input.StartTime))
                         {
                             _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it has been deactivated.", possibleGroupToLinkTo.RowKey);
                             continue;
@@ -95,14 +94,15 @@ namespace StatusAggregator
                 if (groupToLinkTo == null)
                 {
                     _logger.LogInformation("Could not find existing group to link to, creating new group to link incident to.");
-                    groupToLinkTo = await _aggregationFactory.Create(aggregatedEntity);
+                    groupToLinkTo = await _aggregationFactory.Create(input);
                     _logger.LogInformation("Created new group '{GroupRowKey}' to link incident to.", groupToLinkTo.RowKey);
                 }
 
-                aggregatedEntity.ParentRowKey = groupToLinkTo.RowKey;
-                await _table.ReplaceAsync(aggregatedEntity);
-
-                await _aggregationStatusHandler.OnLink(groupToLinkTo, aggregatedEntity);
+                var aggregatedEntity = await _aggregatedEntityFactory.Create(input, groupToLinkTo);
+                foreach (var listener in _aggregationLinkListeners)
+                {
+                    await listener.OnLink(groupToLinkTo, aggregatedEntity);
+                }
 
                 return aggregatedEntity;
             }

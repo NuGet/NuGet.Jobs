@@ -13,6 +13,7 @@ using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
@@ -40,7 +41,8 @@ namespace StatusAggregator
             containerBuilder.Populate(serviceCollection);
 
             AddStorage(containerBuilder);
-            AddUpdaters(containerBuilder);
+            AddFactoriesAndUpdaters(containerBuilder);
+            AddEntityCollector(containerBuilder);
 
             _serviceProvider = new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -57,7 +59,7 @@ namespace StatusAggregator
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
             AddParsing(serviceCollection);
-            serviceCollection.AddTransient<IIncidentCollector, IncidentCollector>();
+            serviceCollection.AddTransient<IEntityCollectorProcessor, IncidentEntityCollectorProcessor>();
             AddManualStatusChangeHandling(serviceCollection);
             serviceCollection.AddTransient<IMessageBuilder, MessageBuilder>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
@@ -134,13 +136,12 @@ namespace StatusAggregator
 
                 // We need to listen to manual status change updates from each storage.
                 containerBuilder
-                    .RegisterType<ManualStatusChangeUpdater>()
+                    .RegisterType<ManualStatusChangeCollectorProcessor>()
                     .WithParameter(new NamedParameter(StorageAccountNameParameter, name))
                     .WithParameter(new ResolvedParameter(
                         (pi, ctx) => pi.ParameterType == typeof(ITableWrapper),
                         (pi, ctx) => ctx.ResolveNamed<ITableWrapper>(name)))
-                    .As<IManualStatusChangeUpdater>()
-                    .Named<IManualStatusChangeUpdater>(name);
+                    .As<IEntityCollectorProcessor>();
             }
         }
 
@@ -163,39 +164,31 @@ namespace StatusAggregator
             return blobClient.GetContainerReference(configuration.ContainerName);
         }
 
-        private const string AggregatedEntityFactoryBindingKey = "AggregatedEntityFactory";
-
-        private static void AddUpdaters(ContainerBuilder containerBuilder)
+        private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
         {
             containerBuilder
                 .RegisterType<IncidentFactory>()
-                .Named<IEntityFactory<IncidentEntity, ParsedIncident>>(AggregatedEntityFactoryBindingKey);
+                .As<IAggregatedEntityFactory<IncidentEntity, IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentGroupFactory>()
-                .Named<IEntityFactory<IncidentGroupEntity, IncidentEntity>>(AggregatedEntityFactoryBindingKey);
+                .As<IAggregatedEntityFactory<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
                 .RegisterType<EventFactory>()
-                .As<IEntityFactory<EventEntity, IncidentGroupEntity>>();
+                .As<IEntityFactory<EventEntity>>();
 
             containerBuilder
-                .RegisterType<AggregatedEntityFactory<IncidentEntity, IncidentGroupEntity, ParsedIncident>>()
-                .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(IEntityFactory<IncidentEntity, ParsedIncident>),
-                    (pi, ctx) => ctx.ResolveNamed<IEntityFactory<IncidentEntity, ParsedIncident>>(AggregatedEntityFactoryBindingKey))
-                .As<IEntityFactory<IncidentEntity, ParsedIncident>>();
+                .RegisterType<EntityFactoryAggregator<IncidentEntity, IncidentGroupEntity>>()
+                .As<IEntityFactory<IncidentEntity>>();
 
             containerBuilder
-                .RegisterType<AggregatedEntityFactory<IncidentGroupEntity, EventEntity, IncidentEntity>>()
-                .WithParameter(
-                    (pi, ctx) => pi.ParameterType == typeof(IEntityFactory<IncidentGroupEntity, IncidentEntity>),
-                    (pi, ctx) => ctx.ResolveNamed<IEntityFactory<IncidentGroupEntity, IncidentEntity>>(AggregatedEntityFactoryBindingKey))
-                .As<IEntityFactory<IncidentGroupEntity, IncidentEntity>>();
+                .RegisterType<EntityFactoryAggregator<IncidentGroupEntity, EventEntity>>()
+                .As<IEntityFactory<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterGeneric(typeof(NullEntityUpdater<>))
-                .As(typeof(IComponentAffectingEntityUpdateHandler<>));
+                .RegisterType<IncidentEntityUpdateHandler>()
+                .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
 
             containerBuilder
                 .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, IncidentEntity>>()
@@ -206,20 +199,49 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
 
             containerBuilder
+                .RegisterType<AggregatedEntityUpdateListener<IncidentEntity, IncidentGroupEntity>>()
+                .As<IComponentAffectingEntityUpdateListener<IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<AggregatedEntityUpdateListener<IncidentGroupEntity, EventEntity>>()
+                .As<IComponentAffectingEntityUpdateListener<IncidentGroupEntity>>();
+
+            containerBuilder
                 .RegisterType<MessageEventUpdateListener>()
                 .As<IComponentAffectingEntityUpdateListener<EventEntity>>();
 
             containerBuilder
-                .RegisterGeneric(typeof(ComponentAffectingEntityUpdater<>))
-                .As(typeof(IComponentAffectingEntityUpdater<>));
-
-            containerBuilder
-                .RegisterGeneric(typeof(NullEntityAggregationLinkHandler<,>))
-                .As(typeof(IEntityAggregationLinkHandler<,>));
-
-            containerBuilder
                 .RegisterType<IncidentGroupLinkListener>()
-                .As<IEntityAggregationLinkHandler<IncidentGroupEntity, IncidentEntity>>();
+                .As<IEntityAggregationLinkListener<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ComponentAffectingEntityUpdater<IncidentEntity>>()
+                .As<IComponentAffectingEntityUpdater>()
+                .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<ComponentAffectingEntityUpdater<IncidentGroupEntity>>()
+                .As<IComponentAffectingEntityUpdater>()
+                .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ComponentAffectingEntityUpdater<EventEntity>>()
+                .As<IComponentAffectingEntityUpdater>()
+                .As<IComponentAffectingEntityUpdater<EventEntity>>();
+        }
+
+        private const string ProcessorParameterName = "processorParameterName";
+
+        private static void AddEntityCollector(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterAdapter<IEntityCollectorProcessor, IEntityCollector>(
+                    (ctx, processor) =>
+                    {
+                        return new EntityCollector(
+                            ctx.Resolve<ICursor>(), 
+                            processor);
+                    });
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

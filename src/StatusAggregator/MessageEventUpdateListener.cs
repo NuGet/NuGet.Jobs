@@ -35,7 +35,7 @@ namespace StatusAggregator
 
         public async Task OnUpdate(EventEntity eventEntity, DateTime cursor)
         {
-            var linkedGroups = _table.GetLinkedEntities<IncidentGroupEntity>(eventEntity).ToList();
+            var linkedGroups = _table.GetLinkedEntities<IncidentGroupEntity, EventEntity>(eventEntity).ToList();
             var statusChanges = new List<StatusChange>();
             foreach (var linkedGroup in linkedGroups)
             {

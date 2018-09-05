@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -10,7 +9,7 @@ using StatusAggregator.Table;
 namespace StatusAggregator
 {
     public class ComponentAffectingEntityUpdater<T> : IComponentAffectingEntityUpdater, IComponentAffectingEntityUpdater<T>
-        where T : ITableEntity, IComponentAffectingEntity, new()
+        where T : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdateHandler<T> _handler;

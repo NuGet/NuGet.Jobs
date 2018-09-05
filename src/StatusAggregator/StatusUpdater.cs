@@ -3,7 +3,6 @@
 
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
-using StatusAggregator.Manual;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,22 +16,24 @@ namespace StatusAggregator
         private const string IncidentCursorName = "incident";
 
         private readonly ICursor _cursor;
-        private readonly IEnumerable<IManualStatusChangeUpdater> _manualStatusChangeUpdaters;
-        private readonly IIncidentCollector _incidentUpdater;
+        private readonly IEntityCollector _incidentCollector;
+        private readonly IEnumerable<IEntityCollector> _manualStatusChangeCollectors;
         private readonly IEnumerable<IComponentAffectingEntityUpdater> _aggregationUpdaters;
 
         private readonly ILogger<StatusUpdater> _logger;
 
         public StatusUpdater(
             ICursor cursor,
-            IEnumerable<IManualStatusChangeUpdater> manualStatusChangeUpdaters,
-            IIncidentCollector incidentUpdater,
+            IEnumerable<IEntityCollector> collectors,
             IEnumerable<IComponentAffectingEntityUpdater> aggregationUpdaters,
             ILogger<StatusUpdater> logger)
         {
             _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
-            _manualStatusChangeUpdaters = manualStatusChangeUpdaters ?? throw new ArgumentNullException(nameof(manualStatusChangeUpdaters));
-            _incidentUpdater = incidentUpdater ?? throw new ArgumentNullException(nameof(incidentUpdater));
+
+            collectors = collectors ?? throw new ArgumentNullException(nameof(collectors));
+            _incidentCollector = collectors.Single(IsIncidentCollector);
+            _manualStatusChangeCollectors = collectors.Where(c => !IsIncidentCollector(c));
+
             _aggregationUpdaters = aggregationUpdaters ?? throw new ArgumentNullException(nameof(aggregationUpdaters));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -41,31 +42,19 @@ namespace StatusAggregator
         {
             using (_logger.Scope("Updating service status."))
             {
-                foreach (var manualStatusChangeUpdater in _manualStatusChangeUpdaters)
+                foreach (var manualStatusChangeCollector in _manualStatusChangeCollectors)
                 {
-                    await ProcessCursor($"{ManualCursorBaseName}{manualStatusChangeUpdater.Name}", manualStatusChangeUpdater.ProcessNewManualChanges);
+                    await manualStatusChangeCollector.FetchLatest();
                 }
 
-                var incidentCursor = await ProcessCursor(IncidentCursorName, async (value) =>
-                {
-                    await _incidentUpdater.RefreshActiveIncidents();
-                    return await _incidentUpdater.FetchNewIncidents(value);
-                });
-
+                var incidentCursor = await _incidentCollector.FetchLatest();
                 await Task.WhenAll(_aggregationUpdaters.Select(u => u.UpdateAllActive(incidentCursor)));
             }
         }
 
-        private async Task<DateTime> ProcessCursor(string name, Func<DateTime, Task<DateTime?>> processCursor)
+        private bool IsIncidentCollector(IEntityCollector collector)
         {
-            var lastCursor = await _cursor.Get(name);
-            var nextCursor = await processCursor(lastCursor);
-            if (nextCursor.HasValue)
-            {
-                await _cursor.Set(name, nextCursor.Value);
-            }
-
-            return nextCursor ?? lastCursor;
+            return collector.Name == IncidentEntityCollectorProcessor.IncidentsCollectorName;
         }
     }
 }

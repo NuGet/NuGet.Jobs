@@ -3,6 +3,7 @@
 
 using NuGet.Services.Incidents;
 using NuGet.Services.Status;
+using NuGet.Services.Status.Table;
 using System;
 
 namespace StatusAggregator.Parse
@@ -10,7 +11,7 @@ namespace StatusAggregator.Parse
     /// <summary>
     /// Describes how a <see cref="Incident"/> affects a <see cref="ServiceStatus"/>.
     /// </summary>
-    public class ParsedIncident
+    public class ParsedIncident : IComponentAffectingEntity
     {
         public ParsedIncident(
             Incident incident, 
@@ -23,16 +24,17 @@ namespace StatusAggregator.Parse
             }
 
             Id = incident.Id;
-            CreationTime = incident.Source.CreateDate;
-            MitigationTime = incident.MitigationData?.Date;
+            StartTime = incident.Source.CreateDate;
+            EndTime = incident.MitigationData?.Date;
             AffectedComponentPath = affectedComponentPath;
-            AffectedComponentStatus = affectedComponentStatus;
+            AffectedComponentStatus = (int)affectedComponentStatus;
         }
 
-        public string Id { get; set; }
-        public string AffectedComponentPath { get; set; }
-        public ComponentStatus AffectedComponentStatus { get; set; }
-        public DateTime CreationTime { get; set; }
-        public DateTime? MitigationTime { get; set; }
+        public string Id { get; }
+        public string AffectedComponentPath { get; }
+        public int AffectedComponentStatus { get; }
+        public DateTime StartTime { get; }
+        public DateTime? EndTime { get; }
+        public bool IsActive => EndTime != null;
     }
 }

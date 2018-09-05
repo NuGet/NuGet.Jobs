@@ -11,8 +11,8 @@ namespace StatusAggregator
 {
     public class EntityAggregationUpdater<TEntityAggregation, TAggregatedEntity> 
         : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
-        where TEntityAggregation : ITableEntity, IEntityAggregation, new()
-        where TAggregatedEntity : ITableEntity, IAggregatedEntity, new()
+        where TEntityAggregation : ComponentAffectingEntity
+        where TAggregatedEntity : ChildComponentAffectingEntity<TEntityAggregation>, new()
     {
         public readonly TimeSpan _groupEndDelay;
 
@@ -45,7 +45,7 @@ namespace StatusAggregator
                     return false;
                 }
 
-                var entitiesLinkedToGroupQuery = _table.GetLinkedEntities<TAggregatedEntity>(groupEntity);
+                var entitiesLinkedToGroupQuery = _table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(groupEntity);
 
                 var entitiesLinkedToGroup = entitiesLinkedToGroupQuery.ToList();
                 if (entitiesLinkedToGroup.Any())

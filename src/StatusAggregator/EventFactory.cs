@@ -2,11 +2,12 @@
 using System.Threading.Tasks;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Parse;
 using StatusAggregator.Table;
 
 namespace StatusAggregator
 {
-    public class EventFactory : IEntityFactory<EventEntity, IncidentGroupEntity>
+    public class EventFactory : IEntityFactory<EventEntity>
     {
         private readonly ITableWrapper _table;
 
@@ -15,12 +16,12 @@ namespace StatusAggregator
             _table = table;
         }
 
-        public async Task<EventEntity> Create(IncidentGroupEntity input)
+        public async Task<EventEntity> Create(ParsedIncident input)
         {
             var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
             var topLevelComponentPathParts = pathParts.Take(2).ToArray();
             var path = ComponentUtility.GetPath(topLevelComponentPathParts);
-            var entity = new EventEntity(input, path);
+            var entity = new EventEntity(path, input.StartTime);
             await _table.InsertOrReplaceAsync(entity);
             return entity;
         }

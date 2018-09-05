@@ -10,18 +10,19 @@ namespace StatusAggregator.Table
     public static class TableWrapperExtensions
     {
         public static IQueryable<T> GetActiveEntities<T>(this ITableWrapper table)
-            where T : ITableEntity, IComponentAffectingEntity, new()
+            where T : ComponentAffectingEntity, new()
         {
             return table
                 .CreateQuery<T>()
                 .Where(e => e.IsActive);
         }
 
-        public static IQueryable<T> GetLinkedEntities<T>(this ITableWrapper table, ITableEntity entity)
-            where T : ITableEntity, ILinkedEntity, new()
+        public static IQueryable<TChild> GetLinkedEntities<TChild, TParent>(this ITableWrapper table, TParent entity)
+            where TChild : ITableEntity, IChildEntity<TParent>, new()
+            where TParent : ITableEntity
         {
             return table
-                .CreateQuery<T>()
+                .CreateQuery<TChild>()
                 .Where(e => e.ParentRowKey == entity.RowKey);
         }
     }

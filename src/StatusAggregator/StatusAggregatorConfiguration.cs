@@ -43,7 +43,7 @@ namespace StatusAggregator
 
         /// <summary>
         /// A team ID to use to query the incident API.
-        /// See <see cref="IncidentCollector"/>.
+        /// See <see cref="IncidentEntityCollectorProcessor"/>.
         /// </summary>
         public string TeamId { get; set; }
 
