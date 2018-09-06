@@ -6,7 +6,7 @@ namespace StatusAggregator
 {
     public interface IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity
-        where TAggregatedEntity : ChildComponentAffectingEntity<TEntityAggregation>
+        where TAggregatedEntity : AggregatedEntity<TEntityAggregation>
     {
         Task<TAggregatedEntity> Create(ParsedIncident input, TEntityAggregation aggregation);
     }

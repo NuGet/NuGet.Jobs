@@ -13,7 +13,7 @@ namespace StatusAggregator
 {
     public class EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation> 
         : IEntityFactory<TAggregatedEntity>
-        where TAggregatedEntity : ChildComponentAffectingEntity<TEntityAggregation>, new()
+        where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;

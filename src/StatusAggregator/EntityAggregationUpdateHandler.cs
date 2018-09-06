@@ -11,7 +11,7 @@ namespace StatusAggregator
     public class EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity> 
         : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity
-        where TAggregatedEntity : ChildComponentAffectingEntity<TEntityAggregation>, new()
+        where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
     {
         public readonly TimeSpan _groupEndDelay;
 
