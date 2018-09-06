@@ -52,31 +52,29 @@ namespace StatusAggregator
             {
                 var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
 
-                var recentEvents = _table
-                    .CreateQuery<EventEntity>()
-                    .Where(e => (e.IsActive || (e.EndTime >= DateTime.UtcNow - _eventVisibilityPeriod)))
-                    .ToList()
-                    .Select(e =>
-                    {
-                        var messages = _table.GetLinkedEntities<MessageEntity, EventEntity>(e)
-                            .ToList()
-                            .Select(m => m.AsMessage());
-                        return e.AsEvent(messages);
-                    })
-                    .Where(e => e.Messages != null && e.Messages.Any());
+                // Apply the active entities to the component tree.
+                var activeIncidentGroups = _table
+                    .GetActiveEntities<IncidentGroupEntity>()
+                    .ToList();
 
-                // If multiple events are affecting a single region, the event with the highest severity should affect the component.
-                var activeEvents = recentEvents
-                    .Where(e => e.EndTime == null || e.EndTime >= DateTime.UtcNow)
+                var activeEvents = _table
+                    .GetActiveEntities<EventEntity>()
+                    .ToList();
+                
+                var activeEntities = activeIncidentGroups
+                    .Concat<IComponentAffectingEntity>(activeEvents)
+                    // Only apply entities with a non-Up status.
+                    .Where(e => e.AffectedComponentStatus != (int)ComponentStatus.Up)
+                    // If multiple events are affecting a single region, the event with the highest severity should affect the component.
                     .GroupBy(e => e.AffectedComponentPath)
                     .Select(g => g.OrderByDescending(e => e.AffectedComponentStatus).First());
 
-                foreach (var activeEvent in activeEvents)
+                foreach (var activeEntity in activeEntities)
                 {
-                    using (_logger.Scope("Applying active event affecting '{AffectedComponentPath}' of severity {AffectedComponentStatus} at {StartTime} to root component", 
-                        activeEvent.AffectedComponentPath, activeEvent.AffectedComponentStatus, activeEvent.StartTime))
+                    using (_logger.Scope("Applying active event affecting '{AffectedComponentPath}' of severity {AffectedComponentStatus} at {StartTime} to root component",
+                        activeEntity.AffectedComponentPath, activeEntity.AffectedComponentStatus, activeEntity.StartTime))
                     {
-                        var currentComponent = rootComponent.GetByPath(activeEvent.AffectedComponentPath);
+                        var currentComponent = rootComponent.GetByPath(activeEntity.AffectedComponentPath);
 
                         if (currentComponent == null)
                         {
@@ -84,9 +82,31 @@ namespace StatusAggregator
                             continue;
                         }
 
-                        currentComponent.Status = activeEvent.AffectedComponentStatus;
+                        currentComponent.Status = (ComponentStatus)activeEntity.AffectedComponentStatus;
                     }
                 }
+
+                var recentEvents = _table
+                    .CreateQuery<EventEntity>()
+                    .Where(e => (e.IsActive || (e.EndTime >= DateTime.UtcNow - _eventVisibilityPeriod)))
+                    .ToList()
+                    .SelectMany(e =>
+                    {
+                        var messages = _table.GetLinkedEntities<MessageEntity, EventEntity>(e)
+                            .ToList()
+                            // Don't show empty messages.
+                            .Where(m => !string.IsNullOrEmpty(m.Contents));
+
+                        var factory = new EventFactory(e);
+                        foreach (var message in messages)
+                        {
+                            factory.AddMessage(message);
+                        }
+
+                        return factory.Events;
+                    })
+                    .Where(e => e.Messages != null && e.Messages.Any())
+                    .ToList();
 
                 ServiceStatus status;
                 string statusJson;
@@ -103,6 +123,74 @@ namespace StatusAggregator
                 }
 
                 return status;
+            }
+        }
+
+        private class EventFactory
+        {
+            private readonly EventEntity _eventEntity;
+
+            private readonly IList<Event> _events = new List<Event>();
+            public IEnumerable<Event> Events
+            {
+                get
+                {
+                    CommitMessages();
+                    return _events;
+                }
+            }
+
+            private readonly IList<MessageEntity> _currentMessages = new List<MessageEntity>();
+
+            public EventFactory(EventEntity eventEntity)
+            {
+                _eventEntity = eventEntity;
+            }
+
+            public void AddMessage(MessageEntity message)
+            {
+                switch ((MessageType)message.Type)
+                {
+                    case MessageType.Start:
+                        CommitMessages();
+                        _currentMessages.Add(message);
+
+                        break;
+
+                    case MessageType.End:
+                        _currentMessages.Add(message);
+                        CommitMessages();
+
+                        break;
+
+                    case MessageType.Manual:
+                        _currentMessages.Add(message);
+
+                        break;
+                }
+            }
+
+            private void CommitMessages()
+            {
+                if (_currentMessages.Any())
+                {
+                    var startTime = _currentMessages.Min(m => m.Time);
+                    var endTime = _currentMessages.Count > 1
+                        ? _currentMessages.Max(m => m.Time)
+                        : (DateTime?)null;
+
+                    var newEvent = new Event(
+                        _eventEntity.AffectedComponentPath,
+                        startTime,
+                        endTime,
+                        _currentMessages
+                            .Select(m => new Message(m.Time, m.Contents))
+                            .ToList());
+
+                    _events.Add(newEvent);
+
+                    _currentMessages.Clear();
+                }
             }
         }
     }
