@@ -5,11 +5,16 @@ using System;
 using System.Threading.Tasks;
 using NuGet.Services.Status.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
-    public interface IComponentAffectingEntityUpdateListener<T>
+    public interface IComponentAffectingEntityUpdater
+    {
+        Task UpdateAllActive(DateTime cursor);
+    }
+
+    public interface IComponentAffectingEntityUpdater<T>
         where T : ComponentAffectingEntity
     {
-        Task OnUpdate(T entity, DateTime cursor);
+        Task<bool> Update(T entity, DateTime cursor);
     }
 }

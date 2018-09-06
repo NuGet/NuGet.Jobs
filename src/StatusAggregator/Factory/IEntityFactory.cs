@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Table;
 using StatusAggregator.Parse;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
     public interface IEntityFactory<TEntity>
         where TEntity : TableEntity

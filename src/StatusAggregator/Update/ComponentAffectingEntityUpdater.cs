@@ -10,7 +10,7 @@ using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
     public class ComponentAffectingEntityUpdater<T> : IComponentAffectingEntityUpdater, IComponentAffectingEntityUpdater<T>
         where T : ComponentAffectingEntity, new()

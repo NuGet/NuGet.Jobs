@@ -11,8 +11,9 @@ using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
+using StatusAggregator.Update;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
     public class EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation> 
         : IEntityFactory<TAggregatedEntity>

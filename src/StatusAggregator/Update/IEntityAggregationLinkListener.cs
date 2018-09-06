@@ -4,7 +4,7 @@
 using System.Threading.Tasks;
 using NuGet.Services.Status.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
     public interface IEntityAggregationLinkListener<TAggregatedEntity, TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity

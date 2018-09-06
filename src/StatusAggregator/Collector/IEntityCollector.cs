@@ -4,7 +4,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace StatusAggregator
+namespace StatusAggregator.Collector
 {
     public interface IEntityCollector
     {

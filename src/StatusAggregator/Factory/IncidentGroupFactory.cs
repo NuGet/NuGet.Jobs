@@ -7,26 +7,24 @@ using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
-    public class IncidentFactory : IAggregatedEntityFactory<IncidentEntity, IncidentGroupEntity>
+    public class IncidentGroupFactory : IAggregatedEntityFactory<IncidentGroupEntity, EventEntity>
     {
         private readonly ITableWrapper _table;
 
-        public IncidentFactory(ITableWrapper table)
+        public IncidentGroupFactory(ITableWrapper table)
         {
             _table = table;
         }
 
-        public async Task<IncidentEntity> Create(ParsedIncident input, IncidentGroupEntity groupEntity)
+        public async Task<IncidentGroupEntity> Create(ParsedIncident input, EventEntity eventEntity)
         {
-            var entity = new IncidentEntity(
-                input.Id,
-                groupEntity,
+            var entity = new IncidentGroupEntity(
+                eventEntity,
                 input.AffectedComponentPath,
                 (ComponentStatus)input.AffectedComponentStatus,
-                input.StartTime,
-                input.EndTime);
+                input.StartTime);
 
             await _table.InsertOrReplaceAsync(entity);
 

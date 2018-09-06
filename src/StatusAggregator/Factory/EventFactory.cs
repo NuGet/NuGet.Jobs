@@ -1,33 +1,31 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
-    public class IncidentGroupFactory : IAggregatedEntityFactory<IncidentGroupEntity, EventEntity>
+    public class EventFactory : IEntityFactory<EventEntity>
     {
         private readonly ITableWrapper _table;
 
-        public IncidentGroupFactory(ITableWrapper table)
+        public EventFactory(ITableWrapper table)
         {
             _table = table;
         }
 
-        public async Task<IncidentGroupEntity> Create(ParsedIncident input, EventEntity eventEntity)
+        public async Task<EventEntity> Create(ParsedIncident input)
         {
-            var entity = new IncidentGroupEntity(
-                eventEntity,
-                input.AffectedComponentPath,
-                (ComponentStatus)input.AffectedComponentStatus,
-                input.StartTime);
-
+            var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
+            var topLevelComponentPathParts = pathParts.Take(2).ToArray();
+            var path = ComponentUtility.GetPath(topLevelComponentPathParts);
+            var entity = new EventEntity(path, input.StartTime);
             await _table.InsertOrReplaceAsync(entity);
-
             return entity;
         }
     }

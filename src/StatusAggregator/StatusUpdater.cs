@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
+using StatusAggregator.Collector;
+using StatusAggregator.Update;
 using System;
 using System.Collections.Generic;
 using System.Linq;

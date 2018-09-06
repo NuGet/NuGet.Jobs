@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Collector;
 using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
     public class IncidentEntityUpdateHandler : IComponentAffectingEntityUpdateHandler<IncidentEntity>
     {

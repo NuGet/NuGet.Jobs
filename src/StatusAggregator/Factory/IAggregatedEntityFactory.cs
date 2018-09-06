@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
     public interface IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity

@@ -5,13 +5,14 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Factory;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace StatusAggregator
+namespace StatusAggregator.Collector
 {
     public class IncidentEntityCollectorProcessor : IEntityCollectorProcessor
     {

@@ -18,9 +18,12 @@ using NuGet.Jobs;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
+using StatusAggregator.Collector;
+using StatusAggregator.Factory;
 using StatusAggregator.Manual;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
+using StatusAggregator.Update;
 
 namespace StatusAggregator
 {

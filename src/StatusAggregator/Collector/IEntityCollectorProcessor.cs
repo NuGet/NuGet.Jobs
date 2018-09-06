@@ -3,13 +3,13 @@
 
 using System;
 using System.Threading.Tasks;
-using NuGet.Services.Status.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Collector
 {
-    public interface IComponentAffectingEntityUpdateHandler<T>
-        where T : ComponentAffectingEntity
+    public interface IEntityCollectorProcessor
     {
-        Task<bool> Update(T groupEntity, DateTime cursor);
+        string Name { get; }
+
+        Task<DateTime?> FetchSince(DateTime cursor);
     }
 }

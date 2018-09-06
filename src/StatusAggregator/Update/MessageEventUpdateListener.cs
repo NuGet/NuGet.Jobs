@@ -10,7 +10,7 @@ using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
     public class MessageEventUpdateListener : IComponentAffectingEntityUpdateListener<EventEntity>
     {
