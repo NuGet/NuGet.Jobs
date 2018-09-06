@@ -159,8 +159,8 @@ namespace StatusAggregator
         /// This was not implemented as a dictionary because it is not possible to construct a <see cref="IEqualityComparer{T}.GetHashCode(T)"/> that works with component path prefixes.
         /// 
         /// Proof:
-        /// A/B and A/C must have the same hashcode as A. (A/B and A/C are both prefixed by A.)
-        /// However, A/B must not have the same hashcode as A/C. (A/B is not a prefix of A/C and vice versa.)
+        /// A/B and A/C must have the same hashcode as A because A/B and A/C are both prefixed by A.
+        /// However, A/B must not have the same hashcode as A/C because A/B is not a prefix of A/C and A/C is not a prefix of A/B.
         /// Therefore, A/B and A/C must have a hashcode that is both identical AND different.
         /// This is not possible.
         /// </remarks>
