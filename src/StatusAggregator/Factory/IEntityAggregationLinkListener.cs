@@ -10,6 +10,9 @@ namespace StatusAggregator.Factory
         where TEntityAggregation : ComponentAffectingEntity
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>
     {
+        /// <summary>
+        /// Called when <paramref name="aggregatedEntity"/> is linked to <paramref name="entityAggregation"/>.
+        /// </summary>
         Task OnLink(TEntityAggregation entityAggregation, TAggregatedEntity aggregatedEntity);
     }
 }

@@ -7,13 +7,13 @@ using StatusAggregator.Parse;
 
 namespace StatusAggregator.Factory
 {
-    /// <summary>
-    /// Creates a <typeparamref name="TAggregatedEntity"/> for a <see cref="ParsedIncident"/> given a <typeparamref name="TEntityAggregation"/>.
-    /// </summary>
     public interface IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>
     {
+        /// <summary>
+        /// Creates a <typeparamref name="TAggregatedEntity"/> for a <see cref="ParsedIncident"/> given a <typeparamref name="TEntityAggregation"/>.
+        /// </summary>
         Task<TAggregatedEntity> Create(ParsedIncident input, TEntityAggregation aggregation);
     }
 }

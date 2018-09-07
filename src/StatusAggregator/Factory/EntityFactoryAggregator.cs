@@ -49,10 +49,11 @@ namespace StatusAggregator.Factory
 
         public async Task<TAggregatedEntity> Create(ParsedIncident input)
         {
-            TEntityAggregation aggregation = null;
+            TEntityAggregation aggregationEntity = null;
             using (_logger.Scope("Creating entity of type {AggregatedType} aggregated by type {AggregationType}.", 
                 typeof(TAggregatedEntity), typeof(TEntityAggregation)))
             {
+                // Iterate through the ancestors of the component that this parsed incident affects
                 var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
                 for (var i = 1; i <= pathParts.Length; i++)
                 {
@@ -61,7 +62,7 @@ namespace StatusAggregator.Factory
                             Constants.ComponentPathDivider.ToString(),
                             pathParts.Take(i).ToArray());
                     
-                    // Find an aggregation to link to
+                    // Find an aggregation to link to with that path
                     var possibleAggregations = _table
                         .CreateQuery<TEntityAggregation>()
                         .Where(e =>
@@ -91,28 +92,28 @@ namespace StatusAggregator.Factory
                             }
 
                             _logger.LogInformation("Linking entity to aggregation.");
-                            aggregation = possibleAggregation;
+                            aggregationEntity = possibleAggregation;
                             break;
                         }
                     }
 
-                    if (aggregation != null)
+                    if (aggregationEntity != null)
                     {
                         break;
                     }
                 }
 
-                if (aggregation == null)
+                if (aggregationEntity == null)
                 {
                     _logger.LogInformation("Could not find existing aggregation to link to, creating new aggregation to link entity to.");
-                    aggregation = await _aggregationFactory.Create(input);
-                    _logger.LogInformation("Created new aggregation {AggregationRowKey} to link entity to.", aggregation.RowKey);
+                    aggregationEntity = await _aggregationFactory.Create(input);
+                    _logger.LogInformation("Created new aggregation {AggregationRowKey} to link entity to.", aggregationEntity.RowKey);
                 }
 
-                var aggregatedEntity = await _aggregatedEntityFactory.Create(input, aggregation);
+                var aggregatedEntity = await _aggregatedEntityFactory.Create(input, aggregationEntity);
                 foreach (var listener in _aggregationLinkListeners)
                 {
-                    await listener.OnLink(aggregation, aggregatedEntity);
+                    await listener.OnLink(aggregationEntity, aggregatedEntity);
                 }
 
                 return aggregatedEntity;
