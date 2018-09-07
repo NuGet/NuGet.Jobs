@@ -14,6 +14,9 @@ using System.Threading.Tasks;
 
 namespace StatusAggregator.Collector
 {
+    /// <summary>
+    /// Fetches new <see cref="IncidentEntity"/>s using an <see cref="IIncidentApiClient"/>.
+    /// </summary>
     public class IncidentEntityCollectorProcessor : IEntityCollectorProcessor
     {
         public const string IncidentsCollectorName = "incidents";

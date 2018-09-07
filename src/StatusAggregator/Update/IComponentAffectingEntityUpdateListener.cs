@@ -10,6 +10,9 @@ namespace StatusAggregator.Update
     public interface IComponentAffectingEntityUpdateListener<T>
         where T : ComponentAffectingEntity
     {
+        /// <summary>
+        /// Called when <paramref name="entity"/> is updated by a <see cref="IComponentAffectingEntityUpdateHandler{T}"/>.
+        /// </summary>
         Task OnUpdate(T entity, DateTime cursor);
     }
 }

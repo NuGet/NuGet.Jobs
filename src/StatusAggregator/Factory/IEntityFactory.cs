@@ -7,6 +7,9 @@ using StatusAggregator.Parse;
 
 namespace StatusAggregator.Factory
 {
+    /// <summary>
+    /// Creates a <typeparamref name="TEntity"/> given a <see cref="ParsedIncident"/>.
+    /// </summary>
     public interface IEntityFactory<TEntity>
         where TEntity : TableEntity
     {

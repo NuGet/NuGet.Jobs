@@ -35,23 +35,23 @@ namespace StatusAggregator.Update
 
         public async Task UpdateAllActive(DateTime cursor)
         {
-            using (_logger.Scope("Updating active groups."))
+            using (_logger.Scope("Updating active entities."))
             {
-                var activeGroups = _table.GetActiveEntities<T>().ToList();
-                _logger.LogInformation("Updating {ActiveGroupsCount} active groups.", activeGroups.Count());
-                foreach (var activeGroup in activeGroups)
+                var activeEntities = _table.GetActiveEntities<T>().ToList();
+                _logger.LogInformation("Updating {ActiveEntitiesCount} active entities.", activeEntities.Count());
+                foreach (var activeEntity in activeEntities)
                 {
-                    await _handler.Update(activeGroup, cursor);
+                    await _handler.Update(activeEntity, cursor);
                 }
             }
         }
 
-        public async Task<bool> Update(T groupEntity, DateTime cursor)
+        public async Task<bool> Update(T entity, DateTime cursor)
         {
-            var result = await _handler.Update(groupEntity, cursor);
+            var result = await _handler.Update(entity, cursor);
             foreach (var listener in _listeners)
             {
-                await listener.OnUpdate(groupEntity, cursor);
+                await listener.OnUpdate(entity, cursor);
             }
 
             return result;

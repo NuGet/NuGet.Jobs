@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -35,87 +36,112 @@ namespace StatusAggregator.Update
 
         public async Task OnUpdate(EventEntity eventEntity, DateTime cursor)
         {
-            var linkedGroups = _table.GetLinkedEntities<IncidentGroupEntity, EventEntity>(eventEntity).ToList();
-            var statusChanges = new List<StatusChange>();
-            foreach (var linkedGroup in linkedGroups)
+            using (_logger.Scope("Updating messages for event {EventRowKey}.", eventEntity.RowKey))
             {
-                var path = linkedGroup.AffectedComponentPath;
-                var status = (ComponentStatus)linkedGroup.AffectedComponentStatus;
-                statusChanges.Add(new StatusChange(linkedGroup.StartTime, path, status, MessageType.Start));
-                if (linkedGroup.EndTime.HasValue)
+                var linkedGroups = _table.GetLinkedEntities<IncidentGroupEntity, EventEntity>(eventEntity).ToList();
+                var statusChanges = new List<StatusChange>();
+                _logger.LogInformation("Event has {IncidentGroupsCount} linked incident groups.", linkedGroups.Count);
+                foreach (var linkedGroup in linkedGroups)
                 {
-                    statusChanges.Add(new StatusChange(linkedGroup.EndTime.Value, path, status, MessageType.End));
+                    using (_logger.Scope("Getting status changes from incident group {IncidentGroupRowKey}.", linkedGroup.RowKey))
+                    {
+                        var path = linkedGroup.AffectedComponentPath;
+                        var status = (ComponentStatus)linkedGroup.AffectedComponentStatus;
+                        var startTime = linkedGroup.StartTime;
+                        _logger.LogInformation("Incident group started at {StartTime}.", startTime);
+                        statusChanges.Add(new StatusChange(startTime, path, status, MessageType.Start));
+                        if (linkedGroup.EndTime.HasValue)
+                        {
+                            var endTime = linkedGroup.EndTime.Value;
+                            _logger.LogInformation("Incident group ended at {EndTime}.", endTime);
+                            statusChanges.Add(new StatusChange(endTime, path, status, MessageType.End));
+                        }
+                    }
                 }
-            }
 
-            var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
-            DateTime? startMessageTimestamp = null;
-            IComponent startMessageComponent = null;
-            ComponentStatus startMessageStatus = ComponentStatus.Up;
-            foreach (var statusChange in statusChanges.OrderBy(c => c.Timestamp))
-            {
-                var component = rootComponent.GetByPath(statusChange.AffectedComponentPath);
-                switch (statusChange.Type)
+                var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
+                DateTime? startMessageTimestamp = null;
+                IComponent startMessageComponent = null;
+                ComponentStatus startMessageStatus = ComponentStatus.Up;
+                foreach (var statusChange in statusChanges.OrderBy(c => c.Timestamp))
                 {
-                    case MessageType.Start:
-                        component.Status = statusChange.AffectedComponentStatus;
-                        
-                        var lowestVisibleComponent = GetLowestVisibleAffectedComponentPath(rootComponent, component);
-                        if (lowestVisibleComponent == null || lowestVisibleComponent.Status == ComponentStatus.Up)
+                    using (_logger.Scope("Processing status change of type {StatusChangeType} at {StatusChangeTimestamp} affecting {StatusChangePath} with status {StatusChangeStatus}.", 
+                        statusChange.Type, statusChange.Timestamp, statusChange.AffectedComponentPath, statusChange.AffectedComponentStatus))
+                    {
+                        var component = rootComponent.GetByPath(statusChange.AffectedComponentPath);
+                        switch (statusChange.Type)
                         {
-                            break;
+                            case MessageType.Start:
+                                _logger.LogInformation("Applying status change to component tree.");
+                                component.Status = statusChange.AffectedComponentStatus;
+
+                                var lowestVisibleComponent = GetLowestVisibleAffectedComponentPath(rootComponent, component);
+                                if (lowestVisibleComponent == null || lowestVisibleComponent.Status == ComponentStatus.Up)
+                                {
+                                    _logger.LogInformation("Status change does not affect component tree. Will not post or edit any messages.");
+                                    break;
+                                }
+
+                                if (startMessageTimestamp.HasValue)
+                                {
+                                    _logger.LogInformation("Found existing start message, will edit message with information from new status change.");
+                                    var leastCommonAncestorPath = GetLeastCommonAncestor(startMessageComponent.Path, lowestVisibleComponent.Path);
+                                    _logger.LogInformation("Least common ancestor component of existing start message is {LeastCommonAncestorPath}.", leastCommonAncestorPath);
+                                    var leastCommonAncestor = rootComponent.GetByPath(leastCommonAncestorPath);
+                                    if (leastCommonAncestor.Status == ComponentStatus.Up)
+                                    {
+                                        _logger.LogWarning("Least common ancestor of two visible components is unaffected!");
+                                    }
+
+                                    await _builder.UpdateMessage(eventEntity, startMessageTimestamp.Value, MessageType.Start, leastCommonAncestor);
+                                    startMessageComponent = leastCommonAncestor;
+                                    startMessageStatus = leastCommonAncestor.Status;
+                                }
+                                else
+                                {
+                                    _logger.LogInformation("Creating new start message for status change.");
+                                    startMessageTimestamp = statusChange.Timestamp;
+                                    startMessageComponent = lowestVisibleComponent;
+                                    startMessageStatus = lowestVisibleComponent.Status;
+                                    await _builder.CreateMessage(eventEntity, startMessageTimestamp.Value, statusChange.Type, startMessageComponent);
+                                }
+
+                                break;
+                            case MessageType.End:
+                                _logger.LogInformation("Removing status change from component tree.");
+                                component.Status = ComponentStatus.Up;
+
+                                if (startMessageTimestamp.HasValue && startMessageComponent.Status == ComponentStatus.Up)
+                                {
+                                    _logger.LogInformation("Found existing start message.");
+                                    if (statusChange.Timestamp - startMessageTimestamp > _eventStartMessageDelay)
+                                    {
+                                        _logger.LogInformation("Existing start message is old enough to keep. Adding a new end message.");
+                                        await _builder.CreateMessage(eventEntity, statusChange.Timestamp, statusChange.Type, startMessageComponent, startMessageStatus);
+                                    }
+                                    else
+                                    {
+                                        _logger.LogInformation("Existing start message is not old enough to keep. Deleting it.");
+                                        await _builder.DeleteMessage(eventEntity, startMessageTimestamp.Value);
+                                    }
+
+                                    startMessageTimestamp = null;
+                                    startMessageComponent = null;
+                                }
+
+                                break;
+                            default:
+                                _logger.LogWarning("Unexpected message type {MessageType}", statusChange.Type);
+                                break;
                         }
-
-                        if (startMessageTimestamp.HasValue)
-                        {
-                            var leastCommonAncestorPath = GetLeastCommonAncestor(startMessageComponent.Path, lowestVisibleComponent.Path);
-                            var leastCommonAncestor = rootComponent.GetByPath(leastCommonAncestorPath);
-                            if (leastCommonAncestor.Status == ComponentStatus.Up)
-                            {
-                                _logger.LogWarning("Least common ancestor of two visible components is not visible!");
-                            }
-
-                            await _builder.UpdateMessage(eventEntity, startMessageTimestamp.Value, MessageType.Start, leastCommonAncestor);
-                            startMessageComponent = leastCommonAncestor;
-                            startMessageStatus = leastCommonAncestor.Status;
-                        }
-                        else
-                        {
-                            startMessageTimestamp = statusChange.Timestamp;
-                            startMessageComponent = lowestVisibleComponent;
-                            startMessageStatus = lowestVisibleComponent.Status;
-                            await _builder.CreateMessage(eventEntity, startMessageTimestamp.Value, statusChange.Type, startMessageComponent);
-                        }
-
-                        break;
-                    case MessageType.End:
-                        component.Status = ComponentStatus.Up;
-
-                        if (startMessageTimestamp.HasValue && startMessageComponent.Status == ComponentStatus.Up)
-                        {
-                            if (statusChange.Timestamp - startMessageTimestamp > _eventStartMessageDelay)
-                            {
-                                await _builder.CreateMessage(eventEntity, statusChange.Timestamp, statusChange.Type, startMessageComponent, startMessageStatus);
-                            }
-                            else
-                            {
-                                await _builder.DeleteMessage(eventEntity, startMessageTimestamp.Value);
-                            }
-
-                            startMessageTimestamp = null;
-                            startMessageComponent = null;
-                        }
-
-                        break;
-                    default:
-                        _logger.LogWarning("Unexpected message type {MessageType}", statusChange.Type);
-                        break;
+                    }
                 }
-            }
 
-            if (cursor - startMessageTimestamp <= _eventStartMessageDelay)
-            {
-                await _builder.DeleteMessage(eventEntity, startMessageTimestamp.Value);
+                if (startMessageTimestamp.HasValue && cursor - startMessageTimestamp.Value <= _eventStartMessageDelay)
+                {
+                    _logger.LogInformation("Remaining start message is not old enough to keep. Deleting it.");
+                    await _builder.DeleteMessage(eventEntity, startMessageTimestamp.Value);
+                }
             }
         }
 

@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Collector;
@@ -15,13 +16,13 @@ namespace StatusAggregator.Update
     {
         private readonly ITableWrapper _table;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly ILogger<IncidentEntityCollectorProcessor> _logger;
+        private readonly ILogger<IncidentEntityUpdateHandler> _logger;
 
         public IncidentEntityUpdateHandler(
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             StatusAggregatorConfiguration configuration,
-            ILogger<IncidentEntityCollectorProcessor> logger)
+            ILogger<IncidentEntityUpdateHandler> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
@@ -30,17 +31,20 @@ namespace StatusAggregator.Update
 
         public async Task<bool> Update(IncidentEntity entity, DateTime cursor)
         {
-            var activeIncident = await _incidentApiClient.GetIncident(entity.IncidentApiId);
-            var endTime = activeIncident.MitigationData?.Date;
-
-            if (entity.EndTime != endTime)
+            using (_logger.Scope("Updating incident with ID {IncidentApiId}.", entity.IncidentApiId))
             {
-                _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", entity.EndTime);
-                entity.EndTime = endTime;
-                await _table.InsertOrReplaceAsync(entity);
-            }
+                var activeIncident = await _incidentApiClient.GetIncident(entity.IncidentApiId);
+                var endTime = activeIncident.MitigationData?.Date;
 
-            return entity.EndTime != null;
+                if (entity.EndTime != endTime)
+                {
+                    _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}.", entity.EndTime);
+                    entity.EndTime = endTime;
+                    await _table.InsertOrReplaceAsync(entity);
+                }
+
+                return entity.EndTime != null;
+            }
         }
     }
 }

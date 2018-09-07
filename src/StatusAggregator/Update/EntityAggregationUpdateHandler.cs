@@ -11,6 +11,9 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Update
 {
+    /// <summary>
+    /// Updates a <typeparamref name="TEntityAggregation"/> and its <typeparamref name="TAggregatedEntity"/>s.
+    /// </summary>
     public class EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity> 
         : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
         where TEntityAggregation : ComponentAffectingEntity
@@ -37,55 +40,56 @@ namespace StatusAggregator.Update
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<bool> Update(TEntityAggregation groupEntity, DateTime cursor)
+        public async Task<bool> Update(TEntityAggregation aggregationEntity, DateTime cursor)
         {
-            using (_logger.Scope("Updating group '{GroupRowKey}' given cursor {Cursor}.", groupEntity.RowKey, cursor))
+            using (_logger.Scope("Updating aggregation '{AggregationRowKey}' given cursor {Cursor}.", aggregationEntity.RowKey, cursor))
             {
-                if (!groupEntity.IsActive)
+                if (!aggregationEntity.IsActive)
                 {
-                    _logger.LogInformation("Group is inactive, cannot update.");
-                    return false;
+                    _logger.LogInformation("Aggregation is inactive, cannot update.");
+                    return true;
                 }
 
-                var entitiesLinkedToGroupQuery = _table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(groupEntity);
+                var aggregatedEntitiesQuery = _table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(aggregationEntity);
 
-                var entitiesLinkedToGroup = entitiesLinkedToGroupQuery.ToList();
-                if (entitiesLinkedToGroup.Any())
+                var aggregatedEntities = aggregatedEntitiesQuery.ToList();
+                if (aggregatedEntities.Any())
                 {
-                    foreach (var linkedEntity in entitiesLinkedToGroup)
+                    _logger.LogInformation("Aggregation has {ChildrenCount} children. Updating each child.", aggregatedEntities.Count);
+                    foreach (var aggregatedEntity in aggregatedEntities)
                     {
-                        await _aggregatedEntityUpdater.Update(linkedEntity, cursor);
+                        await _aggregatedEntityUpdater.Update(aggregatedEntity, cursor);
                     }
                 }
                 else
                 {
-                    _logger.LogInformation("Group has no linked children and must have been created manually, cannot update.");
+                    _logger.LogInformation("Aggregation has no children and must have been created manually, cannot update.");
                     return false;
                 }
 
-                var hasActiveLinkedEntities = entitiesLinkedToGroupQuery
+                var hasActiveAggregatedEntities = aggregatedEntitiesQuery
                     .Where(i => i.IsActive)
                     .ToList()
                     .Any();
 
-                var hasRecentLinkedEntities = entitiesLinkedToGroupQuery
+                var hasRecentAggregatedEntities = aggregatedEntitiesQuery
                     .Where(i => i.EndTime > cursor - _groupEndDelay)
                     .ToList()
                     .Any();
 
-                var shouldDeactivate = !hasActiveLinkedEntities && !hasRecentLinkedEntities;
+                var shouldDeactivate = !hasActiveAggregatedEntities && !hasRecentAggregatedEntities;
                 if (shouldDeactivate)
                 {
-                    _logger.LogInformation("Deactivating group because its children are inactive and too old.");
-                    var lastEndTime = entitiesLinkedToGroup
+                    _logger.LogInformation("Deactivating aggregation because its children are inactive and too old.");
+                    var lastEndTime = aggregatedEntities
                         .Max(i => i.EndTime ?? DateTime.MinValue);
-                    groupEntity.EndTime = lastEndTime;
+                    aggregationEntity.EndTime = lastEndTime;
 
-                    await _table.InsertOrReplaceAsync(groupEntity);
+                    await _table.InsertOrReplaceAsync(aggregationEntity);
                 }
                 else
                 {
-                    _logger.LogInformation("Group has active or recent children so it will not be deactivated.");
+                    _logger.LogInformation("Aggregation has active or recent children so it will not be deactivated.");
                 }
 
                 return shouldDeactivate;

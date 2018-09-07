@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
-namespace StatusAggregator.Update
+namespace StatusAggregator.Factory
 {
     public class IncidentGroupLinkListener : IEntityAggregationLinkListener<IncidentEntity, IncidentGroupEntity>
     {

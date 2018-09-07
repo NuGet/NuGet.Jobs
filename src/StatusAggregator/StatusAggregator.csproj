@@ -54,7 +54,7 @@
     <Compile Include="Factory\IAggregatedEntityFactory.cs" />
     <Compile Include="Update\IComponentAffectingEntityUpdateHandler.cs" />
     <Compile Include="Update\IComponentAffectingEntityUpdateListener.cs" />
-    <Compile Include="Update\IEntityAggregationLinkListener.cs" />
+    <Compile Include="Factory\IEntityAggregationLinkListener.cs" />
     <Compile Include="Collector\IEntityCollector.cs" />
     <Compile Include="Collector\IEntityCollectorProcessor.cs" />
     <Compile Include="Factory\IEntityFactory.cs" />
@@ -63,7 +63,7 @@
     <Compile Include="Update\IncidentEntityUpdateHandler.cs" />
     <Compile Include="Factory\IncidentFactory.cs" />
     <Compile Include="Factory\IncidentGroupFactory.cs" />
-    <Compile Include="Update\IncidentGroupLinkListener.cs" />
+    <Compile Include="Factory\IncidentGroupLinkListener.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandler.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandler.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandler.cs" />

@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 
 namespace StatusAggregator.Collector
 {
+    /// <summary>
+    /// Fetches new <see cref="ManualStatusChangeEntity"/>s using an <see cref="ITableWrapper"/>.
+    /// </summary>
     public class ManualStatusChangeCollectorProcessor : IEntityCollectorProcessor
     {
         public const string ManualCollectorNamePrefix = "manual";

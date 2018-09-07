@@ -15,6 +15,9 @@ using StatusAggregator.Update;
 
 namespace StatusAggregator.Factory
 {
+    /// <summary>
+    /// Implementation of <see cref="IEntityFactory{TEntity}"/> that creates an <see cref="IAggregatedEntity{T}"/>.
+    /// </summary>
     public class EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation> 
         : IEntityFactory<TAggregatedEntity>
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
@@ -46,8 +49,9 @@ namespace StatusAggregator.Factory
 
         public async Task<TAggregatedEntity> Create(ParsedIncident input)
         {
-            TEntityAggregation groupToLinkTo = null;
-            using (_logger.Scope("Creating entity."))
+            TEntityAggregation aggregation = null;
+            using (_logger.Scope("Creating entity of type {AggregatedType} aggregated by type {AggregationType}.", 
+                typeof(TAggregatedEntity), typeof(TEntityAggregation)))
             {
                 var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
                 for (var i = 1; i <= pathParts.Length; i++)
@@ -69,43 +73,46 @@ namespace StatusAggregator.Factory
                             (e.IsActive || (e.EndTime >= input.StartTime)))
                         .ToList();
 
-                    _logger.LogInformation("Found {GroupCount} possible groups to link incident to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
-                    foreach (var possibleGroupToLinkTo in possibleAggregations)
+                    _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
+                    foreach (var possibleAggregation in possibleAggregations)
                     {
-                        if (!_table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(possibleGroupToLinkTo).ToList().Any())
+                        using (_logger.Scope("Determining if entity can be linked to aggregation {AggregationRowKey}", possibleAggregation.RowKey))
                         {
-                            _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it is not linked to any incidents.", possibleGroupToLinkTo.RowKey);
-                            continue;
-                        }
+                            if (!_table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(possibleAggregation).ToList().Any())
+                            {
+                                _logger.LogInformation("Cannot link entity to aggregation because it is not linked to any incidents.");
+                                continue;
+                            }
 
-                        if (await _aggregationUpdater.Update(possibleGroupToLinkTo, input.StartTime))
-                        {
-                            _logger.LogInformation("Cannot link incident to group '{GroupRowKey}' because it has been deactivated.", possibleGroupToLinkTo.RowKey);
-                            continue;
-                        }
+                            if (await _aggregationUpdater.Update(possibleAggregation, input.StartTime))
+                            {
+                                _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated.");
+                                continue;
+                            }
 
-                        _logger.LogInformation("Linking incident to group '{GroupRowKey}'.", possibleGroupToLinkTo.RowKey);
-                        groupToLinkTo = possibleGroupToLinkTo;
-                        break;
+                            _logger.LogInformation("Linking entity to aggregation.");
+                            aggregation = possibleAggregation;
+                            break;
+                        }
                     }
 
-                    if (groupToLinkTo != null)
+                    if (aggregation != null)
                     {
                         break;
                     }
                 }
 
-                if (groupToLinkTo == null)
+                if (aggregation == null)
                 {
-                    _logger.LogInformation("Could not find existing group to link to, creating new group to link incident to.");
-                    groupToLinkTo = await _aggregationFactory.Create(input);
-                    _logger.LogInformation("Created new group '{GroupRowKey}' to link incident to.", groupToLinkTo.RowKey);
+                    _logger.LogInformation("Could not find existing aggregation to link to, creating new aggregation to link entity to.");
+                    aggregation = await _aggregationFactory.Create(input);
+                    _logger.LogInformation("Created new aggregation {AggregationRowKey} to link entity to.", aggregation.RowKey);
                 }
 
-                var aggregatedEntity = await _aggregatedEntityFactory.Create(input, groupToLinkTo);
+                var aggregatedEntity = await _aggregatedEntityFactory.Create(input, aggregation);
                 foreach (var listener in _aggregationLinkListeners)
                 {
-                    await listener.OnLink(groupToLinkTo, aggregatedEntity);
+                    await listener.OnLink(aggregation, aggregatedEntity);
                 }
 
                 return aggregatedEntity;

@@ -7,9 +7,16 @@ using NuGet.Services.Status.Table;
 
 namespace StatusAggregator.Update
 {
+    /// <summary>
+    /// Wrapped by <see cref="IComponentAffectingEntityUpdater{T}"/> to update <typeparamref name="T"/>s.
+    /// </summary>
     public interface IComponentAffectingEntityUpdateHandler<T>
         where T : ComponentAffectingEntity
     {
+        /// <summary>
+        /// Updates <paramref name="groupEntity"/> given that the current time is now <paramref name="cursor"/>.
+        /// Returns whether <paramref name="groupEntity"/> is inactive.
+        /// </summary>
         Task<bool> Update(T groupEntity, DateTime cursor);
     }
 }
