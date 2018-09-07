@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.WindowsAzure.Storage.Table;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
 

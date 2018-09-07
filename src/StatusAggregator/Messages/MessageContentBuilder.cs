@@ -4,106 +4,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
-using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Messages
 {
-    public class MessageBuilder : IMessageBuilder
+    public class MessageContentBuilder : IMessageContentBuilder
     {
-        private readonly ITableWrapper _table;
+        private readonly ILogger<MessageContentBuilder> _logger;
 
-        private readonly ILogger<MessageBuilder> _logger;
-
-        public MessageBuilder(
-            ITableWrapper table,
-            ILogger<MessageBuilder> logger)
+        public MessageContentBuilder(ILogger<MessageContentBuilder> logger)
         {
-            _table = table;
             _logger = logger;
         }
 
-        public Task<MessageEntity> CreateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
-        {
-            return CreateMessage(eventEntity, time, type, component, component.Status);
-        }
-
-        public async Task<MessageEntity> CreateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status)
-        {
-            using (_logger.Scope("Creating new message of type {Type} for event {EventRowKey} at {Timestamp} affecting {ComponentPath} with status {ComponentStatus}.",
-                type, eventEntity.RowKey, time, component.Path, status))
-            {
-                var existingMessage = await _table.RetrieveAsync<MessageEntity>(MessageEntity.GetRowKey(eventEntity, time));
-                if (existingMessage != null)
-                {
-                    _logger.LogInformation("Message already exists, will not recreate.");
-                    return existingMessage;
-                }
-
-                if (!TryGetContentsForMessageHelper(type, component, status, out var contents))
-                {
-                    _logger.LogWarning("Failed to get contents for new message!");
-                    return null;
-                }
-
-                var messageEntity = new MessageEntity(eventEntity, time, contents, type);
-                _logger.LogInformation("Creating message with time {MessageTimestamp} and contents {MessageContents}.",
-                    messageEntity.Time, messageEntity.Contents);
-                await _table.InsertAsync(messageEntity);
-                return messageEntity;
-            }
-        }
-
-        public async Task UpdateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
-        {
-            using (_logger.Scope("Updating existing message of type {Type} for event {EventRowKey} at {Timestamp} affecting {ComponentPath}.",
-                type, eventEntity.RowKey, time, component.Path))
-            {
-                var existingMessage = await _table.RetrieveAsync<MessageEntity>(MessageEntity.GetRowKey(eventEntity, time));
-                if (existingMessage == null)
-                {
-                    _logger.LogWarning("Cannot update message that doesn't exist.");
-                    return;
-                }
-
-                var existingMessageType = (MessageType)existingMessage.Type;
-                if (existingMessageType != type)
-                {
-                    if (existingMessageType == MessageType.Manual)
-                    {
-                        _logger.LogInformation("Message was changed manually, cannot update.");
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Cannot update message, has unexpected type {UnexpectedType}.", existingMessageType);
-                    }
-
-                    return;
-                }
-
-                if (!TryGetContentsForMessageHelper(type, component, out var newContents))
-                {
-                    _logger.LogWarning("Failed to get contents to update message!");
-                    return;
-                }
-
-                _logger.LogInformation("Replacing contents of message with time {MessageTimestamp} and contents {OldMessageContents} with {NewMessageContents}.",
-                    existingMessage.Time, existingMessage.Contents, newContents);
-                existingMessage.Contents = newContents;
-                await _table.ReplaceAsync(existingMessage);
-            }
-        }
-
-        public Task DeleteMessage(EventEntity eventEntity, DateTime time)
-        {
-            return _table.DeleteAsync(TableUtility.GetPartitionKey<MessageEntity>(), MessageEntity.GetRowKey(eventEntity, time));
-        }
-
-        private bool TryGetContentsForMessageHelper(
+        public bool TryGetContentsForMessageHelper(
             MessageType type,
             IComponent component,
             out string contents)
@@ -111,7 +28,7 @@ namespace StatusAggregator
             return TryGetContentsForMessageHelper(type, component, component.Status, out contents);
         }
 
-        private bool TryGetContentsForMessageHelper(
+        public bool TryGetContentsForMessageHelper(
             MessageType type,
             IComponent component,
             ComponentStatus status,
@@ -126,26 +43,35 @@ namespace StatusAggregator
             ComponentStatus status,
             out string contents)
         {
-            contents = null;
-
-            if (!_messageTypeToMessageTemplate.TryGetValue(type, out string messageTemplate))
+            using (_logger.Scope("Getting contents for message of type {MessageType} with path {ComponentPath} and status {ComponentStatus}.",
+                type, path, status))
             {
-                _logger.LogWarning("Could not find a template for type {MessageType}.", type);
-                return false;
+                contents = null;
+
+                if (!_messageTypeToMessageTemplate.TryGetValue(type, out string messageTemplate))
+                {
+                    _logger.LogWarning("Could not find a template for type.", type);
+                    return false;
+                }
+
+                _logger.LogInformation("Using template {MessageTemplate}.", messageTemplate);
+
+                var componentName = GetPrettyName(path);
+                _logger.LogInformation("Using {ComponentName} for name of component.", componentName);
+
+                var actionDescription = GetActionDescriptionFromPath(path);
+                if (actionDescription == null)
+                {
+                    _logger.LogWarning("Could not find an action description for path.", path);
+                    return false;
+                }
+
+                var componentStatus = status.ToString().ToLowerInvariant();
+                contents = string.Format(messageTemplate, componentName, componentStatus, actionDescription);
+
+                _logger.LogInformation("Returned {Contents} for contents of message.", contents);
+                return !string.IsNullOrEmpty(contents);
             }
-
-            var componentName = GetPrettyName(path);
-            var actionDescription = GetActionDescriptionFromPath(path);
-            if (actionDescription == null)
-            {
-                _logger.LogWarning("Could not find an action description for path {ComponentPath}.", path);
-                return false;
-            }
-
-            var componentStatus = status.ToString().ToLowerInvariant();
-            contents = string.Format(messageTemplate, componentName, componentStatus, actionDescription);
-
-            return !string.IsNullOrEmpty(contents);
         }
 
         private string GetPrettyName(string path)

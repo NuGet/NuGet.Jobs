@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
-using StatusAggregator.Collector;
 using StatusAggregator.Table;
 
 namespace StatusAggregator.Update

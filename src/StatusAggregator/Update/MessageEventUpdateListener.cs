@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Messages;
 using StatusAggregator.Table;
 
 namespace StatusAggregator.Update
@@ -18,13 +19,13 @@ namespace StatusAggregator.Update
         private readonly TimeSpan _eventStartMessageDelay;
 
         private readonly ITableWrapper _table;
-        private readonly IMessageBuilder _builder;
+        private readonly IMessageFactory _builder;
 
         private readonly ILogger<MessageEventUpdateListener> _logger;
 
         public MessageEventUpdateListener(
             ITableWrapper table,
-            IMessageBuilder builder,
+            IMessageFactory builder,
             StatusAggregatorConfiguration configuration,
             ILogger<MessageEventUpdateListener> logger)
         {

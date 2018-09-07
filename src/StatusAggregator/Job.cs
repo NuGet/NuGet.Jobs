@@ -21,6 +21,7 @@ using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Collector;
 using StatusAggregator.Factory;
 using StatusAggregator.Manual;
+using StatusAggregator.Messages;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 using StatusAggregator.Update;
@@ -63,7 +64,8 @@ namespace StatusAggregator
             AddParsing(serviceCollection);
             serviceCollection.AddTransient<IEntityCollectorProcessor, IncidentEntityCollectorProcessor>();
             AddManualStatusChangeHandling(serviceCollection);
-            serviceCollection.AddTransient<IMessageBuilder, MessageBuilder>();
+            serviceCollection.AddTransient<IMessageContentBuilder, MessageContentBuilder>();
+            serviceCollection.AddTransient<IMessageFactory, MessageFactory>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
             serviceCollection.AddTransient<StatusAggregator>();
