@@ -2,15 +2,14 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using NuGet.Services.Status;
-using System.Threading.Tasks;
 
-namespace StatusAggregator
+namespace StatusAggregator.Export
 {
-    public interface IStatusExporter
+    public interface IComponentExporter
     {
         /// <summary>
-        /// Builds a <see cref="ServiceStatus"/> and exports it to public storage so that it can be consumed by other services.
+        /// Exports the status of the current active entities to an <see cref="IComponent"/>.
         /// </summary>
-        Task<ServiceStatus> Export();
+        IComponent Export();
     }
 }

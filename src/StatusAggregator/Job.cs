@@ -19,6 +19,7 @@ using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Collector;
+using StatusAggregator.Export;
 using StatusAggregator.Factory;
 using StatusAggregator.Manual;
 using StatusAggregator.Messages;
@@ -46,6 +47,7 @@ namespace StatusAggregator
             AddStorage(containerBuilder);
             AddFactoriesAndUpdaters(containerBuilder);
             AddEntityCollector(containerBuilder);
+            AddExporters(containerBuilder);
 
             _serviceProvider = new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -255,6 +257,29 @@ namespace StatusAggregator
                             ctx.Resolve<ICursor>(), 
                             processor);
                     });
+        }
+
+        private static void AddExporters(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterType<ComponentExporter>()
+                .As<IComponentExporter>();
+
+            containerBuilder
+                .RegisterType<EventMessageExportIterator>()
+                .As<IEventMessageExportIterator>();
+
+            containerBuilder
+                .RegisterType<EventMessageExporter>()
+                .As<IEventMessageExporter>();
+
+            containerBuilder
+                .RegisterType<EventExporter>()
+                .As<IEventExporter>();
+
+            containerBuilder
+                .RegisterType<StatusSerializer>()
+                .As<IStatusSerializer>();
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

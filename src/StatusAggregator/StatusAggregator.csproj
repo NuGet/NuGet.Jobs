@@ -46,6 +46,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Export\ComponentExporter.cs" />
+    <Compile Include="Export\EventExporter.cs" />
+    <Compile Include="Export\IComponentExporter.cs" />
+    <Compile Include="Export\IEventExporter.cs" />
+    <Compile Include="Export\IEventMessageExporter.cs" />
+    <Compile Include="Export\IEventMessageExportIterator.cs" />
+    <Compile Include="Export\IStatusSerializer.cs" />
+    <Compile Include="Export\EventMessageExporter.cs" />
+    <Compile Include="Export\EventMessageExportIterator.cs" />
+    <Compile Include="Export\StatusSerializer.cs" />
     <Compile Include="Factory\EntityFactoryAggregator.cs" />
     <Compile Include="Factory\ExistingAggregationLinkHandler.cs" />
     <Compile Include="Factory\ExistingAggregationProvider.cs" />
@@ -107,9 +117,9 @@
     <Compile Include="StatusUpdater.cs" />
     <Compile Include="Parse\AggregateIncidentParser.cs" />
     <Compile Include="Parse\IAggregateIncidentParser.cs" />
-    <Compile Include="IStatusExporter.cs" />
+    <Compile Include="Export\IStatusExporter.cs" />
     <Compile Include="Update\EventMessagingUpdateListener.cs" />
-    <Compile Include="StatusExporter.cs" />
+    <Compile Include="Export\StatusExporter.cs" />
     <Compile Include="Parse\EnvironmentPrefixIncidentParser.cs" />
     <Compile Include="Parse\IIncidentParser.cs" />
     <Compile Include="Parse\IncidentParser.cs" />
