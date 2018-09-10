@@ -39,7 +39,7 @@ namespace StatusAggregator.Tests.Manual
                 var eventRowKey = EventEntity.GetRowKey(entity.EventAffectedComponentPath, entity.EventStartTime);
 
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult<EventEntity>(null));
 
                 _table
@@ -74,23 +74,23 @@ namespace StatusAggregator.Tests.Manual
             [MemberData(nameof(SavesNewMessageAndUpdatesEventIfNecessary_Data))]
             public async Task SavesNewMessageAndUpdatesEventIfNecessary(bool eventIsActive, bool shouldEventBeActive)
             {
-                var entity = new AddStatusMessageManualChangeEntity("path", new DateTime(2018, 8, 21), "message", shouldEventBeActive)
+                var eventStartTime = new DateTime(2018, 8, 19);
+                var entity = new AddStatusMessageManualChangeEntity("path", eventStartTime, "message", shouldEventBeActive)
                 {
                     Timestamp = new DateTimeOffset(2018, 8, 21, 0, 0, 0, TimeSpan.Zero)
                 };
 
                 var time = entity.Timestamp.UtcDateTime;
-                var eventRowKey = EventEntity.GetRowKey(entity.EventAffectedComponentPath, entity.EventStartTime);
-
                 var existingEntity =
                     new EventEntity(
                         entity.EventAffectedComponentPath,
-                        (int)ComponentStatus.Up,
-                        new DateTime(2018, 8, 19),
+                        eventStartTime,
+                        ComponentStatus.Up,
                         eventIsActive ? (DateTime?)null : new DateTime(2018, 8, 20));
 
+                var eventRowKey = existingEntity.RowKey;
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult(existingEntity));
 
                 _table
@@ -109,7 +109,7 @@ namespace StatusAggregator.Tests.Manual
                             It.Is<MessageEntity>(message =>
                                 message.PartitionKey == MessageEntity.DefaultPartitionKey &&
                                 message.RowKey == MessageEntity.GetRowKey(eventRowKey, time) &&
-                                message.EventRowKey == eventRowKey &&
+                                message.ParentRowKey == eventRowKey &&
                                 message.Time == time &&
                                 message.Contents == entity.MessageContents
                             )),

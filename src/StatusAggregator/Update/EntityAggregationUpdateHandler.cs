@@ -14,23 +14,23 @@ namespace StatusAggregator.Update
     /// <summary>
     /// Updates a <typeparamref name="TEntityAggregation"/> and its <typeparamref name="TAggregatedEntity"/>s.
     /// </summary>
-    public class EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity> 
+    public class EntityAggregationUpdateHandler<TAggregatedEntity, TEntityAggregation> 
         : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
-        where TEntityAggregation : ComponentAffectingEntity
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
+        where TEntityAggregation : ComponentAffectingEntity
     {
         public readonly TimeSpan _groupEndDelay;
 
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdater<TAggregatedEntity> _aggregatedEntityUpdater;
 
-        private readonly ILogger<EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity>> _logger;
+        private readonly ILogger<EntityAggregationUpdateHandler<TAggregatedEntity, TEntityAggregation>> _logger;
 
         public EntityAggregationUpdateHandler(
             ITableWrapper table,
             IComponentAffectingEntityUpdater<TAggregatedEntity> aggregatedEntityUpdater,
             StatusAggregatorConfiguration configuration,
-            ILogger<EntityAggregationUpdateHandler<TEntityAggregation, TAggregatedEntity>> logger)
+            ILogger<EntityAggregationUpdateHandler<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregatedEntityUpdater = aggregatedEntityUpdater 
@@ -42,6 +42,8 @@ namespace StatusAggregator.Update
 
         public async Task<bool> Update(TEntityAggregation aggregationEntity, DateTime cursor)
         {
+            aggregationEntity = aggregationEntity ?? throw new ArgumentNullException(nameof(aggregationEntity));
+
             using (_logger.Scope("Updating aggregation '{AggregationRowKey}' given cursor {Cursor}.", aggregationEntity.RowKey, cursor))
             {
                 if (!aggregationEntity.IsActive)

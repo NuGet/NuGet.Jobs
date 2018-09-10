@@ -39,7 +39,7 @@ namespace StatusAggregator.Tests.Manual
                 var eventRowKey = EventEntity.GetRowKey(entity.EventAffectedComponentPath, entity.EventStartTime);
 
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult<EventEntity>(null));
 
                 await Assert.ThrowsAsync<ArgumentException>(() => _handler.Handle(entity));
@@ -74,12 +74,12 @@ namespace StatusAggregator.Tests.Manual
                 var existingEntity =
                     new EventEntity(
                         entity.EventAffectedComponentPath,
-                        ComponentStatus.Up,
                         entity.EventStartTime,
+                        ComponentStatus.Up,
                         eventIsActive ? (DateTime?)null : new DateTime(2018, 8, 19));
 
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult(existingEntity));
 
                 var shouldUpdateEndTime = ManualStatusChangeUtility.ShouldEventBeActive(existingEntity, shouldEventBeActive, time);

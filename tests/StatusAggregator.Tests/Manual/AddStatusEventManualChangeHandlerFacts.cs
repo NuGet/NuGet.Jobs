@@ -43,7 +43,7 @@ namespace StatusAggregator.Tests.Manual
                     It.Is<MessageEntity>(messageEntity => 
                         messageEntity.PartitionKey == MessageEntity.DefaultPartitionKey &&
                         messageEntity.RowKey == MessageEntity.GetRowKey(eventRowKey, time) &&
-                        messageEntity.EventRowKey == eventRowKey &&
+                        messageEntity.ParentRowKey == eventRowKey &&
                         messageEntity.Time == time &&
                         messageEntity.Contents == entity.MessageContents
                     )))

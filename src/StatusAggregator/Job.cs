@@ -216,11 +216,11 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
 
             containerBuilder
-                .RegisterType<EntityAggregationUpdateHandler<IncidentGroupEntity, IncidentEntity>>()
+                .RegisterType<EntityAggregationUpdateHandler<IncidentEntity, IncidentGroupEntity>>()
                 .As<IComponentAffectingEntityUpdateHandler<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<EntityAggregationUpdateHandler<EventEntity, IncidentGroupEntity>>()
+                .RegisterType<EntityAggregationUpdateHandler<IncidentGroupEntity, EventEntity>>()
                 .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
 
             containerBuilder

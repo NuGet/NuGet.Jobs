@@ -25,7 +25,7 @@ namespace StatusAggregator.Tests.Manual
             [Fact]
             public void ActiveEventStaysActive()
             {
-                var eventEntity = new EventEntity("", 0, new DateTime(2018, 8, 17));
+                var eventEntity = new EventEntity("", new DateTime(2018, 8, 17));
 
                 var result = GetResult(eventEntity, true, new DateTime(2018, 8, 18));
 
@@ -38,7 +38,7 @@ namespace StatusAggregator.Tests.Manual
             {
                 DateTime? initialEndTime = null;
                 var deactivatedTime = new DateTime(2018, 8, 18);
-                var eventEntity = new EventEntity("", 0, new DateTime(2018, 8, 17), initialEndTime);
+                var eventEntity = new EventEntity("", new DateTime(2018, 8, 17), endTime: initialEndTime);
 
                 var result = GetResult(eventEntity, false, deactivatedTime);
 
@@ -52,7 +52,7 @@ namespace StatusAggregator.Tests.Manual
             public void DeactivatedEventIsUnaffected(bool eventIsActive)
             {
                 var deactivatedTime = new DateTime(2018, 8, 18);
-                var eventEntity = new EventEntity("", 0, new DateTime(2018, 8, 17), deactivatedTime);
+                var eventEntity = new EventEntity("", new DateTime(2018, 8, 17), endTime: deactivatedTime);
 
                 var result = GetResult(eventEntity, eventIsActive, new DateTime(2018, 8, 19));
 

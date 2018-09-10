@@ -35,7 +35,7 @@ namespace StatusAggregator.Tests.Manual
                 var eventRowKey = EventEntity.GetRowKey(entity.EventAffectedComponentPath, entity.EventStartTime);
 
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult<EventEntity>(null));
 
                 await Assert.ThrowsAsync<ArgumentException>(() => _handler.Handle(entity));
@@ -52,23 +52,26 @@ namespace StatusAggregator.Tests.Manual
                 var existingEntity =
                     new EventEntity(
                         entity.EventAffectedComponentPath,
-                        ComponentStatus.Up,
                         entity.EventStartTime,
+                        ComponentStatus.Up,
                         null);
 
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult(existingEntity));
 
                 _table
-                    .Setup(x => x.RetrieveAsync<MessageEntity>(MessageEntity.DefaultPartitionKey, messageRowKey))
+                    .Setup(x => x.RetrieveAsync<MessageEntity>(messageRowKey))
                     .Returns(Task.FromResult<MessageEntity>(null));
 
                 await Assert.ThrowsAsync<ArgumentException>(() => _handler.Handle(entity));
             }
 
-            [Fact]
-            public async Task EditsMessage()
+            [Theory]
+            [InlineData(MessageType.Manual)]
+            [InlineData(MessageType.Start)]
+            [InlineData(MessageType.End)]
+            public async Task EditsMessage(MessageType type)
             {
                 var entity = new EditStatusMessageManualChangeEntity("path", new DateTime(2018, 8, 20), new DateTime(2018, 8, 21), "message");
 
@@ -78,18 +81,22 @@ namespace StatusAggregator.Tests.Manual
                 var existingEntity =
                     new EventEntity(
                         entity.EventAffectedComponentPath,
-                        ComponentStatus.Up,
                         entity.EventStartTime,
+                        ComponentStatus.Up,
                         null);
 
                 _table
-                    .Setup(x => x.RetrieveAsync<EventEntity>(EventEntity.DefaultPartitionKey, eventRowKey))
+                    .Setup(x => x.RetrieveAsync<EventEntity>(eventRowKey))
                     .Returns(Task.FromResult(existingEntity));
 
-                var existingMessage = new MessageEntity(eventRowKey, entity.MessageTimestamp, "old message");
+                var existingMessage = new MessageEntity(
+                    existingEntity, 
+                    entity.MessageTimestamp, 
+                    "old message", 
+                    type);
 
                 _table
-                    .Setup(x => x.RetrieveAsync<MessageEntity>(MessageEntity.DefaultPartitionKey, messageRowKey))
+                    .Setup(x => x.RetrieveAsync<MessageEntity>(messageRowKey))
                     .Returns(Task.FromResult(existingMessage));
 
                 _table
@@ -97,9 +104,10 @@ namespace StatusAggregator.Tests.Manual
                         It.Is<MessageEntity>(messageEntity =>
                             messageEntity.PartitionKey == MessageEntity.DefaultPartitionKey &&
                             messageEntity.RowKey == messageRowKey &&
-                            messageEntity.EventRowKey == eventRowKey &&
+                            messageEntity.ParentRowKey == eventRowKey &&
                             messageEntity.Time == existingMessage.Time &&
-                            messageEntity.Contents == entity.MessageContents
+                            messageEntity.Contents == entity.MessageContents &&
+                            messageEntity.Type == (int)MessageType.Manual
                         )))
                     .Returns(Task.CompletedTask)
                     .Verifiable();

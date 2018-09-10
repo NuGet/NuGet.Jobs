@@ -7,11 +7,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
+using StatusAggregator.Update;
 using Xunit;
 
 namespace StatusAggregator.Tests
 {
-    public class EventUpdaterTests
+    public class EntityAggregationUpdateHandlerTests
     {
         private const string RowKey = "rowkey";
         private const int EventEndDelayMinutes = 5;
@@ -31,11 +32,11 @@ namespace StatusAggregator.Tests
         };
 
         private Mock<ITableWrapper> _tableWrapperMock { get; }
-        private Mock<IMessageUpdater> _messageUpdaterMock { get; }
-        private IncidentGroupUpdater _eventUpdater { get; }
-        private EventEntity _eventEntity { get; }
+        private Mock<IComponentAffectingEntityUpdater<IncidentEntity>> _aggregatedEntityUpdater { get; }
+        private EntityAggregationUpdateHandler<IncidentEntity, IncidentGroupEntity> _updater { get; }
+        private IncidentGroupEntity _eventEntity { get; }
 
-        public EventUpdaterTests()
+        public EntityAggregationUpdateHandlerTests()
         {
             var configuration = new StatusAggregatorConfiguration()
             {
@@ -43,14 +44,29 @@ namespace StatusAggregator.Tests
             };
 
             _tableWrapperMock = new Mock<ITableWrapper>();
-            _messageUpdaterMock = new Mock<IMessageUpdater>();
-            _eventUpdater = new IncidentGroupUpdater(
-                _tableWrapperMock.Object, 
-                _messageUpdaterMock.Object,
-                configuration, 
-                Mock.Of<ILogger<IncidentGroupUpdater>>());
 
-            _eventEntity = new EventEntity()
+            _aggregatedEntityUpdater = new Mock<IComponentAffectingEntityUpdater<IncidentEntity>>();
+            foreach (var incident in ClosableIncidents)
+            {
+                _aggregatedEntityUpdater
+                    .Setup(x => x.Update(incident, NextCreationTime))
+                    .Returns(Task.FromResult(true));
+            }
+
+            foreach (var incident in UnclosableIncidents)
+            {
+                _aggregatedEntityUpdater
+                    .Setup(x => x.Update(incident, NextCreationTime))
+                    .Returns(Task.FromResult(false));
+            }
+
+            _updater = new EntityAggregationUpdateHandler<IncidentEntity, IncidentGroupEntity>(
+                _tableWrapperMock.Object,
+                _aggregatedEntityUpdater.Object,
+                configuration, 
+                Mock.Of<ILogger<EntityAggregationUpdateHandler<IncidentEntity, IncidentGroupEntity>>>());
+
+            _eventEntity = new IncidentGroupEntity()
             {
                 RowKey = RowKey,
                 StartTime = DateTime.MinValue,
@@ -61,17 +77,17 @@ namespace StatusAggregator.Tests
         [Fact]
         public async Task ThrowsIfEventNull()
         {
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _eventUpdater.UpdateIncidentGroup(null, DateTime.MinValue));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _updater.Update(null, DateTime.MinValue));
         }
 
         [Fact]
-        public async Task ReturnsFalseIfNotActive()
+        public async Task ReturnsTrueIfNotActive()
         {
             _eventEntity.EndTime = DateTime.MinValue;
 
-            var result = await _eventUpdater.UpdateIncidentGroup(_eventEntity, NextCreationTime);
+            var result = await _updater.Update(_eventEntity, NextCreationTime);
 
-            Assert.False(result);
+            Assert.True(result);
         }
 
         [Fact]
@@ -81,9 +97,12 @@ namespace StatusAggregator.Tests
                 .Setup(x => x.CreateQuery<IncidentEntity>())
                 .Returns(new IncidentEntity[0].AsQueryable());
 
-            var result = await _eventUpdater.UpdateIncidentGroup(_eventEntity, NextCreationTime);
+            var result = await _updater.Update(_eventEntity, NextCreationTime);
 
             Assert.False(result);
+            _aggregatedEntityUpdater.Verify(
+                x => x.Update(It.IsAny<IncidentEntity>(), It.IsAny<DateTime>()), 
+                Times.Never());
         }
 
         public static IEnumerable<object[]> DoesNotCloseEventIfUnclosableIncident_Data
@@ -105,16 +124,16 @@ namespace StatusAggregator.Tests
                 .Setup(x => x.CreateQuery<IncidentEntity>())
                 .Returns(ClosableIncidents.Concat(new[] { unclosableIncident }).AsQueryable());
 
-            var result = await _eventUpdater.UpdateIncidentGroup(_eventEntity, NextCreationTime);
+            var result = await _updater.Update(_eventEntity, NextCreationTime);
 
             Assert.False(result);
             Assert.Null(_eventEntity.EndTime);
-            _messageUpdaterMock.Verify(
-                x => x.CreateMessageForEventStart(_eventEntity, NextCreationTime),
-                Times.Once());
-            _messageUpdaterMock.Verify(
-                x => x.CreateMessageForEventEnd(It.IsAny<EventEntity>()),
-                Times.Never());
+            foreach (var incident in _tableWrapperMock.Object.CreateQuery<IncidentEntity>().ToList())
+            {
+                _aggregatedEntityUpdater.Verify(
+                    x => x.Update(incident, NextCreationTime),
+                    Times.Once());
+            }
         }
 
         [Fact]
@@ -124,30 +143,30 @@ namespace StatusAggregator.Tests
                 .Setup(x => x.CreateQuery<IncidentEntity>())
                 .Returns(ClosableIncidents.AsQueryable());
 
-            var result = await _eventUpdater.UpdateIncidentGroup(_eventEntity, NextCreationTime);
+            var result = await _updater.Update(_eventEntity, NextCreationTime);
 
-            var expectedEndTime = ClosableIncidents.Max(i => i.MitigationTime ?? DateTime.MinValue);
+            var expectedEndTime = ClosableIncidents.Max(i => i.EndTime ?? DateTime.MinValue);
             Assert.True(result);
             Assert.Equal(expectedEndTime, _eventEntity.EndTime);
             _tableWrapperMock.Verify(
                 x => x.InsertOrReplaceAsync(_eventEntity),
                 Times.Once());
-            _messageUpdaterMock.Verify(
-                x => x.CreateMessageForEventStart(_eventEntity, expectedEndTime),
-                Times.Once());
-            _messageUpdaterMock.Verify(
-                x => x.CreateMessageForEventEnd(_eventEntity),
-                Times.Once());
+            foreach (var incident in _tableWrapperMock.Object.CreateQuery<IncidentEntity>().ToList())
+            {
+                _aggregatedEntityUpdater.Verify(
+                    x => x.Update(incident, NextCreationTime),
+                    Times.Once());
+            }
         }
 
-        private static IncidentEntity CreateIncidentEntity(DateTime? mitigationTime = null)
+        private static IncidentEntity CreateIncidentEntity(DateTime? endTime = null)
         {
             return new IncidentEntity()
             {
                 PartitionKey = IncidentEntity.DefaultPartitionKey,
-                EventRowKey = RowKey,
-                CreationTime = DateTime.MinValue,
-                MitigationTime = mitigationTime
+                ParentRowKey = RowKey,
+                StartTime = DateTime.MinValue,
+                EndTime = endTime
             };
         }
     }
