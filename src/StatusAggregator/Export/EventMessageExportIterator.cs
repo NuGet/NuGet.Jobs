@@ -32,7 +32,7 @@ namespace StatusAggregator.Export
         {
             using (_logger.Scope("Exporting all events from iterator."))
             {
-                CommitMessages();
+                CommitMessages(!_eventEntity.IsActive);
                 return _events;
             }
         }
@@ -45,14 +45,14 @@ namespace StatusAggregator.Export
                 switch (type)
                 {
                     case MessageType.Start:
-                        CommitMessages();
+                        CommitMessages(true);
                         AddMessageInternal(message);
 
                         break;
 
                     case MessageType.End:
                         AddMessageInternal(message);
-                        CommitMessages();
+                        CommitMessages(true);
 
                         break;
 
@@ -70,14 +70,14 @@ namespace StatusAggregator.Export
             _currentMessages.Add(message);
         }
 
-        private void CommitMessages()
+        private void CommitMessages(bool hasEndTime)
         {
             using (_logger.Scope("Creating event from message cache."))
             {
                 if (_currentMessages.Any())
                 {
                     var startTime = _currentMessages.Min(m => m.Time);
-                    var endTime = _currentMessages.Count > 1
+                    var endTime = hasEndTime
                         ? _currentMessages.Max(m => m.Time)
                         : (DateTime?)null;
 
