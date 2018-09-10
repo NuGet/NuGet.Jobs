@@ -27,10 +27,5 @@ namespace StatusAggregator.Messages
         /// Updates the message for <paramref name="eventEntity"/> at <paramref name="time"/> of type <paramref name="type"/> affecting <paramref name="component"/>.
         /// </summary>
         Task UpdateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component);
-
-        /// <summary>
-        /// Deletes the message for <paramref name="eventEntity"/> at <paramref name="time"/>.
-        /// </summary>
-        Task DeleteMessage(EventEntity eventEntity, DateTime time);
     }
 }

@@ -62,10 +62,12 @@
     <Compile Include="Factory\IExistingAggregationLinkHandler.cs" />
     <Compile Include="Factory\IExistingAggregationProvider.cs" />
     <Compile Include="Messages\CurrentMessageContext.cs" />
+    <Compile Include="Messages\IIncidentGroupMessageFilter.cs" />
     <Compile Include="Messages\IMessageChangeEventIterator.cs" />
     <Compile Include="Messages\IMessageChangeEventProcessor.cs" />
     <Compile Include="Messages\IMessageChangeEventProvider.cs" />
     <Compile Include="Messages\IMessageContentBuilder.cs" />
+    <Compile Include="Messages\IncidentGroupMessageFilter.cs" />
     <Compile Include="Messages\MessageChangeEvent.cs" />
     <Compile Include="Messages\MessageChangeEventIterator.cs" />
     <Compile Include="Messages\MessageChangeEventProcessor.cs" />

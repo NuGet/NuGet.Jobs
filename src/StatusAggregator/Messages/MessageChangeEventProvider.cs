@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
@@ -14,14 +15,17 @@ namespace StatusAggregator.Messages
     public class MessageChangeEventProvider : IMessageChangeEventProvider
     {
         private readonly ITableWrapper _table;
+        private readonly IIncidentGroupMessageFilter _filter;
 
         private readonly ILogger<MessageChangeEventProvider> _logger;
 
         public MessageChangeEventProvider(
             ITableWrapper table,
+            IIncidentGroupMessageFilter filter,
             ILogger<MessageChangeEventProvider> logger)
         {
             _table = table;
+            _filter = filter;
             _logger = logger;
         }
 
@@ -34,6 +38,12 @@ namespace StatusAggregator.Messages
             {
                 using (_logger.Scope("Getting status changes from incident group {IncidentGroupRowKey}.", linkedGroup.RowKey))
                 {
+                    if (!_filter.CanPostMessages(linkedGroup))
+                    {
+                        _logger.LogInformation("Incident group did not pass filter. Cannot post messages about it.");
+                        continue;
+                    }
+
                     var path = linkedGroup.AffectedComponentPath;
                     var status = (ComponentStatus)linkedGroup.AffectedComponentStatus;
                     var startTime = linkedGroup.StartTime;

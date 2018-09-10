@@ -40,7 +40,7 @@ namespace StatusAggregator.Export
 
                 _logger.LogInformation("Event has {MessageCount} messages. Iterating through each message.", messages.Count);
                 var iterator = _iteratorFactory(eventEntity);
-                foreach (var message in messages)
+                foreach (var message in messages.OrderBy(m => m.Time))
                 {
                     iterator.Process(message);
                 }

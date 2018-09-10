@@ -29,10 +29,10 @@ namespace StatusAggregator.Update
 
         public Task OnUpdate(EventEntity eventEntity, DateTime cursor)
         {
-            using (_logger.Scope("Updating messages for event {EventRowKey}.", eventEntity.RowKey))
+            using (_logger.Scope("Updating messages for event {EventRowKey} at {Cursor}.", eventEntity.RowKey, cursor))
             {
                 var changes = _provider.Get(eventEntity);
-                return _iterator.Iterate(changes, eventEntity, cursor);
+                return _iterator.Iterate(changes, eventEntity);
             }
         }
     }

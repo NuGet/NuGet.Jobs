@@ -13,6 +13,6 @@ namespace StatusAggregator.Messages
         /// <summary>
         /// Iterates through <paramref name="changes"/> and processes them.
         /// </summary>
-        Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity, DateTime cursor);
+        Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity);
     }
 }

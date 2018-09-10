@@ -22,13 +22,13 @@ namespace StatusAggregator.Messages
             _logger = logger;
         }
 
-        public async Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity, DateTime cursor)
+        public async Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity)
         {
             var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
             CurrentMessageContext context = null;
             foreach (var change in changes.OrderBy(c => c.Timestamp))
             {
-                context = await _processor.Process(change, cursor, eventEntity, rootComponent, context);
+                context = await _processor.Process(change, eventEntity, rootComponent, context);
             }
         }
     }

@@ -70,6 +70,7 @@ namespace StatusAggregator
             serviceCollection.AddTransient<IMessageFactory, MessageFactory>();
             serviceCollection.AddTransient<IMessageChangeEventIterator, MessageChangeEventIterator>();
             serviceCollection.AddTransient<IMessageChangeEventProcessor, MessageChangeEventProcessor>();
+            serviceCollection.AddTransient<IIncidentGroupMessageFilter, IncidentGroupMessageFilter>();
             serviceCollection.AddTransient<IMessageChangeEventProvider, MessageChangeEventProvider>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
