@@ -10,17 +10,17 @@ using StatusAggregator.Messages;
 
 namespace StatusAggregator.Update
 {
-    public class MessageEventUpdateListener : IComponentAffectingEntityUpdateListener<EventEntity>
+    public class EventMessagingUpdateListener : IComponentAffectingEntityUpdateListener<EventEntity>
     {
         private readonly IMessageChangeEventProvider _provider;
         private readonly IMessageChangeEventIterator _iterator;
 
-        private readonly ILogger<MessageEventUpdateListener> _logger;
+        private readonly ILogger<EventMessagingUpdateListener> _logger;
 
-        public MessageEventUpdateListener(
+        public EventMessagingUpdateListener(
             IMessageChangeEventProvider provider,
             IMessageChangeEventIterator iterator,
-            ILogger<MessageEventUpdateListener> logger)
+            ILogger<EventMessagingUpdateListener> logger)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _iterator = iterator ?? throw new ArgumentNullException(nameof(iterator));

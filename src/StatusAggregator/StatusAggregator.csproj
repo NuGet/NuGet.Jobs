@@ -74,7 +74,7 @@
     <Compile Include="Factory\IEntityFactory.cs" />
     <Compile Include="Update\IComponentAffectingEntityUpdater.cs" />
     <Compile Include="Collector\IncidentEntityCollectorProcessor.cs" />
-    <Compile Include="Update\IncidentEntityUpdateHandler.cs" />
+    <Compile Include="Update\IncidentUpdateHandler.cs" />
     <Compile Include="Factory\IncidentFactory.cs" />
     <Compile Include="Factory\IncidentGroupFactory.cs" />
     <Compile Include="Factory\IncidentGroupLinkListener.cs" />
@@ -108,7 +108,7 @@
     <Compile Include="Parse\AggregateIncidentParser.cs" />
     <Compile Include="Parse\IAggregateIncidentParser.cs" />
     <Compile Include="IStatusExporter.cs" />
-    <Compile Include="Update\MessageEventUpdateListener.cs" />
+    <Compile Include="Update\EventMessagingUpdateListener.cs" />
     <Compile Include="StatusExporter.cs" />
     <Compile Include="Parse\EnvironmentPrefixIncidentParser.cs" />
     <Compile Include="Parse\IIncidentParser.cs" />

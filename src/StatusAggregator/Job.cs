@@ -210,7 +210,7 @@ namespace StatusAggregator
                 .As<IEntityFactory<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<IncidentEntityUpdateHandler>()
+                .RegisterType<IncidentUpdateHandler>()
                 .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
 
             containerBuilder
@@ -222,7 +222,7 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
 
             containerBuilder
-                .RegisterType<MessageEventUpdateListener>()
+                .RegisterType<EventMessagingUpdateListener>()
                 .As<IComponentAffectingEntityUpdateListener<EventEntity>>();
 
             containerBuilder

@@ -11,17 +11,17 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Update
 {
-    public class IncidentEntityUpdateHandler : IComponentAffectingEntityUpdateHandler<IncidentEntity>
+    public class IncidentUpdateHandler : IComponentAffectingEntityUpdateHandler<IncidentEntity>
     {
         private readonly ITableWrapper _table;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly ILogger<IncidentEntityUpdateHandler> _logger;
+        private readonly ILogger<IncidentUpdateHandler> _logger;
 
-        public IncidentEntityUpdateHandler(
+        public IncidentUpdateHandler(
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             StatusAggregatorConfiguration configuration,
-            ILogger<IncidentEntityUpdateHandler> logger)
+            ILogger<IncidentUpdateHandler> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
