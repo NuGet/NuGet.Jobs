@@ -174,6 +174,22 @@ namespace StatusAggregator
         private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
         {
             containerBuilder
+                .RegisterType<ExistingAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>()
+                .As<IExistingAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>()
+                .As<IExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
+                .RegisterType<ExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>()
+                .As<IExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ExistingAggregationProvider<IncidentGroupEntity, EventEntity>>()
+                .As<IExistingAggregationProvider<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
                 .RegisterType<IncidentFactory>()
                 .As<IAggregatedEntityFactory<IncidentEntity, IncidentGroupEntity>>();
 
