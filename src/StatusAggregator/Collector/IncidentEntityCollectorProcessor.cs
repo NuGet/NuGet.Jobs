@@ -58,12 +58,19 @@ namespace StatusAggregator.Collector
                     .Where(i => i.CreateDate > cursor)
                     .ToList();
 
+                _logger.LogInformation("Found {IncidentCount} incidents to parse.", incidents.Count);
                 var parsedIncidents = incidents
                     .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
                     .ToList();
+
+                _logger.LogInformation("Parsed {ParsedIncidentCount} incidents.", parsedIncidents.Count);
                 foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.StartTime))
                 {
-                    await _incidentFactory.Create(parsedIncident);
+                    using (_logger.Scope("Creating incident for parsed incident with ID {ParsedIncidentID} affecting {ParsedIncidentPath} at {ParsedIncidentStartTime} with status {ParsedIncidentStatus}.",
+                        parsedIncident.Id, parsedIncident.AffectedComponentPath, parsedIncident.StartTime, parsedIncident.AffectedComponentStatus))
+                    {
+                        await _incidentFactory.Create(parsedIncident);
+                    }
                 }
 
                 return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;
