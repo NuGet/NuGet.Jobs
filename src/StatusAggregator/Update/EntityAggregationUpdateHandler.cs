@@ -44,7 +44,7 @@ namespace StatusAggregator.Update
         {
             aggregationEntity = aggregationEntity ?? throw new ArgumentNullException(nameof(aggregationEntity));
 
-            using (_logger.Scope("Updating aggregation '{AggregationRowKey}' given cursor {Cursor}.", aggregationEntity.RowKey, cursor))
+            using (_logger.Scope("Updating aggregation {AggregationRowKey} given cursor {Cursor}.", aggregationEntity.RowKey, cursor))
             {
                 if (!aggregationEntity.IsActive)
                 {
