@@ -33,17 +33,27 @@ namespace StatusAggregator.Export
                 var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
 
                 // Apply the active entities to the component tree.
-                var activeIncidentGroups = _table
-                    .GetActiveEntities<IncidentGroupEntity>()
-                    .ToList();
-
-                _logger.LogInformation("Found {GroupCount} active incident groups.", activeIncidentGroups.Count);
-
                 var activeEvents = _table
                     .GetActiveEntities<EventEntity>()
+                    .ToList()
+                    .Where(e => 
+                        _table
+                            .GetLinkedEntities<MessageEntity, EventEntity>(e)
+                            .ToList()
+                            .Any())
                     .ToList();
 
-                _logger.LogInformation("Found {EventCount} active events.", activeEvents.Count);
+                _logger.LogInformation("Found {EventCount} active events with messages.", activeEvents.Count);
+
+                var activeIncidentGroups = activeEvents
+                    .SelectMany(e => 
+                        _table
+                            .GetLinkedEntities<IncidentGroupEntity, EventEntity>(e)
+                            .Where(i => i.IsActive)
+                            .ToList())
+                    .ToList();
+
+                _logger.LogInformation("Found {GroupCount} active incident groups linked to active events with messages.", activeIncidentGroups.Count);
 
                 var activeEntities = activeIncidentGroups
                     .Concat<IComponentAffectingEntity>(activeEvents)
@@ -57,7 +67,7 @@ namespace StatusAggregator.Export
                 _logger.LogInformation("Active entities affect {PathCount} distinct subcomponents.", activeEntities.Count);
                 foreach (var activeEntity in activeEntities)
                 {
-                    using (_logger.Scope("Applying active entity affecting '{AffectedComponentPath}' of severity {AffectedComponentStatus} at {StartTime} to root component",
+                    using (_logger.Scope("Applying active entity affecting {AffectedComponentPath} of severity {AffectedComponentStatus} at {StartTime} to root component",
                         activeEntity.AffectedComponentPath, activeEntity.AffectedComponentStatus, activeEntity.StartTime))
                     {
                         var currentComponent = rootComponent.GetByPath(activeEntity.AffectedComponentPath);

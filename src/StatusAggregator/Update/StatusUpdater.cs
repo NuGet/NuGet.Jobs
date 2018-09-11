@@ -53,10 +53,14 @@ namespace StatusAggregator.Update
                     await manualStatusChangeCollector.FetchLatest();
                 }
 
-                var incidentCursor = await _incidentCollector.FetchLatest();
+                await _incidentCollector.FetchLatest();
+
+                // Update the active entities based on current time.
+                // If there are no incidents in a while, the incidents cursor won't reflect current time.
+                var currentTime = DateTime.UtcNow;
                 foreach (var aggregationUpdater in _aggregationUpdaters)
                 {
-                    await aggregationUpdater.UpdateAllActive(incidentCursor);
+                    await aggregationUpdater.UpdateAllActive(currentTime);
                 }
             }
         }
