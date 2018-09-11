@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
@@ -73,17 +75,28 @@ namespace StatusAggregator.Messages
                         _logger.LogInformation("Removing change from component tree.");
                         component.Status = ComponentStatus.Up;
 
-                        if (context != null && context.AffectedComponent.Status == ComponentStatus.Up)
+                        if (context != null)
                         {
-                            _logger.LogInformation("Existing message is affected by change! Adding new end message.");
-                            await _factory.CreateMessage(eventEntity, change.Timestamp, change.Type, context.AffectedComponent, context.AffectedComponentStatus);
-                            return null;
+                            _logger.LogInformation("Found existing message, testing if component tree is still affected.");
+
+                            var affectedSubComponents = context.AffectedComponent.GetAllComponents();
+                            if (affectedSubComponents.All(c => c.Status == ComponentStatus.Up))
+                            {
+                                _logger.LogInformation("Component tree is no longer affected. Creating end message.");
+                                await _factory.CreateMessage(eventEntity, change.Timestamp, change.Type, context.AffectedComponent, context.AffectedComponentStatus);
+                                return null;
+                            }
+                            else
+                            {
+                                _logger.LogInformation("Component tree is still affected. Will not post an end message.");
+                            }
                         }
                         else
                         {
-                            _logger.LogInformation("Change has not affected component tree. Will not add or delete any messages.");
-                            return context;
+                            _logger.LogInformation("No existing message found. Will not add or delete any messages.");
                         }
+
+                        return context;
 
                     default:
                         _logger.LogWarning("Unexpected message type {MessageType}", change.Type);

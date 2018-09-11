@@ -71,10 +71,10 @@
       <Version>2.28.0-sb-tablegeo-38564</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status">
-      <Version>2.28.0-sb-aggregateevent-40009</Version>
+      <Version>2.28.0-sb-aggregateevent-40147</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Status.Table">
-      <Version>2.28.0-sb-aggregateevent-40009</Version>
+      <Version>2.28.0-sb-aggregateevent-40147</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
       <Version>4.3.0</Version>
