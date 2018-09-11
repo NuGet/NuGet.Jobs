@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Factory;
 
 namespace StatusAggregator.Messages
 {
@@ -18,8 +19,8 @@ namespace StatusAggregator.Messages
             StatusAggregatorConfiguration configuration,
             ILogger<MessageChangeEventIterator> logger)
         {
-            _processor = processor;
-            _logger = logger;
+            _processor = processor ?? throw new ArgumentNullException(nameof(processor));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity)

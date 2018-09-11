@@ -4,13 +4,12 @@
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using StatusAggregator.Collector;
-using StatusAggregator.Update;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
     public class StatusUpdater : IStatusUpdater
     {

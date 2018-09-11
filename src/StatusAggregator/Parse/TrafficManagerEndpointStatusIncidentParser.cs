@@ -4,6 +4,8 @@
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status;
+using StatusAggregator.Factory;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -22,7 +24,7 @@ namespace StatusAggregator.Parse
             ILogger<TrafficManagerEndpointStatusIncidentParser> logger)
             : base(SubtitleRegEx, filters, logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)

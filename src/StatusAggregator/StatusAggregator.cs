@@ -4,6 +4,7 @@
 using Microsoft.WindowsAzure.Storage.Blob;
 using StatusAggregator.Export;
 using StatusAggregator.Table;
+using StatusAggregator.Update;
 using System;
 using System.Collections.Generic;
 using System.Linq;

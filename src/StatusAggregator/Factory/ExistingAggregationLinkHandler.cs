@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -26,9 +27,9 @@ namespace StatusAggregator.Factory
             IComponentAffectingEntityUpdater<TEntityAggregation> aggregationUpdater,
             ILogger<ExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> logger)
         {
-            _table = table;
-            _aggregationUpdater = aggregationUpdater;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<bool> CanLink(ParsedIncident input, TEntityAggregation entityAggregation)

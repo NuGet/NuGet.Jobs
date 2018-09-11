@@ -3,7 +3,7 @@
 
 using NuGet.Services.Status;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
     /// <summary>
     /// Helps create an <see cref="IComponent"/> that represents the NuGet service as well as paths to its subcomponents.

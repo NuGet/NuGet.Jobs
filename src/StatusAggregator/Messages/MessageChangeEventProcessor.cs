@@ -17,8 +17,8 @@ namespace StatusAggregator.Messages
             IMessageFactory factory,
             ILogger<MessageChangeEventProcessor> logger)
         {
-            _factory = factory;
-            _logger = logger;
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<CurrentMessageContext> Process(MessageChangeEvent change, EventEntity eventEntity, IComponent rootComponent, CurrentMessageContext context)

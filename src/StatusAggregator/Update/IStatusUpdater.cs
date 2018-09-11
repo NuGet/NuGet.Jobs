@@ -3,7 +3,7 @@
 
 using System.Threading.Tasks;
 
-namespace StatusAggregator
+namespace StatusAggregator.Update
 {
     public interface IStatusUpdater
     {

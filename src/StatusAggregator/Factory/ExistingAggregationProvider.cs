@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -27,9 +28,9 @@ namespace StatusAggregator.Factory
             IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> linkHandler,
             ILogger<ExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
         {
-            _table = table;
-            _linkHandler = linkHandler;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _linkHandler = linkHandler ?? throw new ArgumentNullException(nameof(linkHandler));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<TEntityAggregation> GetExistingAggregation(ParsedIncident input)

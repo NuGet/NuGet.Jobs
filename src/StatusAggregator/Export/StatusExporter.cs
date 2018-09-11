@@ -23,9 +23,9 @@ namespace StatusAggregator.Export
             IStatusSerializer serializer,
             ILogger<StatusExporter> logger)
         {
-            _componentExporter = componentExporter;
-            _eventExporter = eventExporter;
-            _serializer = serializer;
+            _componentExporter = componentExporter ?? throw new ArgumentNullException(nameof(componentExporter));
+            _eventExporter = eventExporter ?? throw new ArgumentNullException(nameof(eventExporter));
+            _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

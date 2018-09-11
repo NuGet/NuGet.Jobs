@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
@@ -21,8 +22,8 @@ namespace StatusAggregator.Factory
             ITableWrapper table,
             ILogger<IncidentGroupFactory> logger)
         {
-            _table = table;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IncidentGroupEntity> Create(ParsedIncident input, EventEntity eventEntity)

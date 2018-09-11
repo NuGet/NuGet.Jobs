@@ -15,8 +15,8 @@ namespace StatusAggregator.Collector
             ICursor cursor,
             IEntityCollectorProcessor processor)
         {
-            _cursor = cursor;
-            _processor = processor;
+            _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
+            _processor = processor ?? throw new ArgumentNullException(nameof(processor));
         }
 
         public string Name => _processor.Name;

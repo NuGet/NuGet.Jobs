@@ -23,9 +23,9 @@ namespace StatusAggregator.Messages
             IMessageContentBuilder builder,
             ILogger<MessageFactory> logger)
         {
-            _table = table;
-            _builder = builder;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _builder = builder ?? throw new ArgumentNullException(nameof(builder));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public Task<MessageEntity> CreateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)

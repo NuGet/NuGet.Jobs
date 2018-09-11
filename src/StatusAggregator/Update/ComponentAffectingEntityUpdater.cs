@@ -27,10 +27,10 @@ namespace StatusAggregator.Update
             IEnumerable<IComponentAffectingEntityUpdateListener<T>> listeners,
             ILogger<ComponentAffectingEntityUpdater<T>> logger)
         {
-            _table = table;
-            _handler = handler;
-            _listeners = listeners;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            _listeners = listeners ?? throw new ArgumentNullException(nameof(listeners));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task UpdateAllActive(DateTime cursor)

@@ -24,8 +24,8 @@ namespace StatusAggregator.Export
             EventEntity eventEntity,
             ILogger<EventMessageExportIterator> logger)
         {
-            _eventEntity = eventEntity;
-            _logger = logger;
+            _eventEntity = eventEntity ?? throw new ArgumentNullException(nameof(eventEntity));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IEnumerable<Event> Export()

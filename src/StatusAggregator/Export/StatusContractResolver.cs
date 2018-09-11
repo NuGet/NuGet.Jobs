@@ -7,7 +7,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace StatusAggregator
+namespace StatusAggregator.Export
 {
     /// <summary>
     /// Implementation of <see cref="DefaultContractResolver"/> used by <see cref="StatusExporter"/> such that empty fields and arrays are not serialized.

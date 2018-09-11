@@ -24,9 +24,9 @@ namespace StatusAggregator.Messages
             IIncidentGroupMessageFilter filter,
             ILogger<MessageChangeEventProvider> logger)
         {
-            _table = table;
-            _filter = filter;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _filter = filter ?? throw new ArgumentNullException(nameof(filter));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IEnumerable<MessageChangeEvent> Get(EventEntity eventEntity)

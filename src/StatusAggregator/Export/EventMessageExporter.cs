@@ -20,12 +20,12 @@ namespace StatusAggregator.Export
 
         public EventMessageExporter(
             ITableWrapper table,
-            Func<EventEntity, IEventMessageExportIterator> factory,
+            Func<EventEntity, IEventMessageExportIterator> iteratorFactory,
             ILogger<EventMessageExporter> logger)
         {
-            _table = table;
-            _iteratorFactory = factory;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _iteratorFactory = iteratorFactory ?? throw new ArgumentNullException(nameof(iteratorFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IEnumerable<Event> Export(EventEntity eventEntity)

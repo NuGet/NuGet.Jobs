@@ -30,14 +30,14 @@ namespace StatusAggregator.Factory
 
         public EntityFactoryAggregator(
             ITableWrapper table,
-            IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation> entityFactory,
+            IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation> aggregatedEntityFactory,
             IEntityFactory<TEntityAggregation> aggregationFactory,
             IExistingAggregationProvider<TAggregatedEntity, TEntityAggregation> existingAggregationProvider,
             IEnumerable<IEntityAggregationLinkListener<TAggregatedEntity, TEntityAggregation>> aggregationLinkListeners,
             ILogger<EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _aggregatedEntityFactory = entityFactory ?? throw new ArgumentNullException(nameof(entityFactory));
+            _aggregatedEntityFactory = aggregatedEntityFactory ?? throw new ArgumentNullException(nameof(aggregatedEntityFactory));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _existingAggregationProvider = existingAggregationProvider ?? throw new ArgumentNullException(nameof(existingAggregationProvider));
             _aggregationLinkListeners = aggregationLinkListeners ?? throw new ArgumentNullException(nameof(aggregationLinkListeners));

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Factory;
 
 namespace StatusAggregator.Messages
 {
@@ -17,7 +18,7 @@ namespace StatusAggregator.Messages
 
         public MessageContentBuilder(ILogger<MessageContentBuilder> logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public bool TryGetContentsForMessageHelper(

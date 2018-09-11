@@ -26,10 +26,10 @@ namespace StatusAggregator.Export
             StatusAggregatorConfiguration configuration,
             ILogger<EventExporter> logger)
         {
-            _table = table;
-            _exporter = exporter;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
             _eventVisibilityPeriod = TimeSpan.FromDays(configuration?.EventVisibilityPeriodDays ?? throw new ArgumentNullException(nameof(configuration)));
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IEnumerable<Event> Export()

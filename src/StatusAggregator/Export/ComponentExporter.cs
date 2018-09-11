@@ -1,11 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Factory;
 using StatusAggregator.Table;
 
 namespace StatusAggregator.Export
@@ -20,8 +22,8 @@ namespace StatusAggregator.Export
             ITableWrapper table,
             ILogger<ComponentExporter> logger)
         {
-            _table = table;
-            _logger = logger;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IComponent Export()

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
@@ -14,7 +15,9 @@ namespace StatusAggregator.Table
             CloudStorageAccount storageAccount, 
             string tableName)
         {
-            var tableClient = storageAccount.CreateCloudTableClient();
+
+            var tableClient = storageAccount?.CreateCloudTableClient() 
+                ?? throw new ArgumentNullException(nameof(storageAccount));
             _table = tableClient.GetTableReference(tableName);
         }
 
