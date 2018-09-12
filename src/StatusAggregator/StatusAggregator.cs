@@ -32,15 +32,15 @@ namespace StatusAggregator
             _statusExporter = statusExporter ?? throw new ArgumentNullException(nameof(statusExporter));
         }
 
-        public async Task Run()
+        public async Task Run(DateTime cursor)
         {
             // Initialize all tables and containers.
             await Task.WhenAll(_tables.Select(t => t.CreateIfNotExistsAsync()));
             await Task.WhenAll(_containers.Select(c => c.CreateIfNotExistsAsync()));
             
             // Update and export the status.
-            await _statusUpdater.Update();
-            await _statusExporter.Export();
+            await _statusUpdater.Update(cursor);
+            await _statusExporter.Export(cursor);
         }
     }
 }

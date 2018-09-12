@@ -12,6 +12,9 @@ namespace StatusAggregator.Collector
 {
     public class Cursor : ICursor
     {
+        private readonly ITableWrapper _table;
+        private readonly ILogger<Cursor> _logger;
+
         public Cursor(
             ITableWrapper table,
             ILogger<Cursor> logger)
@@ -20,12 +23,10 @@ namespace StatusAggregator.Collector
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private readonly ITableWrapper _table;
-
-        private readonly ILogger<Cursor> _logger;
-
         public async Task<DateTime> Get(string name)
         {
+            name = name ?? throw new ArgumentNullException(nameof(name));
+
             using (_logger.Scope("Fetching cursor with name {CursorName}.", name))
             {
                 var cursor = await _table.RetrieveAsync<CursorEntity>(name);
@@ -49,6 +50,8 @@ namespace StatusAggregator.Collector
 
         public Task Set(string name, DateTime value)
         {
+            name = name ?? throw new ArgumentNullException(nameof(name));
+
             using (_logger.Scope("Updating cursor with name {CursorName} to {CursorValue}.", name, value))
             {
                 var cursorEntity = new CursorEntity(name, value);

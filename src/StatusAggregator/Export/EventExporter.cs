@@ -32,11 +32,11 @@ namespace StatusAggregator.Export
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public IEnumerable<Event> Export()
+        public IEnumerable<Event> Export(DateTime cursor)
         {
             return _table
                 .CreateQuery<EventEntity>()
-                .Where(e => (e.IsActive || (e.EndTime >= DateTime.UtcNow - _eventVisibilityPeriod)))
+                .Where(e => e.IsActive || (e.EndTime >= cursor - _eventVisibilityPeriod))
                 .ToList()
                 .SelectMany(_exporter.Export)
                 .Where(e => e.Messages != null && e.Messages.Any())

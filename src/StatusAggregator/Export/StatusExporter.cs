@@ -29,12 +29,12 @@ namespace StatusAggregator.Export
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<ServiceStatus> Export()
+        public Task<ServiceStatus> Export(DateTime cursor)
         {
             using (_logger.Scope("Exporting service status."))
             {
                 var rootComponent = _componentExporter.Export();
-                var recentEvents = _eventExporter.Export();
+                var recentEvents = _eventExporter.Export(cursor);
                 return _serializer.Serialize(rootComponent, recentEvents);
             }
         }

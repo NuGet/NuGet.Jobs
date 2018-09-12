@@ -20,8 +20,7 @@ namespace StatusAggregator.Collector
     public class IncidentEntityCollectorProcessor : IEntityCollectorProcessor
     {
         public const string IncidentsCollectorName = "incidents";
-
-        private readonly ITableWrapper _table;
+        
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
         private readonly IEntityFactory<IncidentEntity> _incidentFactory;
@@ -30,14 +29,12 @@ namespace StatusAggregator.Collector
         private readonly string _incidentApiTeamId;
 
         public IncidentEntityCollectorProcessor(
-            ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
             IEntityFactory<IncidentEntity> incidentFactory,
             StatusAggregatorConfiguration configuration,
             ILogger<IncidentEntityCollectorProcessor> logger)
         {
-            _table = table ?? throw new ArgumentNullException(nameof(table));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
             _aggregateIncidentParser = aggregateIncidentParser ?? throw new ArgumentNullException(nameof(aggregateIncidentParser));
             _incidentFactory = incidentFactory ?? throw new ArgumentNullException(nameof(incidentFactory));

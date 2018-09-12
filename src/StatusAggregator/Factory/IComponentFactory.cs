@@ -1,17 +1,15 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using NuGet.Services.Status;
 
-namespace StatusAggregator.Export
+namespace StatusAggregator.Factory
 {
-    public interface IEventExporter
+    public interface IComponentFactory
     {
         /// <summary>
-        /// Exports recent events.
+        /// Returns the root component that describes the service.
         /// </summary>
-        IEnumerable<Event> Export(DateTime cursor);
+        IComponent Create();
     }
 }

@@ -55,7 +55,7 @@ namespace StatusAggregator.Collector
                 var manualChanges = manualChangesQuery.ToList();
 
                 _logger.LogInformation("Processing {ManualChangesCount} manual status changes.", manualChanges.Count());
-                foreach (var manualChange in manualChanges)
+                foreach (var manualChange in manualChanges.OrderBy(m => m.Timestamp))
                 {
                     await _handler.Handle(_table, manualChange);
                 }

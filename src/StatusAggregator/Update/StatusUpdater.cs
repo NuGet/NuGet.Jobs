@@ -44,7 +44,7 @@ namespace StatusAggregator.Update
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Update()
+        public async Task Update(DateTime cursor)
         {
             using (_logger.Scope("Updating service status."))
             {
@@ -54,13 +54,9 @@ namespace StatusAggregator.Update
                 }
 
                 await _incidentCollector.FetchLatest();
-
-                // Update the active entities based on current time.
-                // If there are no incidents in a while, the incidents cursor won't reflect current time.
-                var currentTime = DateTime.UtcNow;
                 foreach (var aggregationUpdater in _aggregationUpdaters)
                 {
-                    await aggregationUpdater.UpdateAllActive(currentTime);
+                    await aggregationUpdater.UpdateAllActive(cursor);
                 }
             }
         }

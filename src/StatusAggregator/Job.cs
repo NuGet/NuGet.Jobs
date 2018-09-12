@@ -56,7 +56,7 @@ namespace StatusAggregator
         {
             return _serviceProvider
                 .GetRequiredService<StatusAggregator>()
-                .Run();
+                .Run(DateTime.UtcNow);
         }
 
         private static void AddServices(IServiceCollection serviceCollection)
@@ -72,6 +72,7 @@ namespace StatusAggregator
             serviceCollection.AddTransient<IMessageChangeEventProcessor, MessageChangeEventProcessor>();
             serviceCollection.AddTransient<IIncidentGroupMessageFilter, IncidentGroupMessageFilter>();
             serviceCollection.AddTransient<IMessageChangeEventProvider, MessageChangeEventProvider>();
+            serviceCollection.AddTransient<IComponentFactory, NuGetServiceComponentFactory>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
             serviceCollection.AddTransient<StatusAggregator>();

@@ -44,7 +44,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collector\CursorTests.cs" />
+    <Compile Include="Collector\EntityCollectorTests.cs" />
+    <Compile Include="Collector\IncidentEntityCollectorProcessorTests.cs" />
+    <Compile Include="Collector\ManualStatusChangeCollectorProcessorTests.cs" />
     <Compile Include="EntityAggregationUpdateHandlerTests.cs" />
+    <Compile Include="Export\ComponentExporterTests.cs" />
+    <Compile Include="Export\EventExporterTests.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandlerFacts.cs" />
@@ -53,6 +59,7 @@
     <Compile Include="Manual\EditStatusMessageManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\ManualStatusChangeUtilityFacts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestComponent.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\StatusAggregator\StatusAggregator.csproj">

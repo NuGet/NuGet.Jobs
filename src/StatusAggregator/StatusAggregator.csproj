@@ -59,6 +59,7 @@
     <Compile Include="Factory\EntityFactoryAggregator.cs" />
     <Compile Include="Factory\ExistingAggregationLinkHandler.cs" />
     <Compile Include="Factory\ExistingAggregationProvider.cs" />
+    <Compile Include="Factory\IComponentFactory.cs" />
     <Compile Include="Factory\IExistingAggregationLinkHandler.cs" />
     <Compile Include="Factory\IExistingAggregationProvider.cs" />
     <Compile Include="Messages\CurrentMessageContext.cs" />

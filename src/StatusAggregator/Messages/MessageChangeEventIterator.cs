@@ -10,22 +10,25 @@ namespace StatusAggregator.Messages
 {
     public class MessageChangeEventIterator : IMessageChangeEventIterator
     {
+        private readonly IComponentFactory _factory;
         private readonly IMessageChangeEventProcessor _processor;
 
         private readonly ILogger<MessageChangeEventIterator> _logger;
 
         public MessageChangeEventIterator(
             IMessageChangeEventProcessor processor,
+            IComponentFactory factory,
             StatusAggregatorConfiguration configuration,
             ILogger<MessageChangeEventIterator> logger)
         {
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _processor = processor ?? throw new ArgumentNullException(nameof(processor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity)
         {
-            var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
+            var rootComponent = _factory.Create();
             CurrentMessageContext context = null;
             foreach (var change in changes.OrderBy(c => c.Timestamp))
             {

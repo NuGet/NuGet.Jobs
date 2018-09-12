@@ -15,14 +15,17 @@ namespace StatusAggregator.Export
     public class ComponentExporter : IComponentExporter
     {
         private readonly ITableWrapper _table;
+        private readonly IComponentFactory _factory;
 
         private readonly ILogger<ComponentExporter> _logger;
 
         public ComponentExporter(
             ITableWrapper table,
+            IComponentFactory factory,
             ILogger<ComponentExporter> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -30,7 +33,7 @@ namespace StatusAggregator.Export
         {
             using (_logger.Scope("Exporting active entities to component."))
             {
-                var rootComponent = NuGetServiceComponentFactory.CreateNuGetServiceRootComponent();
+                var rootComponent = _factory.Create();
 
                 // Apply the active entities to the component tree.
                 var activeEvents = _table
