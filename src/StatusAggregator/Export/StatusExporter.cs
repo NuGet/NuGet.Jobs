@@ -5,7 +5,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
-using NuGet.Services.Status;
 
 namespace StatusAggregator.Export
 {
@@ -29,13 +28,13 @@ namespace StatusAggregator.Export
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<ServiceStatus> Export(DateTime cursor)
+        public Task Export(DateTime cursor)
         {
             using (_logger.Scope("Exporting service status."))
             {
                 var rootComponent = _componentExporter.Export();
                 var recentEvents = _eventExporter.Export(cursor);
-                return _serializer.Serialize(rootComponent, recentEvents);
+                return _serializer.Serialize(cursor, rootComponent, recentEvents);
             }
         }
     }

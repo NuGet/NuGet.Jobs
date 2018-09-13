@@ -51,6 +51,12 @@
     <Compile Include="EntityAggregationUpdateHandlerTests.cs" />
     <Compile Include="Export\ComponentExporterTests.cs" />
     <Compile Include="Export\EventExporterTests.cs" />
+    <Compile Include="Export\EventMessageExporterTests.cs" />
+    <Compile Include="Export\EventMessageExportIterationHandlerTests.cs" />
+    <Compile Include="Export\EventMessageExportIteratorTests.cs" />
+    <Compile Include="Export\StatusContractResolverTests.cs" />
+    <Compile Include="Export\StatusExporterTests.cs" />
+    <Compile Include="Export\StatusSerializerTests.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandlerFacts.cs" />

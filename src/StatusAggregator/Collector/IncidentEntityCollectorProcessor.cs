@@ -7,7 +7,6 @@ using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Factory;
 using StatusAggregator.Parse;
-using StatusAggregator.Table;
 using System;
 using System.Linq;
 using System.Threading.Tasks;

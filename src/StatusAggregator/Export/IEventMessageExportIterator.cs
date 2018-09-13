@@ -12,11 +12,11 @@ namespace StatusAggregator.Export
         /// <summary>
         /// Processes <paramref name="message"/>.
         /// </summary>
-        void Process(MessageEntity message);
+        CurrentMessageExportContext Process(CurrentMessageExportContext context, MessageEntity message);
 
         /// <summary>
         /// Exports all messages that have been processed.
         /// </summary>
-        IEnumerable<Event> Export();
+        IEnumerable<Event> Export(CurrentMessageExportContext context);
     }
 }

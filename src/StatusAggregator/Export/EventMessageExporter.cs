@@ -15,16 +15,16 @@ namespace StatusAggregator.Export
     public class EventMessageExporter : IEventMessageExporter
     {
         private readonly ITableWrapper _table;
-        private readonly Func<EventEntity, IEventMessageExportIterator> _iteratorFactory;
+        private readonly IEventMessageExportIterator _iterator;
         private readonly ILogger<EventMessageExporter> _logger;
 
         public EventMessageExporter(
             ITableWrapper table,
-            Func<EventEntity, IEventMessageExportIterator> iteratorFactory,
+            IEventMessageExportIterator iterator,
             ILogger<EventMessageExporter> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _iteratorFactory = iteratorFactory ?? throw new ArgumentNullException(nameof(iteratorFactory));
+            _iterator = iterator ?? throw new ArgumentNullException(nameof(iterator));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -39,13 +39,13 @@ namespace StatusAggregator.Export
                     .ToList();
 
                 _logger.LogInformation("Event has {MessageCount} messages. Iterating through each message.", messages.Count);
-                var iterator = _iteratorFactory(eventEntity);
+                var context = new CurrentMessageExportContext(eventEntity);
                 foreach (var message in messages.OrderBy(m => m.Time))
                 {
-                    iterator.Process(message);
+                    context = _iterator.Process(context, message);
                 }
 
-                return iterator.Export();
+                return _iterator.Export(context);
             }
         }
     }

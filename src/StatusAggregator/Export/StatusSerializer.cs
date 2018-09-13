@@ -5,23 +5,23 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
+using StatusAggregator.Container;
 
 namespace StatusAggregator.Export
 {
     public class StatusSerializer : IStatusSerializer
     {
-        private const string StatusBlobName = "status.json";
+        public const string StatusBlobName = "status.json";
 
-        private readonly CloudBlobContainer _container;
+        private readonly IContainerWrapper _container;
 
         private readonly ILogger<StatusSerializer> _logger;
 
-        private static readonly JsonSerializerSettings _statusBlobJsonSerializerSettings = new JsonSerializerSettings()
+        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings()
         {
             ContractResolver = new StatusContractResolver(),
             Converters = new List<JsonConverter>() { new StringEnumConverter() },
@@ -30,30 +30,27 @@ namespace StatusAggregator.Export
         };
 
         public StatusSerializer(
-            CloudBlobContainer container,
+            IContainerWrapper container,
             ILogger<StatusSerializer> logger)
         {
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<ServiceStatus> Serialize(IComponent rootComponent, IEnumerable<Event> recentEvents)
+        public async Task Serialize(DateTime cursor, IComponent rootComponent, IEnumerable<Event> recentEvents)
         {
             ServiceStatus status;
             string statusJson;
             using (_logger.Scope("Serializing service status."))
             {
-                status = new ServiceStatus(rootComponent, recentEvents);
-                statusJson = JsonConvert.SerializeObject(status, _statusBlobJsonSerializerSettings);
+                status = new ServiceStatus(cursor, rootComponent, recentEvents);
+                statusJson = JsonConvert.SerializeObject(status, Settings);
             }
 
             using (_logger.Scope("Saving service status to blob storage."))
             {
-                var blob = _container.GetBlockBlobReference(StatusBlobName);
-                await blob.UploadTextAsync(statusJson);
+                await _container.SaveBlobAsync(StatusBlobName, statusJson);
             }
-
-            return status;
         }
     }
 }

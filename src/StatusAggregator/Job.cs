@@ -12,13 +12,13 @@ using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Collector;
+using StatusAggregator.Container;
 using StatusAggregator.Export;
 using StatusAggregator.Factory;
 using StatusAggregator.Manual;
@@ -142,8 +142,8 @@ namespace StatusAggregator
                         var storageAccount = ctx.ResolveNamed<CloudStorageAccount>(name);
                         return GetCloudBlobContainer(ctx, storageAccount);
                     })
-                    .As<CloudBlobContainer>()
-                    .Named<CloudBlobContainer>(name);
+                    .As<IContainerWrapper>()
+                    .Named<IContainerWrapper>(name);
 
                 // We need to listen to manual status change updates from each storage.
                 containerBuilder
@@ -168,11 +168,12 @@ namespace StatusAggregator
             return new TableWrapper(storageAccount, configuration.TableName);
         }
 
-        private static CloudBlobContainer GetCloudBlobContainer(IComponentContext ctx, CloudStorageAccount storageAccount)
+        private static IContainerWrapper GetCloudBlobContainer(IComponentContext ctx, CloudStorageAccount storageAccount)
         {
             var blobClient = storageAccount.CreateCloudBlobClient();
             var configuration = ctx.Resolve<StatusAggregatorConfiguration>();
-            return blobClient.GetContainerReference(configuration.ContainerName);
+            var container = blobClient.GetContainerReference(configuration.ContainerName);
+            return new ContainerWrapper(container);
         }
 
         private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
@@ -266,6 +267,10 @@ namespace StatusAggregator
             containerBuilder
                 .RegisterType<ComponentExporter>()
                 .As<IComponentExporter>();
+
+            containerBuilder
+                .RegisterType<EventMessageExportIterationHandler>()
+                .As<IEventMessageExportIterationHandler>();
 
             containerBuilder
                 .RegisterType<EventMessageExportIterator>()

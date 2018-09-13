@@ -38,42 +38,64 @@ namespace StatusAggregator.Tests.Export
             public void AppliesActiveEntitiesToComponentTree()
             {
                 var eventWithMessage = new EventEntity(Level2A.Path, DefaultStartTime, ComponentStatus.Degraded);
-                var message = new MessageEntity(eventWithMessage, DefaultStartTime, "", MessageType.Manual);
-                var incidentGroup1EventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3AFrom2A.Path, ComponentStatus.Degraded, DefaultStartTime);
-                var incidentGroup2EventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3AFrom2A.Path, ComponentStatus.Down, DefaultStartTime);
-                var incidentGroup3EventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3AFrom2A.Path, ComponentStatus.Up, DefaultStartTime, DefaultStartTime);
-                var incidentGroup4EventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3BFrom2A.Path, ComponentStatus.Degraded, DefaultStartTime, DefaultStartTime);
-
-                // Does not throw if active entity with missing path is applied.
-                var incidentGroup5EventWithMessage = new IncidentGroupEntity(eventWithMessage, "missingPath", ComponentStatus.Degraded, DefaultStartTime, DefaultStartTime);
+                var message1 = new MessageEntity(eventWithMessage, DefaultStartTime, "", MessageType.Manual);
+                var degradedIncidentGroupForEventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3AFrom2A.Path, ComponentStatus.Degraded, DefaultStartTime);
+                var downIncidentGroupForEventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3AFrom2A.Path, ComponentStatus.Down, DefaultStartTime);
+                var upIncidentGroupForEventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3AFrom2A.Path, ComponentStatus.Up, DefaultStartTime);
+                var inactiveIncidentGroupForEventWithMessage = new IncidentGroupEntity(eventWithMessage, Level3BFrom2A.Path, ComponentStatus.Degraded, DefaultStartTime, DefaultStartTime);
+                var missingPathIncidentGroupForEventWithMessage = new IncidentGroupEntity(eventWithMessage, "missingPath", ComponentStatus.Degraded, DefaultStartTime); // Handles missing path gracefully.
 
                 var eventWithoutMessage = new EventEntity(Level2B.Path, DefaultStartTime, ComponentStatus.Degraded);
-                var incidentGroup1EventWithoutMessage = new IncidentGroupEntity(eventWithoutMessage, Level3AFrom2B.Path, ComponentStatus.Degraded, DefaultStartTime);
-                var incidentGroup2EventWithoutMessage = new IncidentGroupEntity(eventWithoutMessage, Level3BFrom2B.Path, ComponentStatus.Degraded, DefaultStartTime);
+                var incidentGroupForEventWithoutMessage = new IncidentGroupEntity(eventWithoutMessage, Level3AFrom2B.Path, ComponentStatus.Degraded, DefaultStartTime);
 
-                SetupTableQuery(new[] { message });
+                var inactiveEventWithMessage = new EventEntity(Level2B.Path, DefaultStartTime + TimeSpan.FromDays(1), ComponentStatus.Degraded, DefaultStartTime + TimeSpan.FromDays(2));
+                var message2 = new MessageEntity(inactiveEventWithMessage, DefaultStartTime + TimeSpan.FromDays(1), "", MessageType.Manual);
+                var incidentGroupForInactiveEventWithMessage = new IncidentGroupEntity(inactiveEventWithMessage, Level3BFrom2B.Path, ComponentStatus.Degraded, DefaultStartTime + TimeSpan.FromDays(1));
+
+                SetupTableQuery(new[] { message1, message2 });
                 SetupTableQuery(new[] {
-                    incidentGroup1EventWithMessage, incidentGroup2EventWithMessage, incidentGroup3EventWithMessage, incidentGroup4EventWithMessage, incidentGroup5EventWithMessage,
-                    incidentGroup1EventWithoutMessage, incidentGroup2EventWithoutMessage });
-                SetupTableQuery(new[] { eventWithMessage, eventWithoutMessage });
+                    degradedIncidentGroupForEventWithMessage, downIncidentGroupForEventWithMessage, upIncidentGroupForEventWithMessage, inactiveIncidentGroupForEventWithMessage, missingPathIncidentGroupForEventWithMessage,
+                    incidentGroupForEventWithoutMessage, incidentGroupForInactiveEventWithMessage });
+                SetupTableQuery(new[] { eventWithMessage, eventWithoutMessage, inactiveEventWithMessage });
 
                 var result = Exporter.Export();
 
-                // Status of events with messages are applied to the component.
-                Assert.Equal(ComponentStatus.Degraded, Level2A.Status);
+                // Status of events with messages are applied.
+                AssertComponentStatus(ComponentStatus.Degraded, Level2A, eventWithMessage);
 
-                // Status of incident groups linked to events with messages are applied to the component.
-                // The most severe status is applied.
-                Assert.Equal(ComponentStatus.Down, Level3AFrom2A.Status);
+                // Most severe status affecting same component is applied.
+                AssertComponentStatus(
+                    ComponentStatus.Down,
+                    Level3AFrom2A, 
+                    degradedIncidentGroupForEventWithMessage, 
+                    downIncidentGroupForEventWithMessage, 
+                    upIncidentGroupForEventWithMessage);
 
-                // Status of incident groups that are not active are not applied.
-                Assert.Equal(ComponentStatus.Up, Level3BFrom2A.Status);
+                // Status of inactive incident groups are not applied.
+                AssertComponentStatus(ComponentStatus.Up, Level3BFrom2A, inactiveIncidentGroupForEventWithMessage);
 
-                // Status of events without messages are not applied to the component.
-                // Status of incident groups linked to events without messages are not applied to the component.
-                Assert.All(
-                    Level2B.GetAllComponents(),
-                    c => Assert.Equal(ComponentStatus.Up, c.Status));
+                // Status of events without messages are not applied.
+                // Status of inactive events with messages are not applied.
+                AssertComponentStatus(ComponentStatus.Up, Level2B, eventWithoutMessage, inactiveEventWithMessage);
+
+                // Status of incident groups for events without messages are not applied.
+                AssertComponentStatus(ComponentStatus.Up, Level3AFrom2B, incidentGroupForEventWithoutMessage);
+
+                // Status of incident groups for inactive events with messages are not applied.
+                AssertComponentStatus(ComponentStatus.Up, Level3BFrom2B, incidentGroupForInactiveEventWithMessage);
+            }
+            
+            private void AssertComponentStatus(ComponentStatus expected, IComponent component, params ComponentAffectingEntity[] entities)
+            {
+                Assert.Equal(expected, component.Status);
+                Assert.Equal(component.Path, entities.First().AffectedComponentPath);
+
+                for (var i = 1; i < entities.Count(); i++)
+                {
+                    Assert.Equal(
+                        entities[i - 1].AffectedComponentPath, 
+                        entities[i].AffectedComponentPath);
+                }
             }
         }
 
