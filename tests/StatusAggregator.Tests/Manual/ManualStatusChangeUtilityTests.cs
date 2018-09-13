@@ -8,7 +8,7 @@ using Xunit;
 
 namespace StatusAggregator.Tests.Manual
 {
-    public class ManualStatusChangeUtilityFacts
+    public class ManualStatusChangeUtilityTests
     {
         public abstract class BaseMethod
         {

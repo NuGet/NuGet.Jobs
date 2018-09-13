@@ -30,8 +30,15 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public bool CanPostMessages(IncidentGroupEntity group)
+        public bool CanPostMessages(IncidentGroupEntity group, DateTime cursor)
         {
+            var duration = (group.EndTime ?? cursor) - group.StartTime;
+            if (duration < _eventStartMessageDelay)
+            {
+                _logger.LogInformation("Incident group has not been active for longer than the messaging delay.");
+                return false;
+            }
+
             var linkedIncidentsQuery = _table.GetLinkedEntities<IncidentEntity, IncidentGroupEntity>(group);
 
             var activeIncidents = linkedIncidentsQuery
@@ -42,7 +49,7 @@ namespace StatusAggregator.Messages
                 activeIncidents.Count);
 
             var incidentsActiveAfterDelay = linkedIncidentsQuery
-                .Where(i => i.EndTime > group.StartTime + _eventStartMessageDelay)
+                .Where(i => i.EndTime >= group.StartTime + _eventStartMessageDelay)
                 .ToList();
 
             _logger.LogInformation("Incident group is linked to {ActiveIncidentsCount} incidents that were active after the messaging delay.", 

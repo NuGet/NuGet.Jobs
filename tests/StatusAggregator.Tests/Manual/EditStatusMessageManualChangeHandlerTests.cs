@@ -13,7 +13,7 @@ using Xunit;
 
 namespace StatusAggregator.Tests.Manual
 {
-    public class EditStatusMessageManualChangeHandlerFacts
+    public class EditStatusMessageManualChangeHandlerTests
     {
         public class TheHandleMethod
         {

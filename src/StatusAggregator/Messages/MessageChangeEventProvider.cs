@@ -29,7 +29,7 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public IEnumerable<MessageChangeEvent> Get(EventEntity eventEntity)
+        public IEnumerable<MessageChangeEvent> Get(EventEntity eventEntity, DateTime cursor)
         {
             var linkedGroups = _table.GetLinkedEntities<IncidentGroupEntity, EventEntity>(eventEntity).ToList();
             var events = new List<MessageChangeEvent>();
@@ -38,7 +38,7 @@ namespace StatusAggregator.Messages
             {
                 using (_logger.Scope("Getting status changes from incident group {IncidentGroupRowKey}.", linkedGroup.RowKey))
                 {
-                    if (!_filter.CanPostMessages(linkedGroup))
+                    if (!_filter.CanPostMessages(linkedGroup, cursor))
                     {
                         _logger.LogInformation("Incident group did not pass filter. Cannot post messages about it.");
                         continue;

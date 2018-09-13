@@ -12,7 +12,7 @@ using Xunit;
 
 namespace StatusAggregator.Tests.Manual
 {
-    public class DeleteStatusEventManualChangeHandlerFacts
+    public class DeleteStatusEventManualChangeHandlerTests
     {
         public class TheHandleMethod
         {

@@ -14,7 +14,7 @@ using Xunit;
 
 namespace StatusAggregator.Tests.Manual
 {
-    public class EditStatusEventManualChangeHandlerFacts
+    public class EditStatusEventManualChangeHandlerTests
     {
         public class TheHandleMethod
         {

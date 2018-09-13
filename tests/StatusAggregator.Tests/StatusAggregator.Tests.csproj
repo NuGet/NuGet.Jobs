@@ -50,6 +50,7 @@
     <Compile Include="Collector\ManualStatusChangeCollectorProcessorTests.cs" />
     <Compile Include="Factory\IncidentGroupFactoryTests.cs" />
     <Compile Include="Factory\IncidentGroupLinkListenerTests.cs" />
+    <Compile Include="Messages\IncidentGroupMessageFilterTests.cs" />
     <Compile Include="Update\EntityAggregationUpdateHandlerTests.cs" />
     <Compile Include="Export\ComponentExporterTests.cs" />
     <Compile Include="Export\EventExporterTests.cs" />
@@ -64,13 +65,13 @@
     <Compile Include="Factory\ExistingAggregationLinkHandlerTests.cs" />
     <Compile Include="Factory\ExistingAggregationProviderTests.cs" />
     <Compile Include="Factory\IncidentFactoryTests.cs" />
-    <Compile Include="Manual\AddStatusEventManualChangeHandlerFacts.cs" />
-    <Compile Include="Manual\AddStatusMessageManualChangeHandlerFacts.cs" />
-    <Compile Include="Manual\DeleteStatusEventManualChangeHandlerFacts.cs" />
-    <Compile Include="Manual\DeleteStatusMessageManualChangeHandlerFacts.cs" />
-    <Compile Include="Manual\EditStatusEventManualChangeHandlerFacts.cs" />
-    <Compile Include="Manual\EditStatusMessageManualChangeHandlerFacts.cs" />
-    <Compile Include="Manual\ManualStatusChangeUtilityFacts.cs" />
+    <Compile Include="Manual\AddStatusEventManualChangeHandlerTests.cs" />
+    <Compile Include="Manual\AddStatusMessageManualChangeHandlerTests.cs" />
+    <Compile Include="Manual\DeleteStatusEventManualChangeHandlerTests.cs" />
+    <Compile Include="Manual\DeleteStatusMessageManualChangeHandlerTests.cs" />
+    <Compile Include="Manual\EditStatusEventManualChangeHandlerTests.cs" />
+    <Compile Include="Manual\EditStatusMessageManualChangeHandlerTests.cs" />
+    <Compile Include="Manual\ManualStatusChangeUtilityTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestComponent.cs" />
   </ItemGroup>
