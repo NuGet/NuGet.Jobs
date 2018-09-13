@@ -12,7 +12,7 @@ using StatusAggregator.Table;
 using StatusAggregator.Update;
 using Xunit;
 
-namespace StatusAggregator.Tests
+namespace StatusAggregator.Tests.Update
 {
     public class EntityAggregationUpdateHandlerTests
     {

@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
@@ -34,19 +35,23 @@ namespace StatusAggregator.Factory
 
         public async Task<bool> CanLink(ParsedIncident input, TEntityAggregation entityAggregation)
         {
-            if (!_table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(entityAggregation).ToList().Any())
+            using (_logger.Scope("Determining if entity can be linked to aggregation {AggregationRowKey}", entityAggregation.RowKey))
             {
-                _logger.LogInformation("Cannot link entity to aggregation because it is not linked to any incidents.");
-                return false;
-            }
+                if (!_table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(entityAggregation).ToList().Any())
+                {
+                    _logger.LogInformation("Cannot link entity to aggregation because it is not linked to any incidents.");
+                    return false;
+                }
 
-            if (await _aggregationUpdater.Update(entityAggregation, input.StartTime))
-            {
-                _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated.");
-                return false;
-            }
+                if (await _aggregationUpdater.Update(entityAggregation, input.StartTime))
+                {
+                    _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated.");
+                    return false;
+                }
 
-            return true;
+                _logger.LogInformation("Entity can be linked to aggregation.");
+                return true;
+            }
         }
     }
 }

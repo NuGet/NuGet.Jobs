@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
-using StatusAggregator.Table;
 
 namespace StatusAggregator.Factory
 {
@@ -20,7 +19,6 @@ namespace StatusAggregator.Factory
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
-        private readonly ITableWrapper _table;
         private readonly IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation> _aggregatedEntityFactory;
         private readonly IEntityFactory<TEntityAggregation> _aggregationFactory;
         private readonly IExistingAggregationProvider<TAggregatedEntity, TEntityAggregation> _existingAggregationProvider;
@@ -29,14 +27,12 @@ namespace StatusAggregator.Factory
         private readonly ILogger<EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation>> _logger;
 
         public EntityFactoryAggregator(
-            ITableWrapper table,
             IAggregatedEntityFactory<TAggregatedEntity, TEntityAggregation> aggregatedEntityFactory,
             IEntityFactory<TEntityAggregation> aggregationFactory,
             IExistingAggregationProvider<TAggregatedEntity, TEntityAggregation> existingAggregationProvider,
             IEnumerable<IEntityAggregationLinkListener<TAggregatedEntity, TEntityAggregation>> aggregationLinkListeners,
             ILogger<EntityFactoryAggregator<TAggregatedEntity, TEntityAggregation>> logger)
         {
-            _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregatedEntityFactory = aggregatedEntityFactory ?? throw new ArgumentNullException(nameof(aggregatedEntityFactory));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _existingAggregationProvider = existingAggregationProvider ?? throw new ArgumentNullException(nameof(existingAggregationProvider));

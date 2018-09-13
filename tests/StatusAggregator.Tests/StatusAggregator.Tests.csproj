@@ -48,7 +48,9 @@
     <Compile Include="Collector\EntityCollectorTests.cs" />
     <Compile Include="Collector\IncidentEntityCollectorProcessorTests.cs" />
     <Compile Include="Collector\ManualStatusChangeCollectorProcessorTests.cs" />
-    <Compile Include="EntityAggregationUpdateHandlerTests.cs" />
+    <Compile Include="Factory\IncidentGroupFactoryTests.cs" />
+    <Compile Include="Factory\IncidentGroupLinkListenerTests.cs" />
+    <Compile Include="Update\EntityAggregationUpdateHandlerTests.cs" />
     <Compile Include="Export\ComponentExporterTests.cs" />
     <Compile Include="Export\EventExporterTests.cs" />
     <Compile Include="Export\EventMessageExporterTests.cs" />
@@ -57,6 +59,11 @@
     <Compile Include="Export\StatusContractResolverTests.cs" />
     <Compile Include="Export\StatusExporterTests.cs" />
     <Compile Include="Export\StatusSerializerTests.cs" />
+    <Compile Include="Factory\EntityFactoryAggregatorTests.cs" />
+    <Compile Include="Factory\EventFactoryTests.cs" />
+    <Compile Include="Factory\ExistingAggregationLinkHandlerTests.cs" />
+    <Compile Include="Factory\ExistingAggregationProviderTests.cs" />
+    <Compile Include="Factory\IncidentFactoryTests.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandlerFacts.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandlerFacts.cs" />

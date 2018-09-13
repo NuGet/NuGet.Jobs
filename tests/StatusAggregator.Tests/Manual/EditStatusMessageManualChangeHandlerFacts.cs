@@ -8,7 +8,6 @@ using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Manual;
 using StatusAggregator.Table;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 

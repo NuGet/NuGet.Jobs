@@ -61,20 +61,17 @@ namespace StatusAggregator.Factory
                 _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
                 foreach (var possibleAggregation in possibleAggregations)
                 {
-                    using (_logger.Scope("Determining if entity can be linked to aggregation {AggregationRowKey}", possibleAggregation.RowKey))
+                    if (await _linkHandler.CanLink(input, possibleAggregation))
                     {
-                        if (await _linkHandler.CanLink(input, possibleAggregation))
-                        {
-                            _logger.LogInformation("Linking entity to aggregation.");
-                            aggregationEntity = possibleAggregation;
-                            break;
-                        }
+                        _logger.LogInformation("Linking entity to aggregation.");
+                        aggregationEntity = possibleAggregation;
+                        break;
                     }
                 }
-
+                
                 if (aggregationEntity != null)
                 {
-                    _logger.LogInformation("Couldn't find any aggregations to link entity to with path {AffectedComponent}.", possiblePath);
+                    _logger.LogInformation("Found aggregation to link entity to with path {AffectedComponentPath}.", possiblePath);
                     break;
                 }
             }
