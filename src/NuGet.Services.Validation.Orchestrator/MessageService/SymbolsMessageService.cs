@@ -11,15 +11,15 @@ using NuGetGallery.Services;
 namespace NuGet.Services.Validation.Orchestrator
 {
     //ToDo: https://github.com/NuGet/NuGetGallery/issues/6255
-    public class SymbolPackageMessageService : MessageServiceConfiguration, IMessageService<SymbolPackage>
+    public class SymbolsPackageMessageService : MessageServiceConfiguration, IMessageService<SymbolPackage>
     {
         private readonly ICoreMessageService _coreMessageService;
-        private readonly ILogger<SymbolPackageMessageService> _logger;
+        private readonly ILogger<SymbolsPackageMessageService> _logger;
 
-        public SymbolPackageMessageService(
+        public SymbolsPackageMessageService(
             ICoreMessageService coreMessageService,
             IOptionsSnapshot<EmailConfiguration> emailConfigurationAccessor,
-            ILogger<SymbolPackageMessageService> logger) : base (emailConfigurationAccessor)
+            ILogger<SymbolsPackageMessageService> logger) : base (emailConfigurationAccessor)
         {
             _coreMessageService = coreMessageService ?? throw new ArgumentNullException(nameof(coreMessageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
