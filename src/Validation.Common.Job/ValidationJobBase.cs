@@ -93,7 +93,7 @@ namespace NuGet.Jobs.Validation
             services.AddScoped<IEntitiesContext>(p =>
             {
                 var connectionFactory = p.GetRequiredService<ISqlConnectionFactory<GalleryDbConfiguration>>();
-                var connection = connectionFactory.CreateAsync().GetAwaiter().GetResult();
+                System.Data.Common.DbConnection  connection = connectionFactory.CreateAsync().GetAwaiter().GetResult();
 
                 return new EntitiesContext(connection, readOnly: true);
             });
