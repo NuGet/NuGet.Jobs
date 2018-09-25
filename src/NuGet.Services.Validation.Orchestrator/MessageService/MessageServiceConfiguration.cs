@@ -6,9 +6,9 @@ using Microsoft.Extensions.Options;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public abstract class MessageServiceConfiguration
+    public class MessageServiceConfiguration
     {
-        protected readonly EmailConfiguration _emailConfiguration;
+        public EmailConfiguration EmailConfiguration { get; }
 
         public MessageServiceConfiguration(IOptionsSnapshot<EmailConfiguration> emailConfigurationAccessor)
         {
@@ -16,26 +16,26 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 throw new ArgumentNullException(nameof(emailConfigurationAccessor));
             }
-            _emailConfiguration = emailConfigurationAccessor.Value ?? throw new ArgumentException("Value cannot be null", nameof(emailConfigurationAccessor));
-            if (string.IsNullOrWhiteSpace(_emailConfiguration.PackageUrlTemplate))
+            EmailConfiguration = emailConfigurationAccessor.Value ?? throw new ArgumentException("Value cannot be null", nameof(emailConfigurationAccessor));
+            if (string.IsNullOrWhiteSpace(EmailConfiguration.PackageUrlTemplate))
             {
-                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.PackageUrlTemplate)} cannot be empty", nameof(emailConfigurationAccessor));
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(EmailConfiguration.PackageUrlTemplate)} cannot be empty", nameof(emailConfigurationAccessor));
             }
-            if (string.IsNullOrWhiteSpace(_emailConfiguration.PackageSupportTemplate))
+            if (string.IsNullOrWhiteSpace(EmailConfiguration.PackageSupportTemplate))
             {
-                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.PackageSupportTemplate)} cannot be empty", nameof(emailConfigurationAccessor));
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(EmailConfiguration.PackageSupportTemplate)} cannot be empty", nameof(emailConfigurationAccessor));
             }
-            if (string.IsNullOrWhiteSpace(_emailConfiguration.EmailSettingsUrl))
+            if (string.IsNullOrWhiteSpace(EmailConfiguration.EmailSettingsUrl))
             {
-                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.EmailSettingsUrl)} cannot be empty", nameof(emailConfigurationAccessor));
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(EmailConfiguration.EmailSettingsUrl)} cannot be empty", nameof(emailConfigurationAccessor));
             }
-            if (!Uri.TryCreate(_emailConfiguration.EmailSettingsUrl, UriKind.Absolute, out Uri result))
+            if (!Uri.TryCreate(EmailConfiguration.EmailSettingsUrl, UriKind.Absolute, out Uri result))
             {
-                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(_emailConfiguration.EmailSettingsUrl)} must be an absolute Url", nameof(emailConfigurationAccessor));
+                throw new ArgumentException($"{nameof(emailConfigurationAccessor.Value)}.{nameof(EmailConfiguration.EmailSettingsUrl)} must be an absolute Url", nameof(emailConfigurationAccessor));
             }
         }
 
-        protected string GalleryPackageUrl(string packageId, string packageNormalizedVersion) => string.Format(_emailConfiguration.PackageUrlTemplate, packageId, packageNormalizedVersion);
-        protected string PackageSupportUrl(string packageId, string packageNormalizedVersion) => string.Format(_emailConfiguration.PackageSupportTemplate, packageId, packageNormalizedVersion);
+        public string GalleryPackageUrl(string packageId, string packageNormalizedVersion) => string.Format(EmailConfiguration.PackageUrlTemplate, packageId, packageNormalizedVersion);
+        public string PackageSupportUrl(string packageId, string packageNormalizedVersion) => string.Format(EmailConfiguration.PackageSupportTemplate, packageId, packageNormalizedVersion);
     }
 }

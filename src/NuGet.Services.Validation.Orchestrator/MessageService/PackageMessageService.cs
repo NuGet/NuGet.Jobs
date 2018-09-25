@@ -10,16 +10,18 @@ using NuGetGallery.Services;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
-    public class PackageMessageService : MessageServiceConfiguration, IMessageService<Package>
+    public class PackageMessageService : IMessageService<Package>
     {
         private readonly ICoreMessageService _coreMessageService;
         private readonly ILogger<PackageMessageService> _logger;
+        private readonly MessageServiceConfiguration _serviceConfiguration;
 
         public PackageMessageService(
             ICoreMessageService coreMessageService,
             IOptionsSnapshot<EmailConfiguration> emailConfigurationAccessor,
-            ILogger<PackageMessageService> logger) : base(emailConfigurationAccessor)
+            ILogger<PackageMessageService> logger)
         {
+            _serviceConfiguration = new MessageServiceConfiguration(emailConfigurationAccessor);
             _coreMessageService = coreMessageService ?? throw new ArgumentNullException(nameof(coreMessageService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -28,10 +30,10 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             package = package ?? throw new ArgumentNullException(nameof(package));
 
-            var galleryPackageUrl = GalleryPackageUrl(package.PackageRegistration.Id, package.NormalizedVersion);
-            var packageSupportUrl = PackageSupportUrl(package.PackageRegistration.Id, package.NormalizedVersion);
+            var galleryPackageUrl = _serviceConfiguration.GalleryPackageUrl(package.PackageRegistration.Id, package.NormalizedVersion);
+            var packageSupportUrl = _serviceConfiguration.PackageSupportUrl(package.PackageRegistration.Id, package.NormalizedVersion);
 
-            await _coreMessageService.SendPackageAddedNoticeAsync(package, galleryPackageUrl, packageSupportUrl, _emailConfiguration.EmailSettingsUrl);
+            await _coreMessageService.SendPackageAddedNoticeAsync(package, galleryPackageUrl, packageSupportUrl, _serviceConfiguration.EmailConfiguration.EmailSettingsUrl);
         }
 
         public async Task SendValidationFailedMessageAsync(Package package, PackageValidationSet validationSet)
@@ -39,17 +41,17 @@ namespace NuGet.Services.Validation.Orchestrator
             package = package ?? throw new ArgumentNullException(nameof(package));
             validationSet = validationSet ?? throw new ArgumentNullException(nameof(validationSet));
 
-            var galleryPackageUrl = GalleryPackageUrl(package.PackageRegistration.Id, package.NormalizedVersion);
-            var packageSupportUrl = PackageSupportUrl(package.PackageRegistration.Id, package.NormalizedVersion);
+            var galleryPackageUrl = _serviceConfiguration.GalleryPackageUrl(package.PackageRegistration.Id, package.NormalizedVersion);
+            var packageSupportUrl = _serviceConfiguration.PackageSupportUrl(package.PackageRegistration.Id, package.NormalizedVersion);
 
-            await _coreMessageService.SendPackageValidationFailedNoticeAsync(package, validationSet, galleryPackageUrl, packageSupportUrl, _emailConfiguration.AnnouncementsUrl, _emailConfiguration.TwitterUrl);
+            await _coreMessageService.SendPackageValidationFailedNoticeAsync(package, validationSet, galleryPackageUrl, packageSupportUrl, _serviceConfiguration.EmailConfiguration.AnnouncementsUrl, _serviceConfiguration.EmailConfiguration.TwitterUrl);
         }
 
         public async Task SendValidationTakingTooLongMessageAsync(Package package)
         {
             package = package ?? throw new ArgumentNullException(nameof(package));
 
-            await _coreMessageService.SendValidationTakingTooLongNoticeAsync(package, GalleryPackageUrl(package.PackageRegistration.Id, package.NormalizedVersion));
+            await _coreMessageService.SendValidationTakingTooLongNoticeAsync(package, _serviceConfiguration.GalleryPackageUrl(package.PackageRegistration.Id, package.NormalizedVersion));
         }
     }
 }
