@@ -28,6 +28,12 @@ namespace StatusAggregator.Messages
                 change.Type, change.Timestamp, change.AffectedComponentPath, change.AffectedComponentStatus))
             {
                 var component = rootComponent.GetByPath(change.AffectedComponentPath);
+                if (component == null)
+                {
+                    _logger.LogInformation("Affected path does not exist in component tree. Will not post or edit any messages.");
+                    return context;
+                }
+
                 switch (change.Type)
                 {
                     case MessageType.Start:

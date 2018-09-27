@@ -269,20 +269,12 @@ namespace StatusAggregator
                 .As<IComponentExporter>();
 
             containerBuilder
-                .RegisterType<EventMessageExportIterationHandler>()
-                .As<IEventMessageExportIterationHandler>();
-
-            containerBuilder
-                .RegisterType<EventMessageExportIterator>()
-                .As<IEventMessageExportIterator>();
-
-            containerBuilder
-                .RegisterType<EventMessageExporter>()
-                .As<IEventMessageExporter>();
-
-            containerBuilder
                 .RegisterType<EventExporter>()
                 .As<IEventExporter>();
+
+            containerBuilder
+                .RegisterType<EventsExporter>()
+                .As<IEventsExporter>();
 
             containerBuilder
                 .RegisterType<StatusSerializer>()
@@ -291,7 +283,7 @@ namespace StatusAggregator
 
         private const int _defaultEventStartMessageDelayMinutes = 15;
         private const int _defaultEventEndDelayMinutes = 15;
-        private const int _defaultEventVisibilityPeriod = 10;
+        private const int _defaultEventVisibilityPeriod = 31;
 
         private static void AddConfiguration(IServiceCollection serviceCollection, IDictionary<string, string> jobArgsDictionary)
         {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
 using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
@@ -13,34 +14,42 @@ namespace StatusAggregator.Export
 {
     public class EventExporter : IEventExporter
     {
-        private readonly TimeSpan _eventVisibilityPeriod;
-
         private readonly ITableWrapper _table;
-        private readonly IEventMessageExporter _exporter;
-
         private readonly ILogger<EventExporter> _logger;
 
         public EventExporter(
             ITableWrapper table,
-            IEventMessageExporter exporter,
-            StatusAggregatorConfiguration configuration,
             ILogger<EventExporter> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
-            _eventVisibilityPeriod = TimeSpan.FromDays(configuration?.EventVisibilityPeriodDays ?? throw new ArgumentNullException(nameof(configuration)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public IEnumerable<Event> Export(DateTime cursor)
+        public Event Export(EventEntity eventEntity)
         {
-            return _table
-                .CreateQuery<EventEntity>()
-                .Where(e => e.IsActive || (e.EndTime >= cursor - _eventVisibilityPeriod))
-                .ToList()
-                .SelectMany(_exporter.Export)
-                .Where(e => e.Messages != null && e.Messages.Any())
-                .ToList();
+            using (_logger.Scope("Exporting event {EventRowKey}.", eventEntity.RowKey))
+            {
+                var messages = _table.GetLinkedEntities<MessageEntity, EventEntity>(eventEntity)
+                    .ToList()
+                    // Don't show empty messages.
+                    .Where(m => !string.IsNullOrEmpty(m.Contents))
+                    .ToList();
+
+                _logger.LogInformation("Event has {MessageCount} messages that are not empty.", messages.Count);
+                
+                if (!messages.Any())
+                {
+                    return null;
+                }
+                
+                return new Event(
+                    eventEntity.AffectedComponentPath, 
+                    eventEntity.StartTime,
+                    eventEntity.EndTime, 
+                    messages
+                        .OrderBy(m => m.Time)
+                        .Select(m => new Message(m.Time, m.Contents)));
+            }
         }
     }
 }

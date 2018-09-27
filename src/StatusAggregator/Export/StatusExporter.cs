@@ -11,14 +11,14 @@ namespace StatusAggregator.Export
     public class StatusExporter : IStatusExporter
     {
         private readonly IComponentExporter _componentExporter;
-        private readonly IEventExporter _eventExporter;
+        private readonly IEventsExporter _eventExporter;
         private readonly IStatusSerializer _serializer;
 
         private readonly ILogger<StatusExporter> _logger;
 
         public StatusExporter(
             IComponentExporter componentExporter,
-            IEventExporter eventExporter,
+            IEventsExporter eventExporter,
             IStatusSerializer serializer,
             ILogger<StatusExporter> logger)
         {

@@ -15,104 +15,56 @@ namespace StatusAggregator.Tests.Export
 {
     public class EventExporterTests
     {
-        public class TheExportMethod : EventExporterTest
+        public class TheExportMethod : EventMessageExporterTest
         {
             [Fact]
-            public void ExportsRecentEvents()
+            public void ExportsEventMessagesWithContent()
             {
-                var oldEventEntity = new EventEntity("", 
-                    new DateTime(2017, 9, 12), 
-                    endTime: new DateTime(2017, 9, 13));
+                var differentEvent = new EventEntity("", DefaultStartTime + TimeSpan.FromDays(1));
+                var differentEventMessage = new MessageEntity(differentEvent, DefaultStartTime, "", MessageType.Manual);
 
-                var activeEvent1Entity = new EventEntity("", 
-                    new DateTime(2017, 9, 12));
-                var activeEvent2Entity = new EventEntity("", 
-                    Cursor);
+                var emptyMessage = new MessageEntity(EventEntity, DefaultStartTime, "", MessageType.Manual);
+                var firstMessage = new MessageEntity(EventEntity, DefaultStartTime, "hi", MessageType.Manual);
+                var secondMessage = new MessageEntity(EventEntity, DefaultStartTime + TimeSpan.FromDays(1), "hi", MessageType.Manual);
 
-                var recentEvent1Entity = new EventEntity("", 
-                    Cursor - EventVisibilityPeriod, 
-                    endTime: Cursor - EventVisibilityPeriod);
-                var recentEvent2Entity = new EventEntity("", 
-                    Cursor - EventVisibilityPeriod, 
-                    endTime: Cursor);
-
-                var eventEntities = new[] 
-                {
-                    oldEventEntity,
-                    activeEvent1Entity,
-                    activeEvent2Entity,
-                    recentEvent1Entity,
-                    recentEvent2Entity
-                };
-
+                var messages = new[] { differentEventMessage, secondMessage, firstMessage, emptyMessage };
                 Table
-                    .Setup(x => x.CreateQuery<EventEntity>())
-                    .Returns(eventEntities.AsQueryable());
+                    .Setup(x => x.CreateQuery<MessageEntity>())
+                    .Returns(messages.AsQueryable());
 
-                var event1ForActiveEvent1 = new Event("", DateTime.MinValue, DateTime.MinValue, new[] { new Message(DateTime.MinValue, "") });
-                var event2ForActiveEvent1 = new Event("", DateTime.MinValue, DateTime.MinValue, Enumerable.Empty<Message>());
-                MessageExporter
-                    .Setup(x => x.Export(activeEvent1Entity))
-                    .Returns(new[] { event1ForActiveEvent1, event2ForActiveEvent1 })
-                    .Verifiable();
+                var result = Exporter.Export(EventEntity);
 
-                MessageExporter
-                    .Setup(x => x.Export(activeEvent2Entity))
-                    .Returns(new Event[0])
-                    .Verifiable();
+                Assert.Equal(EventEntity.AffectedComponentPath, result.AffectedComponentPath);
+                Assert.Equal(EventEntity.StartTime, result.StartTime);
+                Assert.Equal(EventEntity.EndTime, result.EndTime);
 
-                var event1ForRecentEvent1 = new Event("", DateTime.MinValue, DateTime.MinValue, new[] { new Message(DateTime.MinValue, "") });
-                var event2ForRecentEvent1 = new Event("", DateTime.MinValue, DateTime.MinValue, Enumerable.Empty<Message>());
-                MessageExporter
-                    .Setup(x => x.Export(recentEvent1Entity))
-                    .Returns(new[] { event1ForRecentEvent1, event2ForRecentEvent1 })
-                    .Verifiable();
+                Assert.Equal(2, result.Messages.Count());
+                AssertMessageEqual(firstMessage, result.Messages.First());
+                AssertMessageEqual(secondMessage, result.Messages.Last());
+            }
 
-                MessageExporter
-                    .Setup(x => x.Export(recentEvent2Entity))
-                    .Returns(new Event[0])
-                    .Verifiable();
-
-                var result = Exporter.Export(Cursor);
-
-                var expectedEvents = new[] { event1ForActiveEvent1, event1ForRecentEvent1 };
-                Assert.Equal(expectedEvents.Count(), result.Count());
-                foreach (var expectedEvent in expectedEvents)
-                {
-                    Assert.Contains(expectedEvent, result);
-                }
-
-                MessageExporter.Verify();
-                MessageExporter
-                    .Verify(
-                        x => x.Export(oldEventEntity),
-                        Times.Never());
+            private void AssertMessageEqual(MessageEntity expected, Message actual)
+            {
+                Assert.Equal(expected.Time, actual.Time);
+                Assert.Equal(expected.Contents, actual.Contents);
             }
         }
 
-        public class EventExporterTest
+        public class EventMessageExporterTest
         {
-            public DateTime Cursor => new DateTime(2018, 9, 12);
-            public TimeSpan EventVisibilityPeriod => TimeSpan.FromDays(10);
+            public DateTime DefaultStartTime = new DateTime(2018, 9, 12);
+            public EventEntity EventEntity { get; }
             public Mock<ITableWrapper> Table { get; }
-            public Mock<IEventMessageExporter> MessageExporter { get; }
             public EventExporter Exporter { get; }
 
-            public EventExporterTest()
+            public EventMessageExporterTest()
             {
+                EventEntity = new EventEntity("", DefaultStartTime);
+
                 Table = new Mock<ITableWrapper>();
-
-                MessageExporter = new Mock<IEventMessageExporter>();
-
-                var config = new StatusAggregatorConfiguration()
-                {
-                    EventVisibilityPeriodDays = EventVisibilityPeriod.Days
-                };
 
                 Exporter = new EventExporter(
                     Table.Object,
-                    MessageExporter.Object,
-                    config,
                     Mock.Of<ILogger<EventExporter>>());
             }
         }

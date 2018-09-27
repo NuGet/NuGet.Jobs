@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,9 +19,8 @@ namespace StatusAggregator.Messages
         private readonly ILogger<MessageChangeEventIterator> _logger;
 
         public MessageChangeEventIterator(
-            IMessageChangeEventProcessor processor,
             IComponentFactory factory,
-            StatusAggregatorConfiguration configuration,
+            IMessageChangeEventProcessor processor,
             ILogger<MessageChangeEventIterator> logger)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));

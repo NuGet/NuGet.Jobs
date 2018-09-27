@@ -42,14 +42,14 @@ namespace StatusAggregator.Tests.Export
         public class StatusExporterTest
         {
             public Mock<IComponentExporter> ComponentExporter { get; }
-            public Mock<IEventExporter> EventExporter { get; }
+            public Mock<IEventsExporter> EventExporter { get; }
             public Mock<IStatusSerializer> Serializer { get; }
             public StatusExporter Exporter { get; }
 
             public StatusExporterTest()
             {
                 ComponentExporter = new Mock<IComponentExporter>();
-                EventExporter = new Mock<IEventExporter>();
+                EventExporter = new Mock<IEventsExporter>();
                 Serializer = new Mock<IStatusSerializer>();
 
                 Exporter = new StatusExporter(
