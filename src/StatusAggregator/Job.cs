@@ -187,6 +187,14 @@ namespace StatusAggregator
                 .As<IExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
+                .RegisterType<IncidentAggregationPathProvider>()
+                .As<IAggregationPathProvider<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentGroupAggregationPathProvider>()
+                .As<IAggregationPathProvider<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
                 .RegisterType<ExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>()
                 .As<IExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>();
 
@@ -283,7 +291,7 @@ namespace StatusAggregator
 
         private const int _defaultEventStartMessageDelayMinutes = 15;
         private const int _defaultEventEndDelayMinutes = 15;
-        private const int _defaultEventVisibilityPeriod = 31;
+        private const int _defaultEventVisibilityPeriod = 10;
 
         private static void AddConfiguration(IServiceCollection serviceCollection, IDictionary<string, string> jobArgsDictionary)
         {

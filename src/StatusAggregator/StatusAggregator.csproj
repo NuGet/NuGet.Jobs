@@ -60,9 +60,12 @@
     <Compile Include="Factory\EntityFactoryAggregator.cs" />
     <Compile Include="Factory\ExistingAggregationLinkHandler.cs" />
     <Compile Include="Factory\ExistingAggregationProvider.cs" />
+    <Compile Include="Factory\IAggregationPathProvider.cs" />
     <Compile Include="Factory\IComponentFactory.cs" />
     <Compile Include="Factory\IExistingAggregationLinkHandler.cs" />
     <Compile Include="Factory\IExistingAggregationProvider.cs" />
+    <Compile Include="Factory\IncidentAggregationPathProvider.cs" />
+    <Compile Include="Factory\IncidentGroupAggregationPathProvider.cs" />
     <Compile Include="Messages\CurrentMessageContext.cs" />
     <Compile Include="Messages\IIncidentGroupMessageFilter.cs" />
     <Compile Include="Messages\IMessageChangeEventIterator.cs" />

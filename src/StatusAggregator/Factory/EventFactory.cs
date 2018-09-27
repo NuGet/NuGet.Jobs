@@ -16,14 +16,17 @@ namespace StatusAggregator.Factory
     public class EventFactory : IEntityFactory<EventEntity>
     {
         private readonly ITableWrapper _table;
+        private readonly IAggregationPathProvider<IncidentGroupEntity, EventEntity> _pathProvider;
 
         private readonly ILogger<EventFactory> _logger;
 
         public EventFactory(
             ITableWrapper table,
+            IAggregationPathProvider<IncidentGroupEntity, EventEntity> pathProvider,
             ILogger<EventFactory> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
+            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -32,9 +35,7 @@ namespace StatusAggregator.Factory
             var affectedPath = input.AffectedComponentPath;
             using (_logger.Scope("Creating event for parsed incident with path {AffectedComponentPath}.", affectedPath))
             {
-                var pathParts = ComponentUtility.GetNames(affectedPath);
-                var topLevelComponentPathParts = pathParts.Take(2).ToArray();
-                var path = ComponentUtility.GetPath(topLevelComponentPathParts);
+                var path = _pathProvider.Get(input);
                 _logger.LogInformation("Creating event for top level component {TopLevelComponentPath}.", path);
 
                 var entity = new EventEntity(path, input.StartTime);

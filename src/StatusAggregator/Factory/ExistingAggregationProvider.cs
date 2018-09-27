@@ -5,8 +5,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NuGet.Jobs.Extensions;
-using NuGet.Services.Status;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
@@ -19,16 +17,19 @@ namespace StatusAggregator.Factory
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
+        private readonly IAggregationPathProvider<TAggregatedEntity, TEntityAggregation> _pathProvider;
         private readonly IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> _linkHandler;
 
         private readonly ILogger<ExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>> _logger;
 
         public ExistingAggregationProvider(
             ITableWrapper table,
+            IAggregationPathProvider<TAggregatedEntity, TEntityAggregation> pathProvider,
             IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> linkHandler,
             ILogger<ExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
+            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
             _linkHandler = linkHandler ?? throw new ArgumentNullException(nameof(linkHandler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -37,41 +38,26 @@ namespace StatusAggregator.Factory
         {
             TEntityAggregation aggregationEntity = null;
 
-            // Iterate through the ancestors of the component that this parsed incident affects
-            var pathParts = ComponentUtility.GetNames(input.AffectedComponentPath);
-            for (var i = 1; i <= pathParts.Length; i++)
+            var possiblePath = _pathProvider.Get(input);
+            // Find an aggregation to link to
+            var possibleAggregations = _table
+                .CreateQuery<TEntityAggregation>()
+                .Where(e =>
+                    // The aggregation must affect the same path
+                    e.AffectedComponentPath == possiblePath &&
+                    // The aggregation must begin before or at the same time
+                    e.StartTime <= input.StartTime &&
+                    // The aggregation must be active or the aggregation must end after this incident begins
+                    (e.IsActive || (e.EndTime >= input.StartTime)))
+                .ToList();
+
+            _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
+            foreach (var possibleAggregation in possibleAggregations)
             {
-                var possiblePath =
-                    string.Join(
-                        Constants.ComponentPathDivider.ToString(),
-                        pathParts.Take(i).ToArray());
-
-                // Find an aggregation to link to
-                var possibleAggregations = _table
-                    .CreateQuery<TEntityAggregation>()
-                    .Where(e =>
-                        // The aggregation must affect the same path
-                        e.AffectedComponentPath == possiblePath &&
-                        // The aggregation must begin before or at the same time
-                        e.StartTime <= input.StartTime &&
-                        // The aggregation must be active or the aggregation must end after this incident begins
-                        (e.IsActive || (e.EndTime >= input.StartTime)))
-                    .ToList();
-
-                _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
-                foreach (var possibleAggregation in possibleAggregations)
+                if (await _linkHandler.CanLink(input, possibleAggregation))
                 {
-                    if (await _linkHandler.CanLink(input, possibleAggregation))
-                    {
-                        _logger.LogInformation("Linking entity to aggregation.");
-                        aggregationEntity = possibleAggregation;
-                        break;
-                    }
-                }
-                
-                if (aggregationEntity != null)
-                {
-                    _logger.LogInformation("Found aggregation to link entity to with path {AffectedComponentPath}.", possiblePath);
+                    _logger.LogInformation("Linking entity to aggregation.");
+                    aggregationEntity = possibleAggregation;
                     break;
                 }
             }

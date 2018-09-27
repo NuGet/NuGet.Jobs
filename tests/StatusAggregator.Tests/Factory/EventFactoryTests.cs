@@ -21,40 +21,10 @@ namespace StatusAggregator.Tests.Factory
     {
         public class TheCreateMethod : EventFactoryTest
         {
-            public static IEnumerable<object[]> CreatesEvent_Data
+            [Fact]
+            public async Task CreatesEvent()
             {
-                get
-                {
-                    // Gracefully handles empty path.
-                    yield return new object[] { "", "" };
-
-                    // Handles path with single part.
-                    var pathWithSinglePart = "hello";
-                    yield return new object[] { pathWithSinglePart, pathWithSinglePart };
-
-                    // Handles path with two parts.
-                    var pathWithTwoParts = "hello" + Constants.ComponentPathDivider + "there";
-                    yield return new object[] { pathWithTwoParts, pathWithTwoParts };
-
-                    // Handles path with three parts and returns the first two.
-                    var firstPartInThreePartPath = "hello";
-                    var secondPartInThreePartPath = "there";
-                    var thirdPartInThreePartPath = "friend";
-
-                    var firstTwoPartsOfPathWithThreeParts =
-                        firstPartInThreePartPath + Constants.ComponentPathDivider + secondPartInThreePartPath;
-                    var pathWithThreeParts =
-                        firstTwoPartsOfPathWithThreeParts + Constants.ComponentPathDivider + thirdPartInThreePartPath;
-
-                    yield return new object[] { pathWithThreeParts, firstTwoPartsOfPathWithThreeParts };
-                }
-            }
-
-            [Theory]
-            [MemberData(nameof(CreatesEvent_Data))]
-            public async Task CreatesEvent(string initialPath, string expectedPath)
-            {
-                var input = new ParsedIncident(Incident, initialPath, ComponentStatus.Up);
+                var input = new ParsedIncident(Incident, "somePath", ComponentStatus.Up);
 
                 EventEntity entity = null;
                 Table
@@ -66,10 +36,15 @@ namespace StatusAggregator.Tests.Factory
                         entity = e as EventEntity;
                     });
 
+                var aggregationPath = "thePath";
+                Provider
+                    .Setup(x => x.Get(input))
+                    .Returns(aggregationPath);
+
                 var result = await Factory.Create(input);
 
                 Assert.Equal(entity, result);
-                Assert.Equal(expectedPath, entity.AffectedComponentPath);
+                Assert.Equal(aggregationPath, entity.AffectedComponentPath);
                 Assert.Equal(input.StartTime, entity.StartTime);
 
                 Table
@@ -86,14 +61,18 @@ namespace StatusAggregator.Tests.Factory
                     CreateDate = new DateTime(2018, 9, 13) } };
 
             public Mock<ITableWrapper> Table { get; }
+            public Mock<IAggregationPathProvider<IncidentGroupEntity, EventEntity>> Provider { get; }
             public EventFactory Factory { get; }
 
             public EventFactoryTest()
             {
                 Table = new Mock<ITableWrapper>();
 
+                Provider = new Mock<IAggregationPathProvider<IncidentGroupEntity, EventEntity>>();
+
                 Factory = new EventFactory(
                     Table.Object,
+                    Provider.Object,
                     Mock.Of<ILogger<EventFactory>>());
             }
         }
