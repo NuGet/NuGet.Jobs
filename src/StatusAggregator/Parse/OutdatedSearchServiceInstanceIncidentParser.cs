@@ -4,6 +4,7 @@
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status;
+using StatusAggregator.Factory;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;

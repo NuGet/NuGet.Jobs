@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
+using StatusAggregator.Factory;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 using System;
@@ -18,7 +19,7 @@ namespace StatusAggregator
         private readonly ITableWrapper _table;
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly IIncidentFactory _incidentFactory;
+        private readonly IEntityFactory<IncidentEntity> _incidentFactory;
         private readonly ILogger<IncidentUpdater> _logger;
 
         private readonly string _incidentApiTeamId;
@@ -27,7 +28,7 @@ namespace StatusAggregator
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
-            IIncidentFactory incidentFactory,
+            IEntityFactory<IncidentEntity> incidentFactory,
             StatusAggregatorConfiguration configuration,
             ILogger<IncidentUpdater> logger)
         {
@@ -54,8 +55,8 @@ namespace StatusAggregator
                     using (_logger.Scope("Refreshing active incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
                     {
                         var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
-                        activeIncidentEntity.MitigationTime = activeIncident.MitigationData?.Date;
-                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.MitigationTime);
+                        activeIncidentEntity.EndTime = activeIncident.MitigationData?.Date;
+                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.EndTime);
                         await _table.InsertOrReplaceAsync(activeIncidentEntity);
                     }
                 }
@@ -76,9 +77,9 @@ namespace StatusAggregator
                 var parsedIncidents = incidents
                     .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
                     .ToList();
-                foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.CreationTime))
+                foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.StartTime))
                 {
-                    await _incidentFactory.CreateIncident(parsedIncident);
+                    await _incidentFactory.Create(parsedIncident);
                 }
 
                 return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;

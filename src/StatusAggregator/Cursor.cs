@@ -28,8 +28,7 @@ namespace StatusAggregator
         {
             using (_logger.Scope("Fetching cursor with name {CursorName}.", name))
             {
-                var cursor = await _table.RetrieveAsync<CursorEntity>(
-                    CursorEntity.DefaultPartitionKey, name);
+                var cursor = await _table.RetrieveAsync<CursorEntity>(name);
 
                 DateTime value;
                 if (cursor == null)

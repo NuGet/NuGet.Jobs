@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
@@ -14,7 +15,9 @@ namespace StatusAggregator.Table
             CloudStorageAccount storageAccount, 
             string tableName)
         {
-            var tableClient = storageAccount.CreateCloudTableClient();
+
+            var tableClient = storageAccount?.CreateCloudTableClient() 
+                ?? throw new ArgumentNullException(nameof(storageAccount));
             _table = tableClient.GetTableReference(tableName);
         }
 
@@ -25,10 +28,10 @@ namespace StatusAggregator.Table
             return _table.CreateIfNotExistsAsync();
         }
 
-        public async Task<T> RetrieveAsync<T>(string partitionKey, string rowKey) 
+        public async Task<T> RetrieveAsync<T>(string rowKey) 
             where T : class, ITableEntity
         {
-            var operation = TableOperation.Retrieve<T>(partitionKey, rowKey);
+            var operation = TableOperation.Retrieve<T>(TableUtility.GetPartitionKey<T>(), rowKey);
             return (await _table.ExecuteAsync(operation)).Result as T;
         }
 
@@ -71,7 +74,8 @@ namespace StatusAggregator.Table
         {
             return _table
                 .CreateQuery<T>()
-                .AsQueryable();
+                .AsQueryable()
+                .Where(e => e.PartitionKey == TableUtility.GetPartitionKey<T>());
         }
     }
 }

@@ -16,10 +16,13 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
+using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
+using StatusAggregator.Factory;
 using StatusAggregator.Manual;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
+using StatusAggregator.Update;
 
 namespace StatusAggregator
 {
@@ -39,6 +42,7 @@ namespace StatusAggregator
             containerBuilder.Populate(serviceCollection);
 
             AddStorage(containerBuilder);
+            AddFactoriesAndUpdaters(containerBuilder);
 
             _serviceProvider = new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -54,12 +58,10 @@ namespace StatusAggregator
         {
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
-            serviceCollection.AddTransient<IMessageUpdater, MessageUpdater>();
-            serviceCollection.AddTransient<IEventUpdater, EventUpdater>();
-            serviceCollection.AddTransient<IIncidentFactory, IncidentFactory>();
             AddParsing(serviceCollection);
             serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
             AddManualStatusChangeHandling(serviceCollection);
+            serviceCollection.AddTransient<IComponentFactory, NuGetServiceComponentFactory>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
             serviceCollection.AddTransient<StatusAggregator>();
@@ -161,6 +163,82 @@ namespace StatusAggregator
             var blobClient = storageAccount.CreateCloudBlobClient();
             var configuration = ctx.Resolve<StatusAggregatorConfiguration>();
             return blobClient.GetContainerReference(configuration.ContainerName);
+        }
+
+        private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterType<ExistingAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>()
+                .As<IExistingAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>()
+                .As<IExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentAggregationPathProvider>()
+                .As<IAggregationPathProvider<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentGroupAggregationPathProvider>()
+                .As<IAggregationPathProvider<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
+                .RegisterType<ExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>()
+                .As<IExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ExistingAggregationProvider<IncidentGroupEntity, EventEntity>>()
+                .As<IExistingAggregationProvider<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentFactory>()
+                .As<IAggregatedEntityFactory<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentGroupFactory>()
+                .As<IAggregatedEntityFactory<IncidentGroupEntity, EventEntity>>();
+
+            containerBuilder
+                .RegisterType<EventFactory>()
+                .As<IEntityFactory<EventEntity>>();
+
+            containerBuilder
+                .RegisterType<EntityFactoryAggregator<IncidentEntity, IncidentGroupEntity>>()
+                .As<IEntityFactory<IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<EntityFactoryAggregator<IncidentGroupEntity, EventEntity>>()
+                .As<IEntityFactory<IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentUpdateHandler>()
+                .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<EntityAggregationUpdateHandler<IncidentEntity, IncidentGroupEntity>>()
+                .As<IComponentAffectingEntityUpdateHandler<IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<EntityAggregationUpdateHandler<IncidentGroupEntity, EventEntity>>()
+                .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
+
+            containerBuilder
+                .RegisterType<IncidentGroupLinkListener>()
+                .As<IEntityAggregationLinkListener<IncidentEntity, IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ComponentAffectingEntityUpdater<IncidentEntity>>()
+                .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
+
+            containerBuilder
+                .RegisterType<ComponentAffectingEntityUpdater<IncidentGroupEntity>>()
+                .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
+
+            containerBuilder
+                .RegisterType<ComponentAffectingEntityUpdater<EventEntity>>()
+                .As<IComponentAffectingEntityUpdater>()
+                .As<IComponentAffectingEntityUpdater<EventEntity>>();
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

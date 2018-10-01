@@ -3,12 +3,12 @@
 
 using NuGet.Services.Status;
 
-namespace StatusAggregator
+namespace StatusAggregator.Factory
 {
     /// <summary>
     /// Helps create an <see cref="IComponent"/> that represents the NuGet service as well as paths to its subcomponents.
     /// </summary>
-    public static class NuGetServiceComponentFactory
+    public class NuGetServiceComponentFactory : IComponentFactory
     {
         public const string RootName = "NuGet";
         public const string GalleryName = "NuGet.org";
@@ -26,11 +26,8 @@ namespace StatusAggregator
         public const string UsscInstanceName = "South Central US";
         public const string EaInstanceName = "East Asia";
         public const string SeaInstanceName = "Southeast Asia";
-
-        /// <summary>
-        /// Creates an <see cref="IComponent"/> that represents the NuGet service.
-        /// </summary>
-        public static IComponent CreateNuGetServiceRootComponent()
+        
+        public IComponent Create()
         {
             return new TreeComponent(
                 RootName,
@@ -59,7 +56,7 @@ namespace StatusAggregator
                                     new LeafComponent(ChinaRegionName, "V3 restore for users inside China")
                                 }),
                             new PrimarySecondaryComponent(
-                                V2ProtocolName, 
+                                V2ProtocolName,
                                 "Restore using the V2 API",
                                 new[]
                                 {
