@@ -48,7 +48,6 @@ namespace StatusAggregator
 
                 var incidentCursor = await ProcessCursor(IncidentCursorName, async (value) =>
                 {
-                    await _incidentUpdater.RefreshActiveIncidents();
                     return await _incidentUpdater.FetchNewIncidents(value);
                 });
 

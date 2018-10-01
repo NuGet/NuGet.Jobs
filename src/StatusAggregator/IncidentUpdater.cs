@@ -40,29 +40,6 @@ namespace StatusAggregator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task RefreshActiveIncidents()
-        {
-            using (_logger.Scope("Refreshing active incidents."))
-            {
-                var activeIncidentEntities = _table
-                    .CreateQuery<IncidentEntity>()
-                    .Where(i => i.PartitionKey == IncidentEntity.DefaultPartitionKey && i.IsActive)
-                    .ToList();
-
-                _logger.LogInformation("Refreshing {ActiveIncidentsCount} active incidents.", activeIncidentEntities.Count());
-                foreach (var activeIncidentEntity in activeIncidentEntities)
-                {
-                    using (_logger.Scope("Refreshing active incident '{IncidentRowKey}'.", activeIncidentEntity.RowKey))
-                    {
-                        var activeIncident = await _incidentApiClient.GetIncident(activeIncidentEntity.IncidentApiId);
-                        activeIncidentEntity.EndTime = activeIncident.MitigationData?.Date;
-                        _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}", activeIncidentEntity.EndTime);
-                        await _table.InsertOrReplaceAsync(activeIncidentEntity);
-                    }
-                }
-            }
-        }
-
         public async Task<DateTime?> FetchNewIncidents(DateTime cursor)
         {
             using (_logger.Scope("Fetching all new incidents since {Cursor}.", cursor))

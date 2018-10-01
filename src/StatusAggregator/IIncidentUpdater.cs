@@ -14,11 +14,6 @@ namespace StatusAggregator
     public interface IIncidentUpdater
     {
         /// <summary>
-        /// Update the status of any active <see cref="IncidentEntity"/>s.
-        /// </summary>
-        Task RefreshActiveIncidents();
-
-        /// <summary>
         /// Fetches any new <see cref="Incident"/>s and processes them.
         /// </summary>
         /// <param name="cursor">The current timestamp processed by the job.</param>
