@@ -7,13 +7,13 @@ using StatusAggregator.Parse;
 
 namespace StatusAggregator.Factory
 {
-    public interface IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
+    public interface IAggregationProvider<TAggregatedEntity, TEntityAggregation>
         where TAggregatedEntity : IAggregatedEntity<TEntityAggregation>
         where TEntityAggregation : IComponentAffectingEntity
     {
         /// <summary>
-        /// Determines if an entity built from <paramref name="input"/> using a <see cref="IEntityFactory{TEntity}"/> can be linked to <paramref name="entityAggregation"/>.
+        /// Gets an aggregation that matches <paramref name="input"/>.
         /// </summary>
-        Task<bool> CanLink(ParsedIncident input, TEntityAggregation entityAggregation);
+        Task<TEntityAggregation> Get(ParsedIncident input);
     }
 }

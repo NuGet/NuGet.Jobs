@@ -7,15 +7,6 @@ using NuGet.Services.Status.Table;
 
 namespace StatusAggregator.Update
 {
-    public interface IComponentAffectingEntityUpdater
-    {
-        /// <summary>
-        /// Updates entities with <see cref="IComponentAffectingEntity.IsActive"/> <c>true</c>.
-        /// </summary>
-        /// <param name="cursor">The current time.</param>
-        Task UpdateAllActive(DateTime cursor);
-    }
-
     public interface IComponentAffectingEntityUpdater<T>
         where T : ComponentAffectingEntity
     {
@@ -23,6 +14,6 @@ namespace StatusAggregator.Update
         /// Updates <paramref name="groupEntity"/> given that the current time is now <paramref name="cursor"/>.
         /// Returns whether <paramref name="groupEntity"/> is inactive.
         /// </summary>
-        Task<bool> Update(T entity, DateTime cursor);
+        Task Update(T entity, DateTime cursor);
     }
 }

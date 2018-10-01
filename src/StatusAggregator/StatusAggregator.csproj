@@ -47,13 +47,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cursor.cs" />
-    <Compile Include="Factory\EntityFactoryAggregator.cs" />
-    <Compile Include="Factory\ExistingAggregationLinkHandler.cs" />
-    <Compile Include="Factory\ExistingAggregationProvider.cs" />
+    <Compile Include="Factory\AggregationLinkHandler.cs" />
+    <Compile Include="Factory\AggregationProvider.cs" />
     <Compile Include="Factory\IAggregationPathProvider.cs" />
     <Compile Include="Factory\IComponentFactory.cs" />
-    <Compile Include="Factory\IExistingAggregationLinkHandler.cs" />
-    <Compile Include="Factory\IExistingAggregationProvider.cs" />
+    <Compile Include="Factory\IAggregationLinkHandler.cs" />
+    <Compile Include="Factory\IAggregationProvider.cs" />
     <Compile Include="Factory\IncidentAggregationPathProvider.cs" />
     <Compile Include="Factory\IncidentGroupAggregationPathProvider.cs" />
     <Compile Include="ICursor.cs" />
@@ -66,19 +65,15 @@
     <Compile Include="StatusContractResolver.cs" />
     <Compile Include="StatusExporter.cs" />
     <Compile Include="StatusUpdater.cs" />
-    <Compile Include="Update\ComponentAffectingEntityUpdater.cs" />
-    <Compile Include="Update\EntityAggregationUpdateHandler.cs" />
+    <Compile Include="Update\ActiveEventEntityUpdater.cs" />
+    <Compile Include="Update\EntityAggregationUpdater.cs" />
     <Compile Include="Factory\EventFactory.cs" />
-    <Compile Include="Factory\IAggregatedEntityFactory.cs" />
-    <Compile Include="Update\IComponentAffectingEntityUpdateHandler.cs" />
-    <Compile Include="Update\IComponentAffectingEntityUpdateListener.cs" />
-    <Compile Include="Factory\IEntityAggregationLinkListener.cs" />
-    <Compile Include="Factory\IEntityFactory.cs" />
+    <Compile Include="Factory\IComponentAffectingEntityFactory.cs" />
+    <Compile Include="Update\IActiveEventEntityUpdater.cs" />
     <Compile Include="Update\IComponentAffectingEntityUpdater.cs" />
-    <Compile Include="Update\IncidentUpdateHandler.cs" />
+    <Compile Include="Update\IncidentUpdater.cs" />
     <Compile Include="Factory\IncidentFactory.cs" />
     <Compile Include="Factory\IncidentGroupFactory.cs" />
-    <Compile Include="Factory\IncidentGroupLinkListener.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandler.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandler.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandler.cs" />

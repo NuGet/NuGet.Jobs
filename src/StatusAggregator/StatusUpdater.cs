@@ -19,7 +19,7 @@ namespace StatusAggregator
         private readonly ICursor _cursor;
         private readonly IEnumerable<IManualStatusChangeUpdater> _manualStatusChangeUpdaters;
         private readonly IIncidentUpdater _incidentUpdater;
-        private readonly IComponentAffectingEntityUpdater _updater;
+        private readonly IActiveEventEntityUpdater _activeEventUpdater;
 
         private readonly ILogger<StatusUpdater> _logger;
 
@@ -27,13 +27,13 @@ namespace StatusAggregator
             ICursor cursor,
             IEnumerable<IManualStatusChangeUpdater> manualStatusChangeUpdaters,
             IIncidentUpdater incidentUpdater,
-            IComponentAffectingEntityUpdater eventUpdater,
+            IActiveEventEntityUpdater eventUpdater,
             ILogger<StatusUpdater> logger)
         {
             _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             _manualStatusChangeUpdaters = manualStatusChangeUpdaters ?? throw new ArgumentNullException(nameof(manualStatusChangeUpdaters));
             _incidentUpdater = incidentUpdater ?? throw new ArgumentNullException(nameof(incidentUpdater));
-            _updater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
+            _activeEventUpdater = eventUpdater ?? throw new ArgumentNullException(nameof(eventUpdater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -52,7 +52,7 @@ namespace StatusAggregator
                     return await _incidentUpdater.FetchNewIncidents(value);
                 });
 
-                await _updater.UpdateAllActive(incidentCursor);
+                await _activeEventUpdater.UpdateAllActiveEvents(incidentCursor);
             }
         }
 

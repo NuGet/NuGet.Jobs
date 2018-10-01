@@ -168,12 +168,12 @@ namespace StatusAggregator
         private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
         {
             containerBuilder
-                .RegisterType<ExistingAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>()
-                .As<IExistingAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>();
+                .RegisterType<AggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>()
+                .As<IAggregationLinkHandler<IncidentEntity, IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<ExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>()
-                .As<IExistingAggregationLinkHandler<IncidentGroupEntity, EventEntity>>();
+                .RegisterType<AggregationLinkHandler<IncidentGroupEntity, EventEntity>>()
+                .As<IAggregationLinkHandler<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentAggregationPathProvider>()
@@ -184,61 +184,40 @@ namespace StatusAggregator
                 .As<IAggregationPathProvider<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
-                .RegisterType<ExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>()
-                .As<IExistingAggregationProvider<IncidentEntity, IncidentGroupEntity>>();
+                .RegisterType<AggregationProvider<IncidentEntity, IncidentGroupEntity>>()
+                .As<IAggregationProvider<IncidentEntity, IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<ExistingAggregationProvider<IncidentGroupEntity, EventEntity>>()
-                .As<IExistingAggregationProvider<IncidentGroupEntity, EventEntity>>();
+                .RegisterType<AggregationProvider<IncidentGroupEntity, EventEntity>>()
+                .As<IAggregationProvider<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentFactory>()
-                .As<IAggregatedEntityFactory<IncidentEntity, IncidentGroupEntity>>();
+                .As<IComponentAffectingEntityFactory<IncidentEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentGroupFactory>()
-                .As<IAggregatedEntityFactory<IncidentGroupEntity, EventEntity>>();
+                .As<IComponentAffectingEntityFactory<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<EventFactory>()
-                .As<IEntityFactory<EventEntity>>();
+                .As<IComponentAffectingEntityFactory<EventEntity>>();
 
             containerBuilder
-                .RegisterType<EntityFactoryAggregator<IncidentEntity, IncidentGroupEntity>>()
-                .As<IEntityFactory<IncidentEntity>>();
-
-            containerBuilder
-                .RegisterType<EntityFactoryAggregator<IncidentGroupEntity, EventEntity>>()
-                .As<IEntityFactory<IncidentGroupEntity>>();
-
-            containerBuilder
-                .RegisterType<IncidentUpdateHandler>()
-                .As<IComponentAffectingEntityUpdateHandler<IncidentEntity>>();
-
-            containerBuilder
-                .RegisterType<EntityAggregationUpdateHandler<IncidentEntity, IncidentGroupEntity>>()
-                .As<IComponentAffectingEntityUpdateHandler<IncidentGroupEntity>>();
-
-            containerBuilder
-                .RegisterType<EntityAggregationUpdateHandler<IncidentGroupEntity, EventEntity>>()
-                .As<IComponentAffectingEntityUpdateHandler<EventEntity>>();
-
-            containerBuilder
-                .RegisterType<IncidentGroupLinkListener>()
-                .As<IEntityAggregationLinkListener<IncidentEntity, IncidentGroupEntity>>();
-
-            containerBuilder
-                .RegisterType<ComponentAffectingEntityUpdater<IncidentEntity>>()
+                .RegisterType<Update.IncidentUpdater>()
                 .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
 
             containerBuilder
-                .RegisterType<ComponentAffectingEntityUpdater<IncidentGroupEntity>>()
+                .RegisterType<EntityAggregationUpdater<IncidentEntity, IncidentGroupEntity>>()
                 .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<ComponentAffectingEntityUpdater<EventEntity>>()
-                .As<IComponentAffectingEntityUpdater>()
+                .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, EventEntity>>()
                 .As<IComponentAffectingEntityUpdater<EventEntity>>();
+
+            containerBuilder
+                .RegisterType<ActiveEventEntityUpdater>()
+                .As<IActiveEventEntityUpdater>();
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

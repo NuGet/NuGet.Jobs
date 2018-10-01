@@ -11,7 +11,7 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Factory
 {
-    public class EventFactory : IEntityFactory<EventEntity>
+    public class EventFactory : IComponentAffectingEntityFactory<EventEntity>
     {
         private readonly ITableWrapper _table;
         private readonly IAggregationPathProvider<IncidentGroupEntity, EventEntity> _pathProvider;

@@ -10,7 +10,7 @@ namespace StatusAggregator.Factory
     /// <summary>
     /// Creates a <typeparamref name="TEntity"/> given a <see cref="ParsedIncident"/>.
     /// </summary>
-    public interface IEntityFactory<TEntity>
+    public interface IComponentAffectingEntityFactory<TEntity>
         where TEntity : TableEntity
     {
         Task<TEntity> Create(ParsedIncident input);

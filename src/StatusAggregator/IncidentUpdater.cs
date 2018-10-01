@@ -19,7 +19,7 @@ namespace StatusAggregator
         private readonly ITableWrapper _table;
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly IEntityFactory<IncidentEntity> _incidentFactory;
+        private readonly IComponentAffectingEntityFactory<IncidentEntity> _incidentFactory;
         private readonly ILogger<IncidentUpdater> _logger;
 
         private readonly string _incidentApiTeamId;
@@ -28,7 +28,7 @@ namespace StatusAggregator
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
-            IEntityFactory<IncidentEntity> incidentFactory,
+            IComponentAffectingEntityFactory<IncidentEntity> incidentFactory,
             StatusAggregatorConfiguration configuration,
             ILogger<IncidentUpdater> logger)
         {

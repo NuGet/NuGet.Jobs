@@ -7,12 +7,12 @@ using NuGet.Services.Status.Table;
 
 namespace StatusAggregator.Update
 {
-    public interface IComponentAffectingEntityUpdateListener<T>
-        where T : ComponentAffectingEntity
+    public interface IActiveEventEntityUpdater
     {
         /// <summary>
-        /// Called when <paramref name="entity"/> is updated by a <see cref="IComponentAffectingEntityUpdateHandler{T}"/>.
+        /// Updates all active <see cref="EventEntity"/>s.
         /// </summary>
-        Task OnUpdate(T entity, DateTime cursor);
+        /// <param name="cursor">The current time.</param>
+        Task UpdateAllActiveEvents(DateTime cursor);
     }
 }

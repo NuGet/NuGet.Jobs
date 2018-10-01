@@ -11,24 +11,24 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Update
 {
-    public class IncidentUpdateHandler : IComponentAffectingEntityUpdateHandler<IncidentEntity>
+    public class IncidentUpdater : IComponentAffectingEntityUpdater<IncidentEntity>
     {
         private readonly ITableWrapper _table;
         private readonly IIncidentApiClient _incidentApiClient;
-        private readonly ILogger<IncidentUpdateHandler> _logger;
+        private readonly ILogger<IncidentUpdater> _logger;
 
-        public IncidentUpdateHandler(
+        public IncidentUpdater(
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
             StatusAggregatorConfiguration configuration,
-            ILogger<IncidentUpdateHandler> logger)
+            ILogger<IncidentUpdater> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<bool> Update(IncidentEntity entity, DateTime cursor)
+        public async Task Update(IncidentEntity entity, DateTime cursor)
         {
             using (_logger.Scope("Updating incident with ID {IncidentApiId}.", entity.IncidentApiId))
             {
@@ -41,8 +41,6 @@ namespace StatusAggregator.Update
                     entity.EndTime = endTime;
                     await _table.InsertOrReplaceAsync(entity);
                 }
-
-                return entity.EndTime != null;
             }
         }
     }

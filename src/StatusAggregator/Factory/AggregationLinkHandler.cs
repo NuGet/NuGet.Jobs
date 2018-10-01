@@ -13,20 +13,20 @@ using StatusAggregator.Update;
 
 namespace StatusAggregator.Factory
 {
-    public class ExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
-        : IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
+    public class AggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
+        : IAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdater<TEntityAggregation> _aggregationUpdater;
 
-        private readonly ILogger<ExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<AggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> _logger;
 
-        public ExistingAggregationLinkHandler(
+        public AggregationLinkHandler(
             ITableWrapper table,
             IComponentAffectingEntityUpdater<TEntityAggregation> aggregationUpdater,
-            ILogger<ExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> logger)
+            ILogger<AggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));
@@ -37,13 +37,14 @@ namespace StatusAggregator.Factory
         {
             using (_logger.Scope("Determining if entity can be linked to aggregation {AggregationRowKey}", entityAggregation.RowKey))
             {
-                if (!_table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(entityAggregation).ToList().Any())
+                if (!_table.GetChildEntities<TAggregatedEntity, TEntityAggregation>(entityAggregation).ToList().Any())
                 {
                     _logger.LogInformation("Cannot link entity to aggregation because it is not linked to any incidents.");
                     return false;
                 }
 
-                if (await _aggregationUpdater.Update(entityAggregation, input.StartTime))
+                await _aggregationUpdater.Update(entityAggregation, input.StartTime);
+                if (!entityAggregation.IsActive)
                 {
                     _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated.");
                     return false;

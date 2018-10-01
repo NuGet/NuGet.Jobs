@@ -17,7 +17,7 @@ namespace StatusAggregator.Table
                 .Where(e => e.IsActive);
         }
 
-        public static IQueryable<TChild> GetLinkedEntities<TChild, TParent>(this ITableWrapper table, TParent entity)
+        public static IQueryable<TChild> GetChildEntities<TChild, TParent>(this ITableWrapper table, TParent entity)
             where TChild : ITableEntity, IChildEntity<TParent>, new()
             where TParent : ITableEntity
         {

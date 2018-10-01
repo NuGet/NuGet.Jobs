@@ -12,26 +12,31 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Factory
 {
-    public class IncidentFactory : IAggregatedEntityFactory<IncidentEntity, IncidentGroupEntity>
+    public class IncidentFactory : IComponentAffectingEntityFactory<IncidentEntity>
     {
         private readonly ITableWrapper _table;
+        private readonly IAggregationProvider<IncidentEntity, IncidentGroupEntity> _aggregationProvider;
 
         private readonly ILogger<IncidentFactory> _logger;
 
         public IncidentFactory(
             ITableWrapper table,
+            IAggregationProvider<IncidentEntity, IncidentGroupEntity> aggregationProvider,
             ILogger<IncidentFactory> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
+            _aggregationProvider = aggregationProvider ?? throw new ArgumentNullException(nameof(aggregationProvider));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<IncidentEntity> Create(ParsedIncident input, IncidentGroupEntity groupEntity)
+        public async Task<IncidentEntity> Create(ParsedIncident input)
         {
+            var groupEntity = await _aggregationProvider.Get(input);
+
             var affectedPath = input.AffectedComponentPath;
             using (_logger.Scope("Creating incident for parsed incident with path {AffectedComponentPath}.", affectedPath))
             {
-                var entity = new IncidentEntity(
+                var incidentEntity = new IncidentEntity(
                     input.Id,
                     groupEntity,
                     affectedPath,
@@ -39,9 +44,17 @@ namespace StatusAggregator.Factory
                     input.StartTime,
                     input.EndTime);
 
-                await _table.InsertOrReplaceAsync(entity);
+                await _table.InsertOrReplaceAsync(incidentEntity);
 
-                return entity;
+                if (incidentEntity.AffectedComponentStatus > groupEntity.AffectedComponentStatus)
+                {
+                    _logger.LogInformation("Incident {IncidentRowKey} has a greater severity than incident group {GroupRowKey} it was just linked to ({NewSeverity} > {OldSeverity}), updating group's severity.",
+                        incidentEntity.RowKey, groupEntity.RowKey, (ComponentStatus)incidentEntity.AffectedComponentStatus, (ComponentStatus)groupEntity.AffectedComponentStatus);
+                    groupEntity.AffectedComponentStatus = incidentEntity.AffectedComponentStatus;
+                    await _table.ReplaceAsync(groupEntity);
+                }
+
+                return incidentEntity;
             }
         }
     }

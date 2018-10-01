@@ -11,30 +11,33 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Factory
 {
-    public class ExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>
-        : IExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>
+    public class AggregationProvider<TAggregatedEntity, TEntityAggregation>
+        : IAggregationProvider<TAggregatedEntity, TEntityAggregation>
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
         private readonly IAggregationPathProvider<TAggregatedEntity, TEntityAggregation> _pathProvider;
-        private readonly IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> _linkHandler;
+        private readonly IAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> _linkHandler;
+        private readonly IComponentAffectingEntityFactory<TEntityAggregation> _aggregationFactory;
 
-        private readonly ILogger<ExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> _logger;
 
-        public ExistingAggregationProvider(
+        public AggregationProvider(
             ITableWrapper table,
             IAggregationPathProvider<TAggregatedEntity, TEntityAggregation> pathProvider,
-            IExistingAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> linkHandler,
-            ILogger<ExistingAggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
+            IAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> linkHandler,
+            IComponentAffectingEntityFactory<TEntityAggregation> aggregationFactory,
+            ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
             _linkHandler = linkHandler ?? throw new ArgumentNullException(nameof(linkHandler));
+            _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<TEntityAggregation> GetExistingAggregation(ParsedIncident input)
+        public async Task<TEntityAggregation> Get(ParsedIncident input)
         {
             TEntityAggregation aggregationEntity = null;
 
@@ -60,6 +63,13 @@ namespace StatusAggregator.Factory
                     aggregationEntity = possibleAggregation;
                     break;
                 }
+            }
+
+            if (aggregationEntity == null)
+            {
+                _logger.LogInformation("Could not find existing aggregation to link to, creating new aggregation to link entity to.");
+                aggregationEntity = await _aggregationFactory.Create(input);
+                _logger.LogInformation("Created new aggregation {AggregationRowKey} to link entity to.", aggregationEntity.RowKey);
             }
 
             return aggregationEntity;

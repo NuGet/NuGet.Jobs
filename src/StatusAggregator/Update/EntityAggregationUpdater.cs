@@ -14,8 +14,8 @@ namespace StatusAggregator.Update
     /// <summary>
     /// Updates a <typeparamref name="TEntityAggregation"/> and its <typeparamref name="TAggregatedEntity"/>s.
     /// </summary>
-    public class EntityAggregationUpdateHandler<TAggregatedEntity, TEntityAggregation> 
-        : IComponentAffectingEntityUpdateHandler<TEntityAggregation>
+    public class EntityAggregationUpdater<TAggregatedEntity, TEntityAggregation> 
+        : IComponentAffectingEntityUpdater<TEntityAggregation>
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity
     {
@@ -24,13 +24,13 @@ namespace StatusAggregator.Update
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdater<TAggregatedEntity> _aggregatedEntityUpdater;
 
-        private readonly ILogger<EntityAggregationUpdateHandler<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<EntityAggregationUpdater<TAggregatedEntity, TEntityAggregation>> _logger;
 
-        public EntityAggregationUpdateHandler(
+        public EntityAggregationUpdater(
             ITableWrapper table,
             IComponentAffectingEntityUpdater<TAggregatedEntity> aggregatedEntityUpdater,
             StatusAggregatorConfiguration configuration,
-            ILogger<EntityAggregationUpdateHandler<TAggregatedEntity, TEntityAggregation>> logger)
+            ILogger<EntityAggregationUpdater<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregatedEntityUpdater = aggregatedEntityUpdater 
@@ -40,7 +40,7 @@ namespace StatusAggregator.Update
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<bool> Update(TEntityAggregation aggregationEntity, DateTime cursor)
+        public async Task Update(TEntityAggregation aggregationEntity, DateTime cursor)
         {
             aggregationEntity = aggregationEntity ?? throw new ArgumentNullException(nameof(aggregationEntity));
 
@@ -49,41 +49,37 @@ namespace StatusAggregator.Update
                 if (!aggregationEntity.IsActive)
                 {
                     _logger.LogInformation("Aggregation is inactive, cannot update.");
-                    return true;
+                    return;
                 }
+                
+                var hasActiveOrRecentChildren = false;
+                var children = _table
+                    .GetChildEntities<TAggregatedEntity, TEntityAggregation>(aggregationEntity)
+                    .ToList();
 
-                var aggregatedEntitiesQuery = _table.GetLinkedEntities<TAggregatedEntity, TEntityAggregation>(aggregationEntity);
-
-                var aggregatedEntities = aggregatedEntitiesQuery.ToList();
-                if (aggregatedEntities.Any())
+                if (children.Any())
                 {
-                    _logger.LogInformation("Aggregation has {ChildrenCount} children. Updating each child.", aggregatedEntities.Count);
-                    foreach (var aggregatedEntity in aggregatedEntities)
+                    _logger.LogInformation("Aggregation has {ChildrenCount} children. Updating each child.", children.Count);
+                    foreach (var child in children)
                     {
-                        await _aggregatedEntityUpdater.Update(aggregatedEntity, cursor);
+                        await _aggregatedEntityUpdater.Update(child, cursor);
+
+                        hasActiveOrRecentChildren = 
+                            hasActiveOrRecentChildren || 
+                            child.IsActive || 
+                            child.EndTime > cursor - _groupEndDelay;
                     }
                 }
                 else
                 {
                     _logger.LogInformation("Aggregation has no children and must have been created manually, cannot update.");
-                    return false;
+                    return;
                 }
-
-                var hasActiveAggregatedEntities = aggregatedEntitiesQuery
-                    .Where(i => i.IsActive)
-                    .ToList()
-                    .Any();
-
-                var hasRecentAggregatedEntities = aggregatedEntitiesQuery
-                    .Where(i => i.EndTime > cursor - _groupEndDelay)
-                    .ToList()
-                    .Any();
-
-                var shouldDeactivate = !hasActiveAggregatedEntities && !hasRecentAggregatedEntities;
-                if (shouldDeactivate)
+                
+                if (!hasActiveOrRecentChildren)
                 {
                     _logger.LogInformation("Deactivating aggregation because its children are inactive and too old.");
-                    var lastEndTime = aggregatedEntities
+                    var lastEndTime = children
                         .Max(i => i.EndTime ?? DateTime.MinValue);
                     aggregationEntity.EndTime = lastEndTime;
 
@@ -93,8 +89,6 @@ namespace StatusAggregator.Update
                 {
                     _logger.LogInformation("Aggregation has active or recent children so it will not be deactivated.");
                 }
-
-                return shouldDeactivate;
             }
         }
     }
