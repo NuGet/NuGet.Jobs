@@ -177,11 +177,12 @@ namespace StatusAggregator
 
             containerBuilder
                 .RegisterType<IncidentAggregationPathProvider>()
-                .As<IAggregationPathProvider<IncidentEntity, IncidentGroupEntity>>();
+                .As<IAffectedComponentPathProvider<IncidentEntity>>()
+                .As<IAffectedComponentPathProvider<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<IncidentGroupAggregationPathProvider>()
-                .As<IAggregationPathProvider<IncidentGroupEntity, EventEntity>>();
+                .RegisterType<EventPathProvider>()
+                .As<IAffectedComponentPathProvider<EventEntity>>();
 
             containerBuilder
                 .RegisterType<AggregationProvider<IncidentEntity, IncidentGroupEntity>>()

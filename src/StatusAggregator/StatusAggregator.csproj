@@ -49,12 +49,12 @@
     <Compile Include="Cursor.cs" />
     <Compile Include="Factory\AggregationLinkHandler.cs" />
     <Compile Include="Factory\AggregationProvider.cs" />
-    <Compile Include="Factory\IAggregationPathProvider.cs" />
+    <Compile Include="Factory\IAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\IComponentFactory.cs" />
     <Compile Include="Factory\IAggregationLinkHandler.cs" />
     <Compile Include="Factory\IAggregationProvider.cs" />
     <Compile Include="Factory\IncidentAggregationPathProvider.cs" />
-    <Compile Include="Factory\IncidentGroupAggregationPathProvider.cs" />
+    <Compile Include="Factory\EventPathProvider.cs" />
     <Compile Include="ICursor.cs" />
     <Compile Include="IIncidentUpdater.cs" />
     <Compile Include="IncidentUpdater.cs" />

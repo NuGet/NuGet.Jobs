@@ -14,13 +14,13 @@ namespace StatusAggregator.Factory
     public class EventFactory : IComponentAffectingEntityFactory<EventEntity>
     {
         private readonly ITableWrapper _table;
-        private readonly IAggregationPathProvider<IncidentGroupEntity, EventEntity> _pathProvider;
+        private readonly IAffectedComponentPathProvider<EventEntity> _pathProvider;
 
         private readonly ILogger<EventFactory> _logger;
 
         public EventFactory(
             ITableWrapper table,
-            IAggregationPathProvider<IncidentGroupEntity, EventEntity> pathProvider,
+            IAffectedComponentPathProvider<EventEntity> pathProvider,
             ILogger<EventFactory> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
@@ -30,13 +30,10 @@ namespace StatusAggregator.Factory
 
         public async Task<EventEntity> Create(ParsedIncident input)
         {
-            var affectedPath = input.AffectedComponentPath;
+            var affectedPath = _pathProvider.Get(input);
             using (_logger.Scope("Creating event for parsed incident with path {AffectedComponentPath}.", affectedPath))
             {
-                var path = _pathProvider.Get(input);
-                _logger.LogInformation("Creating event for top level component {TopLevelComponentPath}.", path);
-
-                var entity = new EventEntity(path, input.StartTime);
+                var entity = new EventEntity(affectedPath, input.StartTime);
                 await _table.InsertOrReplaceAsync(entity);
 
                 return entity;

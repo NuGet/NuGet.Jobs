@@ -11,7 +11,7 @@ namespace StatusAggregator.Parse
     /// <summary>
     /// Describes how a <see cref="Incident"/> affects a <see cref="ServiceStatus"/>.
     /// </summary>
-    public class ParsedIncident : IComponentAffectingEntity
+    public class ParsedIncident
     {
         public ParsedIncident(
             Incident incident, 

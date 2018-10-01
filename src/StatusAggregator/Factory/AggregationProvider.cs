@@ -17,7 +17,7 @@ namespace StatusAggregator.Factory
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
-        private readonly IAggregationPathProvider<TAggregatedEntity, TEntityAggregation> _pathProvider;
+        private readonly IAffectedComponentPathProvider<TEntityAggregation> _aggregationPathProvider;
         private readonly IAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> _linkHandler;
         private readonly IComponentAffectingEntityFactory<TEntityAggregation> _aggregationFactory;
 
@@ -25,13 +25,13 @@ namespace StatusAggregator.Factory
 
         public AggregationProvider(
             ITableWrapper table,
-            IAggregationPathProvider<TAggregatedEntity, TEntityAggregation> pathProvider,
+            IAffectedComponentPathProvider<TEntityAggregation> aggregationPathProvider,
             IAggregationLinkHandler<TAggregatedEntity, TEntityAggregation> linkHandler,
             IComponentAffectingEntityFactory<TEntityAggregation> aggregationFactory,
             ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
+            _aggregationPathProvider = aggregationPathProvider ?? throw new ArgumentNullException(nameof(aggregationPathProvider));
             _linkHandler = linkHandler ?? throw new ArgumentNullException(nameof(linkHandler));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -41,7 +41,7 @@ namespace StatusAggregator.Factory
         {
             TEntityAggregation aggregationEntity = null;
 
-            var possiblePath = _pathProvider.Get(input);
+            var possiblePath = _aggregationPathProvider.Get(input);
             // Find an aggregation to link to
             var possibleAggregations = _table
                 .CreateQuery<TEntityAggregation>()

@@ -16,24 +16,26 @@ namespace StatusAggregator.Factory
     {
         private readonly ITableWrapper _table;
         private readonly IAggregationProvider<IncidentGroupEntity, EventEntity> _aggregationProvider;
+        private readonly IAffectedComponentPathProvider<IncidentGroupEntity> _pathProvider;
 
         private readonly ILogger<IncidentGroupFactory> _logger;
 
         public IncidentGroupFactory(
             ITableWrapper table,
             IAggregationProvider<IncidentGroupEntity, EventEntity> aggregationProvider,
+            IAffectedComponentPathProvider<IncidentGroupEntity> pathProvider,
             ILogger<IncidentGroupFactory> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationProvider = aggregationProvider ?? throw new ArgumentNullException(nameof(aggregationProvider));
+            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<IncidentGroupEntity> Create(ParsedIncident input)
         {
             var eventEntity = await _aggregationProvider.Get(input);
-
-            var affectedPath = input.AffectedComponentPath;
+            var affectedPath = _pathProvider.Get(input);
             using (_logger.Scope("Creating incident for parsed incident with path {AffectedComponentPath}.", affectedPath))
             {
                 var incidentGroupEntity = new IncidentGroupEntity(
