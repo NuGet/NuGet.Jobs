@@ -32,10 +32,15 @@ namespace StatusAggregator.Update
         {
             using (_logger.Scope("Updating incident with ID {IncidentApiId}.", entity.IncidentApiId))
             {
+                if (!entity.IsActive)
+                {
+                    return;
+                }
+
                 var activeIncident = await _incidentApiClient.GetIncident(entity.IncidentApiId);
                 var endTime = activeIncident.MitigationData?.Date;
 
-                if (entity.EndTime != endTime)
+                if (endTime != null)
                 {
                     _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}.", entity.EndTime);
                     entity.EndTime = endTime;

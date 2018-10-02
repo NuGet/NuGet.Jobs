@@ -6,10 +6,10 @@ using StatusAggregator.Parse;
 
 namespace StatusAggregator.Factory
 {
-    public class IncidentAggregationPathProvider : IAffectedComponentPathProvider<IncidentEntity>, IAffectedComponentPathProvider<IncidentGroupEntity>
+    public class IncidentAffectedComponentPathProvider : IAffectedComponentPathProvider<IncidentEntity>, IAffectedComponentPathProvider<IncidentGroupEntity>
     {
         /// <summary>
-        /// <see cref="IncidentEntity"/>s and <see cref="IncidentGroupEntity"/>s should be created with the same path as the <paramref name="input"/>.
+        /// <see cref="IncidentEntity"/>s and <see cref="IncidentGroupEntity"/>s should be created using the same path as the <paramref name="input"/>.
         /// </summary>
         public string Get(ParsedIncident input)
         {

@@ -13,20 +13,20 @@ using StatusAggregator.Update;
 
 namespace StatusAggregator.Factory
 {
-    public class AggregationManager<TAggregatedEntity, TEntityAggregation>
-        : IAggregationManager<TAggregatedEntity, TEntityAggregation>
+    public class AggregationApprover<TAggregatedEntity, TEntityAggregation>
+        : IAggregationApprover<TAggregatedEntity, TEntityAggregation>
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdater<TEntityAggregation> _aggregationUpdater;
 
-        private readonly ILogger<AggregationManager<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<AggregationApprover<TAggregatedEntity, TEntityAggregation>> _logger;
 
-        public AggregationManager(
+        public AggregationApprover(
             ITableWrapper table,
             IComponentAffectingEntityUpdater<TEntityAggregation> aggregationUpdater,
-            ILogger<AggregationManager<TAggregatedEntity, TEntityAggregation>> logger)
+            ILogger<AggregationApprover<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));

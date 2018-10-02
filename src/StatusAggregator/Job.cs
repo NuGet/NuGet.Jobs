@@ -168,20 +168,20 @@ namespace StatusAggregator
         private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
         {
             containerBuilder
-                .RegisterType<AggregationManager<IncidentEntity, IncidentGroupEntity>>()
-                .As<IAggregationManager<IncidentEntity, IncidentGroupEntity>>();
+                .RegisterType<AggregationApprover<IncidentEntity, IncidentGroupEntity>>()
+                .As<IAggregationApprover<IncidentEntity, IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<AggregationManager<IncidentGroupEntity, EventEntity>>()
-                .As<IAggregationManager<IncidentGroupEntity, EventEntity>>();
+                .RegisterType<AggregationApprover<IncidentGroupEntity, EventEntity>>()
+                .As<IAggregationApprover<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
-                .RegisterType<IncidentAggregationPathProvider>()
+                .RegisterType<IncidentAffectedComponentPathProvider>()
                 .As<IAffectedComponentPathProvider<IncidentEntity>>()
                 .As<IAffectedComponentPathProvider<IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<EventPathProvider>()
+                .RegisterType<EventAffectedComponentPathProvider>()
                 .As<IAffectedComponentPathProvider<EventEntity>>();
 
             containerBuilder

@@ -18,7 +18,7 @@ namespace StatusAggregator.Factory
     {
         private readonly ITableWrapper _table;
         private readonly IAffectedComponentPathProvider<TEntityAggregation> _aggregationPathProvider;
-        private readonly IAggregationManager<TAggregatedEntity, TEntityAggregation> _manager;
+        private readonly IAggregationApprover<TAggregatedEntity, TEntityAggregation> _approver;
         private readonly IComponentAffectingEntityFactory<TEntityAggregation> _aggregationFactory;
 
         private readonly ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> _logger;
@@ -26,13 +26,13 @@ namespace StatusAggregator.Factory
         public AggregationProvider(
             ITableWrapper table,
             IAffectedComponentPathProvider<TEntityAggregation> aggregationPathProvider,
-            IAggregationManager<TAggregatedEntity, TEntityAggregation> manager,
+            IAggregationApprover<TAggregatedEntity, TEntityAggregation> approver,
             IComponentAffectingEntityFactory<TEntityAggregation> aggregationFactory,
             ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationPathProvider = aggregationPathProvider ?? throw new ArgumentNullException(nameof(aggregationPathProvider));
-            _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _approver = approver ?? throw new ArgumentNullException(nameof(approver));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -57,7 +57,7 @@ namespace StatusAggregator.Factory
             _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
             foreach (var possibleAggregation in possibleAggregations)
             {
-                if (await _manager.CanBeAggregatedBy(input, possibleAggregation))
+                if (await _approver.CanBeAggregatedBy(input, possibleAggregation))
                 {
                     _logger.LogInformation("Linking entity to aggregation.");
                     aggregationEntity = possibleAggregation;

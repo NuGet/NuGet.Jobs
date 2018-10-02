@@ -47,14 +47,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cursor.cs" />
-    <Compile Include="Factory\AggregationManager.cs" />
+    <Compile Include="Factory\AggregationApprover.cs" />
     <Compile Include="Factory\AggregationProvider.cs" />
     <Compile Include="Factory\IAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\IComponentFactory.cs" />
-    <Compile Include="Factory\IAggregationManager.cs" />
+    <Compile Include="Factory\IAggregationApprover.cs" />
     <Compile Include="Factory\IAggregationProvider.cs" />
-    <Compile Include="Factory\IncidentAggregationPathProvider.cs" />
-    <Compile Include="Factory\EventPathProvider.cs" />
+    <Compile Include="Factory\IncidentAffectedComponentPathProvider.cs" />
+    <Compile Include="Factory\EventAffectedComponentPathProvider.cs" />
     <Compile Include="ICursor.cs" />
     <Compile Include="IIncidentUpdater.cs" />
     <Compile Include="IncidentUpdater.cs" />

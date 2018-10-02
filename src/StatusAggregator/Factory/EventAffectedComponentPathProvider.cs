@@ -8,10 +8,10 @@ using StatusAggregator.Parse;
 
 namespace StatusAggregator.Factory
 {
-    public class EventPathProvider : IAffectedComponentPathProvider<EventEntity>
+    public class EventAffectedComponentPathProvider : IAffectedComponentPathProvider<EventEntity>
     {
         /// <summary>
-        /// <see cref="IncidentGroupEntity"/>s are aggregated into <see cref="EventEntity"/>s by the path of its level 1 ancestor.
+        /// <see cref="EventEntity"/>s should be created using the path of <paramref name="input"/>'s level 1 ancestor.
         /// </summary>
         public string Get(ParsedIncident input)
         {
