@@ -11,6 +11,12 @@ namespace StatusAggregator.Table
 {
     public class TableWrapper : ITableWrapper
     {
+        /// <summary>
+        /// The <see cref="ITableEntity.ETag"/> to provide when the existing content in the table is unimportant.
+        /// E.g. "if match any".
+        /// </summary>
+        public const string ETagWildcard = "*";
+
         public TableWrapper(
             CloudStorageAccount storageAccount, 
             string tableName)
@@ -31,7 +37,7 @@ namespace StatusAggregator.Table
         public async Task<T> RetrieveAsync<T>(string rowKey) 
             where T : class, ITableEntity
         {
-            var operation = TableOperation.Retrieve<T>(TableUtility.GetPartitionKey<T>(), rowKey);
+            var operation = TableOperation.Retrieve<T>(TablePartitionKeys.Get<T>(), rowKey);
             return (await _table.ExecuteAsync(operation)).Result as T;
         }
 
@@ -52,7 +58,7 @@ namespace StatusAggregator.Table
 
         public Task DeleteAsync(string partitionKey, string rowKey)
         {
-            return DeleteAsync(partitionKey, rowKey, TableUtility.ETagWildcard);
+            return DeleteAsync(partitionKey, rowKey, ETagWildcard);
         }
 
         public Task DeleteAsync(string partitionKey, string rowKey, string eTag)
@@ -75,7 +81,7 @@ namespace StatusAggregator.Table
             return _table
                 .CreateQuery<T>()
                 .AsQueryable()
-                .Where(e => e.PartitionKey == TableUtility.GetPartitionKey<T>());
+                .Where(e => e.PartitionKey == TablePartitionKeys.Get<T>());
         }
     }
 }

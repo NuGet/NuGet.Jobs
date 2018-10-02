@@ -47,11 +47,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cursor.cs" />
-    <Compile Include="Factory\AggregationApprover.cs" />
+    <Compile Include="Factory\AggregationStrategy.cs" />
     <Compile Include="Factory\AggregationProvider.cs" />
     <Compile Include="Factory\IAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\IComponentFactory.cs" />
-    <Compile Include="Factory\IAggregationApprover.cs" />
+    <Compile Include="Factory\IAggregationStrategy.cs" />
     <Compile Include="Factory\IAggregationProvider.cs" />
     <Compile Include="Factory\IncidentAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\EventAffectedComponentPathProvider.cs" />
@@ -66,7 +66,7 @@
     <Compile Include="StatusExporter.cs" />
     <Compile Include="StatusUpdater.cs" />
     <Compile Include="Update\ActiveEventEntityUpdater.cs" />
-    <Compile Include="Update\EntityAggregationUpdater.cs" />
+    <Compile Include="Update\AggregationEntityUpdater.cs" />
     <Compile Include="Factory\EventFactory.cs" />
     <Compile Include="Factory\IComponentAffectingEntityFactory.cs" />
     <Compile Include="Update\IActiveEventEntityUpdater.cs" />
@@ -105,7 +105,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Parse\ValidationDurationIncidentParser.cs" />
-    <Compile Include="Table\TableUtility.cs" />
+    <Compile Include="Table\TablePartitionKeys.cs" />
     <Compile Include="Table\TableWrapper.cs" />
     <Compile Include="Table\TableWrapperExtensions.cs" />
   </ItemGroup>
