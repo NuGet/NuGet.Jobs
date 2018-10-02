@@ -10,7 +10,7 @@ namespace StatusAggregator.Factory
         where T : IComponentAffectingEntity
     {
         /// <summary>
-        /// Returns the <see cref="IComponentAffectingEntity.AffectedComponentPath"/> to use to create an instance of <typeparamref name="T"/>.
+        /// Returns the <see cref="IComponentAffectingEntity.AffectedComponentPath"/> to use to create an instance of <typeparamref name="T"/> for <paramref name="input"/>.
         /// </summary>
         string Get(ParsedIncident input);
     }
