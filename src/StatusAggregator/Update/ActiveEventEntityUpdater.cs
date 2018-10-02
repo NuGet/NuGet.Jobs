@@ -19,11 +19,11 @@ namespace StatusAggregator.Update
 
         public ActiveEventEntityUpdater(
             ITableWrapper table,
-            IComponentAffectingEntityUpdater<EventEntity> handler,
+            IComponentAffectingEntityUpdater<EventEntity> updater,
             ILogger<ActiveEventEntityUpdater> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _updater = handler ?? throw new ArgumentNullException(nameof(handler));
+            _updater = updater ?? throw new ArgumentNullException(nameof(updater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

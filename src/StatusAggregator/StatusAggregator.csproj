@@ -47,11 +47,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Cursor.cs" />
-    <Compile Include="Factory\AggregationLinkHandler.cs" />
+    <Compile Include="Factory\AggregationManager.cs" />
     <Compile Include="Factory\AggregationProvider.cs" />
     <Compile Include="Factory\IAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\IComponentFactory.cs" />
-    <Compile Include="Factory\IAggregationLinkHandler.cs" />
+    <Compile Include="Factory\IAggregationManager.cs" />
     <Compile Include="Factory\IAggregationProvider.cs" />
     <Compile Include="Factory\IncidentAggregationPathProvider.cs" />
     <Compile Include="Factory\EventPathProvider.cs" />

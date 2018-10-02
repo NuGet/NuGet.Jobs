@@ -13,27 +13,27 @@ using StatusAggregator.Update;
 
 namespace StatusAggregator.Factory
 {
-    public class AggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
-        : IAggregationLinkHandler<TAggregatedEntity, TEntityAggregation>
+    public class AggregationManager<TAggregatedEntity, TEntityAggregation>
+        : IAggregationManager<TAggregatedEntity, TEntityAggregation>
         where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
         where TEntityAggregation : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
         private readonly IComponentAffectingEntityUpdater<TEntityAggregation> _aggregationUpdater;
 
-        private readonly ILogger<AggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<AggregationManager<TAggregatedEntity, TEntityAggregation>> _logger;
 
-        public AggregationLinkHandler(
+        public AggregationManager(
             ITableWrapper table,
             IComponentAffectingEntityUpdater<TEntityAggregation> aggregationUpdater,
-            ILogger<AggregationLinkHandler<TAggregatedEntity, TEntityAggregation>> logger)
+            ILogger<AggregationManager<TAggregatedEntity, TEntityAggregation>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<bool> CanLink(ParsedIncident input, TEntityAggregation entityAggregation)
+        public async Task<bool> CanBeAggregatedBy(ParsedIncident input, TEntityAggregation entityAggregation)
         {
             using (_logger.Scope("Determining if entity can be linked to aggregation {AggregationRowKey}", entityAggregation.RowKey))
             {
