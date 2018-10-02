@@ -46,7 +46,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Container\ContainerWrapper.cs" />
+    <Compile Include="Container\IContainerWrapper.cs" />
     <Compile Include="Cursor.cs" />
+    <Compile Include="Export\ComponentExporter.cs" />
+    <Compile Include="Export\EventExporter.cs" />
+    <Compile Include="Export\EventsExporter.cs" />
+    <Compile Include="Export\IComponentExporter.cs" />
+    <Compile Include="Export\IEventExporter.cs" />
+    <Compile Include="Export\IEventsExporter.cs" />
+    <Compile Include="Export\IStatusExporter.cs" />
+    <Compile Include="Export\IStatusSerializer.cs" />
+    <Compile Include="Export\StatusContractResolver.cs" />
+    <Compile Include="Export\StatusExporter.cs" />
+    <Compile Include="Export\StatusSerializer.cs" />
     <Compile Include="Factory\AggregationApprover.cs" />
     <Compile Include="Factory\AggregationProvider.cs" />
     <Compile Include="Factory\IAffectedComponentPathProvider.cs" />
@@ -58,12 +71,9 @@
     <Compile Include="ICursor.cs" />
     <Compile Include="IIncidentUpdater.cs" />
     <Compile Include="IncidentUpdater.cs" />
-    <Compile Include="IStatusExporter.cs" />
     <Compile Include="IStatusUpdater.cs" />
     <Compile Include="Manual\IManualStatusChangeUpdater.cs" />
     <Compile Include="Manual\ManualStatusChangeUpdater.cs" />
-    <Compile Include="StatusContractResolver.cs" />
-    <Compile Include="StatusExporter.cs" />
     <Compile Include="StatusUpdater.cs" />
     <Compile Include="Update\ActiveEventEntityUpdater.cs" />
     <Compile Include="Update\EntityAggregationUpdater.cs" />

@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -7,7 +7,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace StatusAggregator
+namespace StatusAggregator.Export
 {
     /// <summary>
     /// Implementation of <see cref="DefaultContractResolver"/> used by <see cref="StatusExporter"/> such that empty fields and arrays are not serialized.
