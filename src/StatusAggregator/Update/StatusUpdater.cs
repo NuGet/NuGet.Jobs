@@ -30,9 +30,10 @@ namespace StatusAggregator.Update
             ILogger<StatusUpdater> logger)
         {
             _cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
-
-            collectors = collectors ?? throw new ArgumentNullException(nameof(collectors));
-            _incidentCollector = collectors.Single(IsIncidentCollector);
+            collectors = collectors?.Where(c => c != null) 
+                ?? throw new ArgumentNullException(nameof(collectors));
+            _incidentCollector = collectors.SingleOrDefault(IsIncidentCollector) 
+                ?? throw new ArgumentException(nameof(collectors), $"Must provide a collector with name {IncidentEntityCollectorProcessor.IncidentsCollectorName}!");
             _manualStatusChangeCollectors = collectors.Where(c => !IsIncidentCollector(c));
             _activeEventUpdater = activeEventUpdater ?? throw new ArgumentNullException(nameof(activeEventUpdater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -52,7 +53,7 @@ namespace StatusAggregator.Update
             }
         }
 
-        private bool IsIncidentCollector(IEntityCollector collector)
+        private static bool IsIncidentCollector(IEntityCollector collector)
         {
             return collector.Name == IncidentEntityCollectorProcessor.IncidentsCollectorName;
         }
