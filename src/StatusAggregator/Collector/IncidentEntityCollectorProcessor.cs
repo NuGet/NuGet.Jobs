@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using Microsoft.Extensions.Logging;
@@ -7,32 +7,33 @@ using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Factory;
 using StatusAggregator.Parse;
-using StatusAggregator.Table;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace StatusAggregator
+namespace StatusAggregator.Collector
 {
-    public class IncidentUpdater : IIncidentUpdater
+    /// <summary>
+    /// Fetches new <see cref="IncidentEntity"/>s using an <see cref="IIncidentApiClient"/>.
+    /// </summary>
+    public class IncidentEntityCollectorProcessor : IEntityCollectorProcessor
     {
-        private readonly ITableWrapper _table;
+        public const string IncidentsCollectorName = "incidents";
+        
         private readonly IAggregateIncidentParser _aggregateIncidentParser;
         private readonly IIncidentApiClient _incidentApiClient;
         private readonly IComponentAffectingEntityFactory<IncidentEntity> _incidentFactory;
-        private readonly ILogger<IncidentUpdater> _logger;
+        private readonly ILogger<IncidentEntityCollectorProcessor> _logger;
 
         private readonly string _incidentApiTeamId;
 
-        public IncidentUpdater(
-            ITableWrapper table,
+        public IncidentEntityCollectorProcessor(
             IIncidentApiClient incidentApiClient,
             IAggregateIncidentParser aggregateIncidentParser,
             IComponentAffectingEntityFactory<IncidentEntity> incidentFactory,
             StatusAggregatorConfiguration configuration,
-            ILogger<IncidentUpdater> logger)
+            ILogger<IncidentEntityCollectorProcessor> logger)
         {
-            _table = table ?? throw new ArgumentNullException(nameof(table));
             _incidentApiClient = incidentApiClient ?? throw new ArgumentNullException(nameof(incidentApiClient));
             _aggregateIncidentParser = aggregateIncidentParser ?? throw new ArgumentNullException(nameof(aggregateIncidentParser));
             _incidentFactory = incidentFactory ?? throw new ArgumentNullException(nameof(incidentFactory));
@@ -40,7 +41,9 @@ namespace StatusAggregator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<DateTime?> FetchNewIncidents(DateTime cursor)
+        public string Name => IncidentsCollectorName;
+
+        public async Task<DateTime?> FetchSince(DateTime cursor)
         {
             using (_logger.Scope("Fetching all new incidents since {Cursor}.", cursor))
             {
@@ -51,12 +54,19 @@ namespace StatusAggregator
                     .Where(i => i.CreateDate > cursor)
                     .ToList();
 
+                _logger.LogInformation("Found {IncidentCount} incidents to parse.", incidents.Count);
                 var parsedIncidents = incidents
                     .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
                     .ToList();
+
+                _logger.LogInformation("Parsed {ParsedIncidentCount} incidents.", parsedIncidents.Count);
                 foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.StartTime))
                 {
-                    await _incidentFactory.Create(parsedIncident);
+                    using (_logger.Scope("Creating incident for parsed incident with ID {ParsedIncidentID} affecting {ParsedIncidentPath} at {ParsedIncidentStartTime} with status {ParsedIncidentStatus}.",
+                        parsedIncident.Id, parsedIncident.AffectedComponentPath, parsedIncident.StartTime, parsedIncident.AffectedComponentStatus))
+                    {
+                        await _incidentFactory.Create(parsedIncident);
+                    }
                 }
 
                 return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;
