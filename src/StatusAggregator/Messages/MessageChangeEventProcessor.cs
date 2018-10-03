@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,7 +25,7 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<CurrentMessageContext> Process(MessageChangeEvent change, EventEntity eventEntity, IComponent rootComponent, CurrentMessageContext context)
+        public async Task<CurrentMessageContext> ProcessAsync(MessageChangeEvent change, EventEntity eventEntity, IComponent rootComponent, CurrentMessageContext context)
         {
             using (_logger.Scope("Processing change of type {StatusChangeType} at {StatusChangeTimestamp} affecting {StatusChangePath} with status {StatusChangeStatus}.",
                 change.Type, change.Timestamp, change.AffectedComponentPath, change.AffectedComponentStatus))
@@ -66,13 +69,13 @@ namespace StatusAggregator.Messages
                                 _logger.LogWarning("Least common ancestor of two visible components is unaffected!");
                             }
 
-                            await _factory.UpdateMessage(eventEntity, context.Timestamp, MessageType.Start, leastCommonAncestor);
+                            await _factory.UpdateMessageAsync(eventEntity, context.Timestamp, MessageType.Start, leastCommonAncestor);
                             return new CurrentMessageContext(context.Timestamp, leastCommonAncestor, leastCommonAncestor.Status);
                         }
                         else
                         {
                             _logger.LogInformation("No existing message found. Creating new start message for change.");
-                            await _factory.CreateMessage(eventEntity, change.Timestamp, change.Type, lowestVisibleComponent);
+                            await _factory.CreateMessageAsync(eventEntity, change.Timestamp, change.Type, lowestVisibleComponent);
                             return new CurrentMessageContext(change.Timestamp, lowestVisibleComponent, lowestVisibleComponent.Status);
                         }
 
@@ -88,7 +91,7 @@ namespace StatusAggregator.Messages
                             if (affectedSubComponents.All(c => c.Status == ComponentStatus.Up))
                             {
                                 _logger.LogInformation("Component tree is no longer affected. Creating end message.");
-                                await _factory.CreateMessage(eventEntity, change.Timestamp, change.Type, context.AffectedComponent, context.AffectedComponentStatus);
+                                await _factory.CreateMessageAsync(eventEntity, change.Timestamp, change.Type, context.AffectedComponent, context.AffectedComponentStatus);
                                 return null;
                             }
                             else

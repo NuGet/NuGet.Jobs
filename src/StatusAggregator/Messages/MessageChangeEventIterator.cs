@@ -28,13 +28,13 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Iterate(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity)
+        public async Task IterateAsync(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity)
         {
             var rootComponent = _factory.Create();
             CurrentMessageContext context = null;
             foreach (var change in changes.OrderBy(c => c.Timestamp))
             {
-                context = await _processor.Process(change, eventEntity, rootComponent, context);
+                context = await _processor.ProcessAsync(change, eventEntity, rootComponent, context);
             }
         }
     }

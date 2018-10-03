@@ -28,12 +28,12 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<MessageEntity> CreateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
+        public Task<MessageEntity> CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
         {
-            return CreateMessage(eventEntity, time, type, component, component.Status);
+            return CreateMessageAsync(eventEntity, time, type, component, component.Status);
         }
 
-        public async Task<MessageEntity> CreateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status)
+        public async Task<MessageEntity> CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status)
         {
             using (_logger.Scope("Creating new message of type {Type} for event {EventRowKey} at {Timestamp} affecting {ComponentPath} with status {ComponentStatus}.",
                 type, eventEntity.RowKey, time, component.Path, status))
@@ -59,7 +59,7 @@ namespace StatusAggregator.Messages
             }
         }
 
-        public async Task UpdateMessage(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
+        public async Task UpdateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
         {
             using (_logger.Scope("Updating existing message of type {Type} for event {EventRowKey} at {Timestamp} affecting {ComponentPath}.",
                 type, eventEntity.RowKey, time, component.Path))

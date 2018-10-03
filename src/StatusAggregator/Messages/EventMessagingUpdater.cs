@@ -32,7 +32,7 @@ namespace StatusAggregator.Messages
             using (_logger.Scope("Updating messages for event {EventRowKey} at {Cursor}.", eventEntity.RowKey, cursor))
             {
                 var changes = _provider.Get(eventEntity, cursor);
-                return _iterator.Iterate(changes, eventEntity);
+                return _iterator.IterateAsync(changes, eventEntity);
             }
         }
     }

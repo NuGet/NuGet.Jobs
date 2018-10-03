@@ -15,8 +15,8 @@ namespace StatusAggregator.Messages
         /// <param name="eventEntity">The <see cref="EventEntity"/> associated with the change.</param>
         /// <param name="rootComponent">The <see cref="IComponent"/> associated with this iteration.</param>
         /// <param name="context">The <see cref="CurrentMessageContext"/> associated with this iteration.</param>
-        /// <returns>A <see cref="CurrentMessageContext"/> that describes the change made.</returns>
-        Task<CurrentMessageContext> Process(
+        /// <returns>A <see cref="CurrentMessageContext"/> that reflects the change made by processing <paramref name="change"/>.</returns>
+        Task<CurrentMessageContext> ProcessAsync(
             MessageChangeEvent change, 
             EventEntity eventEntity, 
             IComponent rootComponent, 
