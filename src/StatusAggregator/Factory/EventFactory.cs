@@ -28,7 +28,7 @@ namespace StatusAggregator.Factory
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<EventEntity> Create(ParsedIncident input)
+        public async Task<EventEntity> CreateAsync(ParsedIncident input)
         {
             var affectedPath = _pathProvider.Get(input);
             using (_logger.Scope("Creating event for parsed incident with path {AffectedComponentPath}.", affectedPath))

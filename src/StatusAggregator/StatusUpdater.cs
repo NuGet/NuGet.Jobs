@@ -51,7 +51,7 @@ namespace StatusAggregator
                     return await _incidentUpdater.FetchNewIncidents(value);
                 });
 
-                await _activeEventUpdater.UpdateAll(incidentCursor);
+                await _activeEventUpdater.UpdateAllAsync(incidentCursor);
             }
         }
 

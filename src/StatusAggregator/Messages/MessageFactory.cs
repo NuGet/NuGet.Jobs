@@ -98,10 +98,5 @@ namespace StatusAggregator.Messages
                 await _table.ReplaceAsync(existingMessage);
             }
         }
-
-        public Task DeleteMessage(EventEntity eventEntity, DateTime time)
-        {
-            return _table.DeleteAsync(TableUtility.GetPartitionKey<MessageEntity>(), MessageEntity.GetRowKey(eventEntity, time));
-        }
     }
 }

@@ -10,21 +10,21 @@ namespace StatusAggregator.Update
 {
     public class EventUpdater : IComponentAffectingEntityUpdater<EventEntity>
     {
-        private readonly EntityAggregationUpdater<IncidentGroupEntity, EventEntity> _aggregationUpdater;
+        private readonly AggregationEntityUpdater<IncidentGroupEntity, EventEntity> _aggregationUpdater;
         private readonly EventMessagingUpdater _messagingUpdater;
 
         public EventUpdater(
-            EntityAggregationUpdater<IncidentGroupEntity, EventEntity> aggregationUpdater,
+            AggregationEntityUpdater<IncidentGroupEntity, EventEntity> aggregationUpdater,
             EventMessagingUpdater messagingUpdater)
         {
             _aggregationUpdater = aggregationUpdater ?? throw new ArgumentNullException(nameof(aggregationUpdater));
             _messagingUpdater = messagingUpdater ?? throw new ArgumentNullException(nameof(messagingUpdater));
         }
 
-        public async Task Update(EventEntity entity, DateTime cursor)
+        public async Task UpdateAsync(EventEntity entity, DateTime cursor)
         {
-            await _aggregationUpdater.Update(entity, cursor);
-            await _messagingUpdater.Update(entity, cursor);
+            await _aggregationUpdater.UpdateAsync(entity, cursor);
+            await _messagingUpdater.UpdateAsync(entity, cursor);
         }
     }
 }

@@ -9,11 +9,11 @@ namespace StatusAggregator.Table
 {
     public static class TableWrapperExtensions
     {
-        public static IQueryable<T> GetActiveEntities<T>(this ITableWrapper table)
-            where T : ComponentAffectingEntity, new()
+        public static IQueryable<TEntity> GetActiveEntities<TEntity>(this ITableWrapper table)
+            where TEntity : ComponentAffectingEntity, new()
         {
             return table
-                .CreateQuery<T>()
+                .CreateQuery<TEntity>()
                 .Where(e => e.IsActive);
         }
 

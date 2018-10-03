@@ -56,7 +56,7 @@ namespace StatusAggregator
                     .ToList();
                 foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.StartTime))
                 {
-                    await _incidentFactory.Create(parsedIncident);
+                    await _incidentFactory.CreateAsync(parsedIncident);
                 }
 
                 return incidents.Any() ? incidents.Max(i => i.CreateDate) : (DateTime?)null;

@@ -13,6 +13,6 @@ namespace StatusAggregator.Update
         /// Updates all active <see cref="EventEntity"/>s.
         /// </summary>
         /// <param name="cursor">The current time.</param>
-        Task UpdateAll(DateTime cursor);
+        Task UpdateAllAsync(DateTime cursor);
     }
 }

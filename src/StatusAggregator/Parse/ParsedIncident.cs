@@ -3,7 +3,6 @@
 
 using NuGet.Services.Incidents;
 using NuGet.Services.Status;
-using NuGet.Services.Status.Table;
 using System;
 
 namespace StatusAggregator.Parse
@@ -27,12 +26,12 @@ namespace StatusAggregator.Parse
             StartTime = incident.Source.CreateDate;
             EndTime = incident.MitigationData?.Date;
             AffectedComponentPath = affectedComponentPath;
-            AffectedComponentStatus = (int)affectedComponentStatus;
+            AffectedComponentStatus = affectedComponentStatus;
         }
 
         public string Id { get; }
         public string AffectedComponentPath { get; }
-        public int AffectedComponentStatus { get; }
+        public ComponentStatus AffectedComponentStatus { get; }
         public DateTime StartTime { get; }
         public DateTime? EndTime { get; }
         public bool IsActive => EndTime == null;

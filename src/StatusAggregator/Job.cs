@@ -180,12 +180,12 @@ namespace StatusAggregator
         private static void AddFactoriesAndUpdaters(ContainerBuilder containerBuilder)
         {
             containerBuilder
-                .RegisterType<AggregationApprover<IncidentEntity, IncidentGroupEntity>>()
-                .As<IAggregationApprover<IncidentEntity, IncidentGroupEntity>>();
+                .RegisterType<AggregationStrategy<IncidentEntity, IncidentGroupEntity>>()
+                .As<IAggregationStrategy<IncidentEntity, IncidentGroupEntity>>();
 
             containerBuilder
-                .RegisterType<AggregationApprover<IncidentGroupEntity, EventEntity>>()
-                .As<IAggregationApprover<IncidentGroupEntity, EventEntity>>();
+                .RegisterType<AggregationStrategy<IncidentGroupEntity, EventEntity>>()
+                .As<IAggregationStrategy<IncidentGroupEntity, EventEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentAffectedComponentPathProvider>()
@@ -221,9 +221,9 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
 
             containerBuilder
-                .RegisterType<EntityAggregationUpdater<IncidentEntity, IncidentGroupEntity>>()
+                .RegisterType<AggregationEntityUpdater<IncidentEntity, IncidentGroupEntity>>()
                 .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
-
+            
             AddEventUpdater(containerBuilder);
 
             containerBuilder
@@ -234,7 +234,7 @@ namespace StatusAggregator
         private static void AddEventUpdater(ContainerBuilder containerBuilder)
         {
             containerBuilder
-                .RegisterType<EntityAggregationUpdater<IncidentGroupEntity, EventEntity>>()
+                .RegisterType<AggregationEntityUpdater<IncidentGroupEntity, EventEntity>>()
                 .AsSelf();
 
             containerBuilder

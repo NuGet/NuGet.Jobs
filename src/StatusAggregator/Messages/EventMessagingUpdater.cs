@@ -27,7 +27,7 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task Update(EventEntity eventEntity, DateTime cursor)
+        public Task UpdateAsync(EventEntity eventEntity, DateTime cursor)
         {
             using (_logger.Scope("Updating messages for event {EventRowKey} at {Cursor}.", eventEntity.RowKey, cursor))
             {
