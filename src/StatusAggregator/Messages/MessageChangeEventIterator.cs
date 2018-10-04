@@ -31,10 +31,10 @@ namespace StatusAggregator.Messages
         public async Task IterateAsync(IEnumerable<MessageChangeEvent> changes, EventEntity eventEntity)
         {
             var rootComponent = _factory.Create();
-            CurrentMessageContext context = null;
+            ExistingStartMessageContext existingStartMessageContext = null;
             foreach (var change in changes.OrderBy(c => c.Timestamp))
             {
-                context = await _processor.ProcessAsync(change, eventEntity, rootComponent, context);
+                existingStartMessageContext = await _processor.ProcessAsync(change, eventEntity, rootComponent, existingStartMessageContext);
             }
         }
     }

@@ -14,12 +14,18 @@ namespace StatusAggregator.Messages
         /// </summary>
         /// <param name="eventEntity">The <see cref="EventEntity"/> associated with the change.</param>
         /// <param name="rootComponent">The <see cref="IComponent"/> associated with this iteration.</param>
-        /// <param name="context">The <see cref="CurrentMessageContext"/> associated with this iteration.</param>
-        /// <returns>A <see cref="CurrentMessageContext"/> that reflects the change made by processing <paramref name="change"/>.</returns>
-        Task<CurrentMessageContext> ProcessAsync(
+        /// <param name="existingStartMessageContext">
+        /// The <see cref="ExistingStartMessageContext"/> associated with this iteration.
+        /// <c>null</c> if there is no existing start message without a corresponding end message.
+        /// </param>
+        /// <returns>
+        /// A <see cref="ExistingStartMessageContext"/> that reflects the change made by processing <paramref name="change"/>.
+        /// <c>null</c> if there is no existing start message without a corresponding end message.
+        /// </returns>
+        Task<ExistingStartMessageContext> ProcessAsync(
             MessageChangeEvent change, 
             EventEntity eventEntity, 
             IComponent rootComponent, 
-            CurrentMessageContext context);
+            ExistingStartMessageContext existingStartMessageContext);
     }
 }
