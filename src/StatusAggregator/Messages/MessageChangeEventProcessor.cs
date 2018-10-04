@@ -34,6 +34,7 @@ namespace StatusAggregator.Messages
             using (_logger.Scope("Processing change of type {StatusChangeType} at {StatusChangeTimestamp} affecting {StatusChangePath} with status {StatusChangeStatus}.",
                 change.Type, change.Timestamp, change.AffectedComponentPath, change.AffectedComponentStatus))
             {
+                _logger.LogInformation("Getting component affected by change.");
                 var component = rootComponent.GetByPath(change.AffectedComponentPath);
                 if (component == null)
                 {
@@ -64,30 +65,41 @@ namespace StatusAggregator.Messages
             _logger.LogInformation("Applying change to component tree.");
             component.Status = change.AffectedComponentStatus;
 
-            var lowestVisibleComponent = rootComponent.GetLeastCommonVisibleAncestorOfSubComponent(component);
+            // This change may affect a component that we do not display on the status page.
+            // Find the deepester ancestor of the component that is directly affected.
+            _logger.LogInformation("Determining if change affects visible component tree.");
+            var lowestVisibleComponent = rootComponent.GetDeepestVisibleAncestorOfSubComponent(component);
             if (lowestVisibleComponent == null || lowestVisibleComponent.Status == ComponentStatus.Up)
             {
-                _logger.LogInformation("Change does not affect component tree. Will not post or edit any messages.");
+                // The change does not bubble up to a component that we display on the status page.
+                // Therefore, we shouldn't post a message about it.
+                _logger.LogInformation("Change does not affect visible component tree. Will not post or edit any messages.");
                 return existingStartMessageContext;
             }
 
+            // The change bubbles up to a component that we display on the status page.
+            // We must post or update a message about it.
             if (existingStartMessageContext != null)
             {
+                // There is an existing message we need to update.
                 _logger.LogInformation("Found existing message, will edit it with information from new change.");
+                // We must expand the scope of the existing message to include the component affected by this change.
+                // In other words, if the message claims V2 Restore is down and V3 Restore is now down as well, we need to update the message to say Restore is down.
                 var leastCommonAncestorPath = ComponentUtility.GetLeastCommonAncestorPath(existingStartMessageContext.AffectedComponent, lowestVisibleComponent);
                 _logger.LogInformation("Least common ancestor component of existing message and this change is {LeastCommonAncestorPath}.", leastCommonAncestorPath);
                 var leastCommonAncestor = rootComponent.GetByPath(leastCommonAncestorPath);
                 if (leastCommonAncestor == null)
                 {
-                    _logger.LogWarning(
-                        "Least common ancestor component of existing message and this change is not a part of the component tree. " +
-                        "Will not edit the existing message.");
-                    return existingStartMessageContext;
+                    // If the two components don't have a common ancestor, then they must not be a part of the same component tree.
+                    // This should not be possible because it is asserted earlier that both these components are subcomponents of the root component.
+                    throw new ArgumentException("Least common ancestor component of existing message and this change does not exist!", nameof(change));
                 }
 
                 if (leastCommonAncestor.Status == ComponentStatus.Up)
                 {
-                    _logger.LogWarning("Least common ancestor of two visible components is unaffected!");
+                    // The least common ancestor of the component affected by the change and the component referred to by the existing message is unaffected!
+                    // This should not be possible because the ancestor of any visible component should be visible (in other words, changes to visible components should always bubble up).
+                    throw new ArgumentException("Least common ancestor of two visible components is unaffected!");
                 }
 
                 await _factory.UpdateMessageAsync(eventEntity, existingStartMessageContext.Timestamp, MessageType.Start, leastCommonAncestor);
@@ -95,6 +107,7 @@ namespace StatusAggregator.Messages
             }
             else
             {
+                // There is not an existing message we need to update.
                 _logger.LogInformation("No existing message found. Creating new start message for change.");
                 await _factory.CreateMessageAsync(eventEntity, change.Timestamp, change.Type, lowestVisibleComponent);
                 return new ExistingStartMessageContext(change.Timestamp, lowestVisibleComponent, lowestVisibleComponent.Status);
@@ -104,6 +117,7 @@ namespace StatusAggregator.Messages
         private async Task<ExistingStartMessageContext> ProcessEndMessageAsync(
             MessageChangeEvent change,
             EventEntity eventEntity,
+            IComponent rootComponent,
             IComponent component,
             ExistingStartMessageContext existingStartMessageContext)
         {
@@ -112,9 +126,11 @@ namespace StatusAggregator.Messages
 
             if (existingStartMessageContext != null)
             {
+                // There is an existing message that may be resolved by this change.
+                // We should check if any visible components are still affected.
                 _logger.LogInformation("Found existing message, testing if component tree is still affected.");
 
-                var affectedSubComponents = existingStartMessageContext.AffectedComponent.GetAllComponents();
+                var affectedSubComponents = existingStartMessageContext.AffectedComponent.GetAllVisibleComponents();
                 if (affectedSubComponents.All(c => c.Status == ComponentStatus.Up))
                 {
                     _logger.LogInformation("Component tree is no longer affected. Creating end message.");
@@ -128,6 +144,9 @@ namespace StatusAggregator.Messages
             }
             else
             {
+                // There is no existing message.
+                // We must have determined that we do not want to alert customers on this change.
+                // The change likely affected a component that was not visible and did not bubble up.
                 _logger.LogInformation("No existing message found. Will not add or delete any messages.");
             }
 
