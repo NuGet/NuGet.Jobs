@@ -13,6 +13,6 @@ namespace StatusAggregator.Factory
     public interface IComponentAffectingEntityFactory<TEntity>
         where TEntity : TableEntity
     {
-        Task<TEntity> Create(ParsedIncident input);
+        Task<TEntity> CreateAsync(ParsedIncident input);
     }
 }

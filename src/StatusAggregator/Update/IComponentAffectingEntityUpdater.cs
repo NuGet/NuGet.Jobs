@@ -14,6 +14,6 @@ namespace StatusAggregator.Update
         /// Updates <paramref name="groupEntity"/> given that the current time is now <paramref name="cursor"/>.
         /// Returns whether <paramref name="groupEntity"/> is inactive.
         /// </summary>
-        Task Update(T entity, DateTime cursor);
+        Task UpdateAsync(T entity, DateTime cursor);
     }
 }

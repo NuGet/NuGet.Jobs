@@ -12,25 +12,25 @@ using StatusAggregator.Table;
 namespace StatusAggregator.Update
 {
     /// <summary>
-    /// Updates a <typeparamref name="TEntityAggregation"/> and its <typeparamref name="TAggregatedEntity"/>s.
+    /// Updates a <typeparamref name="TAggregationEntity"/> and its <typeparamref name="TChildEntity"/>s.
     /// </summary>
-    public class EntityAggregationUpdater<TAggregatedEntity, TEntityAggregation> 
-        : IComponentAffectingEntityUpdater<TEntityAggregation>
-        where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
-        where TEntityAggregation : ComponentAffectingEntity
+    public class AggregationEntityUpdater<TChildEntity, TAggregationEntity> 
+        : IComponentAffectingEntityUpdater<TAggregationEntity>
+        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>, new()
+        where TAggregationEntity : ComponentAffectingEntity
     {
         public readonly TimeSpan _groupEndDelay;
 
         private readonly ITableWrapper _table;
-        private readonly IComponentAffectingEntityUpdater<TAggregatedEntity> _aggregatedEntityUpdater;
+        private readonly IComponentAffectingEntityUpdater<TChildEntity> _aggregatedEntityUpdater;
 
-        private readonly ILogger<EntityAggregationUpdater<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<AggregationEntityUpdater<TChildEntity, TAggregationEntity>> _logger;
 
-        public EntityAggregationUpdater(
+        public AggregationEntityUpdater(
             ITableWrapper table,
-            IComponentAffectingEntityUpdater<TAggregatedEntity> aggregatedEntityUpdater,
+            IComponentAffectingEntityUpdater<TChildEntity> aggregatedEntityUpdater,
             StatusAggregatorConfiguration configuration,
-            ILogger<EntityAggregationUpdater<TAggregatedEntity, TEntityAggregation>> logger)
+            ILogger<AggregationEntityUpdater<TChildEntity, TAggregationEntity>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregatedEntityUpdater = aggregatedEntityUpdater 
@@ -40,7 +40,7 @@ namespace StatusAggregator.Update
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Update(TEntityAggregation aggregationEntity, DateTime cursor)
+        public async Task UpdateAsync(TAggregationEntity aggregationEntity, DateTime cursor)
         {
             aggregationEntity = aggregationEntity ?? throw new ArgumentNullException(nameof(aggregationEntity));
 
@@ -54,7 +54,7 @@ namespace StatusAggregator.Update
                 
                 var hasActiveOrRecentChildren = false;
                 var children = _table
-                    .GetChildEntities<TAggregatedEntity, TEntityAggregation>(aggregationEntity)
+                    .GetChildEntities<TChildEntity, TAggregationEntity>(aggregationEntity)
                     .ToList();
 
                 if (children.Any())
@@ -62,7 +62,7 @@ namespace StatusAggregator.Update
                     _logger.LogInformation("Aggregation has {ChildrenCount} children. Updating each child.", children.Count);
                     foreach (var child in children)
                     {
-                        await _aggregatedEntityUpdater.Update(child, cursor);
+                        await _aggregatedEntityUpdater.UpdateAsync(child, cursor);
 
                         hasActiveOrRecentChildren = 
                             hasActiveOrRecentChildren || 
