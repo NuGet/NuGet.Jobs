@@ -57,7 +57,6 @@
     <Compile Include="Export\IEventsExporter.cs" />
     <Compile Include="Export\IStatusExporter.cs" />
     <Compile Include="Export\IStatusSerializer.cs" />
-    <Compile Include="Export\StatusContractResolver.cs" />
     <Compile Include="Export\StatusExporter.cs" />
     <Compile Include="Export\StatusSerializer.cs" />
     <Compile Include="Factory\AggregationStrategy.cs" />

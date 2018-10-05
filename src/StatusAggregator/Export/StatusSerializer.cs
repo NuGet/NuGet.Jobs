@@ -23,7 +23,6 @@ namespace StatusAggregator.Export
 
         public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings()
         {
-            ContractResolver = new StatusContractResolver(),
             Converters = new List<JsonConverter>() { new StringEnumConverter() },
             DateTimeZoneHandling = DateTimeZoneHandling.Utc,
             NullValueHandling = NullValueHandling.Ignore
