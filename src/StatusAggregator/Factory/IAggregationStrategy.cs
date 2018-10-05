@@ -8,8 +8,8 @@ using StatusAggregator.Parse;
 namespace StatusAggregator.Factory
 {
     public interface IAggregationStrategy<TChildEntity, TAggregationEntity>
-        where TChildEntity : IAggregatedEntity<TAggregationEntity>
-        where TAggregationEntity : IComponentAffectingEntity
+        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>
+        where TAggregationEntity : ComponentAffectingEntity
     {
         /// <summary>
         /// Returns whether or not an entity built from <paramref name="input"/> using a <see cref="IComponentAffectingEntityFactory{TEntity}"/> can be aggregated by <paramref name="aggregationEntity"/>.

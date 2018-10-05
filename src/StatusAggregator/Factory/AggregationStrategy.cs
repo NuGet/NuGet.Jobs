@@ -15,7 +15,7 @@ namespace StatusAggregator.Factory
 {
     public class AggregationStrategy<TChildEntity, TAggregationEntity>
         : IAggregationStrategy<TChildEntity, TAggregationEntity>
-        where TChildEntity : AggregatedEntity<TAggregationEntity>, new()
+        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>, new()
         where TAggregationEntity : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;

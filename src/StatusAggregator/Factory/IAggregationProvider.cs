@@ -8,8 +8,8 @@ using StatusAggregator.Parse;
 namespace StatusAggregator.Factory
 {
     public interface IAggregationProvider<TChildEntity, TAggregationEntity>
-        where TChildEntity : IAggregatedEntity<TAggregationEntity>
-        where TAggregationEntity : IComponentAffectingEntity
+        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>
+        where TAggregationEntity : ComponentAffectingEntity
     {
         /// <summary>
         /// Gets an aggregation that matches <paramref name="input"/>.
