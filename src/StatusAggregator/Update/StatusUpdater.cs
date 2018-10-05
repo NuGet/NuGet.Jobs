@@ -1,13 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.Extensions.Logging;
-using NuGet.Jobs.Extensions;
-using StatusAggregator.Collector;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using NuGet.Jobs.Extensions;
+using StatusAggregator.Collector;
 
 namespace StatusAggregator.Update
 {
@@ -34,7 +34,9 @@ namespace StatusAggregator.Update
                 ?? throw new ArgumentNullException(nameof(collectors));
             _incidentCollector = collectors.SingleOrDefault(IsIncidentCollector) 
                 ?? throw new ArgumentException(nameof(collectors), $"Must provide a collector with name {IncidentEntityCollectorProcessor.IncidentsCollectorName}!");
-            _manualStatusChangeCollectors = collectors.Where(c => !IsIncidentCollector(c));
+            _manualStatusChangeCollectors = collectors
+                .Where(c => !IsIncidentCollector(c))
+                .ToList();
             _activeEventUpdater = activeEventUpdater ?? throw new ArgumentNullException(nameof(activeEventUpdater));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

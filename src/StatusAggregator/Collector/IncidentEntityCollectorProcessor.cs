@@ -56,7 +56,7 @@ namespace StatusAggregator.Collector
 
                 _logger.LogInformation("Found {IncidentCount} incidents to parse.", incidents.Count);
                 var parsedIncidents = incidents
-                    .SelectMany(i => _aggregateIncidentParser.ParseIncident(i))
+                    .SelectMany(_aggregateIncidentParser.ParseIncident)
                     .ToList();
 
                 _logger.LogInformation("Parsed {ParsedIncidentCount} incidents.", parsedIncidents.Count);
