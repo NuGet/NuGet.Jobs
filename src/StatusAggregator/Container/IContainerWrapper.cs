@@ -12,6 +12,7 @@ namespace StatusAggregator.Container
     public interface IContainerWrapper
     {
         Task CreateIfNotExistsAsync();
+
         Task SaveBlobAsync(string name, string contents);
     }
 }
