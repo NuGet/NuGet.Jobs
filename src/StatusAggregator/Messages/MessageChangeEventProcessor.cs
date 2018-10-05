@@ -68,7 +68,7 @@ namespace StatusAggregator.Messages
             // This change may affect a component that we do not display on the status page.
             // Find the deepester ancestor of the component that is directly affected.
             _logger.LogInformation("Determining if change affects visible component tree.");
-            var lowestVisibleComponent = rootComponent.GetLeastCommonVisibleAncestorOfSubComponent(component);
+            var lowestVisibleComponent = rootComponent.GetDeepestVisibleAncestorOfSubComponent(component);
             if (lowestVisibleComponent == null || lowestVisibleComponent.Status == ComponentStatus.Up)
             {
                 // The change does not bubble up to a component that we display on the status page.
@@ -130,7 +130,7 @@ namespace StatusAggregator.Messages
                 // We should check if any visible components are still affected.
                 _logger.LogInformation("Found existing message, testing if component tree is still affected.");
 
-                var affectedSubComponents = existingStartMessageContext.AffectedComponent.GetAllComponents();
+                var affectedSubComponents = existingStartMessageContext.AffectedComponent.GetAllVisibleComponents();
                 if (affectedSubComponents.All(c => c.Status == ComponentStatus.Up))
                 {
                     _logger.LogInformation("Component tree is no longer affected. Creating end message.");
