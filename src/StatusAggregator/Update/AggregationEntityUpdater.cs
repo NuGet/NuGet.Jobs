@@ -16,7 +16,7 @@ namespace StatusAggregator.Update
     /// </summary>
     public class AggregationEntityUpdater<TChildEntity, TAggregationEntity> 
         : IComponentAffectingEntityUpdater<TAggregationEntity>
-        where TChildEntity : AggregatedEntity<TAggregationEntity>, new()
+        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>, new()
         where TAggregationEntity : ComponentAffectingEntity
     {
         public readonly TimeSpan _groupEndDelay;
