@@ -27,7 +27,7 @@ namespace StatusAggregator.Update
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task UpdateAll(DateTime cursor)
+        public async Task UpdateAllAsync(DateTime cursor)
         {
             using (_logger.Scope("Updating active events."))
             {
@@ -35,7 +35,7 @@ namespace StatusAggregator.Update
                 _logger.LogInformation("Updating {ActiveEventsCount} active events.", activeEvents.Count());
                 foreach (var activeEvent in activeEvents)
                 {
-                    await _updater.Update(activeEvent, cursor);
+                    await _updater.UpdateAsync(activeEvent, cursor);
                 }
             }
         }

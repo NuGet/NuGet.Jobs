@@ -11,24 +11,24 @@ using StatusAggregator.Table;
 
 namespace StatusAggregator.Factory
 {
-    public class AggregationProvider<TAggregatedEntity, TEntityAggregation>
-        : IAggregationProvider<TAggregatedEntity, TEntityAggregation>
-        where TAggregatedEntity : AggregatedEntity<TEntityAggregation>, new()
-        where TEntityAggregation : ComponentAffectingEntity, new()
+    public class AggregationProvider<TChildEntity, TAggregationEntity>
+        : IAggregationProvider<TChildEntity, TAggregationEntity>
+        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>, new()
+        where TAggregationEntity : ComponentAffectingEntity, new()
     {
         private readonly ITableWrapper _table;
-        private readonly IAffectedComponentPathProvider<TEntityAggregation> _aggregationPathProvider;
-        private readonly IAggregationApprover<TAggregatedEntity, TEntityAggregation> _approver;
-        private readonly IComponentAffectingEntityFactory<TEntityAggregation> _aggregationFactory;
+        private readonly IAffectedComponentPathProvider<TAggregationEntity> _aggregationPathProvider;
+        private readonly IAggregationStrategy<TChildEntity, TAggregationEntity> _approver;
+        private readonly IComponentAffectingEntityFactory<TAggregationEntity> _aggregationFactory;
 
-        private readonly ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> _logger;
+        private readonly ILogger<AggregationProvider<TChildEntity, TAggregationEntity>> _logger;
 
         public AggregationProvider(
             ITableWrapper table,
-            IAffectedComponentPathProvider<TEntityAggregation> aggregationPathProvider,
-            IAggregationApprover<TAggregatedEntity, TEntityAggregation> approver,
-            IComponentAffectingEntityFactory<TEntityAggregation> aggregationFactory,
-            ILogger<AggregationProvider<TAggregatedEntity, TEntityAggregation>> logger)
+            IAffectedComponentPathProvider<TAggregationEntity> aggregationPathProvider,
+            IAggregationStrategy<TChildEntity, TAggregationEntity> approver,
+            IComponentAffectingEntityFactory<TAggregationEntity> aggregationFactory,
+            ILogger<AggregationProvider<TChildEntity, TAggregationEntity>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationPathProvider = aggregationPathProvider ?? throw new ArgumentNullException(nameof(aggregationPathProvider));
@@ -37,14 +37,14 @@ namespace StatusAggregator.Factory
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<TEntityAggregation> Get(ParsedIncident input)
+        public async Task<TAggregationEntity> GetAsync(ParsedIncident input)
         {
-            TEntityAggregation aggregationEntity = null;
+            TAggregationEntity aggregationEntity = null;
 
             var possiblePath = _aggregationPathProvider.Get(input);
             // Find an aggregation to link to
             var possibleAggregations = _table
-                .CreateQuery<TEntityAggregation>()
+                .CreateQuery<TAggregationEntity>()
                 .Where(e =>
                     // The aggregation must affect the same path
                     e.AffectedComponentPath == possiblePath &&
@@ -57,7 +57,7 @@ namespace StatusAggregator.Factory
             _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
             foreach (var possibleAggregation in possibleAggregations)
             {
-                if (await _approver.CanBeAggregatedBy(input, possibleAggregation))
+                if (await _approver.CanBeAggregatedByAsync(input, possibleAggregation))
                 {
                     _logger.LogInformation("Linking entity to aggregation.");
                     aggregationEntity = possibleAggregation;
@@ -68,7 +68,7 @@ namespace StatusAggregator.Factory
             if (aggregationEntity == null)
             {
                 _logger.LogInformation("Could not find existing aggregation to link to, creating new aggregation to link entity to.");
-                aggregationEntity = await _aggregationFactory.Create(input);
+                aggregationEntity = await _aggregationFactory.CreateAsync(input);
                 _logger.LogInformation("Created new aggregation {AggregationRowKey} to link entity to.", aggregationEntity.RowKey);
             }
 

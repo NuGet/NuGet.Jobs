@@ -65,7 +65,7 @@ namespace StatusAggregator.Collector
                     using (_logger.Scope("Creating incident for parsed incident with ID {ParsedIncidentID} affecting {ParsedIncidentPath} at {ParsedIncidentStartTime} with status {ParsedIncidentStatus}.",
                         parsedIncident.Id, parsedIncident.AffectedComponentPath, parsedIncident.StartTime, parsedIncident.AffectedComponentStatus))
                     {
-                        await _incidentFactory.Create(parsedIncident);
+                        await _incidentFactory.CreateAsync(parsedIncident);
                     }
                 }
 

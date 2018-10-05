@@ -9,15 +9,9 @@ using NuGet.Services.Status.Table.Manual;
 
 namespace StatusAggregator.Table
 {
-    public static class TableUtility
+    public static class TablePartitionKeys
     {
-        /// <summary>
-        /// The <see cref="ITableEntity.ETag"/> to provide when the existing content in the table is unimportant.
-        /// E.g. "if match any".
-        /// </summary>
-        public const string ETagWildcard = "*";
-
-        public static string GetPartitionKey<T>()
+        public static string Get<T>()
         {
             var match = PartitionKeyMap.FirstOrDefault(m => m.Matches(typeof(T)));
             if (match != null)

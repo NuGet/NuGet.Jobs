@@ -28,7 +28,7 @@ namespace StatusAggregator.Update
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task Update(IncidentEntity entity, DateTime cursor)
+        public async Task UpdateAsync(IncidentEntity entity, DateTime cursor)
         {
             using (_logger.Scope("Updating incident with ID {IncidentApiId}.", entity.IncidentApiId))
             {
