@@ -21,38 +21,32 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public bool TryGetContentsForMessageHelper(
+        public string GetContentsForMessageHelper(
             MessageType type,
-            IComponent component,
-            out string contents)
+            IComponent component)
         {
-            return TryGetContentsForMessageHelper(type, component, component.Status, out contents);
+            return GetContentsForMessageHelper(type, component, component.Status);
         }
 
-        public bool TryGetContentsForMessageHelper(
+        public string GetContentsForMessageHelper(
             MessageType type,
             IComponent component,
-            ComponentStatus status,
-            out string contents)
+            ComponentStatus status)
         {
-            return TryGetContentsForMessageHelper(type, component.Path, status, out contents);
+            return GetContentsForMessageHelper(type, component.Path, status);
         }
 
-        private bool TryGetContentsForMessageHelper(
+        private string GetContentsForMessageHelper(
             MessageType type,
             string path,
-            ComponentStatus status,
-            out string contents)
+            ComponentStatus status)
         {
             using (_logger.Scope("Getting contents for message of type {MessageType} with path {ComponentPath} and status {ComponentStatus}.",
                 type, path, status))
             {
-                contents = null;
-
                 if (!_messageTypeToMessageTemplate.TryGetValue(type, out string messageTemplate))
                 {
-                    _logger.LogWarning("Could not find a template for type.", type);
-                    return false;
+                    throw new ArgumentException("Could not find a template for type.", nameof(type));
                 }
 
                 _logger.LogInformation("Using template {MessageTemplate}.", messageTemplate);
@@ -63,15 +57,13 @@ namespace StatusAggregator.Messages
                 var actionDescription = GetActionDescriptionFromPath(path);
                 if (actionDescription == null)
                 {
-                    _logger.LogWarning("Could not find an action description for path.", path);
-                    return false;
+                    throw new ArgumentException("Could not find an action description for path.", nameof(path));
                 }
 
                 var componentStatus = status.ToString().ToLowerInvariant();
-                contents = string.Format(messageTemplate, componentName, componentStatus, actionDescription);
-
+                var contents = string.Format(messageTemplate, componentName, componentStatus, actionDescription);
                 _logger.LogInformation("Returned {Contents} for contents of message.", contents);
-                return !string.IsNullOrEmpty(contents);
+                return contents;
             }
         }
 

@@ -44,13 +44,8 @@ namespace StatusAggregator.Messages
                     _logger.LogInformation("Message already exists, will not recreate.");
                     return existingMessage;
                 }
-
-                if (!_builder.TryGetContentsForMessageHelper(type, component, status, out var contents))
-                {
-                    _logger.LogWarning("Failed to get contents for new message!");
-                    return null;
-                }
-
+                
+                var contents = _builder.GetContentsForMessageHelper(type, component, status);
                 var messageEntity = new MessageEntity(eventEntity, time, contents, type);
                 _logger.LogInformation("Creating message with time {MessageTimestamp} and contents {MessageContents}.",
                     messageEntity.Time, messageEntity.Contents);
@@ -85,13 +80,8 @@ namespace StatusAggregator.Messages
 
                     return;
                 }
-
-                if (!_builder.TryGetContentsForMessageHelper(type, component, out var newContents))
-                {
-                    _logger.LogWarning("Failed to get contents to update message!");
-                    return;
-                }
-
+                
+                var newContents = _builder.GetContentsForMessageHelper(type, component);
                 _logger.LogInformation("Replacing contents of message with time {MessageTimestamp} and contents {OldMessageContents} with {NewMessageContents}.",
                     existingMessage.Time, existingMessage.Contents, newContents);
                 existingMessage.Contents = newContents;

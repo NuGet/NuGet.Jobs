@@ -19,7 +19,7 @@ namespace StatusAggregator.Messages
         /// True if contents for the message can be generated.
         /// False otherwise.
         /// </returns>
-        bool TryGetContentsForMessageHelper(MessageType type, IComponent component, out string contents);
+        string GetContentsForMessageHelper(MessageType type, IComponent component);
 
         /// <summary>
         /// Tries to get contents for a message of type <paramref name="type"/> affecting <paramref name="component"/> with status <paramref name="status"/>.
@@ -29,6 +29,6 @@ namespace StatusAggregator.Messages
         /// True if contents for the message can be generated.
         /// False otherwise.
         /// </returns>
-        bool TryGetContentsForMessageHelper(MessageType type, IComponent component, ComponentStatus status, out string contents);
+        string GetContentsForMessageHelper(MessageType type, IComponent component, ComponentStatus status);
     }
 }
