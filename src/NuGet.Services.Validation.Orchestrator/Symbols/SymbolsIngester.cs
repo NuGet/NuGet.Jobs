@@ -15,13 +15,13 @@ namespace NuGet.Services.Validation.Symbols
     public class SymbolsIngester : BaseValidator, IValidator
     {
         private readonly ISymbolsValidationEntitiesService _symbolsValidationEntitiesService;
-        private readonly ISymbolsMessageEnqueuer _symbolMessageEnqueuer;
+        private readonly ISymbolsIngesterMessageEnqueuer _symbolMessageEnqueuer;
         private readonly ITelemetryService _telemetryService;
         private readonly ILogger<SymbolsIngester> _logger;
 
         public SymbolsIngester(
             ISymbolsValidationEntitiesService symbolsValidationEntitiesService,
-            ISymbolsMessageEnqueuer symbolMessageEnqueuer,
+            ISymbolsIngesterMessageEnqueuer symbolMessageEnqueuer,
             ITelemetryService telemetryService,
             ILogger<SymbolsIngester> logger)
         {
@@ -78,9 +78,9 @@ namespace NuGet.Services.Validation.Symbols
             }
 
             _telemetryService.TrackSymbolsMessageEnqueued(ValidatorName.SymbolsIngester, request.ValidationId);
-            await _symbolMessageEnqueuer.EnqueueSymbolsValidationMessageAsync(request);
+            var message = await _symbolMessageEnqueuer.EnqueueSymbolsIngestionMessageAsync(request);
 
-            var newSymbolsRequest = SymbolsValidationEntitiesService.CreateFromValidationRequest(request, SymbolsPackageIngestRequestStatus.Ingesting);
+            var newSymbolsRequest = SymbolsValidationEntitiesService.CreateFromValidationRequest(request, SymbolsPackageIngestRequestStatus.Ingesting, message.RequestName);
             var savedSymbolRequest = await _symbolsValidationEntitiesService.AddSymbolsServerRequestAsync(newSymbolsRequest);
             
             if(savedSymbolRequest.RequestStatusKey != SymbolsPackageIngestRequestStatus.Ingesting)

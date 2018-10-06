@@ -81,13 +81,13 @@ namespace NuGet.Jobs.Validation.Symbols.Core
         /// <param name="validationRequest">The <see cref="IValidationRequest"/>.</param>
         /// <param name="status">The <see cref="SymbolsPackageIngestRequestStatus"/>.</param>
         /// <returns></returns>
-        public static SymbolsServerRequest CreateFromValidationRequest(IValidationRequest validationRequest, SymbolsPackageIngestRequestStatus status)
+        public static SymbolsServerRequest CreateFromValidationRequest(IValidationRequest validationRequest, SymbolsPackageIngestRequestStatus status, string requestName)
         {
             return new SymbolsServerRequest()
             {
                 Created = DateTime.UtcNow,
                 LastUpdated = DateTime.UtcNow,
-                RequestName = validationRequest.PackageKey.ToString(),
+                RequestName = requestName,
                 RequestStatusKey = status,
                 SymbolsKey = validationRequest.PackageKey
             };

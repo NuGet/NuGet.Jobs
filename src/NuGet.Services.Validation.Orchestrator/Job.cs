@@ -653,18 +653,18 @@ namespace NuGet.Services.Validation.Orchestrator
                 .Keyed<ITopicClient>(SymbolsIngesterBindingKey);
 
             builder
-                .RegisterType<SymbolsMessageEnqueuer>()
+                .RegisterType<SymbolsIngesterMessageEnqueuer>()
                 .WithKeyedParameter(typeof(ITopicClient), SymbolsIngesterBindingKey)
                 .WithParameter(
                     (pi, ctx) => pi.ParameterType == typeof(TimeSpan?),
                     (pi, ctx) => ctx.Resolve<IOptionsSnapshot<SymbolsIngesterConfiguration>>().Value.MessageDelay)
-                .Keyed<ISymbolsMessageEnqueuer>(SymbolsIngesterBindingKey)
-                .As<ISymbolsMessageEnqueuer>();
+                .Keyed<ISymbolsIngesterMessageEnqueuer>(SymbolsIngesterBindingKey)
+                .As<ISymbolsIngesterMessageEnqueuer>();
 
             builder
                 .RegisterType<SymbolsIngester>()
                 .WithKeyedParameter(typeof(IValidatorStateService), SymbolsIngesterBindingKey)
-                .WithKeyedParameter(typeof(ISymbolsMessageEnqueuer), SymbolsIngesterBindingKey)
+                .WithKeyedParameter(typeof(ISymbolsIngesterMessageEnqueuer), SymbolsIngesterBindingKey)
                 .AsSelf();
         }
 
