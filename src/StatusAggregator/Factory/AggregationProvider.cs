@@ -51,7 +51,12 @@ namespace StatusAggregator.Factory
                     // The aggregation must begin before or at the same time
                     e.StartTime <= input.StartTime &&
                     // The aggregation must cover the same time period
-                    (e.IsActive || (e.EndTime >= input.StartTime)))
+                    (
+                        // If the aggregation is active, it covers the same time period
+                        e.IsActive || 
+                        // Otherwise, if the child is not active, and the aggregation ends after it ends, it covers the same time period
+                        (!input.IsActive && e.EndTime >= input.EndTime)
+                    ))
                 .ToList();
 
             _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
