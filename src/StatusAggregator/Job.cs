@@ -18,6 +18,7 @@ using NuGet.Jobs;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
+using StatusAggregator.Collector;
 using StatusAggregator.Factory;
 using StatusAggregator.Manual;
 using StatusAggregator.Parse;
@@ -43,6 +44,7 @@ namespace StatusAggregator
 
             AddStorage(containerBuilder);
             AddFactoriesAndUpdaters(containerBuilder);
+            AddEntityCollector(containerBuilder);
 
             _serviceProvider = new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -51,7 +53,7 @@ namespace StatusAggregator
         {
             return _serviceProvider
                 .GetRequiredService<StatusAggregator>()
-                .Run();
+                .Run(DateTime.UtcNow);
         }
 
         private static void AddServices(IServiceCollection serviceCollection)
@@ -59,7 +61,7 @@ namespace StatusAggregator
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
             AddParsing(serviceCollection);
-            serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
+            serviceCollection.AddTransient<IEntityCollectorProcessor, IncidentEntityCollectorProcessor>();
             AddManualStatusChangeHandling(serviceCollection);
             serviceCollection.AddTransient<IComponentFactory, NuGetServiceComponentFactory>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
@@ -136,13 +138,12 @@ namespace StatusAggregator
 
                 // We need to listen to manual status change updates from each storage.
                 containerBuilder
-                    .RegisterType<ManualStatusChangeUpdater>()
+                    .RegisterType<ManualStatusChangeCollectorProcessor>()
                     .WithParameter(new NamedParameter(StorageAccountNameParameter, name))
                     .WithParameter(new ResolvedParameter(
                         (pi, ctx) => pi.ParameterType == typeof(ITableWrapper),
                         (pi, ctx) => ctx.ResolveNamed<ITableWrapper>(name)))
-                    .As<IManualStatusChangeUpdater>()
-                    .Named<IManualStatusChangeUpdater>(name);
+                    .As<IEntityCollectorProcessor>();
             }
         }
 
@@ -169,11 +170,11 @@ namespace StatusAggregator
         {
             containerBuilder
                 .RegisterType<AggregationStrategy<IncidentEntity, IncidentGroupEntity>>()
-                .As<IAggregationStrategy<IncidentEntity, IncidentGroupEntity>>();
+                .As<IAggregationStrategy<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<AggregationStrategy<IncidentGroupEntity, EventEntity>>()
-                .As<IAggregationStrategy<IncidentGroupEntity, EventEntity>>();
+                .As<IAggregationStrategy<EventEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentAffectedComponentPathProvider>()
@@ -205,7 +206,7 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityFactory<EventEntity>>();
 
             containerBuilder
-                .RegisterType<Update.IncidentUpdater>()
+                .RegisterType<IncidentUpdater>()
                 .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
 
             containerBuilder
@@ -219,6 +220,18 @@ namespace StatusAggregator
             containerBuilder
                 .RegisterType<ActiveEventEntityUpdater>()
                 .As<IActiveEventEntityUpdater>();
+        }
+
+        private static void AddEntityCollector(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterAdapter<IEntityCollectorProcessor, IEntityCollector>(
+                    (ctx, processor) =>
+                    {
+                        return new EntityCollector(
+                            ctx.Resolve<ICursor>(),
+                            processor);
+                    });
         }
 
         private const int _defaultEventStartMessageDelayMinutes = 15;

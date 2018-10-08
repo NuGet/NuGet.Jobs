@@ -18,7 +18,7 @@ namespace StatusAggregator.Factory
     {
         private readonly ITableWrapper _table;
         private readonly IAffectedComponentPathProvider<TAggregationEntity> _aggregationPathProvider;
-        private readonly IAggregationStrategy<TChildEntity, TAggregationEntity> _strategy;
+        private readonly IAggregationStrategy<TAggregationEntity> _strategy;
         private readonly IComponentAffectingEntityFactory<TAggregationEntity> _aggregationFactory;
 
         private readonly ILogger<AggregationProvider<TChildEntity, TAggregationEntity>> _logger;
@@ -26,7 +26,7 @@ namespace StatusAggregator.Factory
         public AggregationProvider(
             ITableWrapper table,
             IAffectedComponentPathProvider<TAggregationEntity> aggregationPathProvider,
-            IAggregationStrategy<TChildEntity, TAggregationEntity> strategy,
+            IAggregationStrategy<TAggregationEntity> strategy,
             IComponentAffectingEntityFactory<TAggregationEntity> aggregationFactory,
             ILogger<AggregationProvider<TChildEntity, TAggregationEntity>> logger)
         {

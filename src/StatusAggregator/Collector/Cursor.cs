@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -8,10 +8,13 @@ using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
 using StatusAggregator.Table;
 
-namespace StatusAggregator
+namespace StatusAggregator.Collector
 {
     public class Cursor : ICursor
     {
+        private readonly ITableWrapper _table;
+        private readonly ILogger<Cursor> _logger;
+
         public Cursor(
             ITableWrapper table,
             ILogger<Cursor> logger)
@@ -20,12 +23,10 @@ namespace StatusAggregator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private readonly ITableWrapper _table;
-
-        private readonly ILogger<Cursor> _logger;
-
         public async Task<DateTime> Get(string name)
         {
+            name = name ?? throw new ArgumentNullException(nameof(name));
+
             using (_logger.Scope("Fetching cursor with name {CursorName}.", name))
             {
                 var cursor = await _table.RetrieveAsync<CursorEntity>(name);
@@ -49,6 +50,8 @@ namespace StatusAggregator
 
         public Task Set(string name, DateTime value)
         {
+            name = name ?? throw new ArgumentNullException(nameof(name));
+
             using (_logger.Scope("Updating cursor with name {CursorName} to {CursorValue}.", name, value))
             {
                 var cursorEntity = new CursorEntity(name, value);
