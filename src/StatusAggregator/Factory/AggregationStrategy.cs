@@ -41,15 +41,15 @@ namespace StatusAggregator.Factory
                 {
                     // A manually created aggregation will have no children. We cannot use an aggregation that was manually created.
                     // It is also possible that some bug or data issue has broken this aggregation. If that is the case, we cannot use it either.
-                    _logger.LogInformation("Cannot link entity to aggregation because it is not linked to any incidents.");
+                    _logger.LogInformation("Cannot link entity to aggregation because it is not linked to any children.");
                     return false;
                 }
 
                 // To guarantee that the aggregation reflects the latest information and is actually active, we must update it.
                 await _aggregationUpdater.UpdateAsync(aggregationEntity, input.StartTime);
-                if (!aggregationEntity.IsActive)
+                if (aggregationEntity.IsActive || !input.IsActive)
                 {
-                    _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated.");
+                    _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated and the incident has not been.");
                     return false;
                 }
 
