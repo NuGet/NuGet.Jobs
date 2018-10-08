@@ -62,8 +62,6 @@
     <Compile Include="Factory\IncidentAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\EventAffectedComponentPathProvider.cs" />
     <Compile Include="IStatusExporter.cs" />
-    <Compile Include="Manual\IManualStatusChangeUpdater.cs" />
-    <Compile Include="Manual\ManualStatusChangeUpdater.cs" />
     <Compile Include="Messages\ExistingStartMessageContext.cs" />
     <Compile Include="Messages\EventMessagingUpdater.cs" />
     <Compile Include="Messages\IIncidentGroupMessageFilter.cs" />
