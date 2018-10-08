@@ -18,7 +18,7 @@ namespace StatusAggregator.Factory
     {
         private readonly ITableWrapper _table;
         private readonly IAffectedComponentPathProvider<TAggregationEntity> _aggregationPathProvider;
-        private readonly IAggregationStrategy<TAggregationEntity> _approver;
+        private readonly IAggregationStrategy<TAggregationEntity> _strategy;
         private readonly IComponentAffectingEntityFactory<TAggregationEntity> _aggregationFactory;
 
         private readonly ILogger<AggregationProvider<TChildEntity, TAggregationEntity>> _logger;
@@ -26,13 +26,13 @@ namespace StatusAggregator.Factory
         public AggregationProvider(
             ITableWrapper table,
             IAffectedComponentPathProvider<TAggregationEntity> aggregationPathProvider,
-            IAggregationStrategy<TAggregationEntity> approver,
+            IAggregationStrategy<TAggregationEntity> strategy,
             IComponentAffectingEntityFactory<TAggregationEntity> aggregationFactory,
             ILogger<AggregationProvider<TChildEntity, TAggregationEntity>> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
             _aggregationPathProvider = aggregationPathProvider ?? throw new ArgumentNullException(nameof(aggregationPathProvider));
-            _approver = approver ?? throw new ArgumentNullException(nameof(approver));
+            _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
             _aggregationFactory = aggregationFactory ?? throw new ArgumentNullException(nameof(aggregationFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -50,14 +50,19 @@ namespace StatusAggregator.Factory
                     e.AffectedComponentPath == possiblePath &&
                     // The aggregation must begin before or at the same time
                     e.StartTime <= input.StartTime &&
-                    // The aggregation must be active or the aggregation must end after this incident begins
-                    (e.IsActive || (e.EndTime >= input.StartTime)))
+                    // The aggregation must cover the same time period
+                    (
+                        // If the aggregation is active, it covers the same time period
+                        e.IsActive || 
+                        // Otherwise, if the child is not active, and the aggregation ends after it ends, it covers the same time period
+                        (!input.IsActive && e.EndTime >= input.EndTime)
+                    ))
                 .ToList();
 
             _logger.LogInformation("Found {AggregationCount} possible aggregations to link entity to with path {AffectedComponentPath}.", possibleAggregations.Count(), possiblePath);
             foreach (var possibleAggregation in possibleAggregations)
             {
-                if (await _approver.CanBeAggregatedByAsync(input, possibleAggregation))
+                if (await _strategy.CanBeAggregatedByAsync(input, possibleAggregation))
                 {
                     _logger.LogInformation("Linking entity to aggregation.");
                     aggregationEntity = possibleAggregation;
