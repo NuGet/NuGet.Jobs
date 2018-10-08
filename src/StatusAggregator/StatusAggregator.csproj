@@ -46,7 +46,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cursor.cs" />
+    <Compile Include="Collector\Cursor.cs" />
+    <Compile Include="Collector\EntityCollector.cs" />
+    <Compile Include="Collector\ICursor.cs" />
+    <Compile Include="Collector\IEntityCollector.cs" />
+    <Compile Include="Collector\IEntityCollectorProcessor.cs" />
+    <Compile Include="Collector\IncidentEntityCollectorProcessor.cs" />
+    <Compile Include="Collector\ManualStatusChangeCollectorProcessor.cs" />
     <Compile Include="Factory\AggregationStrategy.cs" />
     <Compile Include="Factory\AggregationProvider.cs" />
     <Compile Include="Factory\IAffectedComponentPathProvider.cs" />
@@ -55,11 +61,7 @@
     <Compile Include="Factory\IAggregationProvider.cs" />
     <Compile Include="Factory\IncidentAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\EventAffectedComponentPathProvider.cs" />
-    <Compile Include="ICursor.cs" />
-    <Compile Include="IIncidentUpdater.cs" />
-    <Compile Include="IncidentUpdater.cs" />
     <Compile Include="IStatusExporter.cs" />
-    <Compile Include="IStatusUpdater.cs" />
     <Compile Include="Manual\IManualStatusChangeUpdater.cs" />
     <Compile Include="Manual\ManualStatusChangeUpdater.cs" />
     <Compile Include="Messages\ExistingStartMessageContext.cs" />
@@ -79,7 +81,6 @@
     <Compile Include="Messages\MessageFactory.cs" />
     <Compile Include="StatusContractResolver.cs" />
     <Compile Include="StatusExporter.cs" />
-    <Compile Include="StatusUpdater.cs" />
     <Compile Include="Update\ActiveEventEntityUpdater.cs" />
     <Compile Include="Update\AggregationEntityUpdater.cs" />
     <Compile Include="Factory\EventFactory.cs" />
@@ -124,6 +125,8 @@
     <Compile Include="Table\TablePartitionKeys.cs" />
     <Compile Include="Table\TableWrapper.cs" />
     <Compile Include="Table\TableWrapperExtensions.cs" />
+    <Compile Include="Update\IStatusUpdater.cs" />
+    <Compile Include="Update\StatusUpdater.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj">

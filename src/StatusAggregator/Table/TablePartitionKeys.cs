@@ -11,6 +11,10 @@ namespace StatusAggregator.Table
 {
     public static class TablePartitionKeys
     {
+        /// <summary>
+        /// Gets the partition key associated with <typeparamref name="T"/>.
+        /// Each <typeparamref name="T"/> is mapped to a single key.
+        /// </summary>
         public static string Get<T>()
         {
             var match = PartitionKeyMap.FirstOrDefault(m => m.Matches(typeof(T)));
