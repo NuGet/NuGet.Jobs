@@ -170,11 +170,11 @@ namespace StatusAggregator
         {
             containerBuilder
                 .RegisterType<AggregationStrategy<IncidentEntity, IncidentGroupEntity>>()
-                .As<IAggregationStrategy<IncidentEntity, IncidentGroupEntity>>();
+                .As<IAggregationStrategy<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<AggregationStrategy<IncidentGroupEntity, EventEntity>>()
-                .As<IAggregationStrategy<IncidentGroupEntity, EventEntity>>();
+                .As<IAggregationStrategy<EventEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentAffectedComponentPathProvider>()

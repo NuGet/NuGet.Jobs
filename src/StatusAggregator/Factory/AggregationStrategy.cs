@@ -14,7 +14,7 @@ using StatusAggregator.Update;
 namespace StatusAggregator.Factory
 {
     public class AggregationStrategy<TChildEntity, TAggregationEntity>
-        : IAggregationStrategy<TChildEntity, TAggregationEntity>
+        : IAggregationStrategy<TAggregationEntity>
         where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>, new()
         where TAggregationEntity : ComponentAffectingEntity, new()
     {
