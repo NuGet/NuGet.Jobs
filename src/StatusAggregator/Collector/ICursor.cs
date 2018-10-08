@@ -15,6 +15,7 @@ namespace StatusAggregator.Collector
         /// Gets the current progress of the job by <paramref name="name"/>.
         /// </summary>
         Task<DateTime> Get(string name);
+
         /// <summary>
         /// Saves <paramref name="value"/> as the current progress of the job by <paramref name="name"/>.
         /// </summary>
