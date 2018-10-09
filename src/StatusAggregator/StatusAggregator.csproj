@@ -46,6 +46,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Container\ContainerWrapper.cs" />
+    <Compile Include="Container\IContainerWrapper.cs" />
+    <Compile Include="Export\ComponentExporter.cs" />
+    <Compile Include="Export\EventExporter.cs" />
+    <Compile Include="Export\EventsExporter.cs" />
+    <Compile Include="Export\IComponentExporter.cs" />
+    <Compile Include="Export\IEventExporter.cs" />
+    <Compile Include="Export\IEventsExporter.cs" />
+    <Compile Include="Export\IStatusExporter.cs" />
+    <Compile Include="Export\IStatusSerializer.cs" />
+    <Compile Include="Export\StatusExporter.cs" />
+    <Compile Include="Export\StatusSerializer.cs" />
     <Compile Include="Collector\Cursor.cs" />
     <Compile Include="Collector\EntityCollector.cs" />
     <Compile Include="Collector\ICursor.cs" />
@@ -61,7 +73,6 @@
     <Compile Include="Factory\IAggregationProvider.cs" />
     <Compile Include="Factory\IncidentAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\EventAffectedComponentPathProvider.cs" />
-    <Compile Include="IStatusExporter.cs" />
     <Compile Include="Messages\ExistingStartMessageContext.cs" />
     <Compile Include="Messages\EventMessagingUpdater.cs" />
     <Compile Include="Messages\IIncidentGroupMessageFilter.cs" />
@@ -77,8 +88,6 @@
     <Compile Include="Messages\MessageChangeEventProvider.cs" />
     <Compile Include="Messages\MessageContentBuilder.cs" />
     <Compile Include="Messages\MessageFactory.cs" />
-    <Compile Include="StatusContractResolver.cs" />
-    <Compile Include="StatusExporter.cs" />
     <Compile Include="Update\ActiveEventEntityUpdater.cs" />
     <Compile Include="Update\AggregationEntityUpdater.cs" />
     <Compile Include="Factory\EventFactory.cs" />
