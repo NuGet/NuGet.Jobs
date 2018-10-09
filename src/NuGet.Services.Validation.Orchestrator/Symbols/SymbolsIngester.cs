@@ -40,11 +40,12 @@ namespace NuGet.Services.Validation.Symbols
 
             var result = SymbolsValidationEntitiesService.ConvertToIValidationResult(await _symbolsValidationEntitiesService.GetSymbolsServerRequestAsync(request));
             _logger.LogInformation(
-                    "Symbols status {Status} for PackageId: {PackageId}, PackageNormalizedVersion {PackageNormalizedVersion}, SymbolsPackageKey {SymbolsPackageKey} ",
+                    "Symbols status {Status} for PackageId: {PackageId}, PackageNormalizedVersion {PackageNormalizedVersion}, SymbolsPackageKey {SymbolsPackageKey} ValidationId {ValidationId}",
                     result.Status,
                     request.PackageId,
                     request.PackageVersion,
-                    request.PackageKey);
+                    request.PackageKey,
+                    request.ValidationId);
 
             return result;
         }

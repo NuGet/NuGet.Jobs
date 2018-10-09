@@ -71,8 +71,18 @@ namespace NuGet.Jobs.Validation.Symbols.Core
 
         public async Task<SymbolsServerRequest> GetSymbolsServerRequestAsync(IValidationRequest validationRequest)
         {
-            string requestName = validationRequest.PackageKey.ToString();
-            return  await GetSymbolsServerRequestAsync(requestName, validationRequest.PackageKey);
+            string requestName = CreateSymbolServerRequestNameFromValidationRequest(validationRequest);
+            return await GetSymbolsServerRequestAsync(requestName, validationRequest.PackageKey);
+        }
+
+        /// <summary>
+        /// From a <see cref="IValidationRequest"/> creates a symbol server request name.
+        /// </summary>
+        /// <param name="validationRequest"></param>
+        /// <returns></returns>
+        public static string CreateSymbolServerRequestNameFromValidationRequest(IValidationRequest validationRequest)
+        {
+            return $"{validationRequest.PackageKey}_{validationRequest.ValidationId}";
         }
 
         /// <summary>

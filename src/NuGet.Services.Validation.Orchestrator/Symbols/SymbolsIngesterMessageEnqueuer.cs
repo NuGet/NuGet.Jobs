@@ -32,7 +32,7 @@ namespace NuGet.Services.Validation.Symbols
                 packageId: request.PackageId,
                 packageNormalizedVersion: request.PackageVersion,
                 snupkgUrl: request.NupkgUrl,
-                requestName : CreateRequestNameFromValidation(request));
+                requestName : SymbolsValidationEntitiesService.CreateSymbolServerRequestNameFromValidationRequest(request));
             var brokeredMessage = _serializer.Serialize(message);
 
             var visibleAt = DateTimeOffset.UtcNow + (_messageDelay ?? TimeSpan.Zero);
@@ -40,11 +40,6 @@ namespace NuGet.Services.Validation.Symbols
 
             await _topicClient.SendAsync(brokeredMessage);
             return message;
-        }
-
-        public static string CreateRequestNameFromValidation(IValidationRequest request)
-        {
-            return $"{request.PackageKey}_{request.ValidationId}"; 
         }
     }
 }
