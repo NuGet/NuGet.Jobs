@@ -21,6 +21,7 @@ using NuGet.Services.Status.Table.Manual;
 using StatusAggregator.Collector;
 using StatusAggregator.Factory;
 using StatusAggregator.Manual;
+using StatusAggregator.Messages;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 using StatusAggregator.Update;
@@ -63,10 +64,21 @@ namespace StatusAggregator
             AddParsing(serviceCollection);
             serviceCollection.AddTransient<IEntityCollectorProcessor, IncidentEntityCollectorProcessor>();
             AddManualStatusChangeHandling(serviceCollection);
+            AddMessaging(serviceCollection);
             serviceCollection.AddTransient<IComponentFactory, NuGetServiceComponentFactory>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<IStatusExporter, StatusExporter>();
             serviceCollection.AddTransient<StatusAggregator>();
+        }
+
+        private static void AddMessaging(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddTransient<IMessageContentBuilder, MessageContentBuilder>();
+            serviceCollection.AddTransient<IMessageFactory, MessageFactory>();
+            serviceCollection.AddTransient<IMessageChangeEventIterator, MessageChangeEventIterator>();
+            serviceCollection.AddTransient<IMessageChangeEventProcessor, MessageChangeEventProcessor>();
+            serviceCollection.AddTransient<IIncidentGroupMessageFilter, IncidentGroupMessageFilter>();
+            serviceCollection.AddTransient<IMessageChangeEventProvider, MessageChangeEventProvider>();
         }
 
         private static void AddManualStatusChangeHandling(IServiceCollection serviceCollection)
@@ -212,14 +224,27 @@ namespace StatusAggregator
             containerBuilder
                 .RegisterType<AggregationEntityUpdater<IncidentEntity, IncidentGroupEntity>>()
                 .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
-
-            containerBuilder
-                .RegisterType<AggregationEntityUpdater<IncidentGroupEntity, EventEntity>>()
-                .As<IComponentAffectingEntityUpdater<EventEntity>>();
+            
+            AddEventUpdater(containerBuilder);
 
             containerBuilder
                 .RegisterType<ActiveEventEntityUpdater>()
                 .As<IActiveEventEntityUpdater>();
+        }
+
+        private static void AddEventUpdater(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterType<AggregationEntityUpdater<IncidentGroupEntity, EventEntity>>()
+                .AsSelf();
+
+            containerBuilder
+                .RegisterType<EventMessagingUpdater>()
+                .AsSelf();
+
+            containerBuilder
+                .RegisterType<EventUpdater>()
+                .As<IComponentAffectingEntityUpdater<EventEntity>>();
         }
 
         private static void AddEntityCollector(ContainerBuilder containerBuilder)
