@@ -7,8 +7,7 @@ using StatusAggregator.Parse;
 
 namespace StatusAggregator.Factory
 {
-    public interface IAggregationStrategy<TChildEntity, TAggregationEntity>
-        where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>
+    public interface IAggregationStrategy<TAggregationEntity>
         where TAggregationEntity : ComponentAffectingEntity
     {
         /// <summary>

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using StatusAggregator.Container;
 using StatusAggregator.Export;
 using StatusAggregator.Table;
+using StatusAggregator.Update;
 
 namespace StatusAggregator
 {
@@ -38,7 +39,7 @@ namespace StatusAggregator
             await Task.WhenAll(_containers.Select(c => c.CreateIfNotExistsAsync()));
             
             // Update and export the status.
-            await _statusUpdater.Update();
+            await _statusUpdater.Update(cursor);
             await _statusExporter.Export(cursor);
         }
     }

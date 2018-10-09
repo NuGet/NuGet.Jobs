@@ -12,16 +12,17 @@ using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
 using NuGet.Services.Status.Table;
 using NuGet.Services.Status.Table.Manual;
+using StatusAggregator.Collector;
 using StatusAggregator.Container;
 using StatusAggregator.Export;
 using StatusAggregator.Factory;
 using StatusAggregator.Manual;
+using StatusAggregator.Messages;
 using StatusAggregator.Parse;
 using StatusAggregator.Table;
 using StatusAggregator.Update;
@@ -46,6 +47,7 @@ namespace StatusAggregator
             AddStorage(containerBuilder);
             AddFactoriesAndUpdaters(containerBuilder);
             AddExporters(containerBuilder);
+            AddEntityCollector(containerBuilder);
 
             _serviceProvider = new AutofacServiceProvider(containerBuilder.Build());
         }
@@ -62,11 +64,22 @@ namespace StatusAggregator
             serviceCollection.AddTransient<ICursor, Cursor>();
             serviceCollection.AddSingleton<IIncidentApiClient, IncidentApiClient>();
             AddParsing(serviceCollection);
-            serviceCollection.AddTransient<IIncidentUpdater, IncidentUpdater>();
+            serviceCollection.AddTransient<IEntityCollectorProcessor, IncidentEntityCollectorProcessor>();
             AddManualStatusChangeHandling(serviceCollection);
+            AddMessaging(serviceCollection);
             serviceCollection.AddTransient<IComponentFactory, NuGetServiceComponentFactory>();
             serviceCollection.AddTransient<IStatusUpdater, StatusUpdater>();
             serviceCollection.AddTransient<StatusAggregator>();
+        }
+
+        private static void AddMessaging(IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddTransient<IMessageContentBuilder, MessageContentBuilder>();
+            serviceCollection.AddTransient<IMessageFactory, MessageFactory>();
+            serviceCollection.AddTransient<IMessageChangeEventIterator, MessageChangeEventIterator>();
+            serviceCollection.AddTransient<IMessageChangeEventProcessor, MessageChangeEventProcessor>();
+            serviceCollection.AddTransient<IIncidentGroupMessageFilter, IncidentGroupMessageFilter>();
+            serviceCollection.AddTransient<IMessageChangeEventProvider, MessageChangeEventProvider>();
         }
 
         private static void AddManualStatusChangeHandling(IServiceCollection serviceCollection)
@@ -138,13 +151,12 @@ namespace StatusAggregator
 
                 // We need to listen to manual status change updates from each storage.
                 containerBuilder
-                    .RegisterType<ManualStatusChangeUpdater>()
+                    .RegisterType<ManualStatusChangeCollectorProcessor>()
                     .WithParameter(new NamedParameter(StorageAccountNameParameter, name))
                     .WithParameter(new ResolvedParameter(
                         (pi, ctx) => pi.ParameterType == typeof(ITableWrapper),
                         (pi, ctx) => ctx.ResolveNamed<ITableWrapper>(name)))
-                    .As<IManualStatusChangeUpdater>()
-                    .Named<IManualStatusChangeUpdater>(name);
+                    .As<IEntityCollectorProcessor>();
             }
         }
 
@@ -172,11 +184,11 @@ namespace StatusAggregator
         {
             containerBuilder
                 .RegisterType<AggregationStrategy<IncidentEntity, IncidentGroupEntity>>()
-                .As<IAggregationStrategy<IncidentEntity, IncidentGroupEntity>>();
+                .As<IAggregationStrategy<IncidentGroupEntity>>();
 
             containerBuilder
                 .RegisterType<AggregationStrategy<IncidentGroupEntity, EventEntity>>()
-                .As<IAggregationStrategy<IncidentGroupEntity, EventEntity>>();
+                .As<IAggregationStrategy<EventEntity>>();
 
             containerBuilder
                 .RegisterType<IncidentAffectedComponentPathProvider>()
@@ -208,20 +220,45 @@ namespace StatusAggregator
                 .As<IComponentAffectingEntityFactory<EventEntity>>();
 
             containerBuilder
-                .RegisterType<Update.IncidentUpdater>()
+                .RegisterType<IncidentUpdater>()
                 .As<IComponentAffectingEntityUpdater<IncidentEntity>>();
 
             containerBuilder
                 .RegisterType<AggregationEntityUpdater<IncidentEntity, IncidentGroupEntity>>()
                 .As<IComponentAffectingEntityUpdater<IncidentGroupEntity>>();
-
-            containerBuilder
-                .RegisterType<AggregationEntityUpdater<IncidentGroupEntity, EventEntity>>()
-                .As<IComponentAffectingEntityUpdater<EventEntity>>();
+            
+            AddEventUpdater(containerBuilder);
 
             containerBuilder
                 .RegisterType<ActiveEventEntityUpdater>()
                 .As<IActiveEventEntityUpdater>();
+        }
+
+        private static void AddEventUpdater(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterType<AggregationEntityUpdater<IncidentGroupEntity, EventEntity>>()
+                .AsSelf();
+
+            containerBuilder
+                .RegisterType<EventMessagingUpdater>()
+                .AsSelf();
+
+            containerBuilder
+                .RegisterType<EventUpdater>()
+                .As<IComponentAffectingEntityUpdater<EventEntity>>();
+        }
+
+        private static void AddEntityCollector(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterAdapter<IEntityCollectorProcessor, IEntityCollector>(
+                    (ctx, processor) =>
+                    {
+                        return new EntityCollector(
+                            ctx.Resolve<ICursor>(),
+                            processor);
+                    });
         }
 
         private static void AddExporters(ContainerBuilder containerBuilder)
