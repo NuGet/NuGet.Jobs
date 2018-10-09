@@ -261,6 +261,23 @@ namespace Validation.Symbols.Core.Tests
             }
         }
 
+        public class The
+        {
+            [Fact]
+            public void CreateRequestName()
+            {
+                // Arrange
+                Guid id = Guid.NewGuid();
+                ValidationRequest vRequest = new ValidationRequest(id, 10, "pId", "1.1.1", "url");
+
+                // Act
+                var requestName = SymbolsValidationEntitiesService.CreateSymbolServerRequestNameFromValidationRequest(vRequest);
+
+                // Assert
+                Assert.Equal($"{vRequest.PackageKey}_{vRequest.ValidationId}", requestName);
+            }
+        }
+
         public abstract class FactsBase
         {
             protected readonly Mock<IValidationEntitiesContext> _validationEntitiesContext;

@@ -41,16 +41,6 @@ namespace NuGet.Services.Validation.Symbols
             _topicClient.Verify(x => x.SendAsync(It.IsAny<IBrokeredMessage>()), Times.Once);
         }
 
-        [Fact]
-        public void CreateRequestName()
-        {
-            // Act
-            var requestName = SymbolsIngesterMessageEnqueuer.CreateRequestNameFromValidation(_validationRequest.Object);
-
-            // Assert
-            Assert.Equal($"{_validationRequest.Object.PackageKey}_{_validationRequest.Object.ValidationId}", requestName);
-        }
-
         private readonly Mock<ITopicClient> _topicClient;
         private readonly Mock<IBrokeredMessageSerializer<SymbolsIngesterMessage>> _serializer;
         private readonly SymbolsValidationConfiguration _configuration;
