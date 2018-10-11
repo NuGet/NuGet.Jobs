@@ -74,6 +74,16 @@
     <Compile Include="Messages\MessageChangeEventProviderTests.cs" />
     <Compile Include="Messages\MessageContentBuilderTests.cs" />
     <Compile Include="Messages\MessageFactoryTests.cs" />
+    <Compile Include="Parse\AggregateIncidentParserTests.cs" />
+    <Compile Include="Parse\EnvironmentPrefixIncidentRegexParsingHandlerTests.cs" />
+    <Compile Include="Parse\EnvironmentRegexParsingFilterTests.cs" />
+    <Compile Include="Parse\ParsingUtility.cs" />
+    <Compile Include="Parse\IncidentRegexParserTests.cs" />
+    <Compile Include="Parse\OutdatedSearchServiceInstanceIncidentRegexParsingHandlerTests.cs" />
+    <Compile Include="Parse\PingdomIncidentRegexParsingHandlerTests.cs" />
+    <Compile Include="Parse\SeverityRegexParsingFilterTests.cs" />
+    <Compile Include="Parse\TrafficManagerEndpointStatusIncidentRegexParsingHandlerTests.cs" />
+    <Compile Include="Parse\ValidationDurationIncidentRegexParsingHandlerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestComponent.cs" />
     <Compile Include="TestUtility\MockTableWrapperExtensions.cs" />

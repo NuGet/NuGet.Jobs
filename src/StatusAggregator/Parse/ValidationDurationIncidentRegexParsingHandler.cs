@@ -10,7 +10,7 @@ using StatusAggregator.Factory;
 
 namespace StatusAggregator.Parse
 {
-    public class ValidationDurationIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParserHandler
+    public class ValidationDurationIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParsingHandler
     {
         private const string SubtitleRegEx = "Too many packages are stuck in the \"Validating\" state!";
 

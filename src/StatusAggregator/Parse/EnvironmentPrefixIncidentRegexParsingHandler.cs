@@ -11,26 +11,26 @@ namespace StatusAggregator.Parse
     /// <summary>
     /// Subclass of <see cref="IncidentRegexParsingHandler"/> that expects <see cref="Incident"/>s are prefixed with "[ENVIRONMENT]".
     /// </summary>
-    public abstract class EnvironmentPrefixIncidentRegexParserHandler : IncidentRegexParsingHandler
+    public abstract class EnvironmentPrefixIncidentRegexParsingHandler : IncidentRegexParsingHandler
     {
-        public EnvironmentPrefixIncidentRegexParserHandler(
+        public EnvironmentPrefixIncidentRegexParsingHandler(
             string subtitleRegEx,
             IEnumerable<IIncidentRegexParsingFilter> filters)
             : base(
                   PrependEnvironmentRegexGroup(subtitleRegEx),
                   filters)
         {
-            if (!filters.Any(f => f is EnvironmentRegexFilter))
+            if (!filters.Any(f => f is EnvironmentRegexParsingFilter))
             {
                 throw new ArgumentException(
-                    $"A {nameof(EnvironmentPrefixIncidentRegexParserHandler)} must be run with an {nameof(EnvironmentRegexFilter)}!", 
+                    $"A {nameof(EnvironmentPrefixIncidentRegexParsingHandler)} must be run with an {nameof(EnvironmentRegexParsingFilter)}!", 
                     nameof(filters));
             }
         }
 
         private static string PrependEnvironmentRegexGroup(string subtitleRegEx)
         {
-            return $@"\[(?<{EnvironmentRegexFilter.EnvironmentGroupName}>.*)\] {subtitleRegEx}";
+            return $@"\[(?<{EnvironmentRegexParsingFilter.EnvironmentGroupName}>.*)\] {subtitleRegEx}";
         }
     }
 }

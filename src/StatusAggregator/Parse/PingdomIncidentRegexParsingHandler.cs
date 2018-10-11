@@ -13,8 +13,8 @@ namespace StatusAggregator.Parse
 {
     public class PingdomIncidentRegexParsingHandler : IncidentRegexParsingHandler
     {
-        private const string CheckNameGroupName = "CheckName";
-        private const string CheckUrlGroupName = "CheckUrl";
+        public const string CheckNameGroupName = "CheckName";
+        public const string CheckUrlGroupName = "CheckUrl";
         private static string SubtitleRegEx = $@"Pingdom check '(?<{CheckNameGroupName}>.*)' is failing! '(?<{CheckUrlGroupName}>.*)' is DOWN!";
 
         private readonly ILogger<PingdomIncidentRegexParsingHandler> _logger;

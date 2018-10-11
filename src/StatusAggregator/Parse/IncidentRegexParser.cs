@@ -13,7 +13,7 @@ namespace StatusAggregator.Parse
     /// <summary>
     /// Implementation of <see cref="IIncidentParser"/> that uses <see cref="Regex"/> to parse <see cref="Incident"/>s with.
     /// </summary>
-    public abstract class IncidentRegexParser : IIncidentParser
+    public class IncidentRegexParser : IIncidentParser
     {
         private readonly static TimeSpan MaxRegexExecutionTime = TimeSpan.FromSeconds(5);
 
@@ -51,6 +51,7 @@ namespace StatusAggregator.Parse
 
                 if (match == null)
                 {
+                    // According to its documentation, Regex.Match shouldn't return null, but this if statement is in here as a precaution.
                     _logger.LogError("Parsed incident using regex successfully, but was unable to get match information!");
                     return false;
                 }

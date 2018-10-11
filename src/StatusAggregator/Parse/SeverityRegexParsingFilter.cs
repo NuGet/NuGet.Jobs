@@ -11,15 +11,15 @@ namespace StatusAggregator.Parse
     /// <summary>
     /// Expects that the severity of an <see cref="Incident"/> must be lower than a threshold.
     /// </summary>
-    public class SeverityRegexFilter : IIncidentRegexParsingFilter
+    public class SeverityRegexParsingFilter : IIncidentRegexParsingFilter
     {
         private readonly int _maximumSeverity;
 
-        private readonly ILogger<SeverityRegexFilter> _logger;
+        private readonly ILogger<SeverityRegexParsingFilter> _logger;
 
-        public SeverityRegexFilter(
+        public SeverityRegexParsingFilter(
             StatusAggregatorConfiguration configuration,
-            ILogger<SeverityRegexFilter> logger)
+            ILogger<SeverityRegexParsingFilter> logger)
         {
             _maximumSeverity = configuration?.MaximumSeverity ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

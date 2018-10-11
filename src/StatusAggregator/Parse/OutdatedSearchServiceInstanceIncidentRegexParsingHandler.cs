@@ -11,7 +11,7 @@ using StatusAggregator.Factory;
 
 namespace StatusAggregator.Parse
 {
-    public class OutdatedSearchServiceInstanceIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParserHandler
+    public class OutdatedSearchServiceInstanceIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParsingHandler
     {
         private const string SubtitleRegEx = "All search service instances are using an outdated index!";
 
@@ -21,7 +21,7 @@ namespace StatusAggregator.Parse
             : base(
                   SubtitleRegEx, 
                   // The incident is always severity 4.
-                  filters.Where(f => !(f is SeverityRegexFilter)))
+                  filters.Where(f => !(f is SeverityRegexParsingFilter)))
         {
         }
 

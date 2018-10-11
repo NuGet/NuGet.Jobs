@@ -11,10 +11,10 @@ using StatusAggregator.Factory;
 
 namespace StatusAggregator.Parse
 {
-    public class TrafficManagerEndpointStatusIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParserHandler
+    public class TrafficManagerEndpointStatusIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParsingHandler
     {
-        private const string DomainGroupName = "Domain";
-        private const string TargetGroupName = "Target";
+        public const string DomainGroupName = "Domain";
+        public const string TargetGroupName = "Target";
         private static string SubtitleRegEx = $"Traffic Manager for (?<{DomainGroupName}>.*) is reporting (?<{TargetGroupName}>.*) as not Online!";
 
         private readonly ILogger<TrafficManagerEndpointStatusIncidentRegexParsingHandler> _logger;
@@ -33,7 +33,7 @@ namespace StatusAggregator.Parse
 
             var domain = groups[DomainGroupName].Value;
             var target = groups[TargetGroupName].Value;
-            var environment = groups[EnvironmentRegexFilter.EnvironmentGroupName].Value;
+            var environment = groups[EnvironmentRegexParsingFilter.EnvironmentGroupName].Value;
             _logger.LogInformation("Domain is {Domain}, target is {Target}, environment is {Environment}.", domain, target, environment);
 
             if (EnvironmentToDomainToTargetToPath.TryGetValue(environment, out var domainToTargetToPath) &&
@@ -92,7 +92,7 @@ namespace StatusAggregator.Parse
 
                         {
                             "nuget-dev-ussc-gallery.cloudapp.net",
-                            GalleryUsncPath
+                            GalleryUsscPath
                         }
                     }
                 },
@@ -127,7 +127,7 @@ namespace StatusAggregator.Parse
 
                         {
                             "nuget-int-ussc-gallery.cloudapp.net",
-                            GalleryUsncPath
+                            GalleryUsscPath
                         }
                     }
                 }
@@ -147,7 +147,7 @@ namespace StatusAggregator.Parse
 
                         {
                             "nuget-prod-ussc-gallery.cloudapp.net",
-                            GalleryUsncPath
+                            GalleryUsscPath
                         }
                     }
                 },
