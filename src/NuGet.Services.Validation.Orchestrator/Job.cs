@@ -673,7 +673,5 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             return _serviceProvider.GetRequiredService<T>();
         }
-
-    
     }
 }

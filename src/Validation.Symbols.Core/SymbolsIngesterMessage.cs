@@ -32,6 +32,9 @@ namespace NuGet.Jobs.Validation.Symbols.Core
 
         public string SnupkgUrl { get; }
 
+        /// <summary>
+        /// This is the request name to be used when ingesting a symbols package to VSTS.
+        /// </summary>
         public string RequestName { get; }
     }
 }

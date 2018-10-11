@@ -9,9 +9,9 @@ namespace NuGet.Services.Validation.Symbols
     public interface ISymbolsIngesterMessageEnqueuer
     {
         /// <summary>
-        /// Enqueues a message to one of the topics used by the Symbol Ingester
+        /// Enqueues a message to one of the topics used by the Symbol Ingester.
         /// </summary>
-        /// <param name="request">The validtion request.</param>
+        /// <param name="request">The validation request.</param>
         /// <returns>A <see cref="Task"/> that will be completed when the execution is completed.</returns>
         Task<SymbolsIngesterMessage> EnqueueSymbolsIngestionMessageAsync(IValidationRequest request);
     }
