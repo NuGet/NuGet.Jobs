@@ -19,6 +19,18 @@ namespace StatusAggregator.Tests.Export
         public class TheExportMethod : EventMessageExporterTest
         {
             [Fact]
+            public void IgnoresEventsWithoutMessages()
+            {
+                var eventEntity = new EventEntity("", DefaultStartTime);
+
+                Table.SetupQuery<MessageEntity>();
+
+                var result = Exporter.Export(EventEntity);
+
+                Assert.Null(result);
+            }
+
+            [Fact]
             public void ExportsEventMessagesWithContent()
             {
                 var differentEvent = new EventEntity("", DefaultStartTime + TimeSpan.FromDays(1));

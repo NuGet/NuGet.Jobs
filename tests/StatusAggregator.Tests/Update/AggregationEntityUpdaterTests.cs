@@ -32,10 +32,18 @@ namespace StatusAggregator.Tests.Update
             where TAggregationEntity : ComponentAffectingEntity, new()
         {
             [Fact]
+            public async Task ThrowsIfAggregationNull()
+            {
+                await Assert.ThrowsAsync<ArgumentNullException>(() => Updater.UpdateAsync(null, Cursor));
+            }
+
+            [Fact]
             public async Task IgnoresDeactivatedAggregation()
             {
-                var aggregation = new TAggregationEntity();
-                aggregation.EndTime = new DateTime(2018, 10, 9);
+                var aggregation = new TAggregationEntity
+                {
+                    EndTime = new DateTime(2018, 10, 9)
+                };
 
                 await Updater.UpdateAsync(aggregation, Cursor);
 
@@ -237,6 +245,76 @@ namespace StatusAggregator.Tests.Update
 
                 ChildUpdater
                     .Setup(x => x.UpdateAsync(oldChildSameEntity, Cursor))
+                    .Returns(Task.CompletedTask)
+                    .Verifiable();
+
+                ChildUpdater
+                    .Setup(x => x.UpdateAsync(recentChildSameEntity, Cursor))
+                    .Returns(Task.CompletedTask)
+                    .Verifiable();
+
+                await Updater.UpdateAsync(aggregation, Cursor);
+
+                Assert.True(aggregation.IsActive);
+
+                Table
+                    .Verify(
+                        x => x.ReplaceAsync(aggregation),
+                        Times.Never());
+
+                ChildUpdater.Verify();
+            }
+
+            [Fact]
+            public async Task DoesNotDeactivateAggregationWithActiveAndRecentChildren()
+            {
+                var aggregation = new TAggregationEntity
+                {
+                    RowKey = "rowKey"
+                };
+
+                var activeChildDifferentEntity = new TChildEntity
+                {
+                    ParentRowKey = "different"
+                };
+
+                var recentChildDifferentEntity = new TChildEntity
+                {
+                    ParentRowKey = "different",
+                    EndTime = Cursor
+                };
+
+                var oldChildSameEntity = new TChildEntity
+                {
+                    ParentRowKey = aggregation.RowKey,
+                    EndTime = Cursor - EndMessageDelay
+                };
+
+                var activeChildSameEntity = new TChildEntity
+                {
+                    ParentRowKey = aggregation.RowKey
+                };
+
+                var recentChildSameEntity = new TChildEntity
+                {
+                    ParentRowKey = aggregation.RowKey,
+                    EndTime = Cursor
+                };
+
+                Table.SetupQuery(
+                    activeChildDifferentEntity,
+                    recentChildDifferentEntity,
+                    oldChildSameEntity,
+                    activeChildSameEntity,
+                    recentChildSameEntity);
+
+                ChildUpdater
+                    .Setup(x => x.UpdateAsync(oldChildSameEntity, Cursor))
+                    .Returns(Task.CompletedTask)
+                    .Verifiable();
+
+                ChildUpdater
+                    .Setup(x => x.UpdateAsync(activeChildSameEntity, Cursor))
                     .Returns(Task.CompletedTask)
                     .Verifiable();
 
