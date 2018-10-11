@@ -13,17 +13,17 @@ namespace StatusAggregator.Parse
     /// <summary>
     /// Expects that the <see cref="Incident"/> contains a <see cref="Group"/> named <see cref="EnvironmentGroupName"/> with a whitelisted value.
     /// </summary>
-    public class EnvironmentFilter : IIncidentParsingFilter
+    public class EnvironmentRegexFilter : IIncidentRegexParsingFilter
     {
         public const string EnvironmentGroupName = "Environment";
 
         private IEnumerable<string> _environments { get; }
 
-        private readonly ILogger<EnvironmentFilter> _logger;
+        private readonly ILogger<EnvironmentRegexFilter> _logger;
 
-        public EnvironmentFilter(
+        public EnvironmentRegexFilter(
             StatusAggregatorConfiguration configuration,
-            ILogger<EnvironmentFilter> logger)
+            ILogger<EnvironmentRegexFilter> logger)
         {
             _environments = configuration?.Environments ?? throw new ArgumentNullException(nameof(configuration));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

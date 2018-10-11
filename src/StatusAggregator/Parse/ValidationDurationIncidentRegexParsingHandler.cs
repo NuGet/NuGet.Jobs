@@ -10,24 +10,24 @@ using StatusAggregator.Factory;
 
 namespace StatusAggregator.Parse
 {
-    public class ValidationDurationIncidentParser : EnvironmentPrefixIncidentParser
+    public class ValidationDurationIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParserHandler
     {
         private const string SubtitleRegEx = "Too many packages are stuck in the \"Validating\" state!";
 
-        public ValidationDurationIncidentParser(
-            IEnumerable<IIncidentParsingFilter> filters,
-            ILogger<ValidationDurationIncidentParser> logger)
-            : base(SubtitleRegEx, filters, logger)
+        public ValidationDurationIncidentRegexParsingHandler(
+            IEnumerable<IIncidentRegexParsingFilter> filters,
+            ILogger<ValidationDurationIncidentRegexParsingHandler> logger)
+            : base(SubtitleRegEx, filters)
         {
         }
 
-        protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
+        public override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
             affectedComponentPath = ComponentUtility.GetPath(NuGetServiceComponentFactory.RootName, NuGetServiceComponentFactory.UploadName);
             return true;
         }
 
-        protected override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
+        public override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
         {
             affectedComponentStatus = ComponentStatus.Degraded;
             return true;

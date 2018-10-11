@@ -4,43 +4,29 @@
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Incidents;
-using NuGet.Services.Status;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace StatusAggregator.Parse
 {
     /// <summary>
-    /// Abstract implementation of <see cref="IIncidentParser"/> that allows specifying a <see cref="Regex"/> to analyze <see cref="Incident"/>s with.
+    /// Implementation of <see cref="IIncidentParser"/> that uses <see cref="Regex"/> to parse <see cref="Incident"/>s with.
     /// </summary>
-    public abstract class IncidentParser : IIncidentParser
+    public abstract class IncidentRegexParser : IIncidentParser
     {
         private readonly static TimeSpan MaxRegexExecutionTime = TimeSpan.FromSeconds(5);
 
-        private readonly string _regExPattern;
+        private readonly IIncidentRegexParsingHandler _handler;
 
-        private readonly IEnumerable<IIncidentParsingFilter> _filters;
-
-        private readonly ILogger<IncidentParser> _logger;
-
-        public IncidentParser(
-            string regExPattern, 
-            ILogger<IncidentParser> logger)
+        private readonly ILogger<IncidentRegexParser> _logger;
+        
+        public IncidentRegexParser(
+            IIncidentRegexParsingHandler handler,
+            ILogger<IncidentRegexParser> logger)
         {
-            _regExPattern = regExPattern ?? throw new ArgumentNullException(nameof(regExPattern));
-            _filters = Enumerable.Empty<IIncidentParsingFilter>();
+            _handler = handler ?? throw new ArgumentNullException(nameof(_handler));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public IncidentParser(
-            string regExPattern, 
-            IEnumerable<IIncidentParsingFilter> filters, 
-            ILogger<IncidentParser> logger)
-            : this(regExPattern, logger)
-        {
-            _filters = filters?.ToList() ?? throw new ArgumentNullException(nameof(filters));
         }
 
         public bool TryParseIncident(Incident incident, out ParsedIncident parsedIncident)
@@ -48,14 +34,14 @@ namespace StatusAggregator.Parse
             var title = incident.Title;
 
             using (_logger.Scope("Using parser {IncidentParserType} with pattern {RegExPattern} to parse incident with title {IncidentTitle}",
-                GetType(), _regExPattern, title))
+                GetType(), _handler.RegexPattern, title))
             {
                 parsedIncident = null;
 
                 Match match = null;
                 try
                 {
-                    match = Regex.Match(title, _regExPattern, RegexOptions.None, MaxRegexExecutionTime);
+                    match = Regex.Match(title, _handler.RegexPattern, RegexOptions.None, MaxRegexExecutionTime);
                 }
                 catch (Exception e)
                 {
@@ -78,7 +64,7 @@ namespace StatusAggregator.Parse
         {
             parsedIncident = null;
             
-            if (_filters.Any(f =>
+            if (_handler.Filters.Any(f =>
                 {
                     using (_logger.Scope("Filtering incident using filter {IncidentFilterType}", f.GetType()))
                     {
@@ -92,7 +78,7 @@ namespace StatusAggregator.Parse
                 return false;
             }
 
-            if (!TryParseAffectedComponentPath(incident, groups, out var affectedComponentPath))
+            if (!_handler.TryParseAffectedComponentPath(incident, groups, out var affectedComponentPath))
             {
                 _logger.LogInformation("Could not parse incident component path!");
                 return false;
@@ -100,7 +86,7 @@ namespace StatusAggregator.Parse
 
             _logger.LogInformation("Parsed affected component path {AffectedComponentPath}.", affectedComponentPath);
 
-            if (!TryParseAffectedComponentStatus(incident, groups, out var affectedComponentStatus))
+            if (!_handler.TryParseAffectedComponentStatus(incident, groups, out var affectedComponentStatus))
             {
                 _logger.LogInformation("Could not parse incident component status!");
                 return false;
@@ -111,26 +97,5 @@ namespace StatusAggregator.Parse
             parsedIncident = new ParsedIncident(incident, affectedComponentPath, affectedComponentStatus);
             return true;
         }
-
-        /// <summary>
-        /// Attempts to parse a <see cref="ParsedIncident.AffectedComponentPath"/> from <paramref name="incident"/>.
-        /// </summary>
-        /// <param name="affectedComponentPath">
-        /// The <see cref="ParsedIncident.AffectedComponentPath"/> parsed from <paramref name="incident"/> or <c>null</c> if <paramref name="incident"/> could not be parsed.
-        /// </param>
-        /// <returns>
-        /// <c>true</c> if a <see cref="ParsedIncident.AffectedComponentPath"/> can be parsed from <paramref name="incident"/> and <c>false</c> otherwise.
-        /// </returns>
-        protected abstract bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath);
-
-        /// <summary>
-        /// Attempts to parse a <see cref="ParsedIncident.AffectedComponentStatus"/> from <paramref name="incident"/>.
-        /// </summary>
-        /// <param name="affectedComponentStatus"></param>
-        /// The <see cref="ParsedIncident.AffectedComponentStatus"/> parsed from <paramref name="incident"/> or <see cref="default(ComponentStatus)"/> if <paramref name="incident"/> could not be parsed.
-        /// <returns>
-        /// <c>true</c> if a <see cref="ParsedIncident.AffectedComponentStatus"/> can be parsed from <paramref name="incident"/> and <c>false</c> otherwise.
-        /// </returns>
-        protected abstract bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus);
     }
 }

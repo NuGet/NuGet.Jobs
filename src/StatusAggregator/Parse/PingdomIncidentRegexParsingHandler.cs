@@ -11,23 +11,23 @@ using StatusAggregator.Factory;
 
 namespace StatusAggregator.Parse
 {
-    public class PingdomIncidentParser : IncidentParser
+    public class PingdomIncidentRegexParsingHandler : IncidentRegexParsingHandler
     {
         private const string CheckNameGroupName = "CheckName";
         private const string CheckUrlGroupName = "CheckUrl";
         private static string SubtitleRegEx = $@"Pingdom check '(?<{CheckNameGroupName}>.*)' is failing! '(?<{CheckUrlGroupName}>.*)' is DOWN!";
 
-        private readonly ILogger<PingdomIncidentParser> _logger;
+        private readonly ILogger<PingdomIncidentRegexParsingHandler> _logger;
 
-        public PingdomIncidentParser(
-            IEnumerable<IIncidentParsingFilter> filters,
-            ILogger<PingdomIncidentParser> logger)
-            : base(SubtitleRegEx, filters, logger)
+        public PingdomIncidentRegexParsingHandler(
+            IEnumerable<IIncidentRegexParsingFilter> filters,
+            ILogger<PingdomIncidentRegexParsingHandler> logger)
+            : base(SubtitleRegEx, filters)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
+        public override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
             affectedComponentPath = null;
 
@@ -96,7 +96,7 @@ namespace StatusAggregator.Parse
             return true;
         }
 
-        protected override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
+        public override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
         {
             affectedComponentStatus = ComponentStatus.Degraded;
             return true;

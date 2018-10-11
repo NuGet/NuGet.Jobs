@@ -95,13 +95,13 @@ namespace StatusAggregator
 
         private static void AddParsing(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddTransient<IIncidentParsingFilter, SeverityFilter>();
-            serviceCollection.AddTransient<IIncidentParsingFilter, EnvironmentFilter>();
+            serviceCollection.AddTransient<IIncidentRegexParsingFilter, SeverityRegexFilter>();
+            serviceCollection.AddTransient<IIncidentRegexParsingFilter, EnvironmentRegexFilter>();
 
-            serviceCollection.AddTransient<IIncidentParser, OutdatedSearchServiceInstanceIncidentParser>();
-            serviceCollection.AddTransient<IIncidentParser, PingdomIncidentParser>();
-            serviceCollection.AddTransient<IIncidentParser, ValidationDurationIncidentParser>();
-            serviceCollection.AddTransient<IIncidentParser, TrafficManagerEndpointStatusIncidentParser>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, OutdatedSearchServiceInstanceIncidentRegexParsingHandler>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, PingdomIncidentRegexParsingHandler>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, ValidationDurationIncidentRegexParsingHandler>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, TrafficManagerEndpointStatusIncidentRegexParsingHandler>();
 
             serviceCollection.AddTransient<IAggregateIncidentParser, AggregateIncidentParser>();
         }

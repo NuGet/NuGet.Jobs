@@ -11,29 +11,29 @@ using StatusAggregator.Factory;
 
 namespace StatusAggregator.Parse
 {
-    public class TrafficManagerEndpointStatusIncidentParser : EnvironmentPrefixIncidentParser
+    public class TrafficManagerEndpointStatusIncidentRegexParsingHandler : EnvironmentPrefixIncidentRegexParserHandler
     {
         private const string DomainGroupName = "Domain";
         private const string TargetGroupName = "Target";
         private static string SubtitleRegEx = $"Traffic Manager for (?<{DomainGroupName}>.*) is reporting (?<{TargetGroupName}>.*) as not Online!";
 
-        private readonly ILogger<TrafficManagerEndpointStatusIncidentParser> _logger;
+        private readonly ILogger<TrafficManagerEndpointStatusIncidentRegexParsingHandler> _logger;
 
-        public TrafficManagerEndpointStatusIncidentParser(
-            IEnumerable<IIncidentParsingFilter> filters,
-            ILogger<TrafficManagerEndpointStatusIncidentParser> logger)
-            : base(SubtitleRegEx, filters, logger)
+        public TrafficManagerEndpointStatusIncidentRegexParsingHandler(
+            IEnumerable<IIncidentRegexParsingFilter> filters,
+            ILogger<TrafficManagerEndpointStatusIncidentRegexParsingHandler> logger)
+            : base(SubtitleRegEx, filters)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        protected override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
+        public override bool TryParseAffectedComponentPath(Incident incident, GroupCollection groups, out string affectedComponentPath)
         {
             affectedComponentPath = null;
 
             var domain = groups[DomainGroupName].Value;
             var target = groups[TargetGroupName].Value;
-            var environment = groups[EnvironmentFilter.EnvironmentGroupName].Value;
+            var environment = groups[EnvironmentRegexFilter.EnvironmentGroupName].Value;
             _logger.LogInformation("Domain is {Domain}, target is {Target}, environment is {Environment}.", domain, target, environment);
 
             if (EnvironmentToDomainToTargetToPath.TryGetValue(environment, out var domainToTargetToPath) &&
@@ -46,7 +46,7 @@ namespace StatusAggregator.Parse
             return affectedComponentPath != null;
         }
 
-        protected override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
+        public override bool TryParseAffectedComponentStatus(Incident incident, GroupCollection groups, out ComponentStatus affectedComponentStatus)
         {
             affectedComponentStatus = ComponentStatus.Down;
             return true;
