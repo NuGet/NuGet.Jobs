@@ -47,7 +47,7 @@ namespace StatusAggregator.Factory
 
                 // To guarantee that the aggregation reflects the latest information and is actually active, we must update it.
                 await _aggregationUpdater.UpdateAsync(aggregationEntity, input.StartTime);
-                if (!aggregationEntity.IsActive || input.IsActive)
+                if (!aggregationEntity.IsActive && input.IsActive)
                 {
                     _logger.LogInformation("Cannot link entity to aggregation because it has been deactivated and the incident has not been.");
                     return false;

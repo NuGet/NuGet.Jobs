@@ -21,22 +21,22 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public string GetContentsForMessageHelper(
+        public string Build(
             MessageType type,
             IComponent component)
         {
-            return GetContentsForMessageHelper(type, component, component.Status);
+            return Build(type, component, component.Status);
         }
 
-        public string GetContentsForMessageHelper(
+        public string Build(
             MessageType type,
             IComponent component,
             ComponentStatus status)
         {
-            return GetContentsForMessageHelper(type, component.Path, status);
+            return Build(type, component.Path, status);
         }
 
-        private string GetContentsForMessageHelper(
+        private string Build(
             MessageType type,
             string path,
             ComponentStatus status)
@@ -51,8 +51,8 @@ namespace StatusAggregator.Messages
 
                 _logger.LogInformation("Using template {MessageTemplate}.", messageTemplate);
 
-                var componentName = GetPrettyName(path);
-                _logger.LogInformation("Using {ComponentName} for name of component.", componentName);
+                var nameString = GetName(path);
+                _logger.LogInformation("Using {ComponentName} for name of component.", nameString);
 
                 var actionDescription = GetActionDescriptionFromPath(path);
                 if (actionDescription == null)
@@ -60,14 +60,14 @@ namespace StatusAggregator.Messages
                     throw new ArgumentException("Could not find an action description for path.", nameof(path));
                 }
 
-                var componentStatus = status.ToString().ToLowerInvariant();
-                var contents = string.Format(messageTemplate, componentName, componentStatus, actionDescription);
+                var statusString = status.ToString().ToLowerInvariant();
+                var contents = string.Format(messageTemplate, nameString, statusString, actionDescription);
                 _logger.LogInformation("Returned {Contents} for contents of message.", contents);
                 return contents;
             }
         }
 
-        private string GetPrettyName(string path)
+        private string GetName(string path)
         {
             var componentNames = ComponentUtility.GetNames(path);
             return string.Join(" ", componentNames.Skip(1).Reverse());
@@ -83,7 +83,7 @@ namespace StatusAggregator.Messages
         {
             return _actionDescriptionForComponentPathMap
                 .FirstOrDefault(m => m.Matches(path))?
-                .ActionDescription; ;
+                .ActionDescription;
         }
 
         /// <remarks>

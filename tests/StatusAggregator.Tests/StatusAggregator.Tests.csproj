@@ -44,6 +44,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collector\CursorTests.cs" />
+    <Compile Include="Collector\EntityCollectorTests.cs" />
+    <Compile Include="Collector\IncidentEntityCollectorProcessorTests.cs" />
+    <Compile Include="Collector\ManualStatusChangeCollectorProcessorTests.cs" />
+    <Compile Include="Export\ComponentExporterTests.cs" />
+    <Compile Include="Export\EventExporterTests.cs" />
+    <Compile Include="Export\EventsExporterTests.cs" />
+    <Compile Include="Export\StatusExporterTests.cs" />
+    <Compile Include="Export\StatusSerializerTests.cs" />
+    <Compile Include="Factory\AggregationProviderTests.cs" />
+    <Compile Include="Factory\EventAffectedPathProviderTests.cs" />
+    <Compile Include="Factory\EventFactoryTests.cs" />
+    <Compile Include="Factory\AggregationStrategyTests.cs" />
+    <Compile Include="Factory\IncidentAffectedComponentPathProviderTests.cs" />
+    <Compile Include="Factory\IncidentFactoryTests.cs" />
+    <Compile Include="Factory\IncidentGroupFactoryTests.cs" />
+    <Compile Include="Factory\NuGetServiceComponentFactoryTests.cs" />
     <Compile Include="Manual\AddStatusEventManualChangeHandlerTests.cs" />
     <Compile Include="Manual\AddStatusMessageManualChangeHandlerTests.cs" />
     <Compile Include="Manual\DeleteStatusEventManualChangeHandlerTests.cs" />
@@ -51,7 +68,19 @@
     <Compile Include="Manual\EditStatusEventManualChangeHandlerTests.cs" />
     <Compile Include="Manual\EditStatusMessageManualChangeHandlerTests.cs" />
     <Compile Include="Manual\ManualStatusChangeUtilityTests.cs" />
+    <Compile Include="Messages\IncidentGroupMessageFilterTests.cs" />
+    <Compile Include="Messages\MessageChangeEventIteratorTests.cs" />
+    <Compile Include="Messages\MessageChangeEventProcessorTests.cs" />
+    <Compile Include="Messages\MessageChangeEventProviderTests.cs" />
+    <Compile Include="Messages\MessageContentBuilderTests.cs" />
+    <Compile Include="Messages\MessageFactoryTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestComponent.cs" />
+    <Compile Include="TestUtility\MockTableWrapperExtensions.cs" />
+    <Compile Include="Update\ActiveEventEntityUpdaterTests.cs" />
+    <Compile Include="Update\AggregationEntityUpdaterTests.cs" />
+    <Compile Include="Update\EventMessagingUpdaterTests.cs" />
+    <Compile Include="Update\IncidentUpdaterTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\StatusAggregator\StatusAggregator.csproj">

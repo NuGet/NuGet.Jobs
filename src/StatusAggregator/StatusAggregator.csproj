@@ -74,7 +74,7 @@
     <Compile Include="Factory\IncidentAffectedComponentPathProvider.cs" />
     <Compile Include="Factory\EventAffectedComponentPathProvider.cs" />
     <Compile Include="Messages\ExistingStartMessageContext.cs" />
-    <Compile Include="Messages\EventMessagingUpdater.cs" />
+    <Compile Include="Update\EventMessagingUpdater.cs" />
     <Compile Include="Messages\IIncidentGroupMessageFilter.cs" />
     <Compile Include="Messages\IMessageChangeEventIterator.cs" />
     <Compile Include="Messages\IMessageChangeEventProcessor.cs" />

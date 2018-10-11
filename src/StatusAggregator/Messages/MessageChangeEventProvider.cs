@@ -49,7 +49,7 @@ namespace StatusAggregator.Messages
                     var startTime = linkedGroup.StartTime;
                     _logger.LogInformation("Incident group started at {StartTime}.", startTime);
                     events.Add(new MessageChangeEvent(startTime, path, status, MessageType.Start));
-                    if (linkedGroup.EndTime.HasValue)
+                    if (!linkedGroup.IsActive)
                     {
                         var endTime = linkedGroup.EndTime.Value;
                         _logger.LogInformation("Incident group ended at {EndTime}.", endTime);

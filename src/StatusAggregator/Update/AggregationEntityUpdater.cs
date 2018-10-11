@@ -83,7 +83,7 @@ namespace StatusAggregator.Update
                         .Max(i => i.EndTime ?? DateTime.MinValue);
                     aggregationEntity.EndTime = lastEndTime;
 
-                    await _table.InsertOrReplaceAsync(aggregationEntity);
+                    await _table.ReplaceAsync(aggregationEntity);
                 }
                 else
                 {

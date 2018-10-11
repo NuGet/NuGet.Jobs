@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
 using NuGet.Services.Status.Table;
-using StatusAggregator.Update;
+using StatusAggregator.Messages;
 
-namespace StatusAggregator.Messages
+namespace StatusAggregator.Update
 {
     public class EventMessagingUpdater : IComponentAffectingEntityUpdater<EventEntity>
     {
