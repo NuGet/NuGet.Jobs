@@ -20,7 +20,6 @@ namespace StatusAggregator.Update
         public IncidentUpdater(
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
-            StatusAggregatorConfiguration configuration,
             ILogger<IncidentUpdater> logger)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
@@ -44,7 +43,7 @@ namespace StatusAggregator.Update
                 {
                     _logger.LogInformation("Updated mitigation time of active incident to {MitigationTime}.", entity.EndTime);
                     entity.EndTime = endTime;
-                    await _table.InsertOrReplaceAsync(entity);
+                    await _table.ReplaceAsync(entity);
                 }
             }
         }

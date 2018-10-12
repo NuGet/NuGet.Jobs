@@ -16,12 +16,12 @@ namespace StatusAggregator.Messages
         /// <summary>
         /// Creates a message for <paramref name="eventEntity"/> at <paramref name="time"/> of type <paramref name="type"/> affecting <paramref name="component"/>.
         /// </summary>
-        Task<MessageEntity> CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component);
+        Task CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component);
 
         /// <summary>
         /// Creates a message for <paramref name="eventEntity"/> at <paramref name="time"/> of type <paramref name="type"/> affecting <paramref name="component"/> with status <paramref name="status"/>.
         /// </summary>
-        Task<MessageEntity> CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status);
+        Task CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status);
 
         /// <summary>
         /// Updates the message for <paramref name="eventEntity"/> at <paramref name="time"/> of type <paramref name="type"/> affecting <paramref name="component"/>.

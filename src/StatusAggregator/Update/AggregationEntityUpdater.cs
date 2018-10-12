@@ -79,11 +79,10 @@ namespace StatusAggregator.Update
                 if (!hasActiveOrRecentChildren)
                 {
                     _logger.LogInformation("Deactivating aggregation because its children are inactive and too old.");
-                    var lastEndTime = children
-                        .Max(i => i.EndTime ?? DateTime.MinValue);
+                    var lastEndTime = children.Max(i => i.EndTime.Value);
                     aggregationEntity.EndTime = lastEndTime;
 
-                    await _table.InsertOrReplaceAsync(aggregationEntity);
+                    await _table.ReplaceAsync(aggregationEntity);
                 }
                 else
                 {

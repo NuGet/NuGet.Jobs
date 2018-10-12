@@ -11,6 +11,7 @@ using Autofac;
 using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
@@ -46,6 +47,7 @@ namespace StatusAggregator
 
             AddStorage(containerBuilder);
             AddFactoriesAndUpdaters(containerBuilder);
+            AddIncidentRegexParser(containerBuilder);
             AddExporters(containerBuilder);
             AddEntityCollector(containerBuilder);
 
@@ -95,13 +97,13 @@ namespace StatusAggregator
 
         private static void AddParsing(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddTransient<IIncidentParsingFilter, SeverityFilter>();
-            serviceCollection.AddTransient<IIncidentParsingFilter, EnvironmentFilter>();
+            serviceCollection.AddTransient<IIncidentRegexParsingFilter, SeverityRegexParsingFilter>();
+            serviceCollection.AddTransient<IIncidentRegexParsingFilter, EnvironmentRegexParsingFilter>();
 
-            serviceCollection.AddTransient<IIncidentParser, OutdatedSearchServiceInstanceIncidentParser>();
-            serviceCollection.AddTransient<IIncidentParser, PingdomIncidentParser>();
-            serviceCollection.AddTransient<IIncidentParser, ValidationDurationIncidentParser>();
-            serviceCollection.AddTransient<IIncidentParser, TrafficManagerEndpointStatusIncidentParser>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, OutdatedSearchServiceInstanceIncidentRegexParsingHandler>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, PingdomIncidentRegexParsingHandler>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, ValidationDurationIncidentRegexParsingHandler>();
+            serviceCollection.AddTransient<IIncidentRegexParsingHandler, TrafficManagerEndpointStatusIncidentRegexParsingHandler>();
 
             serviceCollection.AddTransient<IAggregateIncidentParser, AggregateIncidentParser>();
         }
@@ -247,6 +249,18 @@ namespace StatusAggregator
             containerBuilder
                 .RegisterType<EventUpdater>()
                 .As<IComponentAffectingEntityUpdater<EventEntity>>();
+        }
+
+        private static void AddIncidentRegexParser(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .RegisterAdapter<IIncidentRegexParsingHandler, IIncidentParser>(
+                    (ctx, handler) =>
+                    {
+                        return new IncidentRegexParser(
+                            handler,
+                            ctx.Resolve<ILogger<IncidentRegexParser>>());
+                    });
         }
 
         private static void AddEntityCollector(ContainerBuilder containerBuilder)

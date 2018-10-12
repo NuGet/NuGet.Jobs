@@ -4,7 +4,6 @@
 using System;
 using System.Threading.Tasks;
 using NuGet.Services.Status.Table;
-using StatusAggregator.Messages;
 
 namespace StatusAggregator.Update
 {

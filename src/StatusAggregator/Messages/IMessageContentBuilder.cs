@@ -12,23 +12,13 @@ namespace StatusAggregator.Messages
     public interface IMessageContentBuilder
     {
         /// <summary>
-        /// Tries to get contents for a message of type <paramref name="type"/> affecting <paramref name="component"/>.
+        /// Builds contents for a message of type <paramref name="type"/> affecting <paramref name="component"/>.
         /// </summary>
-        /// <param name="contents">The content of the message.</param>
-        /// <returns>
-        /// True if contents for the message can be generated.
-        /// False otherwise.
-        /// </returns>
-        string GetContentsForMessageHelper(MessageType type, IComponent component);
+        string Build(MessageType type, IComponent component);
 
         /// <summary>
-        /// Tries to get contents for a message of type <paramref name="type"/> affecting <paramref name="component"/> with status <paramref name="status"/>.
+        /// Builds contents for a message of type <paramref name="type"/> affecting <paramref name="component"/> with status <paramref name="status"/>.
         /// </summary>
-        /// <param name="contents">The content of the message.</param>
-        /// <returns>
-        /// True if contents for the message can be generated.
-        /// False otherwise.
-        /// </returns>
-        string GetContentsForMessageHelper(MessageType type, IComponent component, ComponentStatus status);
+        string Build(MessageType type, IComponent component, ComponentStatus status);
     }
 }

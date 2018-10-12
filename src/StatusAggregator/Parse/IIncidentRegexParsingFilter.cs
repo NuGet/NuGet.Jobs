@@ -7,12 +7,12 @@ using System.Text.RegularExpressions;
 namespace StatusAggregator.Parse
 {
     /// <summary>
-    /// An additional filter that can be applied to a <see cref="IncidentParser"/>
+    /// An additional filter that can be applied to a <see cref="IncidentRegexParser"/>
     /// </summary>
-    public interface IIncidentParsingFilter
+    public interface IIncidentRegexParsingFilter
     {
         /// <summary>
-        /// Returns whether or not an <see cref="IncidentParser"/> should parse <paramref name="incident"/>.
+        /// Returns whether or not an <see cref="IncidentRegexParser"/> should parse <paramref name="incident"/>.
         /// </summary>
         bool ShouldParse(Incident incident, GroupCollection groups);
     }

@@ -28,12 +28,12 @@ namespace StatusAggregator.Messages
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task<MessageEntity> CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
+        public Task CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component)
         {
             return CreateMessageAsync(eventEntity, time, type, component, component.Status);
         }
 
-        public async Task<MessageEntity> CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status)
+        public async Task CreateMessageAsync(EventEntity eventEntity, DateTime time, MessageType type, IComponent component, ComponentStatus status)
         {
             using (_logger.Scope("Creating new message of type {Type} for event {EventRowKey} at {Timestamp} affecting {ComponentPath} with status {ComponentStatus}.",
                 type, eventEntity.RowKey, time, component.Path, status))
@@ -42,15 +42,14 @@ namespace StatusAggregator.Messages
                 if (existingMessage != null)
                 {
                     _logger.LogInformation("Message already exists, will not recreate.");
-                    return existingMessage;
+                    return;
                 }
                 
-                var contents = _builder.GetContentsForMessageHelper(type, component, status);
+                var contents = _builder.Build(type, component, status);
                 var messageEntity = new MessageEntity(eventEntity, time, contents, type);
                 _logger.LogInformation("Creating message with time {MessageTimestamp} and contents {MessageContents}.",
                     messageEntity.Time, messageEntity.Contents);
                 await _table.InsertAsync(messageEntity);
-                return messageEntity;
             }
         }
 
@@ -81,7 +80,7 @@ namespace StatusAggregator.Messages
                     return;
                 }
                 
-                var newContents = _builder.GetContentsForMessageHelper(type, component);
+                var newContents = _builder.Build(type, component);
                 _logger.LogInformation("Replacing contents of message with time {MessageTimestamp} and contents {OldMessageContents} with {NewMessageContents}.",
                     existingMessage.Time, existingMessage.Contents, newContents);
                 existingMessage.Contents = newContents;
