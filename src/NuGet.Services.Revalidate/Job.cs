@@ -120,9 +120,10 @@ namespace NuGet.Services.Revalidate
 
             services.AddScoped<IGalleryContext>(provider =>
             {
-                var config = provider.GetRequiredService<IOptionsSnapshot<GalleryDbConfiguration>>().Value;
+                var connectionFactory = provider.GetRequiredService<ISqlConnectionFactory<GalleryDbConfiguration>>();
+                var connection = connectionFactory.CreateAsync().GetAwaiter().GetResult();
 
-                return new GalleryContext(config.ConnectionString, readOnly: false);
+                return new GalleryContext(connection, readOnly: false);
             });
 
             // Core
