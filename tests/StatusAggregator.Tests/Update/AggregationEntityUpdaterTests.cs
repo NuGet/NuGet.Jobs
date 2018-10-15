@@ -26,7 +26,7 @@ namespace StatusAggregator.Tests.Update
         {
         }
 
-        public abstract class TheUpdateAsyncMethod<TChildEntity, TAggregationEntity>
+        public class TheUpdateAsyncMethod<TChildEntity, TAggregationEntity>
             : AggregationEntityUpdaterTest<TChildEntity, TAggregationEntity>
             where TChildEntity : AggregatedComponentAffectingEntity<TAggregationEntity>, new()
             where TAggregationEntity : ComponentAffectingEntity, new()
