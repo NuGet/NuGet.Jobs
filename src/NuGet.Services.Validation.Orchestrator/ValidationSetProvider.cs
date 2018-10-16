@@ -14,8 +14,6 @@ namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidationSetProvider<T> : IValidationSetProvider<T> where T : class, IEntity
     {
-        public const string PackageDoesNotExistETag = null;
-
         private readonly IValidationStorageService _validationStorageService;
         private readonly IValidationFileService _packageFileService;
         private readonly IValidatorProvider _validatorProvider;
@@ -63,7 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator
             // was captured at the beginning of the validation. The entity is the latest known information. If the validation set indicates
             // that the package shouldn't exist, yet the entity indicates that the package does exist, then another validation has modified
             // the destination blob. No more processing is necessary by the current validation and we can return null.
-            if (validationSet.PackageETag == PackageDoesNotExistETag && validatingEntity.Status == PackageStatus.Available)
+            if (validationSet.PackageETag == null && validatingEntity.Status == PackageStatus.Available)
             {
                 return null;
             }
@@ -98,7 +96,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 // This indicates that the package in the packages container is expected to not exist (i.e. it has
                 // has no etag at all).
-                validationSet.PackageETag = PackageDoesNotExistETag;
+                validationSet.PackageETag = null;
             }
 
             // If there are any processors in the validation set, back up the original. We back up from the
