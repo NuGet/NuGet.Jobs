@@ -221,40 +221,34 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     Times.Never);
             }
 
-            [Fact]
-            public async Task ThrowsWhenValidationSetPackageAndDestinationPackageDoesNotMatchETagButPackageIsntAvailable()
+            [Theory]
+            [InlineData(PackageStatus.FailedValidation)]
+            [InlineData(PackageStatus.Validating)]
+            public async Task ThrowsWhenValidationSetPackageAndDestinationPackageDoesNotMatchETagButPackageIsntAvailable(PackageStatus status)
             {
-                // TODO
-            }
-
-            [Fact]
-            public async Task CancelsWhenValidationSetPackageDoesntExistButDestinationPackageDoes()
-            {
-                // TODO
-            }
-
-            [Fact]
-            public async Task CancelsWhenValidationSetPackageAndDestinationPackageDoNotMatch()
-            {
+                // Arrange
                 ValidationSet.PackageETag = "\"some-etag\"";
-                Package.PackageStatusKey = PackageStatus.Available;
-                var expected = new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.PreconditionFailed }, "Changed!", null);
+                Package.PackageStatusKey = status;
 
                 PackageFileServiceMock
                     .Setup(x => x.DoesValidationSetPackageExistAsync(It.IsAny<PackageValidationSet>()))
                     .ReturnsAsync(true);
                 PackageFileServiceMock
                     .Setup(x => x.CopyValidationSetPackageToPackageFileAsync(It.IsAny<PackageValidationSet>(), It.IsAny<IAccessCondition>()))
-                    .Throws(expected);
+                    .Throws(new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.PreconditionFailed }, "Changed!", null));
 
-                var actual = await Assert.ThrowsAsync<StorageException>(
-                    () => Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available));
+                // Act
+                var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available));
 
-                Assert.Same(expected, actual);
+                // Assert
+                Assert.Contains("Package package 1.2.3 is public, but isn't marked as available!", ex.Message);
 
                 PackageFileServiceMock.Verify(
                     x => x.CopyValidationSetPackageToPackageFileAsync(ValidationSet, It.Is<IAccessCondition>(y => y.IfMatchETag == "\"some-etag\"")),
                     Times.Once);
+                PackageFileServiceMock.Verify(
+                    x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
                 PackageServiceMock.Verify(
                     x => x.UpdateStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()),
                     Times.Never);
@@ -264,7 +258,131 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 PackageFileServiceMock.Verify(
                     x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
                     Times.Never);
+                TelemetryServiceMock.Verify(
+                    x => x.TrackPackageStatusChange(It.IsAny<PackageStatus>(), It.IsAny<PackageStatus>()),
+                    Times.Never);
             }
+
+            [Fact]
+            public async Task CancelsWhenValidationSetPackageDoesntExistButDestinationPackageDoes1()
+            {
+                // Arrange - a null PackageETag indicates that the validation set expects the package to not exist
+                ValidationSet.PackageETag = null;
+                Package.PackageStatusKey = PackageStatus.Available;
+
+                PackageFileServiceMock
+                    .Setup(x => x.DoesValidationSetPackageExistAsync(It.IsAny<PackageValidationSet>()))
+                    .ReturnsAsync(true);
+                PackageFileServiceMock
+                    .Setup(x => x.CopyValidationSetPackageToPackageFileAsync(It.IsAny<PackageValidationSet>(), It.IsAny<IAccessCondition>()))
+                    .Throws(new FileAlreadyExistsException());
+
+                // Act
+                var result = await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
+
+                // Assert
+                Assert.Equal(SetStatusResult.Cancelled, result);
+
+                PackageFileServiceMock.Verify(
+                    x => x.CopyValidationSetPackageToPackageFileAsync(ValidationSet, It.Is<IAccessCondition>(y => y.IfNoneMatchETag == "*")),
+                    Times.Once);
+                PackageFileServiceMock.Verify(
+                    x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                PackageServiceMock.Verify(
+                    x => x.UpdateStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()),
+                    Times.Never);
+                PackageFileServiceMock.Verify(
+                    x => x.DeleteValidationPackageFileAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                PackageFileServiceMock.Verify(
+                    x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                TelemetryServiceMock.Verify(
+                    x => x.TrackPackageStatusChange(It.IsAny<PackageStatus>(), It.IsAny<PackageStatus>()),
+                    Times.Never);
+            }
+
+            [Fact]
+            public async Task CancelsWhenValidationSetPackageDoesntExistButDestinationPackageDoes2()
+            {
+                // Arrange - a null PackageETag indicates that the validation set expects the package to not exist
+                ValidationSet.PackageETag = null;
+                Package.PackageStatusKey = PackageStatus.Available;
+
+                PackageFileServiceMock
+                    .Setup(x => x.DoesValidationSetPackageExistAsync(It.IsAny<PackageValidationSet>()))
+                    .ReturnsAsync(true);
+                PackageFileServiceMock
+                    .Setup(x => x.CopyValidationSetPackageToPackageFileAsync(It.IsAny<PackageValidationSet>(), It.IsAny<IAccessCondition>()))
+                    .Throws(new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.Conflict }, "Exists!", null));
+
+                // Act
+                var result = await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
+
+                // Assert
+                Assert.Equal(SetStatusResult.Cancelled, result);
+
+                PackageFileServiceMock.Verify(
+                    x => x.CopyValidationSetPackageToPackageFileAsync(ValidationSet, It.Is<IAccessCondition>(y => y.IfNoneMatchETag == "*")),
+                    Times.Once);
+                PackageFileServiceMock.Verify(
+                    x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                PackageServiceMock.Verify(
+                    x => x.UpdateStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()),
+                    Times.Never);
+                PackageFileServiceMock.Verify(
+                    x => x.DeleteValidationPackageFileAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                PackageFileServiceMock.Verify(
+                    x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                TelemetryServiceMock.Verify(
+                    x => x.TrackPackageStatusChange(It.IsAny<PackageStatus>(), It.IsAny<PackageStatus>()),
+                    Times.Never);
+            }
+
+            [Fact]
+            public async Task CancelsWhenValidationSetPackageAndDestinationPackageDoNotMatch()
+            {
+                // Arrange
+                ValidationSet.PackageETag = "\"some-etag\"";
+                Package.PackageStatusKey = PackageStatus.Available;
+
+                PackageFileServiceMock
+                    .Setup(x => x.DoesValidationSetPackageExistAsync(It.IsAny<PackageValidationSet>()))
+                    .ReturnsAsync(true);
+                PackageFileServiceMock
+                    .Setup(x => x.CopyValidationSetPackageToPackageFileAsync(It.IsAny<PackageValidationSet>(), It.IsAny<IAccessCondition>()))
+                    .Throws(new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.PreconditionFailed }, "Changed!", null));
+
+                // Act
+                var result = await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
+
+                // Assert
+                Assert.Equal(SetStatusResult.Cancelled, result);
+
+                PackageFileServiceMock.Verify(
+                    x => x.CopyValidationSetPackageToPackageFileAsync(ValidationSet, It.Is<IAccessCondition>(y => y.IfMatchETag == "\"some-etag\"")),
+                    Times.Once);
+                PackageFileServiceMock.Verify(
+                    x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                PackageServiceMock.Verify(
+                    x => x.UpdateStatusAsync(It.IsAny<Package>(), It.IsAny<PackageStatus>(), It.IsAny<bool>()),
+                    Times.Never);
+                PackageFileServiceMock.Verify(
+                    x => x.DeleteValidationPackageFileAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                PackageFileServiceMock.Verify(
+                    x => x.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
+                    Times.Never);
+                TelemetryServiceMock.Verify(
+                    x => x.TrackPackageStatusChange(It.IsAny<PackageStatus>(), It.IsAny<PackageStatus>()),
+                    Times.Never);
+            }
+
 
             [Theory]
             [InlineData(PackageStatus.Available, false)]
@@ -520,11 +638,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             {
                 Package = new Package
                 {
-                    PackageRegistration = new PackageRegistration(),
+                    PackageRegistration = new PackageRegistration { Id = "package" },
                     PackageStatusKey = PackageStatus.Validating,
                 };
                 ValidationSet = new PackageValidationSet
                 {
+                    PackageId = "package",
+                    PackageNormalizedVersion = "1.2.3",
                     PackageValidations = new List<PackageValidation>
                     {
                         new PackageValidation { Type = "SomeValidator" },

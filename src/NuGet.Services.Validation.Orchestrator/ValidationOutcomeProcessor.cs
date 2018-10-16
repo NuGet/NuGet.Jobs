@@ -71,7 +71,15 @@ namespace NuGet.Services.Validation.Orchestrator
                 // out since that would be noisy for the customer.                
                 if (validatingEntity.Status == PackageStatus.Validating)
                 {
-                    await _packageStateProcessor.SetStatusAsync(validatingEntity, validationSet, PackageStatus.FailedValidation);
+                    var result = await _packageStateProcessor.SetStatusAsync(validatingEntity, validationSet, PackageStatus.FailedValidation);
+                    if (result != SetStatusResult.Completed)
+                    {
+                        // Setting a validation set's result to failed should always complete.
+                        throw new InvalidOperationException(
+                            $"Expected result of {nameof(SetStatusResult.Completed)} after setting validation set " +
+                            $"{validationSet.ValidationTrackingId} to {nameof(PackageStatus.FailedValidation)}, actual result is {result}");
+                    }
+
                     await _messageService.SendValidationFailedMessageAsync(validatingEntity.EntityRecord, validationSet);
                 }
                 else
@@ -104,26 +112,41 @@ namespace NuGet.Services.Validation.Orchestrator
                 // modification of an already available package should be rare. The most common case for this is if
                 // the processor has never been run on a package that was published before the processor was
                 // implemented. In this case, the processor has to play catch-up.
-                await _packageStateProcessor.SetStatusAsync(validatingEntity, validationSet, PackageStatus.Available);
+                var result = await _packageStateProcessor.SetStatusAsync(validatingEntity, validationSet, PackageStatus.Available);
 
-                // Only send the email when first transitioning into the Available state.
-                if (fromStatus != PackageStatus.Available)
+                switch (result)
                 {
-                    await _messageService.SendPublishedMessageAsync(validatingEntity.EntityRecord);
-                }
+                    case SetStatusResult.Cancelled:
+                        _telemetryService.TrackValidationSetCancellation(validationSet);
+                        await CleanupValidationStorageAsync(validationSet);
+                        break;
 
-                if (currentCallStats.AnyRequiredValidationSucceeded)
-                {
-                    TrackValidationSetCompletion(validationSet, isSuccess: true);
-                }
+                    case SetStatusResult.Completed:
+                        // Only send the email when first transitioning into the Available state.
+                        if (fromStatus != PackageStatus.Available)
+                        {
+                            await _messageService.SendPublishedMessageAsync(validatingEntity.EntityRecord);
+                        }
 
-                if (AreOptionalValidationsRunning(validationSet))
-                {
-                    await ScheduleCheckIfNotTimedOut(validationSet, validatingEntity, tooLongNotificationAllowed: false);
-                }
-                else
-                {
-                    await CleanupValidationStorageAsync(validationSet);
+                        if (currentCallStats.AnyRequiredValidationSucceeded)
+                        {
+                            TrackValidationSetCompletion(validationSet, isSuccess: true);
+                        }
+
+                        if (AreOptionalValidationsRunning(validationSet))
+                        {
+                            await ScheduleCheckIfNotTimedOut(validationSet, validatingEntity, tooLongNotificationAllowed: false);
+                        }
+                        else
+                        {
+                            await CleanupValidationStorageAsync(validationSet);
+                        }
+                        break;
+
+                    default:
+                        throw new InvalidOperationException(
+                            $"Expected result of {nameof(SetStatusResult.Completed)} or {nameof(SetStatusResult.Cancelled)} after setting validation " +
+                            $"{validationSet.ValidationTrackingId} to {nameof(PackageStatus.FailedValidation)}, actual result is {result}");
                 }
             }
             else

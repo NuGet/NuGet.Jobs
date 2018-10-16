@@ -11,9 +11,22 @@ namespace NuGet.Services.Validation.Orchestrator
     /// </summary>
     public interface IStatusProcessor<T> where T : class, IEntity
     {
-        Task SetStatusAsync(
+        Task<SetStatusResult> SetStatusAsync(
             IValidatingEntity<T> validatingEntity,
             PackageValidationSet validationSet,
             PackageStatus status);
+    }
+
+    /// <summary>
+    /// The result of <see cref="IStatusProcessor{T}.SetStatusAsync(IValidatingEntity{T}, PackageValidationSet, PackageStatus)"/>.
+    /// </summary>
+    public enum SetStatusResult
+    {
+        // The set status operation was completed successfully.
+        Completed,
+
+        // The set status operation was cancelled gacefully. The validation set should
+        // no longer be processed.
+        Cancelled,
     }
 }

@@ -574,6 +574,78 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Times.Never);
         }
 
+        [Fact]
+        public async Task ThrowsIfUpdatingPackageFromValidatingToFailedValidationCausesCancellation()
+        {
+            // Arrange
+            Package.PackageStatusKey = PackageStatus.Validating;
+
+            AddValidation("validation1", ValidationStatus.Failed);
+
+            PackageStateProcessorMock
+                .Setup(p => p.SetStatusAsync(It.IsAny<IValidatingEntity<Package>>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()))
+                .ReturnsAsync(SetStatusResult.Cancelled);
+
+            var processor = CreateProcessor();
+
+            // Act
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(()
+                => processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats));
+
+            // Assert
+            Assert.Contains(
+                $"Expected result of Completed after setting validation set {ValidationSet.ValidationTrackingId} " +
+                "to FailedValidation, actual result is Cancelled",
+                ex.Message);
+
+            MessageServiceMock.Verify(
+                m => m.SendValidationFailedMessageAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>()),
+                Times.Never);
+            TelemetryServiceMock.Verify(
+                t => t.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()),
+                Times.Never);
+            ValidationEnqueuerMock.Verify(
+                e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()),
+                Times.Never);
+            PackageFileServiceMock.Verify(
+                p => p.DeletePackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task CancelsValidationSetIfUpdatingStatusRequestsCancellation()
+        {
+            // Arrange
+            var processor = CreateProcessor();
+
+            PackageStateProcessorMock
+                .Setup(p => p.SetStatusAsync(It.IsAny<IValidatingEntity<Package>>(), It.IsAny<PackageValidationSet>(), It.IsAny<PackageStatus>()))
+                .ReturnsAsync(SetStatusResult.Cancelled);
+
+            // Act
+            await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
+
+            // Assert
+            MessageServiceMock.Verify(
+                m => m.SendPublishedMessageAsync(It.IsAny<Package>()),
+                Times.Never);
+            MessageServiceMock.Verify(
+                m => m.SendValidationFailedMessageAsync(It.IsAny<Package>(), It.IsAny<PackageValidationSet>()),
+                Times.Never);
+            TelemetryServiceMock.Verify(
+                t => t.TrackValidationSetCancellation(ValidationSet),
+                Times.Once);
+            TelemetryServiceMock.Verify(
+                t => t.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()),
+                Times.Never);
+            ValidationEnqueuerMock.Verify(
+                e => e.StartValidationAsync(It.IsAny<PackageValidationMessageData>()),
+                Times.Never);
+            PackageFileServiceMock.Verify(
+                x => x.DeletePackageForValidationSetAsync(ValidationSet),
+                Times.Once);
+        }
+
         public ValidationOutcomeProcessorFacts()
         {
             ValidationStorageServiceMock = new Mock<IValidationStorageService>();

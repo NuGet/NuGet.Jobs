@@ -94,7 +94,7 @@
     <Compile Include="PackageSigning\ValidateCertificate\ValidateCertificateConfiguration.cs" />
     <Compile Include="PackageSigning\ValidateCertificate\ValidateCertificateEnqueuer.cs" />
     <Compile Include="PackageSigning\ProcessSignature\PackageSignatureValidator.cs" />
-    <Compile Include="PackageStatusProcessor.cs" />
+    <Compile Include="EntityStatusProcessor.cs" />
     <Compile Include="PackageValidationMessageDataSerializer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -34,6 +34,12 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         void TrackTotalValidationDuration(TimeSpan duration, bool isSuccess);
 
         /// <summary>
+        /// A counter metric emitted when a validation set is cancelled.
+        /// </summary>
+        /// <param name="validationSet">The validation set that was cancelled.</param>
+        void TrackValidationSetCancellation(PackageValidationSet validationSet);
+
+        /// <summary>
         /// A counter metric emitted when a notification is sent because a validation set takes too long.
         /// </summary>
         void TrackSentValidationTakingTooLongMessage(string packageId, string normalizedVersion, Guid validationTrackingId);

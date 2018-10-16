@@ -34,7 +34,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public Task SetStatusAsync(
+        public Task<SetStatusResult> SetStatusAsync(
             IValidatingEntity<T> validatingEntity,
             PackageValidationSet validationSet,
             PackageStatus status)
@@ -67,7 +67,7 @@ namespace NuGet.Services.Validation.Orchestrator
             switch (status)
             {
                 case PackageStatus.Available:
-                    return MakePackageAvailableAsync(validatingEntity, validationSet);
+                    return TryMakePackageAvailableAsync(validatingEntity, validationSet);
                 case PackageStatus.FailedValidation:
                     return MakePackageFailedValidationAsync(validatingEntity, validationSet);
                 default:
@@ -77,7 +77,7 @@ namespace NuGet.Services.Validation.Orchestrator
             }
         }
 
-        private async Task MakePackageFailedValidationAsync(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
+        private async Task<SetStatusResult> MakePackageFailedValidationAsync(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
         {
             var fromStatus = validatingEntity.Status;
 
@@ -87,12 +87,21 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 _telemetryService.TrackPackageStatusChange(fromStatus, PackageStatus.FailedValidation);
             }
+
+            return SetStatusResult.Completed;
         }
 
-        private async Task MakePackageAvailableAsync(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
+        /// <summary>
+        /// Attempt to make the validation set's package available. If the package desination has been modified since the
+        /// validation set has been created, this operation will cancel itself.
+        /// </summary>
+        /// <param name="validatingEntity">The entity that should be made available</param>
+        /// <param name="validationSet">The set that validated the entity</param>
+        /// <returns>True if the package was made available, false if the operation is cancelled.</returns>
+        private async Task<SetStatusResult> TryMakePackageAvailableAsync(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
         {
             // 1) Operate on blob storage.
-            var updateResult = await UpdatePublicPackageAsync(validationSet);
+            var updateResult = await TryUpdatePublicPackageAsync(validationSet);
             if (updateResult == UpdatePublicPackageResult.AccessConditionFailed)
             {
                 // The package copy will fail if the public destination has been modified since the validation set was created. This may happen
@@ -111,7 +120,8 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.ValidationTrackingId,
                     validationSet.PackageId,
                     validationSet.PackageNormalizedVersion);
-                return;
+
+                return SetStatusResult.Cancelled;
             }
 
             // 2) Update the package's blob metadata in the packages blob storage container.
@@ -151,6 +161,8 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.PackageNormalizedVersion,
                     validationSet.ValidationTrackingId.ToString());
             }
+
+            return SetStatusResult.Completed;
         }
 
         private async Task<PackageStatus> MarkPackageAsAvailableAsync(
@@ -207,7 +219,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return fromStatus;
         }
 
-        private async Task<UpdatePublicPackageResult> UpdatePublicPackageAsync(PackageValidationSet validationSet)
+        private async Task<UpdatePublicPackageResult> TryUpdatePublicPackageAsync(PackageValidationSet validationSet)
         {
             _logger.LogInformation("Copying .nupkg to public storage for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 validationSet.PackageId,

@@ -18,6 +18,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string DurationToValidationSetCreationSeconds = OrchestratorPrefix + "DurationToValidationSetCreationSeconds";
         private const string PackageStatusChange = OrchestratorPrefix + "PackageStatusChange";
         private const string TotalValidationDurationSeconds = OrchestratorPrefix + "TotalValidationDurationSeconds";
+        private const string ValidationSetCancelled = OrchestratorPrefix + "ValidationSetCancelled";
         private const string SentValidationTakingTooLongMessage = OrchestratorPrefix + "SentValidationTakingTooLongMessage";
         private const string ValidationSetTimeout = OrchestratorPrefix + "ValidationSetTimedOut";
         private const string ValidationIssue = OrchestratorPrefix + "ValidationIssue";
@@ -40,6 +41,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string FromStatus = "FromStatus";
         private const string ToStatus = "ToStatus";
         private const string IsSuccess = "IsSuccess";
+        private const string TotalDurationSeconds = "TotalDurationSeconds";
         private const string ValidatorType = "ValidatorType";
         private const string IssueCode = "IssueCode";
         private const string ClientCode = "ClientCode";
@@ -106,6 +108,22 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                 new Dictionary<string, string>
                 {
                     { IsSuccess, isSuccess.ToString() },
+                });
+        }
+
+        public void TrackValidationSetCancellation(PackageValidationSet validationSet)
+        {
+            var duration = DateTime.UtcNow - validationSet.Created;
+
+            _telemetryClient.TrackMetric(
+                ValidationSetCancelled,
+                1,
+                new Dictionary<string, string>
+                {
+                    { PackageId, validationSet.PackageId },
+                    { NormalizedVersion, validationSet.PackageNormalizedVersion },
+                    { ValidationTrackingId, validationSet.ValidationTrackingId.ToString() },
+                    { TotalDurationSeconds, duration.TotalSeconds.ToString() },
                 });
         }
 
