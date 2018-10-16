@@ -105,7 +105,7 @@ namespace NuGet.Services.Validation.Orchestrator
             if (updateResult == UpdatePublicPackageResult.AccessConditionFailed)
             {
                 // The package copy will fail if the public destination has been modified since the validation set was created. This may happen
-                // if a package has multiple validations in parallel. If so, the first validation set to copy will "win". All other validations
+                // if a package has multiple validations in parallel. If so, the first validation set to copy will "win" and all other validations
                 // should gracefully "cancel" themselves.
                 if (validatingEntity.Status != PackageStatus.Available)
                 {
