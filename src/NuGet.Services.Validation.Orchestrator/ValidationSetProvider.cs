@@ -50,7 +50,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 return await CreateValidationSetAsync(message, validatingEntity);
             }
 
-            // A previously created validation set matched message's tracking ID. Ensure this validation set matches the message and entity.
+            // A previously created validation set matched the message's tracking ID. Ensure this validation set matches the message and entity.
             if (validatingEntity.Key != validationSet.PackageKey)
             {
                 throw new InvalidOperationException($"Validation set key ({validationSet.PackageKey}) " +
