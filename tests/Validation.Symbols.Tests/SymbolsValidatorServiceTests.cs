@@ -28,7 +28,7 @@ namespace Validation.Symbols.Tests
                 // Arrange
                 _symbolsFileService.
                     Setup(sfs => sfs.DownloadSnupkgFileAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).
-                    ThrowsAsync(new FileNotFoundException("Snupkg not found"));
+                    ThrowsAsync(new InvalidOperationException("Snupkg not found"));
 
                 var service = new SymbolsValidatorService(_symbolsFileService.Object, _zipService.Object, _telemetryService.Object, _logger.Object);
 
