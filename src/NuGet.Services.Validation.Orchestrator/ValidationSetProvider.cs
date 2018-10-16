@@ -14,6 +14,8 @@ namespace NuGet.Services.Validation.Orchestrator
 {
     public class ValidationSetProvider<T> : IValidationSetProvider<T> where T : class, IEntity
     {
+        public const string PackageDoesNotExistETag = null;
+
         private readonly IValidationStorageService _validationStorageService;
         private readonly IValidationFileService _packageFileService;
         private readonly IValidatorProvider _validatorProvider;
@@ -47,54 +49,66 @@ namespace NuGet.Services.Validation.Orchestrator
 
             if (validationSet == null)
             {
-                var shouldSkip = await _validationStorageService.OtherRecentValidationSetForPackageExists(
-                    validatingEntity,
-                    _validationConfiguration.NewValidationRequestDeduplicationWindow,
-                    message.ValidationTrackingId);
-                if (shouldSkip)
-                {
-                    return null;
-                }
-
-                validationSet = InitializeValidationSet(message, validatingEntity);
-
-                if (validatingEntity.Status == PackageStatus.Available)
-                {
-                    var packageETag = await _packageFileService.CopyPackageFileForValidationSetAsync(validationSet);
-
-                    // This indicates that the package in the package container is expected to not change.
-                    validationSet.PackageETag = packageETag;
-                }
-                else
-                {
-                    await _packageFileService.CopyValidationPackageForValidationSetAsync(validationSet);
-
-                    // This indicates that the package in the packages container is expected to not exist (i.e. it has
-                    // has no etag at all).
-                    validationSet.PackageETag = null;
-                }
-
-                // If there are any processors in the validation set, back up the original. We back up from the
-                // validation set copy to avoid concurrency issues.
-                if (validationSet.PackageValidations.Any(x => _validatorProvider.IsProcessor(x.Type)))
-                {
-                    await _packageFileService.BackupPackageFileFromValidationSetPackageAsync(validationSet);
-                }
-
-                validationSet = await PersistValidationSetAsync(validationSet, validatingEntity);
+                return await CreateValidationSetAsync(message, validatingEntity);
             }
-            else
+
+            // A previously created validation set matched message's tracking ID. Ensure this validation set matches the message and entity.
+            if (validatingEntity.Key != validationSet.PackageKey)
             {
-                var sameKey = validatingEntity.Key == validationSet.PackageKey;
-                
-                if (!sameKey)
-                {
-                    throw new InvalidOperationException($"Validation set  key ({validationSet.PackageKey}) " +
-                        $"does not match expected {validatingEntity.EntityRecord.GetType().Name} key ({validatingEntity.Key}).");
-                }
+                throw new InvalidOperationException($"Validation set key ({validationSet.PackageKey}) " +
+                    $"does not match expected {validatingEntity.EntityRecord.GetType().Name} key ({validatingEntity.Key}).");
+            }
+
+            // No further processing is necessary if another validation has modified the destination blob. The validation set's data
+            // was captured at the beginning of the validation. The entity is the latest known information. If the validation set indicates
+            // that the package shouldn't exist, yet the entity indicates that the package does exist, then another validation has modified
+            // the destination blob. No more processing is necessary by the current validation and we can return null.
+            if (validationSet.PackageETag == PackageDoesNotExistETag && validatingEntity.Status == PackageStatus.Available)
+            {
+                return null;
             }
 
             return validationSet;
+        }
+
+        private async Task<PackageValidationSet> CreateValidationSetAsync(PackageValidationMessageData message, IValidatingEntity<T> validatingEntity)
+        {
+            var shouldSkip = await _validationStorageService.OtherRecentValidationSetForPackageExists(
+                validatingEntity,
+                _validationConfiguration.NewValidationRequestDeduplicationWindow,
+                message.ValidationTrackingId);
+
+            if (shouldSkip)
+            {
+                return null;
+            }
+
+            var validationSet = InitializeValidationSet(message, validatingEntity);
+
+            if (validatingEntity.Status == PackageStatus.Available)
+            {
+                var packageETag = await _packageFileService.CopyPackageFileForValidationSetAsync(validationSet);
+
+                // This indicates that the package in the package container is expected to not change.
+                validationSet.PackageETag = packageETag;
+            }
+            else
+            {
+                await _packageFileService.CopyValidationPackageForValidationSetAsync(validationSet);
+
+                // This indicates that the package in the packages container is expected to not exist (i.e. it has
+                // has no etag at all).
+                validationSet.PackageETag = PackageDoesNotExistETag;
+            }
+
+            // If there are any processors in the validation set, back up the original. We back up from the
+            // validation set copy to avoid concurrency issues.
+            if (validationSet.PackageValidations.Any(x => _validatorProvider.IsProcessor(x.Type)))
+            {
+                await _packageFileService.BackupPackageFileFromValidationSetPackageAsync(validationSet);
+            }
+
+            return await PersistValidationSetAsync(validationSet, validatingEntity);
         }
 
         private async Task<PackageValidationSet> PersistValidationSetAsync(PackageValidationSet validationSet, IValidatingEntity<T> validatingEntity)

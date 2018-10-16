@@ -448,6 +448,27 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Times.Never);
         }
 
+        [Fact]
+        public async Task DoesNotReturnValidationSetIfPackageIsUnexpectedlyAvailable()
+        {
+            // Arrange - setup a validation set that expects the package to not exist (null ETag)
+            ValidationSet.PackageETag = null;
+            Package.PackageStatusKey = PackageStatus.Available;
+
+            ValidationStorageMock
+                .Setup(vs => vs.GetValidationSetAsync(ValidationSet.ValidationTrackingId))
+                .ReturnsAsync(ValidationSet)
+                .Verifiable();
+
+            var provider = CreateProvider();
+
+            // Act
+            var result = await provider.TryGetOrCreateValidationSetAsync(PackageValidationMessageData, PackageValidatingEntity);
+
+            // Assert
+            Assert.Null(result);
+        }
+
         public ValidationSetProviderFacts()
         {
             ValidationStorageMock = new Mock<IValidationStorageService>(MockBehavior.Strict);
