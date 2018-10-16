@@ -96,9 +96,10 @@ namespace NuGet.Services.Validation.Orchestrator
                     }
                     else
                     {
-                        _logger.LogInformation("Could not find symbols for package {PackageId} {PackageNormalizedVersion} in DB, retrying",
+                        _logger.LogInformation("Could not find symbols for package {PackageId} {PackageNormalizedVersion} {Key} in DB, retrying",
                             message.PackageId,
-                            message.PackageNormalizedVersion);
+                            message.PackageNormalizedVersion,
+                            message.EntityKey.HasValue ? message.EntityKey.Value.ToString() : "NotSet");
 
                         return false;
                     }
@@ -116,6 +117,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
 
                 var processorStats = await _validationSetProcessor.ProcessValidationsAsync(validationSet);
+                // As part of the processing the validation outcome the orchestrator will send itself a message if validation are still being processes
                 await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, symbolPackageEntity, processorStats);
             }
 
