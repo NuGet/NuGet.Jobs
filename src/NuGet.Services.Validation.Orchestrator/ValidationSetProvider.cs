@@ -57,15 +57,6 @@ namespace NuGet.Services.Validation.Orchestrator
                     $"does not match expected {validatingEntity.EntityRecord.GetType().Name} key ({validatingEntity.Key}).");
             }
 
-            // No further processing is necessary if another validation has modified the destination blob. The validation set's data
-            // was captured at the beginning of the validation. The entity is the latest known information. If the validation set indicates
-            // that the package shouldn't exist, yet the entity indicates that the package does exist, then another validation has modified
-            // the destination blob. No more processing is necessary by the current validation and we can return null.
-            if (validationSet.PackageETag == null && validatingEntity.Status == PackageStatus.Available)
-            {
-                return null;
-            }
-
             return validationSet;
         }
 
