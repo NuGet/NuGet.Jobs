@@ -117,7 +117,14 @@ namespace NuGet.Services.Validation.Orchestrator
                 switch (result)
                 {
                     case SetStatusResult.Cancelled:
+                        _logger.LogWarning("The attempt to mark package {PackageId} {PackageVersion} as available was cancelled",
+                            validationSet.PackageId,
+                            validationSet.PackageNormalizedVersion);
+
                         _telemetryService.TrackValidationSetCancellation(validationSet);
+
+                        // TODO - This may cause a deadlettering if a validation set's message is duplicated.
+                        // See: https://github.com/NuGet/NuGetGallery/issues/6572
                         await CleanupValidationStorageAsync(validationSet);
                         break;
 
