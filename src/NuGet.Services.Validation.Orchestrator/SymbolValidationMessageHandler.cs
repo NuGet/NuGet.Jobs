@@ -73,7 +73,9 @@ namespace NuGet.Services.Validation.Orchestrator
                 message.PackageNormalizedVersion,
                 message.ValidationTrackingId))
             {
-                var symbolPackageEntity = _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
+                var symbolPackageEntity = message.EntityKey.HasValue ?
+                    _gallerySymbolService.FindPackageByKey(message.EntityKey.Value):
+                    _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
 
                 if (symbolPackageEntity == null)
                 {
