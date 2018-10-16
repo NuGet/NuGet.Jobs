@@ -69,6 +69,7 @@
     <Compile Include="Symbols\SymbolsIngester.cs" />
     <Compile Include="Symbols\SymbolsValidator.cs" />
     <Compile Include="Symbols\SymbolsValidationConfiguration.cs" />
+    <Compile Include="UpdatePublicPackageResult.cs" />
     <Compile Include="UsernameHelper.cs" />
     <Compile Include="ValidatingEntitites\IValidatingEntity.cs" />
     <Compile Include="IValidationOutcomeProcessor.cs" />

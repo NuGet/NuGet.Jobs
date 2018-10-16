@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
 using NuGetGallery.Packaging;
@@ -91,13 +92,33 @@ namespace NuGet.Services.Validation.Orchestrator
         private async Task MakePackageAvailableAsync(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
         {
             // 1) Operate on blob storage.
-            var copied = await UpdatePublicPackageAsync(validationSet);
+            var updateResult = await UpdatePublicPackageAsync(validationSet);
+            if (updateResult == UpdatePublicPackageResult.AccessConditionFailed)
+            {
+                // The package copy will fail if the public destination has been modified since the validation set was created. This may happen
+                // if a package has multiple validations in parallel. If so, the first validation set to copy will "win". All other validations
+                // should gracefully "cancel" themselves.
+                if (validatingEntity.Status != PackageStatus.Available)
+                {
+                    // The entity is updated after the public package is updated, so this case happens if the other validation has updated the package
+                    // but hasn't updated the entity yet. We will throw and retry later. Eventually, this will deadletter if the parallel validation
+                    // doesn't update the entity.
+                    throw new InvalidOperationException(
+                        $"Package {validationSet.PackageId} {validationSet.PackageNormalizedVersion} is public, but isn't marked as available!");
+                }
+
+                _logger.LogWarning("Cancelling validation set {ValidationSetId} as package {PackageId} {PackageVersion} has been modified",
+                    validationSet.ValidationTrackingId,
+                    validationSet.PackageId,
+                    validationSet.PackageNormalizedVersion);
+                return;
+            }
 
             // 2) Update the package's blob metadata in the packages blob storage container.
             var metadata = await _packageFileService.UpdatePackageBlobMetadataAsync(validationSet);
 
             // 3) Operate on the database.
-            var fromStatus = await MarkPackageAsAvailableAsync(validationSet, validatingEntity, metadata, copied);
+            var fromStatus = await MarkPackageAsAvailableAsync(validationSet, validatingEntity, metadata, updateResult);
 
             // 4) Emit telemetry and clean up.
             if (fromStatus != PackageStatus.Available)
@@ -136,7 +157,7 @@ namespace NuGet.Services.Validation.Orchestrator
             PackageValidationSet validationSet,
             IValidatingEntity<T> validatingEntity,
             PackageStreamMetadata streamMetadata,
-            bool copied)
+            UpdatePublicPackageResult updateResult)
         {
             // Use whatever package made it into the packages container. This is what customers will consume so the DB
             // record must match.
@@ -175,7 +196,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 // This prevents a missing passing in the (unlikely) case where two actors attempt the DB update, one
                 // succeeds and one fails. We don't want an available package record with nothing in the packages
                 // container!
-                if (copied && fromStatus != PackageStatus.Available)
+                if (updateResult == UpdatePublicPackageResult.Copied && fromStatus != PackageStatus.Available)
                 {
                     await _packageFileService.DeletePackageFileAsync(validationSet);
                 }
@@ -186,7 +207,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return fromStatus;
         }
 
-        private async Task<bool> UpdatePublicPackageAsync(PackageValidationSet validationSet)
+        private async Task<UpdatePublicPackageResult> UpdatePublicPackageAsync(PackageValidationSet validationSet)
         {
             _logger.LogInformation("Copying .nupkg to public storage for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 validationSet.PackageId,
@@ -199,7 +220,6 @@ namespace NuGet.Services.Validation.Orchestrator
             // are processors in the validation set, this indicates a bug and an exception will be thrown by the copy
             // operation below. This will cause the validation queue message to eventually dead-letter at which point
             // the on-call person should investigate.
-            bool copied;
             if (validationSet.PackageValidations.Any(x => _validatorProvider.IsProcessor(x.Type)) ||
                 await _packageFileService.DoesValidationSetPackageExistAsync(validationSet))
             {
@@ -237,14 +257,31 @@ namespace NuGet.Services.Validation.Orchestrator
                         validationSet.PackageETag);
                 }
 
-                // Failures here should result in an unhandled exception. This means that this validation set has
+                // Failures here should result in an exception. This means that this validation set has
                 // modified the package but is unable to copy the modified package into the packages container because
                 // another validation set completed first.
-                await _packageFileService.CopyValidationSetPackageToPackageFileAsync(
-                    validationSet,
-                    destAccessCondition);
+                try
+                {
+                    await _packageFileService.CopyValidationSetPackageToPackageFileAsync(
+                        validationSet,
+                        destAccessCondition);
+                }
+                catch (Exception ex) when (IsAccessConditionFailedException(ex))
+                {
+                    _logger.LogError(
+                        Error.UpdatingPackageAccessConditionFailed,
+                        ex,
+                        "Copying validation set {ValidationSetId} package {PackageId} {PackageVersion} failed as etag" +
+                        " {PackageETag} is no longer valid",
+                        validationSet.ValidationTrackingId,
+                        validationSet.PackageId,
+                        validationSet.PackageNormalizedVersion,
+                        validationSet.PackageETag);
 
-                copied = true;
+                    return UpdatePublicPackageResult.AccessConditionFailed;
+                }
+
+                return UpdatePublicPackageResult.Copied;
             }
             else
             {
@@ -259,7 +296,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 {
                     await _packageFileService.CopyValidationPackageToPackageFileAsync(validationSet);
 
-                    copied = true;
+                    return UpdatePublicPackageResult.Copied;
                 }
                 catch (InvalidOperationException)
                 {
@@ -274,11 +311,28 @@ namespace NuGet.Services.Validation.Orchestrator
                         validationSet.PackageNormalizedVersion,
                         validationSet.ValidationTrackingId);
 
-                    copied = false;
+                    return UpdatePublicPackageResult.Skipped;
+                }
+            }
+        }
+
+        private bool IsAccessConditionFailedException(Exception e)
+        {
+            // See https://github.com/NuGet/NuGetGallery/blob/master/src/NuGetGallery.Core/Services/CloudBlobCoreFileStorageService.cs#L247
+            if (e is FileAlreadyExistsException)
+            {
+                return true;
+            }
+
+            if (e is StorageException storageException)
+            {
+                if (storageException.IsFileAlreadyExistsException() || storageException.IsPreconditionFailedException())
+                {
+                    return true;
                 }
             }
 
-            return copied;
+            return false;
         }
     }
 }

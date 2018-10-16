@@ -14,6 +14,7 @@ namespace NuGet.Services.Validation.Orchestrator
         public static EventId VcsValidationUnexpectedAuditFound = new EventId(5, "VCS validation unexpected audit found");
         public static EventId OrchestratorOnMessageException = new EventId(6, "Failed to process orchestrator message");
         public static EventId UpdatingPackageDbStatusFailed = new EventId(7, "Failed to update package status in DB");
+        public static EventId UpdatingPackageAccessConditionFailed = new EventId(8, "Could not update public package due to failed access condition");
 
         public static EventId PackageSigningValidationAlreadyStarted = new EventId(100, "Package Signing validation already started");
 

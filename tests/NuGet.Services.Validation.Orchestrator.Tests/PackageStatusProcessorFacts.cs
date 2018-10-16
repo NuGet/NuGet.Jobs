@@ -222,7 +222,19 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
 
             [Fact]
-            public async Task ThrowsExceptionWhenValidationSetPackageAndDestinationPackageDoesNotMatchETag()
+            public async Task ThrowsWhenValidationSetPackageAndDestinationPackageDoesNotMatchETagButPackageIsntAvailable()
+            {
+                // TODO
+            }
+
+            [Fact]
+            public async Task CancelsWhenValidationSetPackageDoesntExistButDestinationPackageDoes()
+            {
+                // TODO
+            }
+
+            [Fact]
+            public async Task CancelsWhenValidationSetPackageAndDestinationPackageDoNotMatch()
             {
                 ValidationSet.PackageETag = "\"some-etag\"";
                 Package.PackageStatusKey = PackageStatus.Available;
