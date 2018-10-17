@@ -174,5 +174,14 @@
     <None Include="StatusAggregator.nuspec" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <SignPath>..\..\build</SignPath>
+    <SignPath Condition="'$(BUILD_SOURCESDIRECTORY)' != ''">$(BUILD_SOURCESDIRECTORY)\build</SignPath>
+    <SignPath Condition="'$(NuGetBuildPath)' != ''">$(NuGetBuildPath)</SignPath>
+    <SignType Condition="'$(SignType)' == ''">none</SignType>
+  </PropertyGroup>
   <Import Project="..\..\build\sign.targets" Condition="Exists('..\..\build\sign.targets')" />
+  <Import Project="$(SignPath)\sign.microbuild.targets" Condition="Exists('$(SignPath)\sign.microbuild.targets')" />
+  <Import Project="$(SignPath)\sign.scripts.targets" Condition="Exists('$(SignPath)\sign.scripts.targets')" />
+  <Import Project="..\..\sign.thirdparty.targets" />
 </Project>
