@@ -18,15 +18,12 @@ namespace Validation.Symbols
         /// <returns>The snupkg stream.</returns>
         Task<Stream> DownloadNupkgFileAsync(string packageId, string packageNormalizedVersion, CancellationToken cancellationToken);
 
-        ///// <summary>
-        ///// Downloads the snupkg file.
-        ///// </summary>
-        ///// <param name="packageId">The package id.</param>
-        ///// <param name="packageNormalizedVersion">The package normalized version.</param>
-        ///// <param name="cancellationToken">Cancellation token.</param>
-        ///// <returns>The nupkg stream.</returns>
-        //Task<Stream> DownloadSnupkgFileAsync(string packageId, string packageNormalizedVersion, CancellationToken cancellationToken);
-
+        /// <summary>
+        /// Downloads the snupkg file.
+        /// </summary>
+        /// <param name="snupkgUri">The uri of the snupkg.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The stream downloaded.</returns>
         Task<Stream> DownloadSnupkgFileAsync(string snupkgUri, CancellationToken cancellationToken);
     }
 }

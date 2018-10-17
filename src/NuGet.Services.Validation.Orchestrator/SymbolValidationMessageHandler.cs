@@ -73,6 +73,8 @@ namespace NuGet.Services.Validation.Orchestrator
                 message.PackageNormalizedVersion,
                 message.ValidationTrackingId))
             {
+                // When a message is sent from the Gallery with validation of a new entity, the EntityKey will be null because the message is sent to the service bus before the entity is persisted in the DB
+                // However when a revalidation happens or when the message is re-sent by the orchestrator the message will contain the key. In this case the key is used to find the entity to validate.
                 var symbolPackageEntity = message.EntityKey.HasValue ?
                     _gallerySymbolService.FindPackageByKey(message.EntityKey.Value):
                     _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
@@ -117,7 +119,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
 
                 var processorStats = await _validationSetProcessor.ProcessValidationsAsync(validationSet);
-                // As part of the processing the validation outcome the orchestrator will send itself a message if validation are still being processes
+                // As part of the processing the validation outcome the orchestrator will send itself a message if validation are still being processed.
                 await _validationOutcomeProcessor.ProcessValidationOutcomeAsync(validationSet, symbolPackageEntity, processorStats);
             }
 
