@@ -26,6 +26,7 @@
       <dependency id="NuGetGallery.Core" version="4.4.4-master-41290" />
       <dependency id="Serilog" version="2.5.0" />
       <dependency id="System.Net.Http" version="4.3.3" />
+      <dependency id="MicroBuild.Core" version="0.3.0" />
     </dependencies>
   </metadata>
 </package>
