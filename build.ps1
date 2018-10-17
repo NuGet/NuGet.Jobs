@@ -42,21 +42,6 @@ Function Clean-Tests {
     Remove-Item (Join-Path $PSScriptRoot "Results.*.xml")
 }
 
-Function Prepare-Vcs-Callback {
-    [CmdletBinding()]
-    param()
-    
-    Trace-Log 'Preparing Validation.Callback.Vcs Package'
-    
-    $ZipPackagePath = "src\Validation.Callback.Vcs\obj\Validation.Callback.Vcs.zip"
-    
-    if (Test-Path $ZipPackagePath) {
-        Remove-Item $ZipPackagePath
-    }
-    
-    Build-Solution $Configuration $BuildNumber -MSBuildVersion "$msBuildVersion" "src\Validation.Callback.Vcs\Validation.Callback.Vcs.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=obj\Validation.Callback.Vcs.zip" -SkipRestore
-}
-
 Function Prepare-NuGetCDNRedirect {
     [CmdletBinding()]
     param()
@@ -136,9 +121,6 @@ Invoke-BuildStep 'Building solution' {
     } `
     -args $Configuration, $BuildNumber, (Join-Path $PSScriptRoot "NuGet.Jobs.sln"), $SkipRestore `
     -ev +BuildErrors
-    
-Invoke-BuildStep 'Prepare Validation.Callback.Vcs Package' { Prepare-Vcs-Callback } `
-    -ev +BuildErrors
 
 Invoke-BuildStep 'Prepare NuGetCDNRedirect Package' { Prepare-NuGetCDNRedirect } `
     -ev +BuildErrors
@@ -164,8 +146,6 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/ArchivePackages/ArchivePackages.csproj", `
             "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj", `
             "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj", `
-            "src/Validation.Callback.Vcs/Validation.Callback.Vcs.csproj", `
-            "src/Validation.Callback.Vcs/Validation.Callback.Vcs.WebApp.nuspec", `
             "src/Validation.Runner/Validation.Runner.csproj", `
             "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj", `
             "src/Validation.Helper/Validation.Helper.csproj", `
