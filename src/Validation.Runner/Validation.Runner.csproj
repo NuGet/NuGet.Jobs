@@ -76,6 +76,11 @@
     <Content Include="Scripts\nssm.exe" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core">
+      <Version>0.3.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Data.Services.Client">
       <Version>5.7.0</Version>
     </PackageReference>

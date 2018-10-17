@@ -122,6 +122,11 @@
     <PackageReference Include="System.Net.Http">
       <Version>4.3.3</Version>
     </PackageReference>
+    <PackageReference Include="MicroBuild.Core">
+      <Version>0.3.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Scripts\nssm.exe" />
