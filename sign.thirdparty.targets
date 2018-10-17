@@ -14,4 +14,4 @@
         </ItemGroup>
         <Message Text="Files to sign:%0A@(FilesToSign, '%0A')" Importance="High" />
     </Target>
-</Project> 
+</Project>
