@@ -23,7 +23,7 @@ namespace Validation.Symbols
         /// </summary>
         /// <param name="snupkgUri">The uri of the snupkg.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>The stream downloaded.</returns>
+        /// <returns>The snupkg stream.</returns>
         Task<Stream> DownloadSnupkgFileAsync(string snupkgUri, CancellationToken cancellationToken);
     }
 }

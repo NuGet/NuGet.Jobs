@@ -75,9 +75,9 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 // When a message is sent from the Gallery with validation of a new entity, the EntityKey will be null because the message is sent to the service bus before the entity is persisted in the DB
                 // However when a revalidation happens or when the message is re-sent by the orchestrator the message will contain the key. In this case the key is used to find the entity to validate.
-                var symbolPackageEntity = message.EntityKey.HasValue ?
-                    _gallerySymbolService.FindPackageByKey(message.EntityKey.Value):
-                    _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
+                var symbolPackageEntity = message.EntityKey.HasValue
+                    ? _gallerySymbolService.FindPackageByKey(message.EntityKey.Value)
+                    : _gallerySymbolService.FindPackageByIdAndVersionStrict(message.PackageId, message.PackageNormalizedVersion);
 
                 if (symbolPackageEntity == null)
                 {
@@ -101,7 +101,7 @@ namespace NuGet.Services.Validation.Orchestrator
                         _logger.LogInformation("Could not find symbols for package {PackageId} {PackageNormalizedVersion} {Key} in DB, retrying",
                             message.PackageId,
                             message.PackageNormalizedVersion,
-                            message.EntityKey.HasValue ? message.EntityKey.Value.ToString() : "NotSet");
+                            message.EntityKey.HasValue ? message.EntityKey.Value.ToString() : "null");
 
                         return false;
                     }

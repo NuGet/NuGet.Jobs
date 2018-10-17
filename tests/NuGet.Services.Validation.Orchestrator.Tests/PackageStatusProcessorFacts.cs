@@ -101,8 +101,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var stream = new MemoryStream(Encoding.ASCII.GetBytes(content));
 
                 var corePackageService = new Mock<ICorePackageService>();
-                var mockIPackageEntityRepository = new Mock<IEntityRepository<Package>>();
-                var entityPackageService = new PackageEntityService(corePackageService.Object, mockIPackageEntityRepository.Object);
+                var mockPackageEntityRepository = new Mock<IEntityRepository<Package>>();
+                var entityPackageService = new PackageEntityService(corePackageService.Object, mockPackageEntityRepository.Object);
 
                 PackageFileServiceMock
                     .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
