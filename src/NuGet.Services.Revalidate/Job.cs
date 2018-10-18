@@ -42,8 +42,6 @@ namespace NuGet.Services.Revalidate
         private string _preinstalledSetPath;
         private bool _initialize;
         private bool _verifyInitialization;
-        private int? _overrideMinPackageEventRate;
-        private int? _overrideMaxPackageEventRate;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
@@ -52,8 +50,6 @@ namespace NuGet.Services.Revalidate
             _preinstalledSetPath = JobConfigurationManager.TryGetArgument(jobArgsDictionary, RebuildPreinstalledSetArgumentName);
             _initialize = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, InitializeArgumentName);
             _verifyInitialization = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, VerifyInitializationArgumentName);
-            _overrideMinPackageEventRate = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, OverrideMinPackageEventRate);
-            _overrideMaxPackageEventRate = JobConfigurationManager.TryGetIntArgument(jobArgsDictionary, OverrideMaxPackageEventRate);
         }
 
         public override async Task Run()
@@ -119,11 +115,6 @@ namespace NuGet.Services.Revalidate
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<RevalidationConfiguration>(configurationRoot.GetSection(JobConfigurationSectionName));
-            services.Configure<RevalidationConfiguration>(config =>
-            {
-                config.MinPackageEventRate = _overrideMinPackageEventRate ?? config.MinPackageEventRate;
-                config.MaxPackageEventRate = _overrideMaxPackageEventRate ?? config.MaxPackageEventRate;
-            });
 
             services.AddSingleton(provider => provider.GetRequiredService<IOptionsSnapshot<RevalidationConfiguration>>().Value);
             services.AddSingleton(provider => provider.GetRequiredService<IOptionsSnapshot<RevalidationConfiguration>>().Value.Initialization);
