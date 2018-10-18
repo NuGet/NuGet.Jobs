@@ -32,8 +32,6 @@ namespace NuGet.Services.Revalidate
         private const string RebuildPreinstalledSetArgumentName = "RebuildPreinstalledSet";
         private const string InitializeArgumentName = "Initialize";
         private const string VerifyInitializationArgumentName = "VerifyInitialization";
-        private const string OverrideMinPackageEventRate = "OverrideMinPackageEventRate";
-        private const string OverrideMaxPackageEventRate = "OverrideMaxPackageEventRate";
 
         private const string JobConfigurationSectionName = "RevalidateJob";
 
