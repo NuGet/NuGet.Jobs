@@ -101,7 +101,7 @@ namespace NuGet.Services.Validation.Orchestrator
                         _logger.LogInformation("Could not find symbols for package {PackageId} {PackageNormalizedVersion} {Key} in DB, retrying",
                             message.PackageId,
                             message.PackageNormalizedVersion,
-                            message.EntityKey.HasValue ? message.EntityKey.Value.ToString() : "null");
+                            message.EntityKey.HasValue);
 
                         return false;
                     }
