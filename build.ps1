@@ -9,7 +9,7 @@ param (
     [string]$SemanticVersion = '1.0.0-zlocal',
     [string]$Branch = 'zlocal',
     [string]$CommitSHA,
-    [string]$BuildBranch = 'sb-micro'
+    [string]$BuildBranch = 'a0a53ed81cd714fb8de708fd54ab0d09f6fc9671'
 )
 
 $msBuildVersion = 15;
