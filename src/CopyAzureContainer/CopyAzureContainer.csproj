@@ -91,6 +91,8 @@
   <Import Project="$(SignPath)\sign.microbuild.targets" Condition="Exists('$(SignPath)\sign.microbuild.targets')" />
   <ItemGroup>
     <PowerShellScriptsToSign Include="InstallAzCopy.ps1"/>
+    <PowerShellScriptsToNotSign Include="PreDeploy.ps1"/>
+    <ExecutablesToNotSign Include="nssm.exe"/>
   </ItemGroup>
   <Import Project="$(SignPath)\sign.scripts.targets" Condition="Exists('$(SignPath)\sign.scripts.targets')" />
   <Import Project="..\..\sign.thirdparty.targets" />
