@@ -69,9 +69,17 @@ namespace NuGet.Services.Validation.Orchestrator
                 {
                     await _packageFileService.CopyValidationPackageForValidationSetAsync(validationSet);
 
-                    // This indicates that the package in the packages container is expected to not exist (i.e. it has
-                    // has no etag at all).
-                    validationSet.PackageETag = null;
+                    // The symbols may have a previous version saved already.
+                    if (validatingEntity.ValidatingType == ValidatingType.SymbolPackage)
+                    {
+                        validationSet.PackageETag = await _packageFileService.GetPublicPackageBlobETagOrNullAsync(validationSet);
+                    }
+                    else
+                    {
+                        // This indicates that the package in the packages container is expected to not exist (i.e. it has
+                        // has no etag at all).
+                        validationSet.PackageETag = null;
+                    }
                 }
 
                 // If there are any processors in the validation set, back up the original. We back up from the

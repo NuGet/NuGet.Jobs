@@ -40,7 +40,7 @@ using NuGet.Services.Validation.PackageSigning.ProcessSignature;
 using NuGet.Services.Validation.PackageSigning.ValidateCertificate;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery.Diagnostics;
-using NuGetGallery.Services;
+using NuGetGallery.Infrastructure.Mail;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -280,8 +280,8 @@ namespace NuGet.Services.Validation.Orchestrator
                     ? (IMailSender)new DiskMailSender()
                     : (IMailSender)new MailSender(mailSenderConfiguration);
             });
-            services.AddTransient<ICoreMessageServiceConfiguration, CoreMessageServiceConfiguration>();
-            services.AddTransient<ICoreMessageService, CoreMessageService>();
+            services.AddTransient<IMessageServiceConfiguration, CoreMessageServiceConfiguration>();
+            services.AddTransient<IMessageService, CoreMarkdownMessageService>();
             services.AddTransient<IMessageService<Package>, PackageMessageService>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
