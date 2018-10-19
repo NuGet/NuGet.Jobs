@@ -34,6 +34,7 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             if(!ShouldCopy(validationSet))
             {
+                _logger.LogInformation("Symbols package not copied.");
                 return;
             }
 
@@ -46,6 +47,7 @@ namespace NuGet.Services.Validation.Orchestrator
         {
             if (!ShouldCopy(validationSet))
             {
+                _logger.LogInformation("Symbols package not copied.");
                 return;
             }
 
@@ -65,7 +67,24 @@ namespace NuGet.Services.Validation.Orchestrator
             var currentEntity = _symbolEntityService.FindPackageByKey(validationSet.PackageKey);
 
             // If the current entity is in validating mode a new symbolPush is not allowed, so it is safe to copy.
-            return currentEntity.Status == PackageStatus.Validating || (entityInValidatingState == null && currentEntity.Status == PackageStatus.FailedValidation);
+            var aNewEntityInValidatingStateExists = entityInValidatingState != null;
+
+            var shouldCopy = currentEntity.Status == PackageStatus.Validating || (!aNewEntityInValidatingStateExists && currentEntity.Status == PackageStatus.FailedValidation);
+            _logger.LogInformation("Symbols copy file check: "
+                + "PackageId {PackageId} "
+                + "PackageVersion {PackageVersion} "
+                + "ValidationTrackingId {ValidationTrackingId} "
+                + "CurrentValidating entity status {CurrentEntityStatus}"
+                + "ANewEntityInValidatingStateExists {ANewEntityInValidatingStateExists}"
+                + "ShouldCopy {ShouldCopy}",
+                validationSet.PackageId,
+                validationSet.PackageNormalizedVersion,
+                validationSet.ValidationTrackingId,
+                currentEntity.Status,
+                aNewEntityInValidatingStateExists,
+                shouldCopy
+                );
+            return shouldCopy;
         }
     }
 }
