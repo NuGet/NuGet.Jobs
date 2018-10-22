@@ -581,7 +581,6 @@ namespace NuGet.Services.Validation.Orchestrator
                     break;
                 case ValidatingType.SymbolPackage:
                     services.AddTransient<IFileMetadataService, SymbolPackageFileMetadataService>();
-                    //services.AddTransient<IValidationFileService, ValidationSymbolFileService>();
                     services.AddTransient<IValidationFileService, ValidationFileService>();
                     break;
                 default:
@@ -596,7 +595,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<ICoreSymbolPackageService, CoreSymbolPackageService>();
             services.AddTransient<ICriteriaEvaluator<SymbolPackage>, SymbolCriteriaEvaluator>();
             services.AddTransient<IValidationOutcomeProcessor<SymbolPackage>, ValidationOutcomeProcessor<SymbolPackage>>();
-            //services.AddTransient<IStatusProcessor<SymbolPackage>, EntityStatusProcessor<SymbolPackage>>();
             services.AddTransient<IStatusProcessor<SymbolPackage>, SymbolsStatusProcessor>();
             services.AddTransient<IValidationSetProvider<SymbolPackage>, ValidationSetProvider<SymbolPackage>>();
             services.AddTransient<IMessageService<SymbolPackage>, SymbolsPackageMessageService>();
