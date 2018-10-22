@@ -25,7 +25,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         protected override async Task MakePackageAvailableAsync(IValidatingEntity<SymbolPackage> validatingEntity, PackageValidationSet validationSet)
         {
-            if(ProceedToMakePackageAvailable(validatingEntity, validationSet))
+            if(!ProceedToMakePackageAvailable(validatingEntity, validationSet))
             {
                 _logger.LogInformation("SymbolsPackage PackageId { PackageId} PackageVersion {PackageVersion} Status {Status} was not made available again.",
                     validationSet.PackageId,
