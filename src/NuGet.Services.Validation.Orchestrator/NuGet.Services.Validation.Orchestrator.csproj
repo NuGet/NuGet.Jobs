@@ -108,7 +108,6 @@
     <Compile Include="ValidatingEntitites\PackageValidatingEntity.cs" />
     <Compile Include="ValidationFailureBehavior.cs" />
     <Compile Include="SymbolValidationMessageHandler.cs" />
-    <Compile Include="ValidationSymbolFileService.cs" />
     <Compile Include="ValidationPackageFileService.cs" />
     <Compile Include="ValidationSetProcessorResult.cs" />
     <Compile Include="Vcs\IPackageCriteria.cs" />
