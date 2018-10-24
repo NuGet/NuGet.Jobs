@@ -31,9 +31,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
             public void ItShouldNotProceedWhenFromAvailableState()
             {
                 // Arrange
-                IValidatingEntity<SymbolPackage> validatingSymbolPacakge = null;
+                IValidatingEntity<SymbolPackage> validatingSymbolPackage = null;
                 SymbolsPackageServiceMock.Setup(sp => sp.FindPackageByIdAndVersionStrict(PackageId, PackageVersion))
-                .Returns(validatingSymbolPacakge);
+                .Returns(validatingSymbolPackage);
 
                 var validationSet = new PackageValidationSet
                 {
@@ -47,7 +47,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 };
 
                 // Act
-                bool result = Target.ProceedToMakePackageAvailable(AvailableSymbolPackageValidatingEntity, validationSet);
+                bool result = Target.CanProceedToMakePackageAvailable(AvailableSymbolPackageValidatingEntity, validationSet);
                 Target.SetStatusAsync(AvailableSymbolPackageValidatingEntity, validationSet, PackageStatus.Available);
 
                 // Assert
@@ -77,7 +77,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 };
 
                 // Act
-                bool result = Target.ProceedToMakePackageAvailable(FailedSymbolPackageValidatingEntity, validationSet);
+                bool result = Target.CanProceedToMakePackageAvailable(FailedSymbolPackageValidatingEntity, validationSet);
                 Target.SetStatusAsync(FailedSymbolPackageValidatingEntity, validationSet, PackageStatus.Available);
 
                 // Assert
@@ -92,9 +92,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
             public void ItShouldProceedWhenFromFailedStateWithNoValidationInProgress()
             {
                 // Arrange
-                IValidatingEntity<SymbolPackage> validatingSymbolPacakge = null;
+                IValidatingEntity<SymbolPackage> validatingSymbolPackage = null;
                 SymbolsPackageServiceMock.Setup(sp => sp.FindPackageByIdAndVersionStrict(PackageId, PackageVersion))
-                .Returns(validatingSymbolPacakge);
+                .Returns(validatingSymbolPackage);
 
                 var validationSet = new PackageValidationSet
                 {
@@ -108,7 +108,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 };
 
                 // Act
-                bool result = Target.ProceedToMakePackageAvailable(FailedSymbolPackageValidatingEntity, validationSet);
+                bool result = Target.CanProceedToMakePackageAvailable(FailedSymbolPackageValidatingEntity, validationSet);
                 Target.SetStatusAsync(FailedSymbolPackageValidatingEntity, validationSet, PackageStatus.Available);
 
                 // Assert
@@ -135,7 +135,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 };
 
                 // Act
-                bool result = Target.ProceedToMakePackageAvailable(ValidatingSymbolPackageValidatingEntity, validationSet);
+                bool result = Target.CanProceedToMakePackageAvailable(ValidatingSymbolPackageValidatingEntity, validationSet);
                 Target.SetStatusAsync(ValidatingSymbolPackageValidatingEntity, validationSet, PackageStatus.Available);
 
                 // Assert

@@ -69,7 +69,9 @@ namespace NuGet.Services.Validation.Orchestrator
                 {
                     await _packageFileService.CopyValidationPackageForValidationSetAsync(validationSet);
 
-                    // The symbols may have a previous version saved already.
+                    // A symbols package for the same id and version can be re-submitted. 
+                    // When this happens a new validation is submitted. After validation the new symbols package will overwrite the old symbols package. 
+                    // Because of this when a new validation for a symbols package is received it can already exist a symbols package in the public symbols container.
                     if (validatingEntity.ValidatingType == ValidatingType.SymbolPackage)
                     {
                         validationSet.PackageETag = await _packageFileService.GetPublicPackageBlobETagOrNullAsync(validationSet);

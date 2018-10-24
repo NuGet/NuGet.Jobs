@@ -129,7 +129,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         /// <param name="validationSet">A validationSet that will identify the package that will have its blob metadata updated.</param>
         /// <returns>A task that represents the asynchronous operation.
-        /// The result is the etag of the pacakge blob or null if the package does not exists.</returns>
+        /// The result is the etag of the package blob or null if the package does not exists.</returns>
         Task<string> GetPublicPackageBlobETagOrNullAsync(PackageValidationSet validationSet);
     }
 }
