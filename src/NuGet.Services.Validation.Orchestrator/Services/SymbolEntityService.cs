@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using NuGetGallery;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Orchestrator
 {

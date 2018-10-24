@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
-using NuGetGallery;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Orchestrator
 {

@@ -6,10 +6,11 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using NuGet.Jobs.Validation;
-using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
 using NuGetGallery.Packaging;
+using NuGet.Jobs.Validation;
+using NuGet.Services.Validation.Orchestrator.Telemetry;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Orchestrator
 {

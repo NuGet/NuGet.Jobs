@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NuGet.Versioning;
 using NuGetGallery;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Revalidate
 {

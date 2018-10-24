@@ -30,6 +30,7 @@ using NuGet.Jobs.Validation.Storage;
 using NuGet.Services.Validation.Symbols;
 using NuGet.Jobs.Validation.Symbols.Core;
 using NuGet.Services.Configuration;
+using NuGet.Services.Entities;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
@@ -40,7 +41,7 @@ using NuGet.Services.Validation.PackageSigning.ProcessSignature;
 using NuGet.Services.Validation.PackageSigning.ValidateCertificate;
 using NuGet.Services.Validation.Vcs;
 using NuGetGallery.Diagnostics;
-using NuGetGallery.Infrastructure.Mail;
+using NuGet.Services.Messaging.Email;
 
 namespace NuGet.Services.Validation.Orchestrator
 {

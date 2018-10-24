@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Moq;
 using NuGetGallery;
 using NuGetGallery.Packaging;
+using NuGet.Services.Entities;
 using NuGet.Services.Validation.Orchestrator;
 using Xunit;
 

@@ -12,7 +12,7 @@ using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Common;
 using NuGet.Services.Validation.Orchestrator;
 using NuGet.Versioning;
-using NuGetGallery;
+using NuGet.Services.Entities;
 using Error = NuGet.Services.Validation.Orchestrator.Error;
 
 namespace NuGet.Services.Validation.Vcs

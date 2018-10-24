@@ -94,25 +94,25 @@
       <Version>4.8.0-preview4.5289</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration">
-      <Version>2.29.0</Version>
+      <Version>2.30.0-master-42731</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Logging">
-      <Version>2.29.0</Version>
+      <Version>2.30.0-master-42731</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.ServiceBus">
-      <Version>2.29.0</Version>
+      <Version>2.30.0-master-42731</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Storage">
-      <Version>2.29.0</Version>
+      <Version>2.30.0-master-42731</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Validation">
-      <Version>2.29.0</Version>
+      <Version>2.30.0-master-42731</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Validation.Issues">
-      <Version>2.29.0</Version>
+      <Version>2.30.0-master-42731</Version>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
-      <Version>4.4.4-dev-42523</Version>
+      <Version>4.4.4-dev-42836</Version>
     </PackageReference>
     <PackageReference Include="Serilog">
       <Version>2.5.0</Version>

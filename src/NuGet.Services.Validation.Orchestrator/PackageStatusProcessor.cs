@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
+using NuGet.Services.Entities;
 using NuGetGallery;
 using NuGetGallery.Packaging;
 

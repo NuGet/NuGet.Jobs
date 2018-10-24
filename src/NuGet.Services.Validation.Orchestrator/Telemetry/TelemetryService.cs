@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using NuGet.Services.Logging;
 using NuGet.Services.ServiceBus;
-using NuGetGallery;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Orchestrator.Telemetry
 {
