@@ -5,8 +5,6 @@ namespace Gallery.CredentialExpiration
 {
     public class InitializationConfiguration
     {
-        public int AllowEmailResendAfterDays { get; set; }
-
         public string ContainerName { get; set; }
 
         public string DataStorageAccount { get; set; }
@@ -15,9 +13,9 @@ namespace Gallery.CredentialExpiration
 
         public string GalleryBrand { get; set; }
 
-        public string MailFrom { get; set; }
+        public string EmailPublisherConnectionString { get; set; }
 
-        public string SmtpUri { get; set; }
+        public string EmailPublisherTopicName { get; set; }
 
         public int WarnDaysBeforeExpiration { get; set; }
 
