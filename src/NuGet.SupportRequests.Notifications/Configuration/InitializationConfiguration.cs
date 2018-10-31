@@ -6,7 +6,17 @@ namespace NuGet.SupportRequests.Notifications
     public class InitializationConfiguration
     {
         /// <summary>
-        /// Obsolete: replace with IcM configuration
+        /// Connection string to email publisher job's service bus.
+        /// </summary>
+        public string EmailPublisherConnectionString { get; set; }
+
+        /// <summary>
+        /// Name of the email publisher job's service bus topic.
+        /// </summary>
+        public string EmailPublisherTopicName { get; set; }
+
+        /// <summary>
+        /// Obsolete: replace with incident API configuration
         /// </summary>
         public string PagerDutyAccountName { get; set; }
 
@@ -14,11 +24,6 @@ namespace NuGet.SupportRequests.Notifications
         /// Obsolete: replace with IcM configuration
         /// </summary>
         public string PagerDutyApiKey { get; set; }
-
-        /// <summary>
-        /// SMTP configuration.
-        /// </summary>
-        public string SmtpUri { get; set; }
 
         /// <summary>
         /// Email address to which the weekly report is sent.
