@@ -209,8 +209,8 @@ namespace Tests.CredentialExpiration
                 var result = Builder.GetBody(format);
 
                 var intro = AreCredentialsExpired
-                    ? $"We wanted to inform you that the following API key(s) on {Brand} have expired."
-                    : $"We wanted to inform you that the following API key(s) on {Brand} will expire soon.";
+                    ? $"We wanted to inform you that the following API key(s) on {Brand} have expired:"
+                    : $"We wanted to inform you that the following API key(s) on {Brand} will expire soon:";
 
                 Assert.Contains(
                     intro,
@@ -265,7 +265,7 @@ namespace Tests.CredentialExpiration
                     Username = Username,
                     EmailAddress = Email,
                     Description = "first",
-                    Expires = JobRunTime - new TimeSpan((areCredentialsExpired ? 1 : -1), 0, 0)
+                    Expires = JobRunTime - new TimeSpan(25 * (areCredentialsExpired ? 1 : -1), 0, 0)
                 };
 
                 SecondCredential = new ExpiredCredentialData
@@ -273,7 +273,7 @@ namespace Tests.CredentialExpiration
                     Username = Username,
                     EmailAddress = Email,
                     Description = "second",
-                    Expires = JobRunTime - new TimeSpan(2 * (areCredentialsExpired ? 1 : -1), 0, 0)
+                    Expires = JobRunTime - new TimeSpan(2 * 25 * (areCredentialsExpired ? 1 : -1), 0, 0)
                 };
 
                 AreCredentialsExpired = areCredentialsExpired;
