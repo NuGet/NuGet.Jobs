@@ -153,7 +153,7 @@ namespace Tests.CredentialExpiration
             }
         }
 
-        public class TheGetSubjectMethod
+        public abstract class TheGetSubjectMethod
             : CredentialExpirationEmailBuilderMethodTest
         {
             public TheGetSubjectMethod(bool areCredentialsExpired)
@@ -167,7 +167,7 @@ namespace Tests.CredentialExpiration
                 var result = Builder.GetSubject();
 
                 var expected = string.Format(
-                    AreCredentialsExpired ? Strings.ExpiredEmailSubject : Strings.ExpiredEmailSubject, 
+                    AreCredentialsExpired ? Strings.ExpiredEmailSubject : Strings.ExpiringEmailSubject, 
                     Brand);
 
                 Assert.Equal(expected, result);
@@ -192,7 +192,7 @@ namespace Tests.CredentialExpiration
             }
         }
 
-        public class TheGetBodyMethod
+        public abstract class TheGetBodyMethod
             : CredentialExpirationEmailBuilderMethodTest
         {
             public TheGetBodyMethod(bool areCredentialsExpired)
