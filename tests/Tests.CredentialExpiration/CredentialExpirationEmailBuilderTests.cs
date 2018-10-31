@@ -187,7 +187,7 @@ namespace Tests.CredentialExpiration
             : TheGetBodyMethod
         {
             public TheGetBodyMethodWithExpiringCredentials()
-                : base(true)
+                : base(false)
             {
             }
         }
