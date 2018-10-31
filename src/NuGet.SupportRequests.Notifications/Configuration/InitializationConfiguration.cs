@@ -21,7 +21,7 @@ namespace NuGet.SupportRequests.Notifications
         public string PagerDutyAccountName { get; set; }
 
         /// <summary>
-        /// Obsolete: replace with IcM configuration
+        /// Obsolete: replace with incident API configuration
         /// </summary>
         public string PagerDutyApiKey { get; set; }
 
