@@ -40,7 +40,7 @@ namespace Gallery.CredentialExpiration
 
             Username = username ?? throw new ArgumentNullException(nameof(username));
             var userEmail = credentials.FirstOrDefault()?.EmailAddress
-                ?? throw new ArgumentException(
+                ?? throw new ArgumentNullException(
                     "Credentials provided must have an email address!", 
                     nameof(credentials));
 
@@ -65,8 +65,14 @@ namespace Gallery.CredentialExpiration
 
         public override string GetSubject()
         {
-            var template = AreCredentialsExpired ? Strings.ExpiredEmailSubject : Strings.ExpiringEmailSubject;
-            return string.Format(template, InitializationConfiguration.GalleryBrand);
+            if (AreCredentialsExpired)
+            {
+                return string.Format(Strings.ExpiredEmailSubject, InitializationConfiguration.GalleryBrand);
+            }
+            else
+            {
+                return string.Format(Strings.ExpiringEmailSubject, InitializationConfiguration.GalleryBrand);
+            }
         }
 
         protected override string GetMarkdownBody()
@@ -76,8 +82,14 @@ namespace Gallery.CredentialExpiration
                 .ToList();
 
             var apiKeyExpiryMessage = string.Join(Environment.NewLine, apiKeyExpiryMessageList);
-            var template = AreCredentialsExpired ? Strings.ExpiredEmailBody : Strings.ExpiringEmailBody;
-            return string.Format(template, Username, InitializationConfiguration.GalleryBrand, apiKeyExpiryMessage, InitializationConfiguration.GalleryAccountUrl);
+            if (AreCredentialsExpired)
+            {
+                return string.Format(Strings.ExpiredEmailBody, Username, InitializationConfiguration.GalleryBrand, apiKeyExpiryMessage, InitializationConfiguration.GalleryAccountUrl);
+            }
+            else
+            {
+                return string.Format(Strings.ExpiringEmailBody, Username, InitializationConfiguration.GalleryBrand, apiKeyExpiryMessage, InitializationConfiguration.GalleryAccountUrl);
+            }
         }
 
         private static string BuildApiKeyExpiryMessage(string description, DateTimeOffset expiry, DateTimeOffset currentTime)
