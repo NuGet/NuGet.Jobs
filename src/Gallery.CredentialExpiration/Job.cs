@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
@@ -30,8 +31,7 @@ namespace Gallery.CredentialExpiration
         private readonly string _cursorFile = "cursorv2.json";
 
         private InitializationConfiguration InitializationConfiguration { get; set; }
-        private IMessageServiceConfiguration MessageConfiguration { get; set; }
-
+        private MailAddress FromAddress { get; set; }
         private AsynchronousEmailMessageService EmailService { get; set; }
 
         private Storage Storage { get; set; }
@@ -45,9 +45,9 @@ namespace Gallery.CredentialExpiration
             var serializer = new ServiceBusMessageSerializer();
             var topicClient = new TopicClientWrapper(InitializationConfiguration.EmailPublisherConnectionString, InitializationConfiguration.EmailPublisherTopicName);
             var enqueuer = new EmailMessageEnqueuer(topicClient, serializer, LoggerFactory.CreateLogger<EmailMessageEnqueuer>());
+            EmailService = new AsynchronousEmailMessageService(enqueuer);
 
-            MessageConfiguration = _serviceProvider.GetRequiredService<IOptionsSnapshot<IMessageServiceConfiguration>>().Value;
-            EmailService = new AsynchronousEmailMessageService(MessageConfiguration, enqueuer);
+            FromAddress = new MailAddress(InitializationConfiguration.MailFrom);
             
             var storageAccount = CloudStorageAccount.Parse(InitializationConfiguration.DataStorageAccount);
             var storageFactory = new AzureStorageFactory(storageAccount, InitializationConfiguration.ContainerName, LoggerFactory);
@@ -137,7 +137,7 @@ namespace Gallery.CredentialExpiration
 
             var emailBuilder = new CredentialExpirationEmailBuilder(
                 InitializationConfiguration, 
-                MessageConfiguration, 
+                FromAddress, 
                 username, 
                 credentials, 
                 jobRunTime, 

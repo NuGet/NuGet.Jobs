@@ -14,14 +14,15 @@ namespace Gallery.CredentialExpiration
     {
         public CredentialExpirationEmailBuilder(
             InitializationConfiguration initializationConfiguration,
-            IMessageServiceConfiguration messageConfig,
+            MailAddress sender,
             string username,
             List<ExpiredCredentialData> credentials,
             DateTimeOffset jobRunTime,
             bool areCredentialsExpired)
         {
             InitializationConfiguration = initializationConfiguration;
-            MessageConfiguration = messageConfig;
+
+            Sender = sender;
             Credentials = credentials;
             JobRunTime = jobRunTime;
             AreCredentialsExpired = areCredentialsExpired;
@@ -32,7 +33,6 @@ namespace Gallery.CredentialExpiration
         }
 
         public InitializationConfiguration InitializationConfiguration { get; }
-        public IMessageServiceConfiguration MessageConfiguration { get; }
         
         public string Username { get; }
         public MailAddress UserAddress { get; }
@@ -40,7 +40,7 @@ namespace Gallery.CredentialExpiration
         public DateTimeOffset JobRunTime { get; }
         public bool AreCredentialsExpired { get; }
 
-        public override MailAddress Sender => MessageConfiguration.GalleryNoReplyAddress;
+        public override MailAddress Sender { get; }
 
         public override IEmailRecipients GetRecipients()
         {

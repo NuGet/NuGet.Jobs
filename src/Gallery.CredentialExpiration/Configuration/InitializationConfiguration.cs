@@ -9,13 +9,15 @@ namespace Gallery.CredentialExpiration
 
         public string DataStorageAccount { get; set; }
 
+        public string EmailPublisherConnectionString { get; set; }
+
+        public string EmailPublisherTopicName { get; set; }
+
         public string GalleryAccountUrl { get; set; }
 
         public string GalleryBrand { get; set; }
 
-        public string EmailPublisherConnectionString { get; set; }
-
-        public string EmailPublisherTopicName { get; set; }
+        public string MailFrom { get; set; }
 
         public int WarnDaysBeforeExpiration { get; set; }
 
