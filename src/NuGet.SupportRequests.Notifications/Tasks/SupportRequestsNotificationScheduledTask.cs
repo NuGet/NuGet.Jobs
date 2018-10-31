@@ -47,18 +47,18 @@ namespace NuGet.SupportRequests.Notifications.Tasks
 
         protected abstract Task<TNotification> BuildNotification(SupportRequestRepository supportRequestRepository, DateTime referenceTime);
 
-        protected abstract string BuildNotificationBody(string template, TNotification notification);
+        protected abstract string BuildNotificationHtmlBody(string template, TNotification notification);
 
         public async Task RunAsync()
         {
             var referenceTime = DateTime.UtcNow.Date;
             var notification = await BuildNotification(_supportRequestRepository, referenceTime);
             var template = NotificationTemplateProvider.Get(notification.TemplateName);
-            var body = BuildNotificationBody(template, notification);
+            var htmlBody = BuildNotificationHtmlBody(template, notification);
 
             await _messagingService.SendNotification(
                 notification.Subject,
-                body,
+                htmlBody,
                 referenceTime,
                 notification.TargetEmailAddress);
         }

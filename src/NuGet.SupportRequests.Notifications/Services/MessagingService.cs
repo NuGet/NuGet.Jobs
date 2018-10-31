@@ -21,7 +21,7 @@ namespace NuGet.SupportRequests.Notifications.Services
 
         internal async Task SendNotification(
             string subject,
-            string body,
+            string htmlBody,
             DateTime referenceTime,
             string targetEmailAddress)
         {
@@ -30,9 +30,9 @@ namespace NuGet.SupportRequests.Notifications.Services
                 throw new ArgumentException(nameof(subject));
             }
 
-            if (string.IsNullOrEmpty(body))
+            if (string.IsNullOrEmpty(htmlBody))
             {
-                throw new ArgumentException(nameof(body));
+                throw new ArgumentException(nameof(htmlBody));
             }
 
             if (string.IsNullOrEmpty(targetEmailAddress))
@@ -40,7 +40,7 @@ namespace NuGet.SupportRequests.Notifications.Services
                 throw new ArgumentException(nameof(targetEmailAddress));
             }
 
-            var builder = new SupportRequestNotificationEmailBuilder(subject, body, targetEmailAddress);
+            var builder = new SupportRequestNotificationEmailBuilder(subject, htmlBody, targetEmailAddress);
             await _messageService.SendMessageAsync(builder);
 
             _logger.LogInformation(
