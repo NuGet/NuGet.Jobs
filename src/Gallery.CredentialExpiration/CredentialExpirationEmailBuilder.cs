@@ -20,15 +20,30 @@ namespace Gallery.CredentialExpiration
             DateTimeOffset jobRunTime,
             bool areCredentialsExpired)
         {
-            InitializationConfiguration = initializationConfiguration;
+            InitializationConfiguration = initializationConfiguration
+                ?? throw new ArgumentNullException(nameof(initializationConfiguration));
 
-            Sender = sender;
-            Credentials = credentials;
+            Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+
+            Credentials = credentials 
+                ?? throw new ArgumentNullException(nameof(credentials));
+
+            if (!Credentials.Any())
+            {
+                throw new ArgumentException(
+                    "Must provide at least one expiring or expired credential!", 
+                    nameof(credentials));
+            }
+
             JobRunTime = jobRunTime;
             AreCredentialsExpired = areCredentialsExpired;
 
-            Username = username;
-            var userEmail = credentials.FirstOrDefault().EmailAddress;
+            Username = username ?? throw new ArgumentNullException(nameof(username));
+            var userEmail = credentials.FirstOrDefault()?.EmailAddress
+                ?? throw new ArgumentNullException(
+                    "Credentials provided must have an email address!", 
+                    nameof(credentials));
+
             UserAddress = new MailAddress(userEmail, Username);
         }
 
@@ -73,7 +88,7 @@ namespace Gallery.CredentialExpiration
             }
             else
             {
-                return string.Format(Strings.ExpiredEmailBody, Username, InitializationConfiguration.GalleryBrand, apiKeyExpiryMessage, InitializationConfiguration.GalleryAccountUrl);
+                return string.Format(Strings.ExpiringEmailBody, Username, InitializationConfiguration.GalleryBrand, apiKeyExpiryMessage, InitializationConfiguration.GalleryAccountUrl);
             }
         }
 
