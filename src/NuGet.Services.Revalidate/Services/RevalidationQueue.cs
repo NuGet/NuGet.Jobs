@@ -56,7 +56,7 @@ namespace NuGet.Services.Revalidate
                     query = query.Where(
                         r =>
                         !_validationContext.PackageRevalidations.GroupBy(r2 => r2.PackageId)
-                        .Where(g => g.Count() > 200)
+                        .Where(g => g.Count() > _config.MaximumPackageVersions)
                         .Any(g => g.Key == r.PackageId));
                 }
 
