@@ -8,10 +8,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace NuGet.SupportRequests.Notifications {
-    using System;
-    
-    
+namespace NuGet.SupportRequests.Notifications
+{
+
+
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>

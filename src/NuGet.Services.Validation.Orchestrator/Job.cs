@@ -9,7 +9,6 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using AnglicanGeek.MarkdownMailer;
 using Autofac;
 using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
@@ -19,7 +18,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using NuGetGallery;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
@@ -39,8 +37,10 @@ using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGet.Services.Validation.PackageSigning.ProcessSignature;
 using NuGet.Services.Validation.PackageSigning.ValidateCertificate;
 using NuGet.Services.Validation.Vcs;
+using NuGet.Services.Messaging.Email;
+using NuGetGallery;
 using NuGetGallery.Diagnostics;
-using NuGetGallery.Infrastructure.Mail;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -252,36 +252,9 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
             services.AddTransient<PackageSignatureProcessor>();
             services.AddTransient<PackageSignatureValidator>();
-            services.AddTransient<MailSenderConfiguration>(serviceProvider =>
-            {
-                var smtpConfigurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<SmtpConfiguration>>();
-                var smtpConfiguration = smtpConfigurationAccessor.Value;
-                if (string.IsNullOrWhiteSpace(smtpConfiguration.SmtpUri))
-                {
-                    return new MailSenderConfiguration();
-                }
-                var smtpUri = new SmtpUri(new Uri(smtpConfiguration.SmtpUri));
-                return new MailSenderConfiguration
-                {
-                    DeliveryMethod = System.Net.Mail.SmtpDeliveryMethod.Network,
-                    Host = smtpUri.Host,
-                    Port = smtpUri.Port,
-                    EnableSsl = smtpUri.Secure,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(
-                        smtpUri.UserName,
-                        smtpUri.Password)
-                };
-            });
-            services.AddTransient<IMailSender>(serviceProvider =>
-            {
-                var mailSenderConfiguration = serviceProvider.GetRequiredService<MailSenderConfiguration>();
-                return string.IsNullOrWhiteSpace(mailSenderConfiguration.Host)
-                    ? (IMailSender)new DiskMailSender()
-                    : (IMailSender)new MailSender(mailSenderConfiguration);
-            });
+            services.AddTransient<Messaging.IServiceBusMessageSerializer, Messaging.ServiceBusMessageSerializer>();
             services.AddTransient<IMessageServiceConfiguration, CoreMessageServiceConfiguration>();
-            services.AddTransient<IMessageService, CoreMarkdownMessageService>();
+            services.AddTransient<IMessageService, AsynchronousEmailMessageService>();
             services.AddTransient<IMessageService<Package>, PackageMessageService>();
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<ITelemetryService, TelemetryService>();

@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 using System.IO;
+using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Symbols
 {
