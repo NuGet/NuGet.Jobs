@@ -41,6 +41,7 @@ using NuGet.Services.Messaging.Email;
 using NuGetGallery;
 using NuGetGallery.Diagnostics;
 using NuGet.Services.Entities;
+using NuGet.Services.Messaging;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -63,6 +64,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string EmailConfigurationSectionName = "Email";
         private const string PackageDownloadTimeoutName = "PackageDownloadTimeout";
 
+        private const string EmailBindingKey = EmailConfigurationSectionName;
         private const string VcsBindingKey = VcsSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
         private const string PackageSignatureBindingKey = PackageSigningSectionName;
@@ -186,7 +188,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<GalleryDbConfiguration>(configurationRoot.GetSection(GalleryDbConfigurationSectionName));
             services.Configure<ValidationDbConfiguration>(configurationRoot.GetSection(ValidationDbConfigurationSectionName));
             services.Configure<ServiceBusConfiguration>(configurationRoot.GetSection(ServiceBusConfigurationSectionName));
-            services.Configure<SmtpConfiguration>(configurationRoot.GetSection(SmtpConfigurationSectionName));
             services.Configure<EmailConfiguration>(configurationRoot.GetSection(EmailConfigurationSectionName));
             services.Configure<ScanAndSignConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
             services.Configure<SymbolScanOnlyConfiguration>(configurationRoot.GetSection(SymbolScanOnlySectionName));
@@ -198,8 +199,8 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
 
-            services.AddScoped<NuGetGallery.IEntitiesContext>(serviceProvider =>
-                new NuGetGallery.EntitiesContext(
+            services.AddScoped<IEntitiesContext>(serviceProvider =>
+                new EntitiesContext(
                     CreateDbConnection<GalleryDbConfiguration>(serviceProvider),
                     readOnly: false)
                     );
@@ -210,8 +211,8 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddScoped<IValidationEntitiesContext>(serviceProvider =>
                 serviceProvider.GetRequiredService<ValidationEntitiesContext>());
             services.AddScoped<IValidationStorageService, ValidationStorageService>();
-            services.Add(ServiceDescriptor.Transient(typeof(NuGetGallery.IEntityRepository<>), typeof(NuGetGallery.EntityRepository<>)));
-            services.AddTransient<NuGetGallery.ICorePackageService, NuGetGallery.CorePackageService>();
+            services.Add(ServiceDescriptor.Transient(typeof(IEntityRepository<>), typeof(EntityRepository<>)));
+            services.AddTransient<ICorePackageService, CorePackageService>();
             services.AddTransient<IEntityService<Package>, PackageEntityService>();
             services.AddTransient<ISubscriptionClient>(serviceProvider =>
             {
@@ -233,14 +234,14 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<ICriteriaEvaluator<Package>, PackageCriteriaEvaluator>();
             services.AddTransient<VcsValidator>();
             services.AddTransient<IProcessSignatureEnqueuer, ProcessSignatureEnqueuer>();
-            services.AddTransient<NuGetGallery.ICloudBlobClient>(c =>
+            services.AddTransient<ICloudBlobClient>(c =>
                 {
                     var configurationAccessor = c.GetRequiredService<IOptionsSnapshot<ValidationConfiguration>>();
-                    return new NuGetGallery.CloudBlobClientWrapper(
+                    return new CloudBlobClientWrapper(
                         configurationAccessor.Value.ValidationStorageConnectionString,
                         readAccessGeoRedundant: false);
                 });
-            services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
+            services.AddTransient<ICoreFileStorageService, CloudBlobCoreFileStorageService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();
             services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
             services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
@@ -347,6 +348,22 @@ namespace NuGet.Services.Validation.Orchestrator
                     SubscriptionProcessor<PackageValidationMessageData>, 
                     IMessageHandler<PackageValidationMessageData>>(
                         OrchestratorBindingKey);
+
+            // Configure the email enqueuer.
+            containerBuilder
+                .Register(c =>
+                {
+                    var configuration = c.Resolve<IOptionsSnapshot<EmailConfiguration>>().Value.ServiceBus;
+                    return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+                })
+                .Keyed<ITopicClient>(EmailBindingKey);
+
+            containerBuilder
+                .RegisterTypeWithKeyedParameter<
+                    IEmailMessageEnqueuer, 
+                    EmailMessageEnqueuer, 
+                    ITopicClient>(
+                        EmailBindingKey);
 
             // Configure Validators
             var validatingType = configurationRoot
@@ -542,7 +559,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="configurationRoot"></param>
         private static void ConfigureFileServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            services.AddTransient<NuGetGallery.ICoreFileStorageService, NuGetGallery.CloudBlobCoreFileStorageService>();
+            services.AddTransient<ICoreFileStorageService, CloudBlobCoreFileStorageService>();
             var validatingType = configurationRoot
                 .GetSection(RunnerConfigurationSectionName)
                 .GetValue(nameof(OrchestrationRunnerConfiguration.ValidatingType), ValidatingType.Package);
