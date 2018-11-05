@@ -19,8 +19,6 @@ namespace Validation.PackageSigning.RevalidateCertificate
     {
         private const string RevalidationConfigurationSectionName = "RevalidateJob";
 
-        private ICertificateRevalidator _revalidator;
-
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(serviceContainer, jobArgsDictionary);
@@ -30,13 +28,13 @@ namespace Validation.PackageSigning.RevalidateCertificate
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                _revalidator = _serviceProvider.GetRequiredService<ICertificateRevalidator>();
+                var revalidator = scope.ServiceProvider.GetRequiredService<ICertificateRevalidator>();
 
                 // Both of these methods only do a chunk of the possible promotion/revalidating work before
                 // completing. This "Run" method may need to run several times to promote all signatures
                 // and to revalidate all stale certificates.
-                await _revalidator.PromoteSignaturesAsync();
-                await _revalidator.RevalidateStaleCertificatesAsync();
+                await revalidator.PromoteSignaturesAsync();
+                await revalidator.RevalidateStaleCertificatesAsync();
             }
         }
 
