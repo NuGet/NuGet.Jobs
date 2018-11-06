@@ -24,6 +24,7 @@ namespace Validation.Symbols
         private const string SymbolCount = "SymbolCount";
         private const string ValidationResult = "ValidationResult";
         private const string Issue = "Issue";
+        private const string AssemblyName = "AssemblyName";
 
         private readonly ITelemetryClient _telemetryClient;
 
@@ -68,7 +69,7 @@ namespace Validation.Symbols
                 });
         }
 
-        public void TrackSymbolsValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus, string issue)
+        public void TrackSymbolsValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus, string issue, string assemblyName)
         {
             _telemetryClient.TrackMetric(
                 SymbolValidationResult,
@@ -78,7 +79,8 @@ namespace Validation.Symbols
                     { ValidationResult, validationStatus.ToString() },
                     { Issue, issue },
                     { PackageId, packageId },
-                    { PackageNormalizedVersion, packageNormalizedVersion }
+                    { PackageNormalizedVersion, packageNormalizedVersion },
+                    { AssemblyName, assemblyName }
                 });
         }
 

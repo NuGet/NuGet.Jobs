@@ -38,6 +38,7 @@ namespace Validation.Symbols
         /// <param name="packageNormalizedVersion">The package normalized version.</param>
         /// <param name="validationStatus">The validation result.</param>
         /// <param name="issue">Information about the issue id failed or empty if passed..</param>
-        void TrackSymbolsValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus, string issue);
+        /// <param name="assemblyName">The assembly name.</param>
+        void TrackSymbolsValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus, string issue, string assemblyName);
     }
 }
