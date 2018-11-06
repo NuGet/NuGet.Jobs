@@ -325,13 +325,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var streamMetadata = await _target.UpdatePackageBlobMetadataAsync(_validationSet);
 
                 Assert.True(wasUpdated);
-                Assert.Single(metadata);
+                Assert.Equal(2, metadata.Count);
                 Assert.Equal(expectedHash, metadata[CoreConstants.Sha512HashAlgorithmId]);
                 Assert.NotNull(streamMetadata);
                 Assert.Equal(stream.Length, streamMetadata.Size);
                 Assert.Equal(expectedHash, streamMetadata.Hash);
                 Assert.Equal(CoreConstants.Sha512HashAlgorithmId, streamMetadata.HashAlgorithm);
-
+                Assert.True(metadata.ContainsKey(Constants.BlobMetadata.CacheControlProperty));
+                Assert.Equal(Constants.BlobMetadata.CacheControlDefaultValue, metadata[Constants.BlobMetadata.CacheControlProperty]);
                 _fileStorageService.VerifyAll();
                 _telemetryService.VerifyAll();
             }
@@ -372,7 +373,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     () => _target.UpdatePackageBlobMetadataAsync(_validationSet));
 
                 Assert.True(wasUpdated);
-                Assert.Single(metadata);
+                Assert.Equal(2, metadata.Count);
                 Assert.Equal(expectedHash, metadata[CoreConstants.Sha512HashAlgorithmId]);
 
                 _fileStorageService.VerifyAll();

@@ -46,6 +46,7 @@
     <Compile Include="BaseValidator.cs" />
     <Compile Include="Configuration\ConfigurationValidator.cs" />
     <Compile Include="Configuration\TopologicalSort.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="ContainerBuilderExtensions.cs" />
     <Compile Include="Configuration\CoreMessageServiceConfiguration.cs" />
     <Compile Include="DiskMailSender.cs" />
@@ -184,7 +185,7 @@
   <Import Project="$(SignPath)\sign.targets" Condition="Exists('$(SignPath)\sign.targets')" />
   <Import Project="$(SignPath)\sign.microbuild.targets" Condition="Exists('$(SignPath)\sign.microbuild.targets')" />
   <ItemGroup>
-    <PowerShellScriptsToSign Include="RunE2ETests.ps1"/>
+    <PowerShellScriptsToSign Include="RunE2ETests.ps1" />
   </ItemGroup>
   <Import Project="$(SignPath)\sign.scripts.targets" Condition="Exists('$(SignPath)\sign.scripts.targets')" />
   <Import Project="..\..\sign.thirdparty.targets" />
