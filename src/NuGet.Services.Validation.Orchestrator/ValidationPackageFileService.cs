@@ -252,6 +252,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     }
 
                     metadata[CoreConstants.Sha512HashAlgorithmId] = hash;
+
                     streamMetadata = new PackageStreamMetadata()
                     {
                         Size = packageStream.Length,

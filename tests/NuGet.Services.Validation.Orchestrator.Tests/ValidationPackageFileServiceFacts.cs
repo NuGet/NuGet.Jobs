@@ -331,6 +331,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Assert.Equal(stream.Length, streamMetadata.Size);
                 Assert.Equal(expectedHash, streamMetadata.Hash);
                 Assert.Equal(CoreConstants.Sha512HashAlgorithmId, streamMetadata.HashAlgorithm);
+
                 _fileStorageService.VerifyAll();
                 _telemetryService.VerifyAll();
             }
