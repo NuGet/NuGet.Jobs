@@ -21,7 +21,6 @@ namespace Validation.Symbols
     {
         private static TimeSpan _cleanWorkingDirectoryTimeSpan = TimeSpan.FromSeconds(20);
         private static readonly string[] PEExtensionsPatterns = new string[] { "*.dll", "*.exe" };
-        private static readonly string SymbolExtensionPattern = "*.pdb";
         private static readonly string[] PEExtensions = new string[] { ".dll", ".exe" };
         private static readonly string[] SymbolExtension = new string[] { ".pdb" };
 
@@ -62,9 +61,14 @@ namespace Validation.Symbols
 
                             using (_telemetryService.TrackSymbolValidationDurationEvent(message.PackageId, message.PackageNormalizedVersion, pdbs.Count))
                             {
-                                if (!SymbolsHaveMatchingPEFiles(pdbs, pes))
+                                List<string> orphanSymbolFiles;
+                                if (!SymbolsHaveMatchingPEFiles(pdbs, pes, out orphanSymbolFiles))
                                 {
-                                    _telemetryService.TrackSymbolsValidationResultEvent(message.PackageId, message.PackageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound), assemblyName:"");
+                                    orphanSymbolFiles.ForEach((symbol) =>
+                                    {
+                                        _telemetryService.TrackSymbolsAssemblyValidationResultEvent(message.PackageId, message.PackageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound), assemblyName: symbol);
+                                    });
+                                    _telemetryService.TrackSymbolsValidationResultEvent(message.PackageId, message.PackageNormalizedVersion, ValidationStatus.Failed);
                                     return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
                                 }
                                 var targetDirectory = Settings.GetWorkingDirectory();
@@ -154,11 +158,12 @@ namespace Validation.Symbols
                     IValidationResult validationResult;
                     if (!IsChecksumMatch(peFile, packageId, packageNormalizedVersion, out validationResult))
                     {
+                        _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed);
                         return validationResult;
                     }
                 }
             }
-            _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Succeeded, issue:"", assemblyName:"");
+            _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Succeeded);
             return ValidationResult.Succeeded;
         }
 
@@ -182,7 +187,7 @@ namespace Validation.Symbols
 
                     if (checksumRecords.Length == 0)
                     {
-                        _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
+                        _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
                         validationResult = ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
                         return false;
                     }
@@ -214,19 +219,19 @@ namespace Validation.Symbols
                             if (checksumRecord.Checksum.ToArray().SequenceEqual(hash))
                             {
                                 // found the right checksum
-                                _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion,  ValidationStatus.Succeeded, issue:"", assemblyName:Path.GetFileName(peFilePath));
+                                _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion,  ValidationStatus.Succeeded, issue:"", assemblyName:Path.GetFileName(peFilePath));
                                 return true;
                             }
                         }
 
                         // Not found any checksum record that matches the PDB.
-                        _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
+                        _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
                         validationResult = ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
                         return false;
                     }
                 }
             }
-            _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound), assemblyName: Path.GetFileName(peFilePath));
+            _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound), assemblyName: Path.GetFileName(peFilePath));
             validationResult = ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingPortablePDBNotFound);
             return false;
         }
@@ -237,7 +242,7 @@ namespace Validation.Symbols
         /// <param name="symbols">Symbol list extracted from the compressed folder.</param>
         /// <param name="PEs">The list of PE files extracted from the compressed folder.</param>
         /// <returns></returns>
-        public static bool SymbolsHaveMatchingPEFiles(IEnumerable<string> symbols, IEnumerable<string> PEs)
+        public static bool SymbolsHaveMatchingPEFiles(IEnumerable<string> symbols, IEnumerable<string> PEs, out List<string> orphanSymbolFiles)
         {
             if(symbols == null)
             {
@@ -249,7 +254,9 @@ namespace Validation.Symbols
             }
             var symbolsWithoutExtension = ZipArchiveService.RemoveExtension(symbols);
             var PEsWithoutExtensions = ZipArchiveService.RemoveExtension(PEs);
-            return !symbolsWithoutExtension.Except(PEsWithoutExtensions, StringComparer.OrdinalIgnoreCase).Any();
+            orphanSymbolFiles = symbolsWithoutExtension.Except(PEsWithoutExtensions, StringComparer.OrdinalIgnoreCase).ToList();
+
+            return !orphanSymbolFiles.Any();
         }
     }
 }

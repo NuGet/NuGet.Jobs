@@ -17,6 +17,7 @@ namespace Validation.Symbols
         private const string MessageDeliveryLag = Prefix + "MessageDeliveryLag";
         private const string MessageEnqueueLag = Prefix + "MessageEnqueueLag";
         private const string SymbolValidationResult = Prefix + "SymbolValidationResult";
+        private const string SymbolAssemblyValidationResult = Prefix + "SymbolAssemblyValidationResult";
 
         private const string PackageId = "PackageId";
         private const string PackageNormalizedVersion = "PackageNormalizedVersion";
@@ -69,10 +70,10 @@ namespace Validation.Symbols
                 });
         }
 
-        public void TrackSymbolsValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus, string issue, string assemblyName)
+        public void TrackSymbolsAssemblyValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus, string issue, string assemblyName)
         {
             _telemetryClient.TrackMetric(
-                SymbolValidationResult,
+                SymbolAssemblyValidationResult,
                 1,
                 new Dictionary<string, string>
                 {
@@ -81,6 +82,19 @@ namespace Validation.Symbols
                     { PackageId, packageId },
                     { PackageNormalizedVersion, packageNormalizedVersion },
                     { AssemblyName, assemblyName }
+                });
+        }
+
+        public void TrackSymbolsValidationResultEvent(string packageId, string packageNormalizedVersion, ValidationStatus validationStatus)
+        {
+            _telemetryClient.TrackMetric(
+                SymbolValidationResult,
+                1,
+                new Dictionary<string, string>
+                {
+                    { ValidationResult, validationStatus.ToString() },
+                    { PackageId, packageId },
+                    { PackageNormalizedVersion, packageNormalizedVersion }
                 });
         }
 
