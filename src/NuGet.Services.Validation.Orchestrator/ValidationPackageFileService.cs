@@ -252,7 +252,6 @@ namespace NuGet.Services.Validation.Orchestrator
                     }
 
                     metadata[CoreConstants.Sha512HashAlgorithmId] = hash;
-                    metadata[Constants.BlobMetadata.CacheControlProperty] = Constants.BlobMetadata.CacheControlDefaultValue;
                     streamMetadata = new PackageStreamMetadata()
                     {
                         Size = packageStream.Length,
