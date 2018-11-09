@@ -306,7 +306,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Broken by https://github.com/NuGet/NuGet.Client/pull/2391")]
         public async Task AcceptsTrustedTimestampingCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -359,7 +359,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Broken by https://github.com/NuGet/NuGet.Client/pull/2391")]
         public async Task AcceptsTrustedSigningCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -1448,7 +1448,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Broken by https://github.com/NuGet/NuGet.Client/pull/2391")]
         public async Task WhenRepositoryCounterSigned_AcceptsTrustedTimestampingCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -1507,7 +1507,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Broken by https://github.com/NuGet/NuGet.Client/pull/2391")]
         public async Task WhenRepositoryCounterSigned_AcceptsTrustedSigningCertificateWithUnavailableRevocation()
         {
             // Arrange
