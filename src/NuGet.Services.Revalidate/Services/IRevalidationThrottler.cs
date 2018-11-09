@@ -16,8 +16,9 @@ namespace NuGet.Services.Revalidate
         /// <summary>
         /// Delay the current task to achieve the desired revalidation rate.
         /// </summary>
+        /// <param name="started">The number of revalidations started.</param>
         /// <returns>Delay the task to ensure the desired revalidation rate.</returns>
-        Task DelayUntilNextRevalidationAsync();
+        Task DelayUntilNextRevalidationAsync(int started);
 
         /// <summary>
         /// Delay the current task until when a revalidation can be retried.

@@ -59,10 +59,10 @@ namespace NuGet.Services.Revalidate
             }
         }
 
-        public async Task DelayUntilNextRevalidationAsync()
+        public async Task DelayUntilNextRevalidationAsync(int revalidationsStarted)
         {
             var desiredHourlyRate = await _jobState.GetDesiredPackageEventRateAsync();
-            var sleepDuration = TimeSpan.FromHours(1.0 / desiredHourlyRate);
+            var sleepDuration = TimeSpan.FromHours((float)revalidationsStarted / desiredHourlyRate);
 
             _logger.LogInformation("Delaying until next revalidation by sleeping for {SleepDuration}...", sleepDuration);
 

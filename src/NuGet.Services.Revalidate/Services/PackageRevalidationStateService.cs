@@ -67,21 +67,20 @@ namespace NuGet.Services.Revalidate
                 .CountAsync();
         }
 
-        public async Task MarkPackageRevalidationAsEnqueuedAsync(PackageRevalidation revalidation)
+        public async Task MarkPackageRevalidationsAsEnqueuedAsync(IReadOnlyList<PackageRevalidation> revalidations)
         {
             try
             {
-                revalidation.Enqueued = DateTime.UtcNow;
+                foreach (var revalidation in revalidations)
+                {
+                    revalidation.Enqueued = DateTime.UtcNow;
+                }
 
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                _logger.LogWarning(
-                    "Failed to update revalidation as enqueued for {PackageId} {PackageNormalizedVersion}",
-                    revalidation.PackageId,
-                    revalidation.PackageNormalizedVersion);
-
+                _logger.LogWarning("Failed to update revalidations as enqueued");
                 throw;
             }
         }

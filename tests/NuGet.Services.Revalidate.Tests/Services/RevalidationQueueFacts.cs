@@ -16,7 +16,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
 {
     public class RevalidationQueueFacts
     {
-        public class TheNextOrNullAsyncMethod : FactsBase
+        public class TheNextAsyncMethod : FactsBase
         {
             [Fact]
             public async Task SkipsEnqueuedOrCompletedRevalidations()
@@ -69,9 +69,10 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 });
 
                 // Act
-                var next = await _target.NextOrNullAsync();
+                var nextRevalidations = await _target.NextAsync();
 
                 // Assert
+                var next = Assert.Single(nextRevalidations);
                 Assert.Equal("Package", next.PackageId);
                 Assert.Equal("1.0.0", next.PackageNormalizedVersion);
             }
@@ -80,6 +81,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
             public async Task SkipsRepositorySignedPackages()
             {
                 // Arrange
+                _config.MaxBatchSize = 10;
+
                 _validationContext.Mock(
                     packageRevalidations: new[]
                     {
@@ -125,9 +128,10 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 });
 
                 // Act
-                var next = await _target.NextOrNullAsync();
+                var nextRevalidations = await _target.NextAsync();
 
                 // Assert
+                var next = Assert.Single(nextRevalidations);
                 Assert.Equal("Package", next.PackageId);
                 Assert.Equal("1.0.0", next.PackageNormalizedVersion);
 
@@ -206,9 +210,10 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 });
 
                 // Act
-                var next = await _target.NextOrNullAsync();
+                var nextRevalidations = await _target.NextAsync();
 
                 // Assert
+                var next = Assert.Single(nextRevalidations);
                 if (skipsPackageWithManyVersions)
                 {
                     Assert.Equal("Package", next.PackageId);
@@ -253,6 +258,8 @@ namespace NuGet.Services.Revalidate.Tests.Services
             public async Task SkipsDeletedPackages()
             {
                 // Arrange
+                _config.MaxBatchSize = 10;
+
                 _validationContext.Mock(packageRevalidations: new[]
                 {
                     new PackageRevalidation
@@ -298,9 +305,10 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 });
 
                 // Act
-                var next = await _target.NextOrNullAsync();
+                var nextRevalidations = await _target.NextAsync();
 
                 // Assert
+                var next = Assert.Single(nextRevalidations);
                 Assert.Equal("Package", next.PackageId);
                 Assert.Equal("1.0.0", next.PackageNormalizedVersion);
 
@@ -308,18 +316,20 @@ namespace NuGet.Services.Revalidate.Tests.Services
                 _telemetryService.Verify(t => t.TrackPackageRevalidationMarkedAsCompleted("Hard.Deleted.Package", "1.0.0"), Times.Once);
             }
 
-            [Fact]
-            public async Task IfReachesAttemptsThreshold_ReturnsNull()
+            [Theory]
+            [InlineData(1, false)]
+            [InlineData(2, true)]
+            public async Task RespectsTheMaxBatchSizeConfiguration(int maxBatchSize, bool includesSecondVersion)
             {
                 // Arrange
-                _config.MaximumAttempts = 1;
+                _config.MaxBatchSize = maxBatchSize;
 
                 _validationContext.Mock(packageRevalidations: new[]
                 {
                     new PackageRevalidation
                     {
                         Key = 1,
-                        PackageId = "Hard.Deleted.Package",
+                        PackageId = "Package",
                         PackageNormalizedVersion = "1.0.0",
                         Enqueued = null,
                         Completed = false,
@@ -328,7 +338,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
                     {
                         Key = 2,
                         PackageId = "Package",
-                        PackageNormalizedVersion = "1.0.0",
+                        PackageNormalizedVersion = "2.0.0",
                         Enqueued = null,
                         Completed = false,
                     },
@@ -341,16 +351,28 @@ namespace NuGet.Services.Revalidate.Tests.Services
                         PackageRegistration = new PackageRegistration { Id = "Package" },
                         NormalizedVersion = "1.0.0",
                         PackageStatusKey = PackageStatus.Available,
+                    },
+                    new Package
+                    {
+                        PackageRegistration = new PackageRegistration { Id = "Package" },
+                        NormalizedVersion = "2.0.0",
+                        PackageStatusKey = PackageStatus.Available,
                     }
                 });
 
                 // Act
-                var next = await _target.NextOrNullAsync();
+                var nextRevalidations = await _target.NextAsync();
 
                 // Assert
-                Assert.Null(next);
+                Assert.Equal(includesSecondVersion ? 2 : 1, nextRevalidations.Count);
+                Assert.Equal("Package", nextRevalidations[0].PackageId);
+                Assert.Equal("1.0.0", nextRevalidations[0].PackageNormalizedVersion);
 
-                _telemetryService.Verify(t => t.TrackPackageRevalidationMarkedAsCompleted("Hard.Deleted.Package", "1.0.0"), Times.Once);
+                if (includesSecondVersion)
+                {
+                    Assert.Equal("Package", nextRevalidations[1].PackageId);
+                    Assert.Equal("2.0.0", nextRevalidations[1].PackageNormalizedVersion);
+                }
             }
         }
 
@@ -371,8 +393,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
                 _config = new RevalidationQueueConfiguration
                 {
-                    MaximumAttempts = 5,
-                    SleepBetweenAttempts = TimeSpan.FromSeconds(0)
+                    MaxBatchSize = 1
                 };
 
                 _target = new RevalidationQueue(
