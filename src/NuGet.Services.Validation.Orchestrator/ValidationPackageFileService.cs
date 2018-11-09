@@ -236,10 +236,8 @@ namespace NuGet.Services.Validation.Orchestrator
                 fileName,
                 async (lazyStream, blobProperties) =>
                 {
-                    // Update the cache control only if the cache control is not set or 
-                    // not the same as the default value.
-                    if (string.IsNullOrEmpty(blobProperties.CacheControl)
-                        || !string.Equals(blobProperties.CacheControl, CoreConstants.DefaultCacheControl, StringComparison.OrdinalIgnoreCase))
+                    // Update the cache control only if the cache control is not the same as the default value.
+                    if (!string.Equals(blobProperties.CacheControl, CoreConstants.DefaultCacheControl, StringComparison.OrdinalIgnoreCase))
                     {
                         blobProperties.CacheControl = CoreConstants.DefaultCacheControl;
                         return await Task.FromResult(true);
