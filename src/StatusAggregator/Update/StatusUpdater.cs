@@ -13,7 +13,7 @@ namespace StatusAggregator.Update
 {
     public class StatusUpdater : IStatusUpdater
     {
-        private const string LastUpdatedCursorName = 
+        public const string LastUpdatedCursorName = "updated";
 
         private readonly ICursor _cursor;
         private readonly IEntityCollector _incidentCollector;
@@ -58,6 +58,8 @@ namespace StatusAggregator.Update
                 {
                     _logger.LogError(LogEvents.IncidentIngestionFailure, e, "Failed to update incident API data.");
                 }
+                
+                await _cursor.Set(LastUpdatedCursorName, cursor);
             }
         }
 
