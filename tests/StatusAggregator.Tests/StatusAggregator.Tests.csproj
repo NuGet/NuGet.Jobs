@@ -91,6 +91,7 @@
     <Compile Include="Update\AggregationEntityUpdaterTests.cs" />
     <Compile Include="Update\EventMessagingUpdaterTests.cs" />
     <Compile Include="Update\IncidentUpdaterTests.cs" />
+    <Compile Include="Update\StatusUpdaterTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\StatusAggregator\StatusAggregator.csproj">
