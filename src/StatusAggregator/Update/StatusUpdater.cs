@@ -53,13 +53,13 @@ namespace StatusAggregator.Update
                 {
                     await _incidentCollector.FetchLatest();
                     await _activeEventUpdater.UpdateAllAsync(cursor);
+
+                    await _cursor.Set(LastUpdatedCursorName, cursor);
                 }
                 catch (Exception e)
                 {
                     _logger.LogError(LogEvents.IncidentIngestionFailure, e, "Failed to update incident API data.");
                 }
-                
-                await _cursor.Set(LastUpdatedCursorName, cursor);
             }
         }
 

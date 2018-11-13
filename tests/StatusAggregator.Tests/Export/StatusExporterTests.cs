@@ -31,13 +31,13 @@ namespace StatusAggregator.Tests.Export
                 EventExporter
                     .Setup(x => x.Export(cursor))
                     .Returns(events);
-                
-                await Exporter.Export(cursor);
 
                 var lastUpdated = new DateTime(2018, 9, 12);
                 Cursor
                     .Setup(x => x.Get(StatusUpdater.LastUpdatedCursorName))
                     .ReturnsAsync(lastUpdated);
+
+                await Exporter.Export(cursor);
 
                 Serializer
                     .Verify(
