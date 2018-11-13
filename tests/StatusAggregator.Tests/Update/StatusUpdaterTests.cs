@@ -26,7 +26,7 @@ namespace StatusAggregator.Tests.Update
                     .ReturnsAsync(new DateTime(2018, 11, 12))
                     .Verifiable();
 
-                ManualStatusChangeCollector1
+                ManualStatusChangeCollector2
                     .Setup(x => x.FetchLatest())
                     .ReturnsAsync(new DateTime(2018, 11, 13))
                     .Verifiable();
@@ -62,7 +62,7 @@ namespace StatusAggregator.Tests.Update
                     .ReturnsAsync(new DateTime(2018, 11, 12))
                     .Verifiable();
 
-                ManualStatusChangeCollector1
+                ManualStatusChangeCollector2
                     .Setup(x => x.FetchLatest())
                     .ReturnsAsync(new DateTime(2018, 11, 13))
                     .Verifiable();
@@ -99,7 +99,7 @@ namespace StatusAggregator.Tests.Update
                     .ReturnsAsync(new DateTime(2018, 11, 12))
                     .Verifiable();
 
-                ManualStatusChangeCollector1
+                ManualStatusChangeCollector2
                     .Setup(x => x.FetchLatest())
                     .ReturnsAsync(new DateTime(2018, 11, 13))
                     .Verifiable();
@@ -188,6 +188,7 @@ namespace StatusAggregator.Tests.Update
                 {
                     // null enumerable
                     yield return new object[] { typeof(ArgumentNullException), null };
+
                     // empty enumerable
                     yield return new object[] { typeof(ArgumentException), new IEntityCollector[0] };
 
@@ -212,15 +213,13 @@ namespace StatusAggregator.Tests.Update
             [Fact]
             public void ThrowsWithoutActiveEventUpdater()
             {
-                var incidentCollector = new Mock<IEntityCollector>();
-                incidentCollector
-                    .Setup(x => x.Name)
-                    .Returns(IncidentEntityCollectorProcessor.IncidentsCollectorName);
-
                 Assert.Throws<ArgumentNullException>(
                     () => new StatusUpdater(
                         Mock.Of<ICursor>(),
-                        new[] { incidentCollector.Object },
+                        new[]
+                        {
+                            CreateCollectorWithName(IncidentEntityCollectorProcessor.IncidentsCollectorName).Object
+                        },
                         null,
                         Mock.Of<ILogger<StatusUpdater>>()));
             }
@@ -228,15 +227,13 @@ namespace StatusAggregator.Tests.Update
             [Fact]
             public void ThrowsWithoutLogger()
             {
-                var incidentCollector = new Mock<IEntityCollector>();
-                incidentCollector
-                    .Setup(x => x.Name)
-                    .Returns(IncidentEntityCollectorProcessor.IncidentsCollectorName);
-
                 Assert.Throws<ArgumentNullException>(
                     () => new StatusUpdater(
                         Mock.Of<ICursor>(),
-                        new[] { incidentCollector.Object },
+                        new[] 
+                        {
+                            CreateCollectorWithName(IncidentEntityCollectorProcessor.IncidentsCollectorName).Object
+                        },
                         Mock.Of<IActiveEventEntityUpdater>(),
                         null));
             }
