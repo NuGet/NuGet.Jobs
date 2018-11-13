@@ -20,14 +20,15 @@ namespace StatusAggregator.Tests.Export
             [Fact]
             public async Task SerializesStatus()
             {
+                var lastBuilt = new DateTime(2018, 11, 13);
                 var lastUpdated = new DateTime(2018, 9, 13);
                 var component = new TestComponent("hi", new[] { new TestComponent("yo"), new TestComponent("what's up") });
                 var events = new[] { new Event("", lastUpdated, lastUpdated, new[] { new Message(lastUpdated, "howdy") }) };
 
-                var expectedStatus = new ServiceStatus(lastUpdated, component, events);
+                var expectedStatus = new ServiceStatus(lastBuilt, lastUpdated, component, events);
                 var expectedJson = JsonConvert.SerializeObject(expectedStatus, StatusSerializer.Settings);
 
-                await Serializer.Serialize(lastUpdated, component, events);
+                await Serializer.Serialize(lastBuilt, lastUpdated, component, events);
 
                 Container
                     .Verify(

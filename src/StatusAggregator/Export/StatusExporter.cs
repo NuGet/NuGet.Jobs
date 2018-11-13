@@ -41,7 +41,7 @@ namespace StatusAggregator.Export
                 var recentEvents = _eventExporter.Export(cursor);
 
                 var lastUpdated = await _cursor.Get(StatusUpdater.LastUpdatedCursorName);
-                await _serializer.Serialize(lastUpdated, rootComponent, recentEvents);
+                await _serializer.Serialize(cursor, lastUpdated, rootComponent, recentEvents);
             }
         }
     }

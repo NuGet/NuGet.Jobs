@@ -41,7 +41,7 @@ namespace StatusAggregator.Tests.Export
 
                 Serializer
                     .Verify(
-                        x => x.Serialize(lastUpdated, component, events),
+                        x => x.Serialize(cursor, lastUpdated, component, events),
                         Times.Once());
             }
         }

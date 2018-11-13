@@ -13,6 +13,6 @@ namespace StatusAggregator.Export
         /// <summary>
         /// Serializes <paramref name="rootComponent"/> and <paramref name="recentEvents"/> and saves to storage with a time of <paramref name="lastUpdated"/>.
         /// </summary>
-        Task Serialize(DateTime lastUpdated, IComponent rootComponent, IEnumerable<Event> recentEvents);
+        Task Serialize(DateTime lastBuilt, DateTime lastUpdated, IComponent rootComponent, IEnumerable<Event> recentEvents);
     }
 }
