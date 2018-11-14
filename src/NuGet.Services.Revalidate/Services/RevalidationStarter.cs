@@ -136,6 +136,11 @@ namespace NuGet.Services.Revalidate
 
             foreach (var revalidation in revalidations)
             {
+                _logger.LogInformation(
+                    "Starting revalidation for package {PackageId} {PackageVersion}...",
+                    revalidation.PackageId,
+                    revalidation.PackageNormalizedVersion);
+
                 var message = new PackageValidationMessageData(
                     revalidation.PackageId,
                     revalidation.PackageNormalizedVersion,
@@ -144,6 +149,10 @@ namespace NuGet.Services.Revalidate
                 await _validationEnqueuer.StartValidationAsync(message);
 
                 _telemetryService.TrackPackageRevalidationStarted(revalidation.PackageId, revalidation.PackageNormalizedVersion);
+                _logger.LogInformation(
+                    "Started revalidation for package {PackageId} {PackageVersion}",
+                    revalidation.PackageId,
+                    revalidation.PackageNormalizedVersion);
             }
 
             _logger.LogInformation("Started {RevalidationCount} revalidations, marking them as enqueued...", revalidations.Count);

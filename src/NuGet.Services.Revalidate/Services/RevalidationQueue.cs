@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Entities;
@@ -74,34 +75,49 @@ namespace NuGet.Services.Revalidate
 
         private async Task<List<PackageRevalidation>> FilterCompletedRevalidationsAsync(IReadOnlyList<PackageRevalidation> revalidations)
         {
-            // Split the list of revalidations by which ones have been completed.
             var completed = new List<PackageRevalidation>();
             var uncompleted = revalidations.ToDictionary(
-                r => Tuple.Create(r.PackageId, r.PackageNormalizedVersion),
+                r => $"{r.PackageId}/{r.PackageNormalizedVersion}",
                 r => r);
 
-            // Seperate out packages that already have a repository signature.
+            // Packages that already have a repository signature do not need to be revalidated.
+            _logger.LogInformation("Finding revalidations that can be skipped because their packages are already repository signed...");
+
             var hasRepositorySignatures = await _validationContext.PackageSigningStates
-                .Where(s => revalidations.Any(r => r.PackageId == s.PackageId && r.PackageNormalizedVersion == s.PackageNormalizedVersion))
+                .Select(s => new {
+                    IdAndVersion = s.PackageId + "/" + s.PackageNormalizedVersion,
+                    s.PackageSignatures
+                })
+                .Where(s => uncompleted.Keys.Contains(s.IdAndVersion))
                 .Where(s => s.PackageSignatures.Any(sig => sig.Type == PackageSignatureType.Repository))
-                .Select(s => new { s.PackageId, s.PackageNormalizedVersion })
+                .Select(s => s.IdAndVersion)
                 .ToListAsync();
 
-            foreach (var package in hasRepositorySignatures)
-            {
-                var key = Tuple.Create(package.PackageId, package.PackageNormalizedVersion);
+            _logger.LogInformation(
+                "Found {RevalidationCount} revalidations that can be skipped because their packages are already repository signed",
+                hasRepositorySignatures.Count);
 
-                completed.Add(uncompleted[key]);
-                uncompleted.Remove(key);
+            foreach (var idAndVersion in hasRepositorySignatures)
+            {
+                completed.Add(uncompleted[idAndVersion]);
+                uncompleted.Remove(idAndVersion);
             }
 
-            // Separate out packages that are no longer available. We consider that a revalidation
-            // is "completed" if a package no longer exists.
+            // Packages that are no longer available should not be revalidated.
+            _logger.LogInformation("Finding revalidations' package statuses...");
+
             var packageStatuses = await _galleryContext.Set<Package>()
-                .Where(p => uncompleted.Any(r => r.Key.Item1 == p.PackageRegistration.Id && r.Key.Item2 == p.NormalizedVersion))
+                .Select(p => new
+                {
+                    Identity = p.PackageRegistration.Id + "/" + p.NormalizedVersion,
+                    p.PackageStatusKey
+                })
+                .Where(p => uncompleted.Keys.Contains(p.Identity))
                 .ToDictionaryAsync(
-                    p => Tuple.Create(p.PackageRegistration.Id, p.NormalizedVersion),
+                    p => p.Identity,
                     p => p.PackageStatusKey);
+
+            _logger.LogInformation("Found {RevalidationCount} revalidations' package statuses", packageStatuses.Count);
 
             foreach (var key in uncompleted.Keys.ToList())
             {
