@@ -73,7 +73,7 @@ namespace NuGet.Services.Revalidate
             return await FilterCompletedRevalidationsAsync(next);
         }
 
-        private async Task<List<PackageRevalidation>> FilterCompletedRevalidationsAsync(IReadOnlyList<PackageRevalidation> revalidations)
+        private async Task<IReadOnlyList<PackageRevalidation>> FilterCompletedRevalidationsAsync(IReadOnlyList<PackageRevalidation> revalidations)
         {
             var completed = new List<PackageRevalidation>();
             var uncompleted = revalidations.ToDictionary(
@@ -117,7 +117,7 @@ namespace NuGet.Services.Revalidate
                     p => p.Identity,
                     p => p.PackageStatusKey);
 
-            _logger.LogInformation("Found {RevalidationCount} revalidations' package statuses", packageStatuses.Count);
+            _logger.LogInformation("Found {PackageStatusCount} revalidations' package statuses", packageStatuses.Count);
 
             foreach (var key in uncompleted.Keys.ToList())
             {
@@ -129,6 +129,12 @@ namespace NuGet.Services.Revalidate
                     continue;
                 }
             }
+
+            _logger.LogInformation(
+                "Found {CompletedRevalidations} revalidations that can be skipped. There are {UncompletedRevalidations} " +
+                "revalidations remaining in this batch",
+                completed.Count,
+                uncompleted.Count);
 
             // Update revalidations that were determined to be completed and return the remaining revalidations.
             await MarkRevalidationsAsCompletedAsync(completed);
@@ -142,7 +148,7 @@ namespace NuGet.Services.Revalidate
                 foreach (var revalidation in revalidations)
                 {
                     _logger.LogInformation(
-                        "Marking package revalidation as completed as it has a repository signature or is deleted for {PackageId} {PackageNormalizedVersion}...",
+                        "Marking package {PackageId} {PackageNormalizedVersion} revalidation as completed as the package is unavailable or the package is already repository signed...",
                         revalidation.PackageId,
                         revalidation.PackageNormalizedVersion);
 
@@ -154,7 +160,7 @@ namespace NuGet.Services.Revalidate
                 foreach (var revalidation in revalidations)
                 {
                     _logger.LogInformation(
-                        "Marked package revalidation as completed as it has a repository signature or is deleted for {PackageId} {PackageNormalizedVersion}",
+                        "Marked package {PackageId} {PackageNormalizedVersion} revalidation as completed",
                         revalidation.PackageId,
                         revalidation.PackageNormalizedVersion);
 

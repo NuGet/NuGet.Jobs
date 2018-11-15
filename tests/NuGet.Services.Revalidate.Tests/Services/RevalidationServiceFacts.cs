@@ -98,7 +98,7 @@ namespace NuGet.Services.Revalidate.Tests.Services
 
                 _telemetryService.Verify(t => t.TrackStartNextRevalidationOperation(), Times.Once);
                 _scopeFactory.Verify(f => f.CreateScope(), Times.Once);
-                _throttler.Verify(t => t.DelayUntilNextRevalidationAsync(123), Times.Once);
+                _throttler.Verify(t => t.DelayUntilNextRevalidationAsync(123, It.IsAny<TimeSpan>()), Times.Once);
 
                 Assert.Equal(StartRevalidationStatus.RevalidationsEnqueued, _operation.Properties.Result);
             }

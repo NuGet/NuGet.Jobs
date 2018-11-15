@@ -71,9 +71,10 @@ namespace NuGet.Services.Revalidate
         {
             try
             {
+                var enqueueTime = DateTime.UtcNow;
                 foreach (var revalidation in revalidations)
                 {
-                    revalidation.Enqueued = DateTime.UtcNow;
+                    revalidation.Enqueued = enqueueTime;
                 }
 
                 await _context.SaveChangesAsync();

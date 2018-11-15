@@ -49,14 +49,19 @@ namespace NuGet.Services.Revalidate
             {
                 _logger.LogInformation("Starting next revalidation...");
 
+                var startRevalidationsStopwatch = Stopwatch.StartNew();
                 var result = await StartNextRevalidationsAsync();
+                startRevalidationsStopwatch.Stop();
 
                 switch (result.Status)
                 {
                     case StartRevalidationStatus.RevalidationsEnqueued:
-                        _logger.LogInformation("Successfully enqueued revalidations");
+                        _logger.LogInformation(
+                            "Successfully enqueued {RevalidationsStarted} revalidations in {Duration}",
+                            result.RevalidationsStarted,
+                            startRevalidationsStopwatch.Elapsed);
 
-                        await _throttler.DelayUntilNextRevalidationAsync(result.RevalidationsStarted);
+                        await _throttler.DelayUntilNextRevalidationAsync(result.RevalidationsStarted, startRevalidationsStopwatch.Elapsed);
                         break;
 
                     case StartRevalidationStatus.RetryLater:
