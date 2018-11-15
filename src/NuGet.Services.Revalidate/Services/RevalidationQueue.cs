@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Entities;
@@ -45,29 +44,31 @@ namespace NuGet.Services.Revalidate
             //   1. The package has more than "MaximumPackageVersions" versions
             //   2. The package has already been enqueued for revalidation
             //   3. The package's revalidation was completed by an external factory (like manual admin revalidation)
-            IQueryable<PackageRevalidation> query = _validationContext.PackageRevalidations;
-
-            if (_config.MaximumPackageVersions.HasValue)
+            List<PackageRevalidation> next;
+            using (_telemetry.TrackFindNextRevalidations())
             {
-                query = query.Where(
-                    r =>
-                    !_validationContext.PackageRevalidations.GroupBy(r2 => r2.PackageId)
-                    .Where(g => g.Count() > _config.MaximumPackageVersions)
-                    .Any(g => g.Key == r.PackageId));
+                _logger.LogInformation("Finding the next packages to revalidate...");
+
+                IQueryable<PackageRevalidation> query = _validationContext.PackageRevalidations;
+
+                if (_config.MaximumPackageVersions.HasValue)
+                {
+                    query = query.Where(
+                        r =>
+                        !_validationContext.PackageRevalidations.GroupBy(r2 => r2.PackageId)
+                        .Where(g => g.Count() > _config.MaximumPackageVersions)
+                        .Any(g => g.Key == r.PackageId));
+                }
+
+                next = await query
+                    .Where(r => r.Enqueued == null)
+                    .Where(r => r.Completed == false)
+                    .OrderBy(r => r.Key)
+                    .Take(_config.MaxBatchSize)
+                    .ToListAsync();
             }
 
-            var next = await query
-                .Where(r => r.Enqueued == null)
-                .Where(r => r.Completed == false)
-                .OrderBy(r => r.Key)
-                .Take(_config.MaxBatchSize)
-                .ToListAsync();
-
-            if (!next.Any())
-            {
-                _logger.LogWarning("Could not find any incomplete revalidations");
-                return next;
-            }
+            _logger.LogInformation("Found {Revalidations} packages to revalidate", next.Count);
 
             // Return all the revalidations that aren't already completed.
             return await FilterCompletedRevalidationsAsync(next);
@@ -75,6 +76,11 @@ namespace NuGet.Services.Revalidate
 
         private async Task<IReadOnlyList<PackageRevalidation>> FilterCompletedRevalidationsAsync(IReadOnlyList<PackageRevalidation> revalidations)
         {
+            if (!revalidations.Any())
+            {
+                return revalidations;
+            }
+
             var completed = new List<PackageRevalidation>();
             var uncompleted = revalidations.ToDictionary(
                 r => $"{r.PackageId}/{r.PackageNormalizedVersion}",
@@ -137,7 +143,11 @@ namespace NuGet.Services.Revalidate
                 uncompleted.Count);
 
             // Update revalidations that were determined to be completed and return the remaining revalidations.
-            await MarkRevalidationsAsCompletedAsync(completed);
+            if (completed.Any())
+            {
+                await MarkRevalidationsAsCompletedAsync(completed);
+            }
+
             return uncompleted.Values.ToList();
         }
 
