@@ -8,14 +8,13 @@ namespace NuGet.Services.Revalidate
     public class RevalidationQueueConfiguration
     {
         /// <summary>
-        /// The maximum times that the <see cref="RevalidationQueue"/> should look for a revalidation
-        /// before giving up.
+        /// The maximum number of revalidations that should be returned by <see cref="IRevalidationQueue.NextAsync"/>.
         /// </summary>
-        public int MaximumAttempts { get; set; } = 5;
+        public int MaxBatchSize { get; set; } = 64;
 
         /// <summary>
-        /// The time to sleep after an initialized revalidation is deemed completed.
+        /// If non-null, this skips revalidations of packages with more than this many versions.
         /// </summary>
-        public TimeSpan SleepBetweenAttempts { get; set; } = TimeSpan.FromSeconds(5);
+        public int? MaximumPackageVersions { get; set; }
     }
 }

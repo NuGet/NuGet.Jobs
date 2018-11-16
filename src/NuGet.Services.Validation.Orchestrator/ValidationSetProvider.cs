@@ -7,8 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuGet.Services.Entities;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
-using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
@@ -152,7 +152,11 @@ namespace NuGet.Services.Validation.Orchestrator
                 ValidatingType = message.ValidatingType
             };
 
-            foreach (var validation in _validationConfiguration.Validations)
+            var validationsToStart = _validationConfiguration
+                .Validations
+                .Where(v => v.ShouldStart);
+
+            foreach (var validation in validationsToStart)
             {
                 var packageValidation = new PackageValidation
                 {

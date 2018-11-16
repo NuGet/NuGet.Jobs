@@ -17,6 +17,7 @@ using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.PackageSigning.Telemetry;
 using NuGet.Jobs.Validation.Storage;
 using NuGet.Packaging.Signing;
+using NuGet.Services.Entities;
 using NuGet.Services.Validation;
 using NuGet.Services.Validation.Issues;
 using NuGetGallery;
@@ -62,12 +63,12 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageSigningStateService = new Mock<IPackageSigningStateService>();
                 _formatValidator = new Mock<ISignatureFormatValidator>();
 
-                _minimalVerifyResult = new VerifySignaturesResult(valid: true, signed: true);
+                _minimalVerifyResult = new VerifySignaturesResult(isValid: true, isSigned: true);
                 _formatValidator
                     .Setup(x => x.ValidateMinimalAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(() => _minimalVerifyResult);
 
-                _fullVerifyResult = new VerifySignaturesResult(valid: true, signed: true);
+                _fullVerifyResult = new VerifySignaturesResult(isValid: true, isSigned: true);
                 _formatValidator
                     .Setup(x => x.ValidateAllSignaturesAsync(It.IsAny<ISignedPackageReader>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(() => _fullVerifyResult);
@@ -275,7 +276,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
-                _minimalVerifyResult = new VerifySignaturesResult(valid: false, signed: true);
+                _minimalVerifyResult = new VerifySignaturesResult(isValid: false, isSigned: true);
                 _message = new SignatureValidationMessage(
                     TestResources.SignedPackageLeafId,
                     TestResources.SignedPackageLeaf1Version,
@@ -303,8 +304,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
                 _minimalVerifyResult = new VerifySignaturesResult(
-                    valid: false,
-                    signed: true,
+                    isValid: false,
+                    isSigned: true,
                     results: new[]
                     {
                         new InvalidSignaturePackageVerificationResult(
@@ -348,7 +349,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     TestResources.SignedPackageLeafId,
                     TestResources.SignedPackageLeaf1Version,
                     TestResources.Leaf1Thumbprint);
-                _fullVerifyResult = new VerifySignaturesResult(valid: false, signed: true);
+                _fullVerifyResult = new VerifySignaturesResult(isValid: false, isSigned: true);
                 _message = new SignatureValidationMessage(
                     TestResources.SignedPackageLeafId,
                     TestResources.SignedPackageLeaf1Version,
@@ -378,8 +379,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     TestResources.SignedPackageLeaf1Version,
                     TestResources.Leaf1Thumbprint);
                 _fullVerifyResult = new VerifySignaturesResult(
-                    valid: false,
-                    signed: true,
+                    isValid: false,
+                    isSigned: true,
                     results: new[]
                     {
                         new InvalidSignaturePackageVerificationResult(
