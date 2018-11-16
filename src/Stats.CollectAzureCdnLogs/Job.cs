@@ -114,7 +114,7 @@ namespace Stats.CollectAzureCdnLogs
             var azureClient = new CloudBlobRawLogClient(LoggerFactory, _cloudStorageAccount);
 
             // Collect directory listing.
-            var rawLogFileUris = await ftpClient.GetRawLogFiles(_ftpServerUri);
+            var rawLogFileUris = await ftpClient.GetRawLogFileUris(_ftpServerUri);
 
             // Prepare cloud storage blob container.
             var cloudBlobContainer = await azureClient.CreateContainerIfNotExistsAsync(_cloudStorageContainerName);
