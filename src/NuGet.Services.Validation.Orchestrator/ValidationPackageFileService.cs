@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Validation;
+using NuGet.Services.Entities;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
 using NuGetGallery.Packaging;
@@ -220,6 +221,30 @@ namespace NuGet.Services.Validation.Orchestrator
                 _fileMetadataService.ValidationFolderName,
                 destFileName,
                 AccessConditionWrapper.GenerateEmptyCondition());
+        }
+
+        public async Task UpdatePackageBlobPropertiesAsync(PackageValidationSet validationSet)
+        {
+            var fileName = BuildFileName(
+                validationSet,
+                _fileMetadataService.FileSavePathTemplate,
+                _fileMetadataService.FileExtension);
+
+            // This will throw if the ETag changes between read and write operations.
+            await _fileStorageService.SetPropertiesAsync(
+                _fileMetadataService.FileFolderName,
+                fileName,
+                async (lazyStream, blobProperties) =>
+                {
+                    // Update the cache control only if the cache control is not the same as the default value.
+                    if (!string.Equals(blobProperties.CacheControl, CoreConstants.DefaultCacheControl, StringComparison.OrdinalIgnoreCase))
+                    {
+                        blobProperties.CacheControl = CoreConstants.DefaultCacheControl;
+                        return await Task.FromResult(true);
+                    }
+
+                    return await Task.FromResult(false);
+                });
         }
 
         public async Task<PackageStreamMetadata> UpdatePackageBlobMetadataAsync(PackageValidationSet validationSet)
