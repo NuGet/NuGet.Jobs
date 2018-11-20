@@ -5,12 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Stats.AzureCdnLogs.Common;
 
 namespace Stats.CollectAzureCdnLogs
 {
     internal interface IRawLogClient
     {
-        Task<IEnumerable<RawLogFileInfo>> GetRawLogFiles(Uri uri);
+        Task<IEnumerable<RawLogFileInfo>> GetRawLogFiles(string accountNumber, AzureCdnPlatform platform);
         Task<Stream> OpenReadAsync(Uri uri);
         Task<bool> RenameAsync(Uri uri, string newFileName);
         Task DeleteAsync(Uri uri);

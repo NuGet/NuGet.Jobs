@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Stats.AzureCdnLogs.Common;
+using Stats.CollectAzureCdnLogs.Configuration;
 
 namespace Stats.CollectAzureCdnLogs.Ftp
 {
@@ -17,20 +18,12 @@ namespace Stats.CollectAzureCdnLogs.Ftp
         : IRawLogClient
     {
         private const int _maxFtpRequestAttempts = 5;
-        private readonly string _username;
-        private readonly string _password;
+        private readonly FtpConfiguration _ftpConfiguration;
 
-        public FtpRawLogClient(ILoggerFactory loggerFactory, string username, string password)
+        public FtpRawLogClient(ILogger<FtpRawLogClient> logger, FtpConfiguration ftpConfiguration)
         {
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
-            Logger = loggerFactory.CreateLogger<FtpRawLogClient>();
-
-            _username = username;
-            _password = password;
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _ftpConfiguration = ftpConfiguration ?? throw new ArgumentNullException(nameof(ftpConfiguration));
         }
 
         public ILogger Logger { get; private set; }
@@ -97,22 +90,23 @@ namespace Stats.CollectAzureCdnLogs.Ftp
             }
         }
 
-        public async Task<IEnumerable<RawLogFileInfo>> GetRawLogFiles(Uri uri)
+        public async Task<IEnumerable<RawLogFileInfo>> GetRawLogFiles(string accountNumber, AzureCdnPlatform platform)
         {
-            if (uri == null)
+            if (string.IsNullOrEmpty(accountNumber))
             {
-                throw new ArgumentNullException(nameof(uri));
+                throw new ArgumentNullException(nameof(accountNumber));
             }
 
-            var uriString = uri.ToString();
+            var serverUri = _ftpConfiguration.GetServerUri();
+            var uriString = serverUri.ToString();
 
             using (Logger.BeginScope("Beginning directory listing from '{FtpDirectoryUri}'", uriString))
             {
                 try
                 {
-                    var request = CreateRequest(uri);
+                    var request = CreateRequest(serverUri);
                     request.Method = WebRequestMethods.Ftp.ListDirectory;
-                    var webResponse = (FtpWebResponse) await request.GetResponseAsync();
+                    var webResponse = (FtpWebResponse)await request.GetResponseAsync();
 
                     string directoryList;
                     using (var streamReader = new StreamReader(webResponse.GetResponseStream(), Encoding.ASCII))
@@ -124,7 +118,13 @@ namespace Stats.CollectAzureCdnLogs.Ftp
 
                     var fileNames = directoryList.Split(Environment.NewLine.ToCharArray(),
                         StringSplitOptions.RemoveEmptyEntries);
-                    var rawLogFiles = fileNames.Select(fn => new RawLogFileInfo(new Uri(uri.EnsureTrailingSlash(), fn)));
+                    var rawLogFiles = fileNames
+                        .Select(fn => new RawLogFileInfo(new Uri(serverUri.EnsureTrailingSlash(), fn)))
+                        .Where(rawLogFile =>
+                            // Only process the raw log files matching the target CDN platform and account number.
+                            rawLogFile.AzureCdnPlatform == platform
+                            && rawLogFile.AzureCdnAccountNumber.Equals(accountNumber, StringComparison.InvariantCultureIgnoreCase))
+                        .ToList();
 
                     return rawLogFiles;
                 }
@@ -143,7 +143,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
             {
                 try
                 {
-                    var response = (FtpWebResponse) await request.GetResponseAsync();
+                    var response = (FtpWebResponse)await request.GetResponseAsync();
                     return response.StatusCode;
                 }
                 catch (WebException exception)
@@ -205,7 +205,7 @@ namespace Stats.CollectAzureCdnLogs.Ftp
         private FtpWebRequest CreateRequest(Uri uri)
         {
             var request = (FtpWebRequest)WebRequest.Create(uri);
-            request.Credentials = new NetworkCredential(_username, _password);
+            request.Credentials = new NetworkCredential(_ftpConfiguration.Username, _ftpConfiguration.Password);
             request.EnableSsl = true;
 
             return request;

@@ -49,6 +49,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Blob\CloudBlobRawLogClient.cs" />
+    <Compile Include="Configuration\AzureCdnConfiguration.cs" />
+    <Compile Include="Configuration\FtpConfiguration.cs" />
     <Compile Include="FileExtensions.cs" />
     <Compile Include="Ftp\FtpDownloadStream.cs" />
     <Compile Include="Ftp\FtpRawLogClient.cs" />
@@ -70,6 +72,9 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="Scripts\*" />
+    <None Include="settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Stats.CollectAzureCdnLogs.nuspec" />
   </ItemGroup>
   <ItemGroup>

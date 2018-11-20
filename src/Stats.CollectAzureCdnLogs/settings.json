@@ -1,0 +1,19 @@
+{
+  "FtpSource": {
+    "Username": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Username}",
+    "Password": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Password}"
+    "ServerUrl": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Uri}",
+  },
+  "AzureCdn": {
+    "AccountNumber": "#{Jobs.stats.collectazurecdnlogs.AzureCdn.AccountNumber}",
+    "Platform": "#{Jobs.stats.collectazurecdnlogs.AzureCdn.Platform}",
+    "CloudStorageAccount": "#{Jobs.stats.collectazurecdnlogs.AzureCdn.CloudStorageAccount}",
+    "CloudStorageContainerName": "#{Jobs.stats.collectazurecdnlogs.AzureCdn.CloudStorageContainerName}"
+  },
+  "KeyVault_VaultName": "#{Deployment.Azure.KeyVault.VaultName}",
+  "KeyVault_ClientId": "#{Deployment.Azure.KeyVault.ClientId}",
+  "KeyVault_CertificateThumbprint": "#{Deployment.Azure.KeyVault.CertificateThumbprint}",
+  "KeyVault_ValidateCertificate": true,
+  "KeyVault_StoreName": "My",
+  "KeyVault_StoreLocation": "LocalMachine"
+}

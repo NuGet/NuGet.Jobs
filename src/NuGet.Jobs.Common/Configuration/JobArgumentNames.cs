@@ -65,15 +65,8 @@ namespace NuGet.Jobs
         public const string LicenseReportService = "LicenseReportService";
         public const string LicenseReportUser = "LicenseReportUser";
         public const string LicenseReportPassword = "LicenseReportPassword";
-
-        //Arguments specific to CollectAzureCdnLogs
-        public const string FtpSourceUri = "FtpSourceUri";
-        public const string FtpSourceUsername = "FtpSourceUsername";
-        public const string FtpSourcePassword = "FtpSourcePassword";
-        public const string AzureCdnAccountNumber = "AzureCdnAccountNumber";
-        public const string AzureCdnPlatform = "AzureCdnPlatform";
-
-        //Arguments shared by CollectAzureCdnLogs, ParseAzureCdnLogs, Search.GenerateAuxiliaryData
+        
+        //Arguments shared by ParseAzureCdnLogs, Search.GenerateAuxiliaryData
         public const string AzureCdnCloudStorageAccount = "AzureCdnCloudStorageAccount";
         public const string AzureCdnCloudStorageContainerName = "AzureCdnCloudStorageContainerName";
 

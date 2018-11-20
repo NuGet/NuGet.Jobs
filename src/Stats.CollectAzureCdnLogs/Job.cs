@@ -7,15 +7,21 @@ using System.ComponentModel.Design;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using ICSharpCode.SharpZipLib;
 using ICSharpCode.SharpZipLib.GZip;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
+using Microsoft.Extensions.Options;
 using NuGet.Jobs;
+using NuGet.Services.Configuration;
+using NuGet.Services.KeyVault;
 using Stats.AzureCdnLogs.Common;
 using Stats.CollectAzureCdnLogs.Blob;
+using Stats.CollectAzureCdnLogs.Configuration;
 using Stats.CollectAzureCdnLogs.Ftp;
 
 namespace Stats.CollectAzureCdnLogs
@@ -23,113 +29,104 @@ namespace Stats.CollectAzureCdnLogs
     public class Job
          : JobBase
     {
+        private const string ConfigurationArgument = "Configuration";
+        private const string FtpSourceSectionName = "FtpSource";
+        private const string AzureCdnSectionName = "AzureCdn";
+
+        private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
         private static readonly DateTime _unixTimestamp = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        private Uri _ftpServerUri;
-        private string _ftpUsername;
-        private string _ftpPassword;
-        private string _azureCdnAccountNumber;
-        private AzureCdnPlatform _azureCdnPlatform;
-        private CloudStorageAccount _cloudStorageAccount;
-        private string _cloudStorageContainerName;
+
+        private IServiceProvider _serviceProvider;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
-            var ftpLogFolder = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.FtpSourceUri);
-            var azureCdnPlatform = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnPlatform);
-            var cloudStorageAccount = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageAccount);
-            _cloudStorageContainerName = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnCloudStorageContainerName);
-            _azureCdnAccountNumber = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.AzureCdnAccountNumber);
-            _ftpUsername = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.FtpSourceUsername);
-            _ftpPassword = JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.FtpSourcePassword);
-
-            _ftpServerUri = ValidateFtpUri(ftpLogFolder);
-            _azureCdnPlatform = ValidateAzureCdnPlatform(azureCdnPlatform);
-            _cloudStorageAccount = ValidateAzureCloudStorageAccount(cloudStorageAccount);
+            var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
+            var configurationRoot = GetConfigurationRoot(configurationFilename, out var secretInjector);
+            _serviceProvider = GetServiceProvider(configurationRoot, secretInjector);
         }
 
-        private static CloudStorageAccount ValidateAzureCloudStorageAccount(string cloudStorageAccount)
+        private IConfigurationRoot GetConfigurationRoot(string configurationFilename, out ISecretInjector secretInjector)
         {
-            if (string.IsNullOrEmpty(cloudStorageAccount))
-            {
-                throw new ArgumentException("Job parameter for Azure CDN Cloud Storage Account is not defined.");
-            }
+            Logger.LogInformation("Using the {ConfigurationFilename} configuration file", configurationFilename);
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddJsonFile(configurationFilename, optional: false, reloadOnChange: true);
 
-            CloudStorageAccount account;
-            if (CloudStorageAccount.TryParse(cloudStorageAccount, out account))
-            {
-                return account;
-            }
-            throw new ArgumentException("Job parameter for Azure CDN Cloud Storage Account is invalid.");
+            var uninjectedConfiguration = builder.Build();
+
+            secretInjector = null;
+
+            var secretReaderFactory = new ConfigurationRootSecretReaderFactory(uninjectedConfiguration);
+            var cachingSecretReaderFactory = new CachingSecretReaderFactory(secretReaderFactory, KeyVaultSecretCachingTimeout);
+            secretInjector = cachingSecretReaderFactory.CreateSecretInjector(cachingSecretReaderFactory.CreateSecretReader());
+
+            builder = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                .AddInjectedJsonFile(configurationFilename, secretInjector);
+
+            return builder.Build();
         }
 
-        private static AzureCdnPlatform ValidateAzureCdnPlatform(string azureCdnPlatform)
+        private IServiceProvider GetServiceProvider(IConfigurationRoot configurationRoot, ISecretInjector secretInjector)
         {
-            if (string.IsNullOrEmpty(azureCdnPlatform))
-            {
-                throw new ArgumentException("Job parameter for Azure CDN Platform is not defined.");
-            }
+            var services = new ServiceCollection();
 
-            AzureCdnPlatform value;
-            if (Enum.TryParse(azureCdnPlatform, true, out value))
-            {
-                return value;
-            }
-            throw new ArgumentException("Job parameter for Azure CDN Platform is invalid. Allowed values are: HttpLargeObject, HttpSmallObject, ApplicationDeliveryNetwork, FlashMediaStreaming.");
+            services.AddSingleton(secretInjector);
 
+            ConfigureLibraries(services);
+            ConfigureJobServices(services, configurationRoot);
+
+            return CreateProvider(services, configurationRoot);
         }
 
-        private static Uri ValidateFtpUri(string serverUrl)
+        private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            var trimmedServerUrl = (serverUrl ?? string.Empty).Trim();
-            if (string.IsNullOrEmpty(trimmedServerUrl))
-            {
-                throw new ArgumentException("FTP Server Uri is null or empty.", "serverUrl");
-            }
-
-            // if no protocol was specified assume ftp
-            var schemeRegex = new Regex(@"^[a-zA-Z]+://");
-            if (!schemeRegex.IsMatch(trimmedServerUrl))
-            {
-                trimmedServerUrl = string.Concat(@"ftp://", trimmedServerUrl);
-            }
-
-            var uri = new Uri(trimmedServerUrl);
-            if (!uri.IsAbsoluteUri)
-            {
-                throw new UriFormatException(string.Format(CultureInfo.CurrentCulture, "FTP Server Uri must be an absolute URI. Value: '{0}'.", trimmedServerUrl));
-            }
-
-            // only ftp is supported but we could support others
-            if (!uri.Scheme.Equals("ftp", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new UriFormatException(string.Format(CultureInfo.CurrentCulture, "FTP Server Uri must use the 'ftp://' scheme. Value: '{0}'.", trimmedServerUrl));
-            }
-
-            return uri;
+            services.Configure<FtpConfiguration>(configurationRoot.GetSection(FtpSourceSectionName));
+            services.Configure<AzureCdnConfiguration>(configurationRoot.GetSection(AzureCdnSectionName));
         }
+
+        private static IServiceProvider CreateProvider(IServiceCollection services, IConfigurationRoot configurationRoot)
+        {
+            var containerBuilder = new ContainerBuilder();
+            containerBuilder.Populate(services);
+
+            return new AutofacServiceProvider(containerBuilder.Build());
+        }
+
+        private void ConfigureLibraries(IServiceCollection services)
+        {
+            // we do not call services.AddOptions here, because we want our own custom version of IOptionsSnapshot 
+            // to be present in the service collection for KeyVault secret injection to work properly
+            services.Add(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(NonCachingOptionsSnapshot<>)));
+            services.AddSingleton(LoggerFactory);
+            services.AddLogging();
+        }
+
 
         public override async Task Run()
         {
-            var ftpClient = new FtpRawLogClient(LoggerFactory, _ftpUsername, _ftpPassword);
-            var azureClient = new CloudBlobRawLogClient(LoggerFactory, _cloudStorageAccount);
+            // Ensure secrets are refreshed on every run.
+            var ftpConfiguration = GetRequiredService<IOptionsSnapshot<FtpConfiguration>>().Value;
+            var azureCdnConfiguration = GetRequiredService<IOptionsSnapshot<AzureCdnConfiguration>>().Value;
 
             // Collect directory listing.
-            var rawLogFiles = await ftpClient.GetRawLogFiles(_ftpServerUri);
+            var ftpClient = new FtpRawLogClient(
+                LoggerFactory.CreateLogger<FtpRawLogClient>(),
+                ftpConfiguration);
+            var rawLogFiles = await ftpClient.GetRawLogFiles(
+                azureCdnConfiguration.AccountNumber,
+                azureCdnConfiguration.GetAzureCdnPlatform());
 
             // Prepare cloud storage blob container.
-            var cloudBlobContainer = await azureClient.CreateContainerIfNotExistsAsync(_cloudStorageContainerName);
+            var azureClient = new CloudBlobRawLogClient(
+                LoggerFactory.CreateLogger<CloudBlobRawLogClient>(),
+                azureCdnConfiguration);
+            var cloudBlobContainer = await azureClient.CreateContainerIfNotExistsAsync();
 
             foreach (var rawLogFile in rawLogFiles)
             {
                 try
                 {
-                    if (_azureCdnPlatform != rawLogFile.AzureCdnPlatform
-                        || !_azureCdnAccountNumber.Equals(rawLogFile.AzureCdnAccountNumber, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        // Only process the raw log files matching the target CDN platform and account number.
-                        continue;
-                    }
-
                     var skipProcessing = false;
                     var uploadSucceeded = false;
                     var rawLogUri = rawLogFile.Uri;
@@ -364,6 +361,11 @@ namespace Stats.CollectAzureCdnLogs
         {
             var secondsPastEpoch = (dateTime - _unixTimestamp).TotalSeconds;
             return secondsPastEpoch.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private T GetRequiredService<T>()
+        {
+            return _serviceProvider.GetRequiredService<T>();
         }
     }
 }
