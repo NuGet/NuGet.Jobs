@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Autofac;
@@ -116,6 +117,12 @@ namespace Stats.CollectAzureCdnLogs
             var rawLogFiles = await ftpClient.GetRawLogFiles(
                 azureCdnConfiguration.AccountNumber,
                 azureCdnConfiguration.GetAzureCdnPlatform());
+
+            if (!rawLogFiles.Any())
+            {
+                // No files to process: exit early.
+                return;
+            }
 
             // Prepare cloud storage blob container.
             var azureClient = new CloudBlobRawLogClient(
