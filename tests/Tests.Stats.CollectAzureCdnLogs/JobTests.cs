@@ -29,15 +29,6 @@ namespace Tests.Stats.CollectAzureCdnLogs
             Assert.ThrowsAny<Exception>(() => job.Init(ServiceContainer, jobArgsDictionary));
         }
 
-        [Fact]
-        public void InitSucceedsWhenValidArguments()
-        {
-            var jobArgsDictionary = CreateValidJobArgsDictionary();
-
-            var job = new Job();
-            job.Init(ServiceContainer, jobArgsDictionary);
-        }
-
         [Theory]
         [InlineData("")]
         [InlineData(null)]
@@ -130,13 +121,7 @@ namespace Tests.Stats.CollectAzureCdnLogs
         private static Dictionary<string, string> CreateValidJobArgsDictionary()
         {
             var jobArgsDictionary = new Dictionary<string, string>();
-            jobArgsDictionary.Add("FtpSourceUri", "ftp://someserver/logFolder");
-            jobArgsDictionary.Add("FtpSourceUsername", @"domain\alias");
-            jobArgsDictionary.Add("FtpSourcePassword", "secret");
-            jobArgsDictionary.Add("AzureCdnPlatform", "HttpLargeObject");
-            jobArgsDictionary.Add("AzureCdnAccountNumber", "AA00");
-            jobArgsDictionary.Add("AzureCdnCloudStorageAccount", "UseDevelopmentStorage=true;");
-            jobArgsDictionary.Add("AzureCdnCloudStorageContainerName", "cdnLogs");
+            jobArgsDictionary.Add("Configuration", "settings.json");
 
             return jobArgsDictionary;
         }
