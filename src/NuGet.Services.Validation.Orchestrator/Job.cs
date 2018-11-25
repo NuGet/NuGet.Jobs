@@ -250,7 +250,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 });
             services.AddTransient<ICoreFileStorageService, CloudBlobCoreFileStorageService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();
-            services.AddTransient<IStatusProcessor<Package>, EntityStatusProcessor<Package>>();
+            services.AddTransient<IStatusProcessor<Package>, PackageStatusProcessor>();
             services.AddTransient<IValidationSetProvider<Package>, ValidationSetProvider<Package>>();
             services.AddTransient<IValidationSetProcessor, ValidationSetProcessor>();
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();

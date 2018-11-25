@@ -51,6 +51,7 @@
     <Compile Include="Configuration\EmailConfiguration.cs" />
     <Compile Include="EntityStatusProcessor.cs" />
     <Compile Include="Error.cs" />
+    <Compile Include="PackageStatusProcessor.cs" />
     <Compile Include="Services\MessageServiceConfiguration.cs" />
     <Compile Include="Services\SymbolsMessageService.cs" />
     <Compile Include="SymbolsStatusProcessor.cs" />
