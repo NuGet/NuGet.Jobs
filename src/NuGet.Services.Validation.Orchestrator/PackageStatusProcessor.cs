@@ -21,9 +21,11 @@ namespace NuGet.Services.Validation.Orchestrator
         {
         }
 
-        protected override async Task MakePackageAvailableAsync(IValidatingEntity<Package> validatingEntity, PackageValidationSet validationSet)
+        protected override async Task OnBeforeUpdateDatabaseToMakePackageAvailable(
+            IValidatingEntity<Package> validatingEntity,
+            PackageValidationSet validationSet)
         {
-            await base.MakePackageAvailableAsync(validatingEntity, validationSet);
+
         }
     }
 }

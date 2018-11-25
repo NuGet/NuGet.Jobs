@@ -100,6 +100,9 @@ namespace NuGet.Services.Validation.Orchestrator
             // 3) Update the package's blob properties in the public blob storage container.
             await _packageFileService.UpdatePackageBlobPropertiesAsync(validationSet);
 
+            // 3.5) Allow descendants to do their own things before we update the database
+            await OnBeforeUpdateDatabaseToMakePackageAvailable(validatingEntity, validationSet);
+
             // 4) Operate on the database.
             var fromStatus = await MarkPackageAsAvailableAsync(validationSet, validatingEntity, metadata, copied);
 
@@ -134,6 +137,16 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.PackageNormalizedVersion,
                     validationSet.ValidationTrackingId.ToString());
             }
+        }
+
+        /// <summary>
+        /// Allows descendants to do additional operations before database is updated to mark package as available.
+        /// </summary>
+        /// <param name="validatingEntity">Entity being marked as available.</param>
+        /// <param name="validationSet">Validation set that was completed.</param>
+        protected virtual Task OnBeforeUpdateDatabaseToMakePackageAvailable(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
+        {
+            return Task.CompletedTask;
         }
 
         private async Task<PackageStatus> MarkPackageAsAvailableAsync(
