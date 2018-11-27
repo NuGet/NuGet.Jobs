@@ -25,7 +25,7 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidatingEntity<Package> validatingEntity,
             PackageValidationSet validationSet)
         {
-
+            // TODO: extract license file
         }
     }
 }
