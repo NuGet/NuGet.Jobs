@@ -1,24 +1,29 @@
-﻿using Microsoft.Extensions.Logging;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using NuGet.Services.Entities;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using NuGetGallery;
 
 namespace NuGet.Services.Validation.Orchestrator
 {
     public class PackageStatusProcessor : EntityStatusProcessor<Package>
     {
+        private readonly ICoreLicenseFileService _coreLicenseFileService;
+
         public PackageStatusProcessor(
             IEntityService<Package> galleryPackageService,
             IValidationFileService packageFileService,
             IValidatorProvider validatorProvider,
             ITelemetryService telemetryService,
-            ILogger<EntityStatusProcessor<Package>> logger) 
+            ILogger<EntityStatusProcessor<Package>> logger,
+            ICoreLicenseFileService coreLicenseFileService) 
             : base(galleryPackageService, packageFileService, validatorProvider, telemetryService, logger)
         {
+            _coreLicenseFileService = coreLicenseFileService ?? throw new ArgumentNullException(nameof(coreLicenseFileService));
         }
 
         protected override async Task OnBeforeUpdateDatabaseToMakePackageAvailable(
@@ -26,6 +31,11 @@ namespace NuGet.Services.Validation.Orchestrator
             PackageValidationSet validationSet)
         {
             // TODO: extract license file
+
+            using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
+            {
+                await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
+            }
         }
     }
 }

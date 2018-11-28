@@ -526,6 +526,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidatorProviderMock = new Mock<IValidatorProvider>();
                 TelemetryServiceMock = new Mock<ITelemetryService>();
                 LoggerMock = new Mock<ILogger<EntityStatusProcessor<Package>>>();
+                CoreLicenseFileServiceMock = new Mock<ICoreLicenseFileService>();
 
                 var streamMetadata = new PackageStreamMetadata()
                 {
@@ -538,12 +539,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     .Setup(x => x.UpdatePackageBlobMetadataAsync(It.IsAny<PackageValidationSet>()))
                     .ReturnsAsync(streamMetadata);
 
-                Target = new EntityStatusProcessor<Package>(
+                Target = new PackageStatusProcessor(
                     PackageServiceMock.Object,
                     PackageFileServiceMock.Object,
                     ValidatorProviderMock.Object,
                     TelemetryServiceMock.Object,
-                    LoggerMock.Object);
+                    LoggerMock.Object,
+                    CoreLicenseFileServiceMock.Object);
 
                 PackageValidatingEntity = new PackageValidatingEntity(Package);
             }
@@ -555,6 +557,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             public Mock<IValidatorProvider> ValidatorProviderMock { get; }
             public Mock<ITelemetryService> TelemetryServiceMock { get; }
             public Mock<ILogger<EntityStatusProcessor<Package>>> LoggerMock { get; }
+            public Mock<ICoreLicenseFileService> CoreLicenseFileServiceMock { get; }
             public EntityStatusProcessor<Package> Target { get; }
             public PackageValidatingEntity PackageValidatingEntity { get; }
         }
