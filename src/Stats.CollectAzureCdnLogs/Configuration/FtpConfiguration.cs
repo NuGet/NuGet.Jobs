@@ -29,7 +29,7 @@ namespace Stats.CollectAzureCdnLogs.Configuration
             var trimmedServerUrl = (ServerUrl ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(trimmedServerUrl))
             {
-                throw new ArgumentException("FTP Server Uri is null or empty.", "serverUrl");
+                throw new ArgumentException("FTP Server Url is null or empty.", nameof(ServerUrl));
             }
 
             // if no protocol was specified assume ftp
@@ -42,13 +42,13 @@ namespace Stats.CollectAzureCdnLogs.Configuration
             var uri = new Uri(trimmedServerUrl);
             if (!uri.IsAbsoluteUri)
             {
-                throw new UriFormatException(string.Format(CultureInfo.CurrentCulture, "FTP Server Uri must be an absolute URI. Value: '{0}'.", trimmedServerUrl));
+                throw new UriFormatException(string.Format(CultureInfo.CurrentCulture, "FTP Server Url must be an absolute URI. Value: '{0}'.", trimmedServerUrl));
             }
 
             // only ftp is supported but we could support others
             if (!uri.Scheme.Equals("ftp", StringComparison.OrdinalIgnoreCase))
             {
-                throw new UriFormatException(string.Format(CultureInfo.CurrentCulture, "FTP Server Uri must use the 'ftp://' scheme. Value: '{0}'.", trimmedServerUrl));
+                throw new UriFormatException(string.Format(CultureInfo.CurrentCulture, "FTP Server Url must use the 'ftp://' scheme. Value: '{0}'.", trimmedServerUrl));
             }
 
             return uri;

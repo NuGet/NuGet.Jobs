@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AzureCdnPlatformExtensionsTests.cs" />
+    <Compile Include="Configuration\AzureCdnConfigurationTests.cs" />
+    <Compile Include="Configuration\FtpConfigurationTests.cs" />
     <Compile Include="JobTests.cs" />
     <Compile Include="RawLogFileInfoTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

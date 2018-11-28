@@ -40,6 +40,7 @@ namespace Stats.CollectAzureCdnLogs.Configuration
             {
                 return account;
             }
+
             throw new ArgumentException("Job parameter for Azure CDN Cloud Storage Account is invalid.");
         }
     }
