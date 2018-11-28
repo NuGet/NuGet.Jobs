@@ -1,8 +1,8 @@
 {
   "FtpSource": {
     "Username": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Username}",
-    "Password": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Password}"
-    "ServerUrl": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Uri}",
+    "Password": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Password}",
+    "ServerUrl": "#{Jobs.stats.collectazurecdnlogs.FtpSource.Uri}"
   },
   "AzureCdn": {
     "AccountNumber": "#{Jobs.stats.collectazurecdnlogs.AzureCdn.AccountNumber}",
