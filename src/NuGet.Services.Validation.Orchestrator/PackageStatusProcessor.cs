@@ -30,11 +30,22 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidatingEntity<Package> validatingEntity,
             PackageValidationSet validationSet)
         {
-            // TODO: extract license file
-
-            using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
+            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
             {
-                await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
+                using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
+                {
+                    await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
+                }
+            }
+        }
+
+        protected override async Task OnCleanupAfterDatabaseUpdateFailure(
+            IValidatingEntity<Package> validatingEntity,
+            PackageValidationSet validationSet)
+        {
+            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
+            {
+                await _coreLicenseFileService.DeleteLicenseFileAsync(validationSet.PackageId, validationSet.PackageNormalizedVersion);
             }
         }
     }

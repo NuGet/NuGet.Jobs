@@ -195,12 +195,26 @@ namespace NuGet.Services.Validation.Orchestrator
                 if (copied && fromStatus != PackageStatus.Available)
                 {
                     await _packageFileService.DeletePackageFileAsync(validationSet);
+                    await OnCleanupAfterDatabaseUpdateFailure(validatingEntity, validationSet);
                 }
 
                 throw;
             }
 
             return fromStatus;
+        }
+
+        /// <summary>
+        /// Allows descendants to do additional cleanup on failure to update DB when marking package as available.
+        /// Only called if package was copied to public container before trying to update DB.
+        /// </summary>
+        /// <param name="validatingEntity">Entity being marked as available.</param>
+        /// <param name="validationSet">Validation set that was completed.</param>
+        protected virtual Task OnCleanupAfterDatabaseUpdateFailure(
+            IValidatingEntity<T> validatingEntity,
+            PackageValidationSet validationSet)
+        {
+            return Task.CompletedTask;
         }
 
         private async Task<bool> UpdatePublicPackageAsync(PackageValidationSet validationSet)
