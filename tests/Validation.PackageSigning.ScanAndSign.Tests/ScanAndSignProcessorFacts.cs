@@ -267,7 +267,7 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
         }
 
         [Fact]
-        public async Task WhenUsernameInvalid_SkipsScanAndSign()
+        public async Task WhenUsernameInvalid_ScanAndSigns()
         {
             _config.RepositorySigningEnabled = true;
 
@@ -276,13 +276,21 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
                 .Setup(p => p.FindPackageRegistrationById(_request.PackageId))
                 .Returns(_packageRegistrationWithInvalidUser);
 
+            var owners = _packageRegistrationWithInvalidUser.Owners.Select(o => o.Username).ToList();
+
             var result = await _target.StartAsync(_request);
 
             _packageServiceMock
                 .Verify(p => p.FindPackageRegistrationById(_request.PackageId), Times.Once);
 
             _enqueuerMock
-                .Verify(e => e.EnqueueScanAsync(_request.ValidationId, _request.NupkgUrl), Times.Once);
+                .Verify(
+                    e => e.EnqueueScanAndSignAsync(
+                        _request.ValidationId,
+                        _request.NupkgUrl,
+                        _config.V3ServiceIndexUrl,
+                        owners),
+                    Times.Once);
 
             _validatorStateServiceMock
                 .Verify(v => v.TryAddValidatorStatusAsync(_request, _status, ValidationStatus.Incomplete), Times.Once);
