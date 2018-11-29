@@ -6,6 +6,5 @@ namespace NuGet.Services.Validation.Orchestrator
     public class FlatContainerConfiguration
     {
         public string ConnectionString { get; set; }
-        public string ContainerName { get; set; }
     }
 }
