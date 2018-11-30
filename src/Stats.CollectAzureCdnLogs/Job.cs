@@ -27,11 +27,10 @@ namespace Stats.CollectAzureCdnLogs
     public class Job : JsonConfigurationJob
     {
         private static readonly DateTime _unixTimestamp = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private IOptionsSnapshot<CollectAzureCdnLogsConfiguration> _configurationAccessor;
         private Uri _ftpServerUri;
         private AzureCdnPlatform _azureCdnPlatform;
         private CloudStorageAccount _cloudStorageAccount;
-
-        private CollectAzureCdnLogsConfiguration _configuration;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
@@ -42,30 +41,34 @@ namespace Stats.CollectAzureCdnLogs
 
         public void InitializeJobConfiguration(IServiceProvider serviceProvider)
         {
-            _configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<CollectAzureCdnLogsConfiguration>>().Value;
+            _configurationAccessor = serviceProvider.GetRequiredService<IOptionsSnapshot<CollectAzureCdnLogsConfiguration>>();
+        }
 
-            if (string.IsNullOrEmpty(_configuration.AzureCdnAccountNumber))
+        private void ValidateJobConfiguration(CollectAzureCdnLogsConfiguration configuration)
+        {
+            if (string.IsNullOrEmpty(configuration.AzureCdnAccountNumber))
             {
-                throw new ArgumentException("Configuration 'AzureCdnAccountNumber' is required", nameof(_configuration));
+                throw new ArgumentException("Configuration 'AzureCdnAccountNumber' is required", nameof(configuration));
             }
 
-            if (string.IsNullOrEmpty(_configuration.AzureCdnCloudStorageContainerName))
+            if (string.IsNullOrEmpty(configuration.AzureCdnCloudStorageContainerName))
             {
-                throw new ArgumentException("Configuration 'AzureCdnCloudStorageContainerName' is required", nameof(_configuration));
+                throw new ArgumentException("Configuration 'AzureCdnCloudStorageContainerName' is required", nameof(configuration));
             }
 
-            if (string.IsNullOrEmpty(_configuration.FtpSourceUsername)) {
-                throw new ArgumentException("Configuration 'FtpSourceUsername' is required", nameof(_configuration));
-            }
-
-            if (string.IsNullOrEmpty(_configuration.FtpSourcePassword))
+            if (string.IsNullOrEmpty(configuration.FtpSourceUsername))
             {
-                throw new ArgumentException("Configuration 'FtpSourcePassword' is required", nameof(_configuration));
+                throw new ArgumentException("Configuration 'FtpSourceUsername' is required", nameof(configuration));
             }
 
-            _cloudStorageAccount = ValidateAzureCloudStorageAccount(_configuration.AzureCdnCloudStorageAccount);
-            _azureCdnPlatform = ValidateAzureCdnPlatform(_configuration.AzureCdnPlatform);
-            _ftpServerUri = ValidateFtpUri(_configuration.FtpSourceUri);
+            if (string.IsNullOrEmpty(configuration.FtpSourcePassword))
+            {
+                throw new ArgumentException("Configuration 'FtpSourcePassword' is required", nameof(configuration));
+            }
+
+            _cloudStorageAccount = ValidateAzureCloudStorageAccount(configuration.AzureCdnCloudStorageAccount);
+            _azureCdnPlatform = ValidateAzureCdnPlatform(configuration.AzureCdnPlatform);
+            _ftpServerUri = ValidateFtpUri(configuration.FtpSourceUri);
         }
 
         private static CloudStorageAccount ValidateAzureCloudStorageAccount(string cloudStorageAccount)
@@ -131,14 +134,18 @@ namespace Stats.CollectAzureCdnLogs
 
         public override async Task Run()
         {
-            var ftpClient = new FtpRawLogClient(LoggerFactory, _configuration.FtpSourceUsername, _configuration.FtpSourcePassword);
+            // Ensure we read secrets on every run. Refresh and validate job configuration.
+            var configuration = _configurationAccessor.Value;
+            ValidateJobConfiguration(configuration);
+
+            var ftpClient = new FtpRawLogClient(LoggerFactory, configuration.FtpSourceUsername, configuration.FtpSourcePassword);
             var azureClient = new CloudBlobRawLogClient(LoggerFactory, _cloudStorageAccount);
 
             // Collect directory listing.
             var rawLogFileUris = await ftpClient.GetRawLogFileUris(_ftpServerUri);
 
             // Prepare cloud storage blob container.
-            var cloudBlobContainer = await azureClient.CreateContainerIfNotExistsAsync(_configuration.AzureCdnCloudStorageContainerName);
+            var cloudBlobContainer = await azureClient.CreateContainerIfNotExistsAsync(configuration.AzureCdnCloudStorageContainerName);
 
             foreach (var rawLogFileUri in rawLogFileUris)
             {
@@ -147,7 +154,7 @@ namespace Stats.CollectAzureCdnLogs
                     var rawLogFile = new RawLogFileInfo(rawLogFileUri);
 
                     if (_azureCdnPlatform != rawLogFile.AzureCdnPlatform
-                        || !_configuration.AzureCdnAccountNumber.Equals(rawLogFile.AzureCdnAccountNumber, StringComparison.InvariantCultureIgnoreCase))
+                        || !configuration.AzureCdnAccountNumber.Equals(rawLogFile.AzureCdnAccountNumber, StringComparison.InvariantCultureIgnoreCase))
                     {
                         // Only process the raw log files matching the target CDN platform and account number.
                         continue;
