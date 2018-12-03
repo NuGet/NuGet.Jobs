@@ -4,7 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
+using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.RetryPolicies;
 
@@ -13,30 +13,30 @@ namespace Stats.CollectAzureCdnLogs.Blob
     internal sealed class CloudBlobRawLogClient
     {
         private readonly ILogger _logger;
-        private readonly CloudStorageAccount _cloudStorageAccount;
+        private readonly CollectAzureCdnLogsConfiguration _configuration;
 
-        public CloudBlobRawLogClient(ILoggerFactory loggerFactory, CloudStorageAccount cloudStorageAccount)
+        public CloudBlobRawLogClient(
+            ILogger<CloudBlobRawLogClient> logger,
+            IOptionsSnapshot<CollectAzureCdnLogsConfiguration> configurationAccessor)
         {
-            if (loggerFactory == null)
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            if (configurationAccessor == null)
             {
-                throw new ArgumentNullException(nameof(loggerFactory));
+                throw new ArgumentNullException(nameof(configurationAccessor));
             }
 
-            if (cloudStorageAccount == null)
-            {
-                throw new ArgumentNullException(nameof(cloudStorageAccount));
-            }
-
-            _logger = loggerFactory.CreateLogger<CloudBlobRawLogClient>();
-            _cloudStorageAccount = cloudStorageAccount;
+            _configuration = configurationAccessor.Value;
         }
 
-        public async Task<CloudBlobContainer> CreateContainerIfNotExistsAsync(string containerName)
+        public async Task<CloudBlobContainer> CreateContainerIfNotExistsAsync()
         {
-            var cloudBlobClient = _cloudStorageAccount.CreateCloudBlobClient();
+            var cloudStorageAccount = ConfigurationValidator.ValidateAzureCloudStorageAccount(_configuration.AzureCdnCloudStorageAccount);
+
+            var cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
             cloudBlobClient.DefaultRequestOptions.RetryPolicy = new ExponentialRetry(TimeSpan.FromSeconds(10), 5);
 
-            var cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
+            var cloudBlobContainer = cloudBlobClient.GetContainerReference(_configuration.AzureCdnCloudStorageContainerName);
             await cloudBlobContainer.CreateIfNotExistsAsync();
 
             return cloudBlobContainer;

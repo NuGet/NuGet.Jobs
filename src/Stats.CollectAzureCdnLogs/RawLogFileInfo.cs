@@ -19,13 +19,8 @@ namespace Stats.CollectAzureCdnLogs
 
         public RawLogFileInfo(Uri uri)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException("uri");
-            }
-
+            Uri = uri ?? throw new ArgumentNullException("uri");
             ContentType = "text/plain";
-            Uri = uri;
 
             TryParseFileName();
         }

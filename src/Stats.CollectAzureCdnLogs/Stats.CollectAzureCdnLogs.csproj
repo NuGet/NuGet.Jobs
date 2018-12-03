@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Blob\CloudBlobRawLogClient.cs" />
+    <Compile Include="Configuration\ConfigurationValidator.cs" />
     <Compile Include="Configuration\CollectAzureCdnLogsConfiguration.cs" />
     <Compile Include="FileExtensions.cs" />
     <Compile Include="Ftp\FtpDownloadStream.cs" />
