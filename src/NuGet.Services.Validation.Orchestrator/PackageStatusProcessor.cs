@@ -35,6 +35,10 @@ namespace NuGet.Services.Validation.Orchestrator
                 using (_telemetryService.TrackDurationToExtractLicenseFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
                 using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
                 {
+                    _logger.LogInformation("Extracting the license file of type {EmbeddedLicenseFileType} for the package {PackageId} {PackageVersion}",
+                        validatingEntity.EntityRecord.EmbeddedLicenseType,
+                        validationSet.PackageId,
+                        validationSet.PackageNormalizedVersion);
                     await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
                     _logger.LogInformation("Successfully extracted the license file.");
                 }
@@ -49,8 +53,9 @@ namespace NuGet.Services.Validation.Orchestrator
             {
                 using (_telemetryService.TrackDurationToDeleteLicenseFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
                 {
-                    _logger.LogInformation("Deleting the license file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
+                    _logger.LogInformation("Cleaning up the license file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
                     await _coreLicenseFileService.DeleteLicenseFileAsync(validationSet.PackageId, validationSet.PackageNormalizedVersion);
+                    _logger.LogInformation("Deleted the license file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
                 }
             }
         }
