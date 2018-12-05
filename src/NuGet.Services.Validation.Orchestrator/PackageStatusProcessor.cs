@@ -36,6 +36,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
                 {
                     await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
+                    _logger.LogInformation("Successfully extracted the license file.");
                 }
             }
         }
