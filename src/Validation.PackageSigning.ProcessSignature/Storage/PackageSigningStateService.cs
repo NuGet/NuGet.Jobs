@@ -52,7 +52,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.Storage
                 // Remove all stored signatures if the package is transitioning to an unsigned state.
                 if (status == PackageSigningStatus.Unsigned)
                 {
-                    foreach (var signature in signatureState.PackageSignatures)
+                    foreach (var signature in signatureState.PackageSignatures.ToList())
                     {
                         _validationContext.PackageSignatures.Remove(signature);
                     }
