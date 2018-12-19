@@ -56,7 +56,7 @@ namespace NuGet.Jobs.Validation
                     {
                         packageStream = FileStreamUtility.GetTemporaryFile();
 
-                        await networkStream.CopyToAsync(packageStream, FileStreamUtility.BufferSize, cancellationToken);
+                        await networkStream.CopyToAsync(packageStream, 81920, cancellationToken);
                     }
                 }
 
