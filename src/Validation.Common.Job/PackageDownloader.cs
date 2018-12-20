@@ -29,6 +29,9 @@ namespace NuGet.Jobs.Validation
         }
 
         public async Task<Stream> DownloadAsync(Uri packageUri, CancellationToken cancellationToken)
+            => await DownloadAsync(packageUri, cancellationToken, FileStreamUtility.BufferSize);
+
+        public async Task<Stream> DownloadAsync(Uri packageUri, CancellationToken cancellationToken, int bufferSize)
         {
             _logger.LogInformation("Attempting to download package from {PackageUri}...", packageUri);
 
@@ -56,7 +59,7 @@ namespace NuGet.Jobs.Validation
                     {
                         packageStream = FileStreamUtility.GetTemporaryFile();
 
-                        await networkStream.CopyToAsync(packageStream, FileStreamUtility.BufferSize, cancellationToken);
+                        await networkStream.CopyToAsync(packageStream, bufferSize, cancellationToken);
                     }
                 }
 
