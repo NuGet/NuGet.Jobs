@@ -33,6 +33,21 @@ namespace NuGet.Jobs.Validation
 
         public async Task<Stream> DownloadAsync(Uri packageUri, CancellationToken cancellationToken, int bufferSize)
         {
+            if (packageUri == null)
+            {
+                throw new ArgumentNullException(nameof(packageUri));
+            }
+
+            if (cancellationToken == null)
+            {
+                throw new ArgumentNullException(nameof(cancellationToken));
+            }
+
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), $"{nameof(bufferSize)} must be greater than 0");
+            }
+
             _logger.LogInformation("Attempting to download package from {PackageUri}...", packageUri);
 
             Stream packageStream = null;
