@@ -7,7 +7,7 @@ namespace NuGet.Jobs.Validation
 {
     public static class FileStreamUtility
     {
-        public const int BufferSize = 80 * 1024;
+        private const int BufferSize = 80 * 1024;
 
         public static FileStream GetTemporaryFile()
         {
