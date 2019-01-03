@@ -199,9 +199,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<SymbolsValidationConfiguration>(configurationRoot.GetSection(SymbolsValidatorSectionName));
             services.Configure<SymbolsIngesterConfiguration>(configurationRoot.GetSection(SymbolsIngesterSectionName));
 
-            // Setting package downloader buffer size to default buffer size used for copying streams
-            // see https://github.com/dotnet/corefx/blob/master/src/Common/src/CoreLib/System/IO/Stream.cs#L32-L35
-            services.Configure<PackageDownloaderConfiguration>(downloaderConfiguration => downloaderConfiguration.BufferSize = 80 * 1024);
+            services.Configure<PackageDownloaderConfiguration>(downloaderConfiguration => { });
 
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
