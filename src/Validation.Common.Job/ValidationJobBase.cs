@@ -41,8 +41,6 @@ namespace NuGet.Jobs.Validation
 
             ConfigureDatabaseServices(services);
 
-            services.Configure<PackageDownloaderConfiguration>(downloaderConfiguration => { });
-
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
             services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
             services.AddTransient<IFileDownloader, PackageDownloader>();

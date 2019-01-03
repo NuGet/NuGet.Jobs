@@ -199,8 +199,6 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<SymbolsValidationConfiguration>(configurationRoot.GetSection(SymbolsValidatorSectionName));
             services.Configure<SymbolsIngesterConfiguration>(configurationRoot.GetSection(SymbolsIngesterSectionName));
 
-            services.Configure<PackageDownloaderConfiguration>(downloaderConfiguration => { });
-
             services.AddTransient<ConfigurationValidator>();
             services.AddTransient<OrchestrationRunner>();
 
