@@ -7,6 +7,13 @@ namespace NuGet.Jobs.Validation
 {
     public static class FileStreamUtility
     {
+        /// <summary>
+        /// The buffer size to use for file operations.
+        /// </summary>
+        /// <remarks>
+        /// The value is chosen to align with the default Stream buffer size:
+        /// https://github.com/dotnet/corefx/blob/master/src/Common/src/CoreLib/System/IO/Stream.cs#L32-L35
+        /// </remarks>
         private const int BufferSize = 80 * 1024;
 
         public static FileStream GetTemporaryFile()
