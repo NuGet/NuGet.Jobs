@@ -264,9 +264,9 @@ namespace Validation.Symbols
         public static bool IsPortable(Stream pdbStream)
         {
             // Portable pdbs have the first four bytes "B", "S", "J", "B"
-            byte[] portableStamp = new byte[4] { 66, 83, 74, 66 };
+            var portableStamp = new byte[4] { 66, 83, 74, 66 };
 
-            byte[] currentPDBStamp = new byte[4];
+            var currentPDBStamp = new byte[4];
             pdbStream.Read(currentPDBStamp, 0, 4);
             return currentPDBStamp.SequenceEqual(portableStamp);
         }
