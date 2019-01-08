@@ -38,6 +38,10 @@ namespace Stats.CollectAzureChinaCDNLogs
         public ChinaStatsCollector(ILogSource source, ILogDestination destination, ILogger<ChinaStatsCollector> logger) : base(source, destination, logger)
         {}
 
+        public ChinaStatsCollector()
+        {
+        }
+
         public override OutputLogLine TransformRawLogLine(string line)
         {
             if (string.IsNullOrWhiteSpace(line) || 

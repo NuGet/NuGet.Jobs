@@ -38,6 +38,10 @@ namespace Stats.AzureCdnLogs.Common.Collect
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        public Collector()
+        {
+        }
+
         /// <summary>
         /// Try to process the files from the source.
         /// After processing the file is cleaned. This means it wil be moved either to a archive or a deadletter container.
