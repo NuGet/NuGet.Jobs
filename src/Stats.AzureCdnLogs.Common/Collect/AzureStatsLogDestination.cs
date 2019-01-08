@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using ICSharpCode.SharpZipLib.GZip;
@@ -23,13 +24,15 @@ namespace Stats.AzureCdnLogs.Common.Collect
         private CloudStorageAccount _azureAccount;
         private CloudBlobClient _cloudBlobClient;
         private CloudBlobContainer _cloudBlobContainer;
+        private readonly ILogger<AzureStatsLogDestination> _logger;
 
-        public AzureStatsLogDestination(CloudStorageAccount storageAccount, string containerName)
+        public AzureStatsLogDestination(CloudStorageAccount storageAccount, string containerName, ILogger<AzureStatsLogDestination> logger)
         {
             _azureAccount = storageAccount;
             _cloudBlobClient = _azureAccount.CreateCloudBlobClient();
             _cloudBlobContainer = _cloudBlobClient.GetContainerReference(containerName);
             _cloudBlobContainer.CreateIfNotExists();
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -44,7 +47,10 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <returns></returns>
         public async Task WriteAsync(Stream inputStream, Action<Stream,Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
         {
-            if(token.IsCancellationRequested)
+            _logger.LogInformation("WriteAsync: Start to write to {DestinationFileName}. ContentType is {ContentType}", 
+                $"{_cloudBlobContainer.StorageUri}{_cloudBlobContainer.Name}{destinationFileName}",
+                destinationContentType);
+            if (token.IsCancellationRequested)
             {
                 return;
             }
@@ -65,6 +71,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 writeAction(inputStream, resultStream);
             }
             resultStream.Commit();
+            _logger.LogInformation("WriteAsync: End write to {DestinationFileName}", destinationFileName);
         }
 
         private string GetContentType(ContentType contentType)

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Stats.AzureCdnLogs.Common.Collect
 {
@@ -22,19 +23,18 @@ namespace Stats.AzureCdnLogs.Common.Collect
         private static readonly DateTime _unixTimestamp = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
         protected ILogSource _source;
         protected ILogDestination _destination;
-        
-        public Collector()
-        { }
+        protected readonly ILogger<Collector> _logger;
 
         /// <summary>
         /// .ctor for the Collector
         /// </summary>
         /// <param name="source">The source of the Collector.</param>
         /// <param name="destination">The destination for the collector.</param>
-        public Collector(ILogSource source, ILogDestination destination)
+        public Collector(ILogSource source, ILogDestination destination, ILogger<Collector> logger)
         {
             _source = source;
             _destination = destination;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -55,7 +55,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 var files = await _source.GetFilesAsync(maxFileCount, token);
                 var parallelResult = Parallel.ForEach(files, (file) =>
                 {
-                    if(token.IsCancellationRequested)
+                    _logger.LogInformation("ProcessAsync: {File} ", file.AbsoluteUri);
+                    if (token.IsCancellationRequested)
                     {
                         return;
                     }
@@ -76,17 +77,17 @@ namespace Stats.AzureCdnLogs.Common.Collect
                             }).
                             ContinueWith(t =>
                             {
-                                AddException(exceptions, t.Exception);
+                                AddException(exceptions, t.Exception, $"Method:WriteAsync File:{file.AbsoluteUri}");
                                 return _source.CleanAsync(file, onError: t.IsFaulted, token: token).Result;
                             }).
                             ContinueWith(t =>
                             {
-                                AddException(exceptions, t.Exception);
+                                AddException(exceptions, t.Exception, $"Method:CleanAsync File:{file.AbsoluteUri}");
                                 return _source.ReleaseLockAsync(file, token).Result;
                             }).
                             ContinueWith(t =>
                             {
-                                AddException(exceptions, t.Exception);
+                                AddException(exceptions, t.Exception, $"Method:ReleaseLockAsync File:{file.AbsoluteUri}");
                                 return t.Result;
                             }).Result;
                         }
@@ -95,7 +96,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                     //if the task is still running at this moment any future failure would not matter 
                     if(lockResult.Item2 != null && lockResult.Item2.IsFaulted)
                     {
-                        AddException(exceptions, lockResult.Item2.Exception);
+                        AddException(exceptions, lockResult.Item2.Exception, $"Method:AcquireLease File:{file.AbsoluteUri}");
                     }
                 });
             }
@@ -106,7 +107,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             return exceptions.Count() > 0 ? new AggregateException(exceptions.ToArray()) : null;
         }
 
-        private void AddException(ConcurrentBag<Exception> exceptions, Exception e)
+        private void AddException(ConcurrentBag<Exception> exceptions, Exception e, string fileUri = "")
         {
             if(e == null)
             {
@@ -116,12 +117,12 @@ namespace Stats.AzureCdnLogs.Common.Collect
             {
                 foreach (Exception innerEx in ((AggregateException)e).Flatten().InnerExceptions)
                 {
-                    exceptions.Add(innerEx);
+                    exceptions.Add(new Exception(fileUri, innerEx));
                 }
             }
             else
             {
-                exceptions.Add(e);
+                exceptions.Add(new Exception(fileUri, e));
             }
         }
 
