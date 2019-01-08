@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 
 namespace Stats.AzureCdnLogs.Common.Collect
 {
@@ -73,7 +74,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                                 {
                                     throw new ApplicationException($"File {file} failed validation.");
                                 }
-                                _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, token).Wait();
+                                return _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, token).Result;
                             }).
                             ContinueWith(t =>
                             {
@@ -142,24 +143,35 @@ namespace Stats.AzureCdnLogs.Common.Collect
       
         protected void ProcessLogStream(Stream sourceStream, Stream targetStream)
         {
-            using (var sourceStreamReader = new StreamReader(sourceStream))
-            using (var targetStreamWriter = new StreamWriter(targetStream))
+            try
             {
-                targetStreamWriter.WriteLine(OutputLogLine.Header);
-                var lineNumber = 0;
-                while (!sourceStreamReader.EndOfStream)
+                using (var sourceStreamReader = new StreamReader(sourceStream))
+                using (var targetStreamWriter = new StreamWriter(targetStream))
                 {
-                    var rawLogLine = TransformRawLogLine(sourceStreamReader.ReadLine());
-                    if (rawLogLine != null)
+                    targetStreamWriter.WriteLine(OutputLogLine.Header);
+                    var lineNumber = 0;
+                    while (!sourceStreamReader.EndOfStream)
                     {
-                        lineNumber++;
-                        var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine.ToString());
-                        if (!string.IsNullOrEmpty(logLine))
+                        var rawLogLine = TransformRawLogLine(sourceStreamReader.ReadLine());
+                        if (rawLogLine != null)
                         {
-                            targetStreamWriter.Write(logLine);
+                            lineNumber++;
+                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine.ToString());
+                            if (!string.IsNullOrEmpty(logLine))
+                            {
+                                targetStreamWriter.Write(logLine);
+                            }
                         }
-                    }
-                };
+                    };
+                    _logger.LogInformation("ProcessLogStream: Finished writting to the destination stream.");
+                }
+            }
+            // It could happen that this may throw in cases when the target bolb already exists and a lease is taken on it. 
+            // This should happen in very rare cases when an input file got processed twice.
+            catch(StorageException ex)
+            {
+                _logger.LogCritical("ProcessLogStream: An exception while processing the stream {Exception}.", ex);
+                throw ex;
             }
         }
 
