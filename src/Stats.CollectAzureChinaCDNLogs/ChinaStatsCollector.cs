@@ -39,8 +39,7 @@ namespace Stats.CollectAzureChinaCDNLogs
         {}
 
         public ChinaStatsCollector()
-        {
-        }
+        { }
 
         public override OutputLogLine TransformRawLogLine(string line)
         {

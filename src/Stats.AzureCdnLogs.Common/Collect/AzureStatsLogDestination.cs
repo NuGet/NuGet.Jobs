@@ -62,8 +62,6 @@ namespace Stats.AzureCdnLogs.Common.Collect
             if (!(await blob.ExistsAsync()))
             {
                 var resultStream = await blob.OpenWriteAsync();
-
-                bool bb = await blob.ExistsAsync();
                 if (destinationContentType == ContentType.GZip)
                 {
                     using (var resultGzipStream = new GZipOutputStream(resultStream))

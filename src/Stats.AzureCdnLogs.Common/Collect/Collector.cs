@@ -27,19 +27,22 @@ namespace Stats.AzureCdnLogs.Common.Collect
         protected readonly ILogger<Collector> _logger;
 
         /// <summary>
+        /// Used by UnitTests
+        /// </summary>
+        public Collector()
+        {}
+
+        /// <summary>
         /// .ctor for the Collector
         /// </summary>
         /// <param name="source">The source of the Collector.</param>
         /// <param name="destination">The destination for the collector.</param>
+        /// <param name="logger">The logger.</param>
         public Collector(ILogSource source, ILogDestination destination, ILogger<Collector> logger)
         {
             _source = source;
             _destination = destination;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
-
-        public Collector()
-        {
         }
 
         /// <summary>
@@ -170,8 +173,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                     _logger.LogInformation("ProcessLogStream: Finished writting to the destination stream.");
                 }
             }
-            // It could happen that this may throw in cases when the target bolb already exists and a lease is taken on it. 
-            // This should happen in very rare cases when an input file got processed twice.
+            // It should not happen, but if it does log it for better diagnostics.
             catch(StorageException ex)
             {
                 _logger.LogCritical("ProcessLogStream: An exception while processing the stream {Exception}.", ex);
