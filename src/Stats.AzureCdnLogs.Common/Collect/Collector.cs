@@ -175,7 +175,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 }
             }
             // It should not happen, but if it does log it for better diagnostics.
-            catch(StorageException ex)
+            catch (StorageException ex)
             {
                 _logger.LogCritical("ProcessLogStream: An exception while processing the stream {Exception}.", ex);
                 throw ex;

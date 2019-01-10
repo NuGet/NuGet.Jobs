@@ -44,8 +44,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <param name="destinationFileName">The destination file name.</param>
         /// <param name="destinationContentType">The destination content type.</param>
         /// <param name="token">A token to cancel the operation.</param>
-        /// <returns></returns>
-        public async Task<bool> WriteAsync(Stream inputStream, Action<Stream,Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
+        /// <returns>Returns true if the action to write the destination file was successful. If the destination file was already present, the operation will return false without any action taken.</returns>
+        public async Task<bool> WriteAsync(Stream inputStream, Action<Stream, Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
         {
             _logger.LogInformation("WriteAsync: Start to write to {DestinationFileName}. ContentType is {ContentType}.", 
                 $"{_cloudBlobContainer.StorageUri}{_cloudBlobContainer.Name}{destinationFileName}",

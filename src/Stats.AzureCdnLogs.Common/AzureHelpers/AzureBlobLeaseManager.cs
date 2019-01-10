@@ -24,7 +24,7 @@ namespace Stats.AzureCdnLogs.Common
         private BlobRequestOptions _blobRequestOptions;
         private readonly ILogger<AzureBlobLeaseManager> _logger;
 
-        public AzureBlobLeaseManager(ILogger<AzureBlobLeaseManager> logger, BlobRequestOptions blobRequestOptions=null)
+        public AzureBlobLeaseManager(ILogger<AzureBlobLeaseManager> logger, BlobRequestOptions blobRequestOptions = null)
         {
             _blobRequestOptions = blobRequestOptions;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
