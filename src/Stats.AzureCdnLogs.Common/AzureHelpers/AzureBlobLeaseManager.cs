@@ -45,6 +45,10 @@ namespace Stats.AzureCdnLogs.Common
             blob.FetchAttributes();
             if (token.IsCancellationRequested || blob.Properties.LeaseStatus == LeaseStatus.Locked)
             {
+                _logger.LogInformation("AcquireLease: The operation was cancelled or the blob lease is already taken. Blob {BlobUri}, Cancellation status {IsCancellationRequested}, BlobLeaseStatus {BlobLeaseStatus}.",
+                    blob.Uri.AbsoluteUri,
+                    token.IsCancellationRequested,
+                    blob.Properties.LeaseStatus);
                 return false;
             }
             var proposedLeaseId = Guid.NewGuid().ToString();
@@ -57,7 +61,10 @@ namespace Stats.AzureCdnLogs.Common
             renewStatusTask = 
                 Task.Run(() =>
                 {
-                    _logger.LogInformation("RenewLeaseTask: Start for BlobUri {BlobUri}. ThreadId {ThreadId} ", blob.Uri.AbsoluteUri, Thread.CurrentThread.ManagedThreadId);
+                    _logger.LogInformation("RenewLeaseTask: Start for BlobUri {BlobUri}. ThreadId {ThreadId}. IsCancellationRequested {IsCancellationRequested}.", 
+                        blob.Uri.AbsoluteUri,
+                        Thread.CurrentThread.ManagedThreadId,
+                        token.IsCancellationRequested);
 
                     int sleepBeforeRenewInSeconds = MaxRenewPeriodInSeconds - OverlapRenewPeriodInSeconds < 0 ? MaxRenewPeriodInSeconds : MaxRenewPeriodInSeconds - OverlapRenewPeriodInSeconds;
                     if (!token.IsCancellationRequested)
@@ -69,7 +76,7 @@ namespace Stats.AzureCdnLogs.Common
                             {
                                 Thread.Sleep(sleepBeforeRenewInSeconds * 1000);
                                 string blobLeaseId = string.Empty;
-                                //it will renew the lease only if the lease was not explicitelly released 
+                                //it will renew the lease only if the lease was not explicitly released 
                                 if (_leasedBlobs.TryGetValue(blob.Uri, out blobLeaseId) && blobLeaseId == leaseId)
                                 {
                                     AccessCondition acc = new AccessCondition() { LeaseId = leaseId };

@@ -103,11 +103,13 @@ namespace Stats.AzureCdnLogs.Common.Collect
         {
             if(token.IsCancellationRequested)
             {
+                _logger.LogInformation("OpenReadAsync: The operation was cancelled.");
                 return null;
             }
             var blob = await GetBlobAsync(blobUri);
             if(blob == null)
             {
+                _logger.LogInformation("OpenReadAsync: The blob was not found. Blob {BlobUri}", blobUri.AbsoluteUri);
                 return null;
             }
             var inputRawStream = await blob.OpenReadAsync();
@@ -175,13 +177,14 @@ namespace Stats.AzureCdnLogs.Common.Collect
             _logger.LogInformation("CleanAsync:Start cleanup for {Blob}", blobUri.AbsoluteUri);
             if (token.IsCancellationRequested)
             {
+                _logger.LogInformation("CleanAsync: The operation was cancelled.");
                 return false;
             }
 
             var sourceBlob = await GetBlobAsync(blobUri);
             if(sourceBlob == null)
             {
-                _logger.LogError("CleanAsync: Blob {Blob} was not found.", blobUri.AbsoluteUri);
+                _logger.LogError("CleanAsync: The blob {Blob} was not found.", blobUri.AbsoluteUri);
                 return false;
             }
             string archiveTargetContainerName = onError ? _deadletterContainerName : _archiveContainerName;

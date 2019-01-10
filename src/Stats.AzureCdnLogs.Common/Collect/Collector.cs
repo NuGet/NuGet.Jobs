@@ -30,7 +30,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// Used by UnitTests
         /// </summary>
         public Collector()
-        {}
+        { }
 
         /// <summary>
         /// .ctor for the Collector
@@ -63,9 +63,10 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 var files = await _source.GetFilesAsync(maxFileCount, token);
                 var parallelResult = Parallel.ForEach(files, (file) =>
                 {
-                    _logger.LogInformation("ProcessAsync: {File} ", file.AbsoluteUri);
+                    _logger.LogInformation("TryProcessAsync: {File} ", file.AbsoluteUri);
                     if (token.IsCancellationRequested)
                     {
+                        _logger.LogInformation("TryProcessAsync: The operation was cancelled.");
                         return;
                     }
                     var lockResult = _source.TakeLockAsync(file, token).Result;
@@ -277,6 +278,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         {
             if(token.IsCancellationRequested)
             {
+                _logger.LogInformation("VerifyStreamInternalAsync: The operation was cancelled.");
                 return false;
             }
             using (var stream = await _source.OpenReadAsync(file, contentType, token))

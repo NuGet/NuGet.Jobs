@@ -47,11 +47,12 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <returns></returns>
         public async Task<bool> WriteAsync(Stream inputStream, Action<Stream,Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
         {
-            _logger.LogInformation("WriteAsync: Start to write to {DestinationFileName}. ContentType is {ContentType}", 
+            _logger.LogInformation("WriteAsync: Start to write to {DestinationFileName}. ContentType is {ContentType}.", 
                 $"{_cloudBlobContainer.StorageUri}{_cloudBlobContainer.Name}{destinationFileName}",
                 destinationContentType);
             if (token.IsCancellationRequested)
             {
+                _logger.LogInformation("WriteAsync: The operation was cancelled.");
                 return false;
             }
             var blob = _cloudBlobContainer.GetBlockBlobReference(destinationFileName);
