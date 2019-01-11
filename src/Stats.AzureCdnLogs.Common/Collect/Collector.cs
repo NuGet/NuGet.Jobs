@@ -126,12 +126,12 @@ namespace Stats.AzureCdnLogs.Common.Collect
             {
                 foreach (Exception innerEx in ((AggregateException)e).Flatten().InnerExceptions)
                 {
-                    exceptions.Add(new Exception(fileUri, innerEx));
+                    exceptions.Add(new CDNLogException(fileUri, innerEx));
                 }
             }
             else
             {
-                exceptions.Add(new Exception(fileUri, e));
+                exceptions.Add(new CDNLogException(fileUri, e));
             }
         }
 

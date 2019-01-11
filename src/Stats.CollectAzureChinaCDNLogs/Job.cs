@@ -70,7 +70,7 @@ namespace Stats.CollectAzureChinaCDNLogs
             {
                 foreach(var ex in aggregateExceptions.InnerExceptions)
                 {
-                    Logger.LogError(Stats.AzureCdnLogs.Common.LogEvents.JobRunFailed, ex.InnerException, ex.Message);
+                    Logger.LogError(Stats.AzureCdnLogs.Common.LogEvents.JobRunFailed, ex, ex.Message);
                 }
             }
 
