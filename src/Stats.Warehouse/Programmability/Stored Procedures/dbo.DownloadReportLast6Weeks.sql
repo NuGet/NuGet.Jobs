@@ -19,8 +19,9 @@ BEGIN
 		AND	[Year] = @MinYear
 
 	DECLARE @Cursor DATETIME = (SELECT ISNULL(MAX([Position]), @ReportGenerationTime) FROM [dbo].[Cursors] (NOLOCK) WHERE [Name] = 'GetDirtyPackageId')
+	DECLARE @MaxDate DATE = DATEADD(DAY, 42, @MinDate)
 
-	SELECT	TOP 6 D.[Year],
+	SELECT	D.[Year],
 			D.[WeekOfYear],
 			SUM(ISNULL(Facts.[DownloadCount], 0)) 'Downloads'
 	FROM	[dbo].[Fact_Download] AS Facts (NOLOCK)
@@ -29,19 +30,10 @@ BEGIN
 	ON			D.[Id] = Facts.[Dimension_Date_Id]
 
 	WHERE	D.[Date] IS NOT NULL
-			AND ISNULL(D.[Date], CONVERT(DATE, '1900-01-01')) >=
-				DATETIMEFROMPARTS(
-					DATEPART(year, @MinDate),
-					DATEPART(month, @MinDate),
-					DATEPART(day, @MinDate),
-					0, 0, 0, 0)
-			AND ISNULL(D.[Date], CONVERT(DATE, DATEADD(day, 1, @ReportGenerationTime))) <
-				DATETIMEFROMPARTS(
-					DATEPART(year, @ReportGenerationTime),
-					DATEPART(month, @ReportGenerationTime),
-					DATEPART(day, @ReportGenerationTime),
-					0, 0, 0, 0)
+			AND ISNULL(D.[Date], CONVERT(DATE, '1900-01-01')) >= CAST(@MinDate AS DATE)
+			AND ISNULL(D.[Date], CONVERT(DATE, DATEADD(day, 1, @ReportGenerationTime))) < CAST(@ReportGenerationTime AS DATE)
 			AND Facts.[Timestamp] <= @Cursor
+			AND Facts.[Timestamp] <= @MaxDate
 
 	GROUP BY	D.[Year], D.[WeekOfYear]
 	ORDER BY	[Year], [WeekOfYear]
