@@ -23,10 +23,19 @@ BEGIN
 
 	WITH WeekLookup AS 
 	(
-	    -- Around new year we might have an issue where week start and week end have different
-		-- [WeekOfYear] and [Year] values, which cause same week to be represented twice in
-		-- the result set. This CTE makes sure that all days within one week have same
-		-- [WeekOfYear] and [Year] values around new year (taken from the first day of that week).
+        -- If we just take all the rows between @MinDate and @MaxDate from Dimension_Date table
+		-- we might end up the days from the week that contains 1st of January to have two
+		-- different week numbers:
+		-- 12/30/2018 -> 53rd of 2018
+		-- 12/31/2018 -> 53rd of 2018
+		-- 1/1/2019 -> 1st of 2019
+		-- 1/2/2019 -> 1st of 2019
+		-- etc.
+		-- which results in the wrong grouping when group by [WeekOfYear] and [Year] is done:
+		-- the single week gets split into two portions, one for the previous year and another for
+		-- the new one with aggregations calculated separately for each of the portions.
+		-- This CTE works around the issue by making sure that all days of the week map to
+		-- the same [WeekOfYear] and [Year], specifically to that of the first day of that week.
 		SELECT d.[Id], dd.[WeekOfYear], dd.[Year]
 		FROM [dbo].[Dimension_Date] AS d WITH(NOLOCK)
 		CROSS APPLY
