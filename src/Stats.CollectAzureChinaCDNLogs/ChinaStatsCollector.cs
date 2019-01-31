@@ -61,7 +61,8 @@ namespace Stats.CollectAzureChinaCDNLogs
 
             // Global status code format: cache status + "/" + HTTP status code
             // China status code format: HTTP status code
-            // By appending a custom cache status string, we can align China logs with Global.
+            // Unfortunately, the cache status string does not appear to be present in China logs anywhere
+            // We are using "TCP_UNKNOWN" to represent the cache status string
             var scstatus = "TCP_UNKNOWN/" + segments[(int)ChinaLogHeaderFields.scstatus];
 
             return new OutputLogLine(timestamp: timeStamp2,
