@@ -47,7 +47,7 @@ namespace Stats.CollectAzureChinaCDNLogs
                 string.IsNullOrEmpty(line) || 
                 line.Trim().StartsWith("c-ip", ignoreCase: true, culture: System.Globalization.CultureInfo.InvariantCulture))
             {
-                //is the header
+                // Ignore empty lines or the header
                 return null;
             }
 
@@ -59,11 +59,10 @@ namespace Stats.CollectAzureChinaCDNLogs
             DateTime dt = DateTime.Parse(timestamp, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AdjustToUniversal);
             string timeStamp2 = ToUnixTimeStamp(dt);
 
-            //ignore 400 error codes
-            if(segments[5] == "400")
-            {
-                return null;
-            }
+            // Global status code format: cache status + "/" + HTTP status code
+            // China status code format: HTTP status code
+            // By appending a custom cache status string, we can align China logs with Global.
+            var scstatus = "TCP_UNKNOWN/" + segments[(int)ChinaLogHeaderFields.scstatus];
 
             return new OutputLogLine(timestamp: timeStamp2,
                 timetaken: notAvailableInt,
@@ -71,7 +70,7 @@ namespace Stats.CollectAzureChinaCDNLogs
                 filesize: notAvailableInt,
                 sip: segments[(int)ChinaLogHeaderFields.sip],
                 sport: notAvailableInt,
-                scstatus: segments[(int)ChinaLogHeaderFields.scstatus],
+                scstatus: scstatus,
                 scbytes: segments[(int)ChinaLogHeaderFields.scbytes],
                 csmethod: segments[(int)ChinaLogHeaderFields.csmethod],
                 csuristem: segments[(int)ChinaLogHeaderFields.csuristem],
