@@ -22,6 +22,16 @@ namespace Tests.Stats.ImportAzureCdnStatistics
             [InlineData("SOMETHING_ELSE/404")]
             [InlineData("TCP_MISS/504")]
             [InlineData("TCP_MISS/604")]
+            [InlineData("0")]
+            [InlineData("304")]
+            [InlineData("400")]
+            [InlineData("404")]
+            [InlineData("500")]
+            [InlineData("TCP_UNKNOWN/0")]
+            [InlineData("TCP_UNKNOWN/304")]
+            [InlineData("TCP_UNKNOWN/400")]
+            [InlineData("TCP_UNKNOWN/404")]
+            [InlineData("TCP_UNKNOWN/500")]
             public void IgnoresNon200HttpStatusCodes(string status)
             {
                 // Arrange
@@ -43,7 +53,6 @@ namespace Tests.Stats.ImportAzureCdnStatistics
             [InlineData("TCP_MISS/")]
             [InlineData("TCP_MISS")]
             [InlineData("200")]
-            [InlineData("500")]
             public void DoesNotIgnore200LevelAndUnrecognizedHttpStatusCodes(string status)
             {
                 // Arrange
