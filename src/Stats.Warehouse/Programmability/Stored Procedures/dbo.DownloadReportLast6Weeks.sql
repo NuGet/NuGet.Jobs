@@ -23,6 +23,10 @@ BEGIN
 
 	WITH WeekLookup AS 
 	(
+	    -- Around new year we might have an issue where week start and week end have different
+		-- [WeekOfYear] and [Year] values, which cause same week to be represented twice in
+		-- the result set. This CTE makes sure that all days within one week have same
+		-- [WeekOfYear] and [Year] values around new year (taken from the first day of that week).
 		SELECT d.[Id], dd.[WeekOfYear], dd.[Year]
 		FROM [dbo].[Dimension_Date] AS d WITH(NOLOCK)
 		CROSS APPLY
