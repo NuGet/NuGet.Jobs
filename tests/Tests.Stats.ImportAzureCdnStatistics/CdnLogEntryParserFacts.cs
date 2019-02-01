@@ -27,11 +27,6 @@ namespace Tests.Stats.ImportAzureCdnStatistics
             [InlineData("400")]
             [InlineData("404")]
             [InlineData("500")]
-            [InlineData("TCP_UNKNOWN/0")]
-            [InlineData("TCP_UNKNOWN/304")]
-            [InlineData("TCP_UNKNOWN/400")]
-            [InlineData("TCP_UNKNOWN/404")]
-            [InlineData("TCP_UNKNOWN/500")]
             public void IgnoresNon200HttpStatusCodes(string status)
             {
                 // Arrange
