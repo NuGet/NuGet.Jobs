@@ -23,7 +23,7 @@ BEGIN
 
 	WITH WeekLookup AS 
 	(
-        -- If we just take all the rows between @MinDate and @MaxDate from Dimension_Date table
+		-- If we just take all the rows between @MinDate and @MaxDate from Dimension_Date table
 		-- we might end up the days from the week that contains 1st of January to have two
 		-- different week numbers:
 		-- 12/30/2018 -> 53rd of 2018
