@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27121.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28525.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Jobs.Common", "src\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj", "{4B4B1EFB-8F33-42E6-B79F-54E7F3293D31}"
 EndProject
@@ -140,6 +140,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Validation.Symbols.Core.Tests", "tests\Validation.Symbols.Core.Tests\Validation.Symbols.Core.Tests.csproj", "{9ED642DF-4623-4EB2-8B72-52C6489BF9D6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Jobs.Common.Tests", "tests\NuGet.Jobs.Common.Tests\NuGet.Jobs.Common.Tests.csproj", "{CE96428B-8138-4914-9999-2B391797FFF8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Vulnerabilities", "Vulnerabilities", "{40075D35-D1D6-485A-A42E-6FC32180F217}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateVulnerabilityData", "src\UpdateVulnerabilityData\UpdateVulnerabilityData.csproj", "{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -369,6 +373,10 @@ Global
 		{CE96428B-8138-4914-9999-2B391797FFF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE96428B-8138-4914-9999-2B391797FFF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE96428B-8138-4914-9999-2B391797FFF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -429,6 +437,7 @@ Global
 		{640D29AB-4D1B-4FC7-AE67-AD12EE5AC503} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{9ED642DF-4623-4EB2-8B72-52C6489BF9D6} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{CE96428B-8138-4914-9999-2B391797FFF8} = {6A776396-02B1-475D-A104-26940ADB04AB}
+		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD} = {40075D35-D1D6-485A-A42E-6FC32180F217}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {284A7AC3-FB43-4F1F-9C9C-2AF0E1F46C2B}
