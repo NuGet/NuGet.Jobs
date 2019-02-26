@@ -145,6 +145,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Vulnerabilities", "Vulnerab
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateVulnerabilityData", "src\UpdateVulnerabilityData\UpdateVulnerabilityData.csproj", "{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateVulnerabilityData.Tests", "tests\UpdateVulnerabilityData.Tests\UpdateVulnerabilityData.Tests.csproj", "{899B3059-8610-4760-B303-04878228930B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -377,6 +379,10 @@ Global
 		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{899B3059-8610-4760-B303-04878228930B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{899B3059-8610-4760-B303-04878228930B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{899B3059-8610-4760-B303-04878228930B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{899B3059-8610-4760-B303-04878228930B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -438,6 +444,7 @@ Global
 		{9ED642DF-4623-4EB2-8B72-52C6489BF9D6} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{CE96428B-8138-4914-9999-2B391797FFF8} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{EEC68096-D4BF-479F-90BB-CC4EAFD37ECD} = {40075D35-D1D6-485A-A42E-6FC32180F217}
+		{899B3059-8610-4760-B303-04878228930B} = {6A776396-02B1-475D-A104-26940ADB04AB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {284A7AC3-FB43-4F1F-9C9C-2AF0E1F46C2B}
