@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Stats.AzureCdnLogs.Common;
 using Stats.ImportAzureCdnStatistics;
 using System;
@@ -43,7 +44,7 @@ namespace Tests.Stats.ImportAzureCdnStatistics
             // Arrange
             var logEntry = GetCdnLogEntry($"http://test.me/{packageId}.{packageVersion}.nupkg");
 
-            var translator = new PackageTranslator("packagetranslations.json");
+            var translator = new TestablePackageTranslator();
             var statsParser = new PackageStatisticsParser(translator, new LoggerFactory());
 
             // Act
