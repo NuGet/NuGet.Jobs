@@ -27,5 +27,12 @@ namespace NuGet.Jobs.Validation.Symbols.Core
         /// and the <paramref name="filterFileNames"/> contains only foo.pdb than only the foo.dll wil be extracted.</param>
         /// <returns>The list of the full paths for the extracted files.</returns>
         List<string> ExtractFilesFromZipStream(Stream stream, string targetDirectory, IEnumerable<string> filterFileExtensions, IEnumerable<string> filterFileNames = null);
+
+        /// <summary>
+        /// Validate that a zip stream does not contain zip slip vulnerability.
+        /// </summary>
+        /// <param name="stream">The snupkg stream</param>
+        /// <returns>True if the file is clean.</returns>
+        bool ValidateZip(Stream stream);
     }
 }

@@ -6,6 +6,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using NuGet.Packaging;
 
 namespace NuGet.Jobs.Validation.Symbols.Core
 {
@@ -151,6 +153,22 @@ namespace NuGet.Jobs.Validation.Symbols.Core
                 Where(e => !string.IsNullOrEmpty(e.Name)).
                 Where(e => matchingExtensions.Contains(Path.GetExtension(e.FullName), StringComparer.OrdinalIgnoreCase)).
                 Select(e => e.FullName);
+        }
+
+        public bool ValidateZip(Stream stream)
+        {
+            using (var packageArchiveReader = new PackageArchiveReader(stream, true))
+            {
+                try
+                {
+                    packageArchiveReader.ValidatePackageEntriesAsync(CancellationToken.None);
+                    return true;         
+                }
+                catch(UnsafePackageEntryException)
+                {
+                    return false;
+                }
+            }
         }
     }
 }

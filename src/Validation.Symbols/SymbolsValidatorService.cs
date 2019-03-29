@@ -52,6 +52,10 @@ namespace Validation.Symbols
             {
                 using (Stream snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(message.SnupkgUrl, token))
                 {
+                    if (!_zipArchiveService.ValidateZip(snupkgstream))
+                    {
+                        return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_SnupkgContainsEntriesNotSafeForExtraction);
+                    }
                     try
                     {
                         using (Stream nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(message.PackageId, message.PackageNormalizedVersion, token))
@@ -59,6 +63,10 @@ namespace Validation.Symbols
                             var pdbs = _zipArchiveService.ReadFilesFromZipStream(snupkgstream, SymbolExtension);
                             var pes = _zipArchiveService.ReadFilesFromZipStream(nupkgstream, PEExtensions);
 
+                            if(pdbs.Count == 0)
+                            {
+                                return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_SnupkgDoesNotContainSymbols);
+                            }
                             using (_telemetryService.TrackSymbolValidationDurationEvent(message.PackageId, message.PackageNormalizedVersion, pdbs.Count))
                             {
                                 List<string> orphanSymbolFiles;
