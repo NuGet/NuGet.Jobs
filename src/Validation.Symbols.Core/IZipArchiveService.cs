@@ -3,6 +3,8 @@
 
 using System.IO;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NuGet.Jobs.Validation.Symbols.Core
 {
@@ -31,8 +33,10 @@ namespace NuGet.Jobs.Validation.Symbols.Core
         /// <summary>
         /// Validate that a zip stream does not contain zip slip vulnerability.
         /// </summary>
-        /// <param name="stream">The snupkg stream</param>
-        /// <returns>True if the file is clean.</returns>
-        bool ValidateZip(Stream stream);
+        /// <param name="stream">The stream.</param>
+        /// <param name="streamName">The stream name.</param>
+        /// <param name="token">The async operation cancellation token.</param>
+        /// <returns>True if the file passed the validation.</returns>
+        Task<bool> ValidateZipAsync(Stream stream, string streamName, CancellationToken token);
     }
 }

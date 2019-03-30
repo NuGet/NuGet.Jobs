@@ -7,12 +7,22 @@ using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 
 namespace NuGet.Jobs.Validation.Symbols.Core
 {
     public class ZipArchiveService : IZipArchiveService
     {
+        ILogger<ZipArchiveService> _logger;
+
+        public ZipArchiveService(ILogger<ZipArchiveService> logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger)); 
+        }
+
         /// <summary>
         /// Returns the files from a zip stream. The results are filtered for the files with the specified exceptions.
         /// </summary>
@@ -155,17 +165,24 @@ namespace NuGet.Jobs.Validation.Symbols.Core
                 Select(e => e.FullName);
         }
 
-        public bool ValidateZip(Stream stream)
+        public async Task<bool> ValidateZipAsync(Stream stream, string streamName, CancellationToken token)
         {
-            using (var packageArchiveReader = new PackageArchiveReader(stream, true))
+            // See: https://github.com/NuGet/NuGet.Client/blob/f168e1667d548e3138b3f1e93c34d557b0deeda3/src/NuGet.Core/NuGet.Packaging/PackageArchiveReader.cs#L234
+            using (var packageArchiveReader = new PackageArchiveReader(stream, leaveStreamOpen: true))
             {
                 try
                 {
-                    packageArchiveReader.ValidatePackageEntriesAsync(CancellationToken.None);
+                    await packageArchiveReader.ValidatePackageEntriesAsync(token);
                     return true;         
                 }
-                catch(UnsafePackageEntryException)
+                catch (UnsafePackageEntryException unsafePackageEntryException)
                 {
+                    _logger.LogError("Archive with unsafe entries.{StreamName} {Exception}", streamName, unsafePackageEntryException);
+                    return false;
+                }
+                catch (PackagingException packagingException)
+                {
+                    _logger.LogError("The package is not in the correct format.{StreamName} {Exception}", streamName, packagingException);
                     return false;
                 }
             }

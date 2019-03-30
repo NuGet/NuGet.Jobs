@@ -52,10 +52,11 @@ namespace Validation.Symbols
             {
                 using (Stream snupkgstream = await _symbolFileService.DownloadSnupkgFileAsync(message.SnupkgUrl, token))
                 {
-                    if (!_zipArchiveService.ValidateZip(snupkgstream))
+                    if (!await _zipArchiveService.ValidateZipAsync(snupkgstream, message.SnupkgUrl, token))
                     {
                         return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_SnupkgContainsEntriesNotSafeForExtraction);
                     }
+
                     try
                     {
                         using (Stream nupkgstream = await _symbolFileService.DownloadNupkgFileAsync(message.PackageId, message.PackageNormalizedVersion, token))
@@ -63,10 +64,11 @@ namespace Validation.Symbols
                             var pdbs = _zipArchiveService.ReadFilesFromZipStream(snupkgstream, SymbolExtension);
                             var pes = _zipArchiveService.ReadFilesFromZipStream(nupkgstream, PEExtensions);
 
-                            if(pdbs.Count == 0)
+                            if (pdbs.Count == 0)
                             {
                                 return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_SnupkgDoesNotContainSymbols);
                             }
+
                             using (_telemetryService.TrackSymbolValidationDurationEvent(message.PackageId, message.PackageNormalizedVersion, pdbs.Count))
                             {
                                 List<string> orphanSymbolFiles;
@@ -105,7 +107,7 @@ namespace Validation.Symbols
                     }
                 }
             }
-            catch(InvalidOperationException)
+            catch (InvalidOperationException)
             {
                 _telemetryService.TrackSymbolsPackageNotFoundEvent(message.PackageId, message.PackageNormalizedVersion);
                 return ValidationResult.Failed;
@@ -139,7 +141,7 @@ namespace Validation.Symbols
                         lastException = e;
                     }
                 }
-                if(Directory.Exists(workingDirectory))
+                if (Directory.Exists(workingDirectory))
                 {
                     _logger.LogWarning(0, lastException, "{ValidatorName} :TryCleanWorkingDirectory failed. WorkingDirectory:{WorkingDirectory}", ValidatorName.SymbolsValidator, workingDirectory);
                 }
@@ -165,7 +167,7 @@ namespace Validation.Symbols
                 {
                     IValidationResult validationResult;
 
-                    if(!IsPortable(GetSymbolPath(peFile)))
+                    if (!IsPortable(GetSymbolPath(peFile)))
                     {
                         _telemetryService.TrackSymbolsValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed);
                         return ValidationResult.FailedWithIssues(ValidationIssue.SymbolErrorCode_PdbIsNotPortable);
@@ -292,7 +294,7 @@ namespace Validation.Symbols
         /// <returns></returns>
         public static bool SymbolsHaveMatchingPEFiles(IEnumerable<string> symbols, IEnumerable<string> PEs, out List<string> orphanSymbolFiles)
         {
-            if(symbols == null)
+            if (symbols == null)
             {
                 throw new ArgumentNullException(nameof(symbols));
             }
