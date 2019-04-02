@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Gallery.Maintenance
 {
-    public class DeletedExpiredDeletedAccountsTask : DeleteExpiredEntityTask<ExpiredDeletedAccount>
+    public class DeleteExpiredDeletedAccountsTask : DeleteExpiredEntityTask<ExpiredDeletedAccount>
     {
-        public DeletedExpiredDeletedAccountsTask(ILogger<DeletedExpiredDeletedAccountsTask> logger)
+        public DeleteExpiredDeletedAccountsTask(ILogger<DeleteExpiredDeletedAccountsTask> logger)
             : base(logger)
         {
         }
