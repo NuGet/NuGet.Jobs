@@ -177,12 +177,12 @@ namespace NuGet.Jobs.Validation.Symbols.Core
                 }
                 catch (UnsafePackageEntryException unsafePackageEntryException)
                 {
-                    _logger.LogError("Archive with unsafe entries.{StreamName} {Exception}", streamName, unsafePackageEntryException);
+                    _logger.LogError(Error.PackageHasUnsecureEntries, unsafePackageEntryException, "Archive with unsafe entries. {StreamName}", streamName);
                     return false;
                 }
                 catch (PackagingException packagingException)
                 {
-                    _logger.LogError("The package is not in the correct format.{StreamName} {Exception}", streamName, packagingException);
+                    _logger.LogError(Error.PackagingException, packagingException, "The package is not in the correct format. {StreamName}", streamName);
                     return false;
                 }
             }
