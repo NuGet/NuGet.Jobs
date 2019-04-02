@@ -39,7 +39,10 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DeletedExpiredDeletedAccountsTask.cs" />
+    <Compile Include="DeleteExpiredEntityTask.cs" />
     <Compile Include="DeleteExpiredVerificationKeysTask.cs" />
+    <Compile Include="Models\ExpiredDeletedAccount.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="LogEvents.cs" />
     <Compile Include="MaintenanceTask.cs" />
