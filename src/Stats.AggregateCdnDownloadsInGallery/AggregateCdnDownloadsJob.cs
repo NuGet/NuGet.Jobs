@@ -52,7 +52,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
                 SELECT Stats.[PackageRegistrationKey] AS [PackageRegistrationKey], SUM(Stats.[DownloadCount]) AS [DownloadCount]
                 FROM #AggregateCdnDownloadsInGallery AS Stats
                 GROUP BY Stats.[PackageRegistrationKey]
-            ) AS AggregateStats ON AggregateStats.[PackageRegistrationKey] = PR.[Key] 
+            ) AS AggregateStats ON AggregateStats.[PackageRegistrationKey] = PR.[Key]
 
             -- No more need for temp table
             DROP TABLE #AggregateCdnDownloadsInGallery";
