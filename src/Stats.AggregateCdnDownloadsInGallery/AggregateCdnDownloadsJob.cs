@@ -52,7 +52,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
                 SELECT Stats.[PackageRegistrationKey] AS [PackageRegistrationKey], SUM(Stats.[DownloadCount]) AS [DownloadCount]
                 FROM #AggregateCdnDownloadsInGallery AS Stats
                 GROUP BY Stats.[PackageRegistrationKey]
-            ) AS AggregateStats ON AggregateStats.[PackageRegistrationKey] = PR.[Key]
+            ) AS AggregateStats ON AggregateStats.[PackageRegistrationKey] = PR.[Key] 
 
             -- No more need for temp table
             DROP TABLE #AggregateCdnDownloadsInGallery";
@@ -149,7 +149,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
             }
         }
 
-        private async Task ProcessBatch(List<IPackageIdGroup> batch, SqlConnection destinationDatabase, IDictionary<string, string> packageRegistrationLookup)
+        private async Task ProcessBatch(List<IPackageIdGroup> batch, SqlConnection destinationDatabase, IDictionary<string, PackageRegistrationData> packageRegistrationLookup)
         {
             // Create a temporary table
             Logger.LogDebug("Creating temporary table...");
@@ -179,17 +179,45 @@ namespace Stats.AggregateCdnDownloadsInGallery
 
             foreach (var packageRegistrationGroup in batch)
             {
-                var packageId = packageRegistrationGroup.Key.ToLowerInvariant();
-                var packageRegistrationKey = packageRegistrationLookup[packageId];
-
-                // Set download count on individual packages
-                foreach (var package in packageRegistrationGroup)
+                // If not all the elements in a group have the same PackageId something is wrong.
+                // Data will not be ingested.
+                if (packageRegistrationGroup.Select(g => g.PackageId).Distinct().Count() == 1)
                 {
-                    var row = aggregateCdnDownloadsInGalleryTable.NewRow();
-                    row["PackageRegistrationKey"] = packageRegistrationKey;
-                    row["PackageVersion"] = package.PackageVersion;
-                    row["DownloadCount"] = package.TotalDownloadCount;
-                    aggregateCdnDownloadsInGalleryTable.Rows.Add(row);
+                    var packageId = packageRegistrationGroup.Key.ToLowerInvariant();
+                    var packageRegistrationData = packageRegistrationLookup[packageId];
+
+                    Logger.LogInformation("{ToDataSource} {PackageId} {DownloadCount}", "GalleryPackageRegistration", packageId, packageRegistrationData.DownloadCount);
+
+                    // Calculate the total sum of the new downloads 
+                    // If it is not greater than the current download count there is not any need to update.
+                    long newDownloadCount = packageRegistrationGroup.Select(g => g.TotalDownloadCount).Sum();
+                    long currentDownloadCount = long.Parse(packageRegistrationData.DownloadCount);
+                    if (newDownloadCount > currentDownloadCount)
+                    {
+                        // Set download count on individual packages
+                        foreach (var package in packageRegistrationGroup)
+                        {
+                            var row = aggregateCdnDownloadsInGalleryTable.NewRow();
+                            row["PackageRegistrationKey"] = packageRegistrationData.Key;
+                            row["PackageVersion"] = package.PackageVersion;
+                            row["DownloadCount"] = package.TotalDownloadCount;
+                            aggregateCdnDownloadsInGalleryTable.Rows.Add(row);
+
+                            Logger.LogInformation("{FromDataSource} {PackageId} {PackageVersion} {DownloadCount}", "Statistics_FactDownloads", packageId, package.PackageVersion, package.TotalDownloadCount);
+                        }
+                    }
+                    else if(newDownloadCount == currentDownloadCount)
+                    {
+                        Logger.LogInformation("DownloadCount did not change for {PackageId}. {CurrentDownloadCount} {NewDownloadCount}", packageRegistrationGroup.Key, currentDownloadCount, newDownloadCount);
+                    }
+                    else
+                    {
+                        Logger.LogCritical(LogEvents.DownloadCountDecreaseDetected, "{PackageId} {CurrentDownloadCount} {NewDownloadCount}", packageRegistrationGroup.Key, currentDownloadCount, newDownloadCount);
+                    }
+                }
+                else
+                {
+                    Logger.LogCritical(LogEvents.IncorrectIdsInGroupBatch, "{GroupKey} {Ids}", packageRegistrationGroup.Key, string.Join(",", packageRegistrationGroup.Select(g => g.PackageId).Distinct()));
                 }
             }
 
@@ -251,7 +279,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
             return batch;
         }
 
-        private bool IsValidGroup(IDictionary<string, string> packageRegistrationLookup, IPackageIdGroup group)
+        private bool IsValidGroup(IDictionary<string, PackageRegistrationData> packageRegistrationLookup, IPackageIdGroup group)
         {
             // Don't process missing package IDs.
             if (string.IsNullOrWhiteSpace(group.Key))
@@ -272,17 +300,17 @@ namespace Stats.AggregateCdnDownloadsInGallery
             return batch.Count + 1 + batch.Sum(x => x.Count()) + candidate.Count();
         }
 
-        private async Task<IDictionary<string, string>> GetPackageRegistrations(SqlConnection sqlConnection)
+        private async Task<IDictionary<string, PackageRegistrationData>> GetPackageRegistrations(SqlConnection sqlConnection)
         {
             Logger.LogDebug("Retrieving package registrations...");
 
             var stopwatch = Stopwatch.StartNew();
 
-            var packageRegistrationDictionary = new Dictionary<string, string>();
+            var packageRegistrationDictionary = new Dictionary<string, PackageRegistrationData>();
 
             // Ensure results are sorted deterministically.
             var packageRegistrationData = (await sqlConnection.QueryWithRetryAsync<PackageRegistrationData>(
-                    "SELECT [Key], LOWER([Id]) AS LowercasedId, [Id] AS OriginalId FROM [dbo].[PackageRegistrations] (NOLOCK) ORDER BY [Id] ASC",
+                    "SELECT [Key], LOWER([Id]) AS LowercasedId, [Id] AS OriginalId, [DownloadCount] AS DownloadCount FROM [dbo].[PackageRegistrations] (NOLOCK) ORDER BY [Id] ASC",
                     commandTimeout: TimeSpan.FromSeconds(_commandTimeoutSeconds),
                     maxRetries: 5)).ToList();
 
@@ -297,12 +325,12 @@ namespace Stats.AggregateCdnDownloadsInGallery
 
                 if (!packageRegistrationDictionary.ContainsKey(item.LowercasedId))
                 {
-                    packageRegistrationDictionary.Add(item.LowercasedId, item.Key);
+                    packageRegistrationDictionary.Add(item.LowercasedId, item);
                 }
                 else
                 {
                     var conflictingPackageRegistration = packageRegistrationDictionary[item.LowercasedId];
-                    var conflictingPackageOriginalId = packageRegistrationData.Single(p => p.Key == conflictingPackageRegistration).OriginalId;
+                    var conflictingPackageOriginalId = packageRegistrationData.Single(p => p.Key == conflictingPackageRegistration.Key).OriginalId;
 
                     // Lowercased package ID's should be unique, however, there's the case of the Turkish i...
                     Logger.LogWarning(
