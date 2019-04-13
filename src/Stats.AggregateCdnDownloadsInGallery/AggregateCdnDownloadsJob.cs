@@ -179,8 +179,12 @@ namespace Stats.AggregateCdnDownloadsInGallery
 
             foreach (var packageRegistrationGroup in batch)
             {
-                // If not all the elements in a group have the same PackageId something is wrong.
-                // Data will not be ingested.
+                // The packageRegistrationGroup is created with data from Statistics db and grouped based on packageId.
+                // Each group has a key that is the packageId and has a list of packages that are the versions for the packageId that is the key.
+                // Using the packageId the packageRegistration key is found - see  packageRegistrationData = packageRegistrationLookup[packageId];
+                // Using this package registation key the data in the temp table is populated - see: row["PackageRegistrationKey"] = packageRegistrationData.Key;
+                // If not all the elements in a group have the same PackageId that will lead to have data from packageId2 version:1.0.0 to be ingested as data for packageId1: version:1.0.0
+                // In this case data will not be ingested.
                 if (packageRegistrationGroup.Select(g => g.PackageId).Distinct().Count() == 1)
                 {
                     var packageId = packageRegistrationGroup.Key.ToLowerInvariant();
