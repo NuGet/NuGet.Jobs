@@ -58,7 +58,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <param name="maxResults">The max number of files to be returned.</param>
         /// <param name="token">A token to be used for cancellation.</param>
         /// <returns></returns>
-        public async Task<IEnumerable<Uri>> GetFilesAsync(int maxResults, CancellationToken token)
+        public async Task<IEnumerable<Uri>> GetFilesAsync(int maxResults, CancellationToken token, string prefix = null)
         {
             if (maxResults<= 0)
             {
@@ -68,7 +68,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             var result = new List<Uri>();
             do
             {
-                var resultsInternal = await _container.ListBlobsSegmentedAsync(prefix: null,
+                var resultsInternal = await _container.ListBlobsSegmentedAsync(prefix: prefix,
                     useFlatBlobListing: true,
                     blobListingDetails: BlobListingDetails.Metadata,
                     maxResults: null,

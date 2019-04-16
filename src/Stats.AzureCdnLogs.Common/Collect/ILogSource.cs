@@ -11,7 +11,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 {
     public interface ILogSource
     {
-        Task<IEnumerable<Uri>> GetFilesAsync(int maxResults, CancellationToken token);
+        Task<IEnumerable<Uri>> GetFilesAsync(int maxResults, CancellationToken token, string prefix = null);
 
         Task<bool> CleanAsync(Uri fileUri, bool onError, CancellationToken token);
 

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Stats.CollectAzureChinaCDNLogs</id>
+    <version>$version$</version>
+    <title>CopyAzureContainer</title>
+    <authors>.NET Foundation</authors>
+    <owners>.NET Foundation</owners>
+    <description>CopyAzureContainer</description>
+    <copyright>Copyright .NET Foundation</copyright>
+  </metadata>
+  <files>
+    <file src="bin\$configuration$\*.*" target="bin"/>
+    <file src="Scripts\Stats.CDNLogsSanitizer.cmd" />	
+
+    <file src="Settings\*.json" target="bin" />
+  </files>
+</package>

@@ -55,6 +55,7 @@
     <Compile Include="Collect\OutputLogLine.cs" />
     <Compile Include="DictionaryExtensions.cs" />
     <Compile Include="EnumerableExtensions.cs" />
+    <Compile Include="ExtensionsUtils.cs" />
     <Compile Include="ITrackEdgeServerIpAddress.cs" />
     <Compile Include="ITrackUserAgent.cs" />
     <Compile Include="LogEvents.cs" />
