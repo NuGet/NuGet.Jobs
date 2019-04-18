@@ -163,7 +163,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/StatusAggregator/StatusAggregator.csproj", `
             "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj", `
             "src/Validation.Symbols/Validation.Symbols.Job.csproj", `
-	    "src/Stats.CDNLogsSanitizer/Stats.CDNLogsSanitizer.csproj"
+			"src/Stats.CDNLogsSanitizer/Stats.CDNLogsSanitizer.csproj"
 
 
         Foreach ($Project in $NuspecProjects) {
