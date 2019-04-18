@@ -22,8 +22,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// </summary>
         /// <param name="fileUri">The file uri.</param>
         /// <param name="token">The token for cancellation.</param>
-        /// <returns>The status of the operaton and a task that will continue taking the lock overtime.</returns>
-        Task<Tuple<bool, Task>> TakeLockAsync(Uri fileUri, CancellationToken token);
+        /// <returns>The result of the lock action. </returns>
+        Task<AzureBlobLockResult> TakeLockAsync(Uri fileUri, CancellationToken token);
 
         Task<bool> ReleaseLockAsync(Uri fileUri, CancellationToken token);
     }

@@ -76,7 +76,7 @@ namespace Stats.CDNLogsSanitizer
 
             if (cts.IsCancellationRequested)
             {
-                Logger.LogInformation($"Execution exceeded the timeout of {_executionTimeoutInSeconds} seconds and it was cancelled.");
+                Logger.LogInformation("Execution exceeded the timeout of {ExecutionTimeoutInSeconds} seconds and it was cancelled.", _executionTimeoutInSeconds);
             }
         }
 

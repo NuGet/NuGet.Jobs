@@ -12,7 +12,7 @@ namespace Stats.AzureCdnLogs.Common
         {
             if (string.IsNullOrWhiteSpace(line) || string.IsNullOrEmpty(line))
             {
-                return null;
+                return new string[0];
             }
             if(delimiter == ',')
             {
@@ -25,9 +25,9 @@ namespace Stats.AzureCdnLogs.Common
         {
             if (string.IsNullOrWhiteSpace(line) || string.IsNullOrEmpty(line))
             {
-                return null;
+                return new string[0];
             }
-            string[] segments = line.Split(',').Select(s => s.Trim()).ToArray();
+            var segments = line.Split(',').Select(s => s.Trim()).ToArray();
             List<string> result = new List<string>();
             for (int i = 0; i < segments.Length; i++)
             {

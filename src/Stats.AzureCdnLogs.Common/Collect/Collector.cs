@@ -69,43 +69,40 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         _logger.LogInformation("TryProcessAsync: The operation was cancelled.");
                         return;
                     }
-                    var lockResult = _source.TakeLockAsync(file, token).Result;
-                    if (lockResult.Item1 /*lockResult*/)
+                    using (var lockResult = _source.TakeLockAsync(file, token).Result)
                     {
-                        using (var inputStream = _source.OpenReadAsync(file, sourceContentType, token).Result)
+                        var blobOperationToken = lockResult.BlobOperationToken.Token;
+                        if (lockResult.LockIsTaken /*lockResult*/)
                         {
-                            var writeAction = VerifyStreamInternalAsync(file, sourceContentType, token).
-                            ContinueWith(t =>
+                            using (var inputStream = _source.OpenReadAsync(file, sourceContentType, blobOperationToken).Result)
                             {
-                                //if validation failed clean the file to not continue processing over and over 
-                                if (!t.Result)
+                                var writeAction = VerifyStreamInternalAsync(file, sourceContentType, blobOperationToken).
+                                ContinueWith(t =>
                                 {
-                                    throw new ApplicationException($"File {file} failed validation.");
-                                }
-                                return _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, token).Result;
-                            }).
-                            ContinueWith(t =>
-                            {
-                                AddException(exceptions, t.Exception, $"Method:WriteAsync File:{file.AbsoluteUri}");
-                                return _source.CleanAsync(file, onError: t.IsFaulted, token: token).Result;
-                            }).
-                            ContinueWith(t =>
-                            {
-                                AddException(exceptions, t.Exception, $"Method:CleanAsync File:{file.AbsoluteUri}");
-                                return _source.ReleaseLockAsync(file, token).Result;
-                            }).
-                            ContinueWith(t =>
-                            {
-                                AddException(exceptions, t.Exception, $"Method:ReleaseLockAsync File:{file.AbsoluteUri}");
-                                return t.Result;
-                            }).Result;
+                                    //if validation failed clean the file to not continue processing over and over 
+                                    if (!t.Result)
+                                    {
+                                        throw new ApplicationException($"File {file} failed validation.");
+                                    }
+                                    return _destination.WriteAsync(inputStream, ProcessLogStream, fileNameTransform(file.Segments.Last()), destinationContentType, blobOperationToken).Result;
+                                }).
+                                ContinueWith(t =>
+                                {
+                                    AddException(exceptions, t.Exception, $"Method:WriteAsync File:{file.AbsoluteUri}");
+                                    return _source.CleanAsync(file, onError: t.IsFaulted, token: blobOperationToken).Result;
+                                }).
+                                ContinueWith(t =>
+                                {
+                                    AddException(exceptions, t.Exception, $"Method:CleanAsync File:{file.AbsoluteUri}");
+                                    return _source.ReleaseLockAsync(file, blobOperationToken).Result;
+                                }).
+                                ContinueWith(t =>
+                                {
+                                    AddException(exceptions, t.Exception, $"Method:ReleaseLockAsync File:{file.AbsoluteUri}");
+                                    return t.Result;
+                                }).Result;
+                            }
                         }
-                    }
-                    //log any exceptions from the renewlease task if faulted
-                    //if the task is still running at this moment any future failure would not matter 
-                    if(lockResult.Item2 != null && lockResult.Item2.IsFaulted)
-                    {
-                        AddException(exceptions, lockResult.Item2.Exception, $"Method:AcquireLease File:{file.AbsoluteUri}");
                     }
                 });
             }

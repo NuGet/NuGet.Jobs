@@ -45,8 +45,8 @@ namespace Stats.CDNLogsSanitizer
                 {
                     var blobs = (await _source.GetFilesAsync(_maxBatchToProcess, token, blobPrefix)).ToArray();
                     continueProcessing = blobs.Length == _maxBatchToProcess;
-                    var workers = Enumerable.Range(0, blobs.Length).Select(i => ProcessBlobAsync(blobs[i], token)).ToArray();
-                    Task.WaitAll(workers);
+                    var workers = Enumerable.Range(0, blobs.Length).Select(i => ProcessBlobAsync(blobs[i], token));
+                    await Task.WhenAll(workers);
                 }
             }
             catch (AggregateException aggregateExceptions)
@@ -70,19 +70,18 @@ namespace Stats.CDNLogsSanitizer
                 _logger.LogInformation("ProcessBlobAsync: The operation was cancelled.");
                 return;
             }
-            var lockResult = await _source.TakeLockAsync(blobUri, token);
-            if (lockResult.Item1 /*lockResult*/)
+            using (var lockResult = await _source.TakeLockAsync(blobUri, token))
             {
-                using (var inputStream = _source.OpenReadAsync(blobUri, ContentType.GZip, token).Result)
+                if (lockResult.LockIsTaken /*lockResult*/)
                 {
-                    bool success = await _destination.WriteAsync(inputStream, ProcessStream, blobUri.Segments.Last(), ContentType.GZip, token);
-                    await _source.CleanAsync(blobUri, onError: !success, token: token);
-                    await _source.ReleaseLockAsync(blobUri, token);
+                    var operationToken = lockResult.BlobOperationToken.Token;
+                    using (var inputStream = await _source.OpenReadAsync(blobUri, ContentType.GZip, token))
+                    {
+                        bool success = await _destination.WriteAsync(inputStream, ProcessStream, blobUri.Segments.Last(), ContentType.GZip, operationToken);
+                        await _source.CleanAsync(blobUri, onError: !success, token: operationToken);
+                        await _source.ReleaseLockAsync(blobUri, operationToken);
+                    }
                 }
-            }
-            if (lockResult.Item2 != null && lockResult.Item2.IsFaulted)
-            {
-                _logger.LogCritical("ProcessBlobAsync: The block renew task had an exception {Exception}", lockResult.Item2.Exception);
             }
             _logger.LogInformation("ProcessBlobAsync: Finished to process blob {BlobName}", blobUri.AbsoluteUri);
         }

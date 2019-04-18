@@ -1,9 +1,9 @@
 ﻿{
   "Initialization": {
-    "AzureAccountConnectionStringSource": "DefaultEndpointsProtocol=https;AccountName=nugetgallerydev;AccountKey=$$Dev-NuGetGalleryMooncakeStorage-Key$$;EndpointSuffix=core.chinacloudapi.cn",
-    "AzureAccountConnectionStringDestination": "DefaultEndpointsProtocol=https;AccountName=nugetgallerydev;AccountKey=$$Dev-NuGetGalleryMooncakeStorage-Key$$;EndpointSuffix=core.chinacloudapi.cn",
-    "AzureContainerNameSource": "china-cdn-access-logs-archive",
-    "AzureContainerNameDestination": "china-cdn-access-logs-archive2",
+    "AzureAccountConnectionStringSource": "DefaultEndpointsProtocol=https;AccountName=***;AccountKey=$$Dev-NuGetGalleryMooncakeStorage-Key$$;EndpointSuffix=core.chinacloudapi.cn",
+    "AzureAccountConnectionStringDestination": "DefaultEndpointsProtocol=https;AccountName=***;AccountKey=$$Dev-NuGetGalleryMooncakeStorage-Key$$;EndpointSuffix=core.chinacloudapi.cn",
+    "AzureContainerNameSource": "***",
+    "AzureContainerNameDestination": "***",
     "BlobPrefix": "",
     "LogHeader": "c-ip, timestamp, cs-method, cs-uri-stem, http-ver, sc-status, sc-bytes, c-referer, c-user-agent, rs-duration(ms), hit-miss, s-ip",
     "LogHeaderDelimiter": ",",

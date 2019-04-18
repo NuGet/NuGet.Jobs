@@ -26,5 +26,6 @@ namespace Stats.AzureCdnLogs.Common
         public static EventId TranslatedPackageIdVersion = new EventId(516, "Translated package id and version");
         public static EventId JobRunFailed = new EventId(550, "Job run failed");
         public static EventId JobInitFailed = new EventId(551, "Job initialization failed");
+        public static EventId FailedBlobCopy = new EventId(517, "Failed to copy blob.");
     }
 }

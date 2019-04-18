@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AzureHelpers\AzureBlobLeaseManager.cs" />
+    <Compile Include="AzureHelpers\AzureBlobLockResult.cs" />
     <Compile Include="CdnStatistics.cs" />
     <Compile Include="Collect\AzureStatsLogDestination.cs" />
     <Compile Include="Collect\AzureStatsLogSource.cs" />

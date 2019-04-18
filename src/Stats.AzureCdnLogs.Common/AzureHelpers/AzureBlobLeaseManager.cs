@@ -39,9 +39,8 @@ namespace Stats.AzureCdnLogs.Common
         /// <param name="token">A token to cancel the operation.</param>
         /// <param name="renewStatusTask">The renew task.</param>
         /// <returns>True if the lease was acquired. </returns>
-        public bool AcquireLease(CloudBlob blob, CancellationToken token, out Task<bool> renewStatusTask)
+        public AzureBlobLockResult AcquireLease(CloudBlob blob, CancellationToken token)
         {
-            renewStatusTask = null;
             blob.FetchAttributes();
             if (token.IsCancellationRequested || blob.Properties.LeaseStatus == LeaseStatus.Locked)
             {
@@ -49,52 +48,72 @@ namespace Stats.AzureCdnLogs.Common
                     blob.Uri.AbsoluteUri,
                     token.IsCancellationRequested,
                     blob.Properties.LeaseStatus);
-                return false;
+                return AzureBlobLockResult.FailedLockResult();
             }
             var proposedLeaseId = Guid.NewGuid().ToString();
-            string leaseId;
 
-            leaseId = blob.AcquireLease(TimeSpan.FromSeconds(MaxRenewPeriodInSeconds), proposedLeaseId);
-            _leasedBlobs.AddOrUpdate(blob.Uri, leaseId, (uri, guid) => leaseId);
+            var leaseId = blob.AcquireLease(TimeSpan.FromSeconds(MaxRenewPeriodInSeconds), proposedLeaseId);
+            // If the lease was lost but the _leasedBlobs is not clean it means that a TryReleaseLease was not invoked 
+            // This means that an Operation (read => copy => delete blob) was started but not fully completed 
+            // One reason for this can be the fact that the task that does the blob lease renew was not succesful and the lease was lost.
+            if (!_leasedBlobs.TryAdd(blob.Uri, leaseId))
+            {
+                var accessCondition = new AccessCondition()
+                {
+                    LeaseId = leaseId
+                };
+                // release the lease just taken and return
+                blob.ReleaseLease(accessCondition);
+                return AzureBlobLockResult.FailedLockResult();
+            }
+
+            var lockResult = new AzureBlobLockResult(true, leaseId, token);
 
             //start a task that will renew the lease until the token is cancelled or the Release methods was invoked
-            renewStatusTask = 
-                Task.Run(() =>
+            var renewStatusTask = new Task( (lockresult) =>
                 {
-                    _logger.LogInformation("RenewLeaseTask: Start for BlobUri {BlobUri}. ThreadId {ThreadId}. IsCancellationRequested {IsCancellationRequested}.", 
+                    var blobLockResult = (AzureBlobLockResult)lockresult;
+                    _logger.LogInformation("RenewLeaseTask: Started for BlobUri {BlobUri}. ThreadId {ThreadId}. IsCancellationRequested {IsCancellationRequested}. LeaseId {LeaseId}", 
                         blob.Uri.AbsoluteUri,
                         Thread.CurrentThread.ManagedThreadId,
-                        token.IsCancellationRequested);
+                        blobLockResult.BlobOperationToken.IsCancellationRequested,
+                        blobLockResult.LeaseId);
 
                     int sleepBeforeRenewInSeconds = MaxRenewPeriodInSeconds - OverlapRenewPeriodInSeconds < 0 ? MaxRenewPeriodInSeconds : MaxRenewPeriodInSeconds - OverlapRenewPeriodInSeconds;
-                    if (!token.IsCancellationRequested)
+                    if (!blobLockResult.BlobOperationToken.IsCancellationRequested)
                     {
                         //if the token was cancelled just try to release the lease as soon as possible
-                        using (token.Register(() => { TryReleaseLease(blob); }))
+                        using (blobLockResult.BlobOperationToken.Token.Register(() => { TryReleaseLease(blob); }))
                         {
-                            while (!token.IsCancellationRequested)
+                            while (!blobLockResult.BlobOperationToken.Token.IsCancellationRequested)
                             {
                                 Thread.Sleep(sleepBeforeRenewInSeconds * 1000);
-                                string blobLeaseId = string.Empty;
+                               
                                 //it will renew the lease only if the lease was not explicitly released 
-                                if (_leasedBlobs.TryGetValue(blob.Uri, out blobLeaseId) && blobLeaseId == leaseId)
+                                try
                                 {
-                                    AccessCondition acc = new AccessCondition() { LeaseId = leaseId };
+                                    AccessCondition acc = new AccessCondition() { LeaseId = blobLockResult.LeaseId };
                                     blob.RenewLease(accessCondition: acc, options: _blobRequestOptions, operationContext: null);
-                                    _logger.LogInformation("RenewLeaseTask: Lease was renewed for BlobUri {BlobUri} and LeaseId {LeaseId}.", blob.Uri.AbsoluteUri, blobLeaseId);
+                                    _logger.LogInformation("RenewLeaseTask: Lease was renewed for BlobUri {BlobUri} and LeaseId {LeaseId}.",
+                                        blob.Uri.AbsoluteUri,
+                                        blobLockResult.LeaseId);
                                 }
-                                else
+                                catch(StorageException)
                                 {
-                                    _logger.LogInformation("RenewLeaseTask: The Lease could not be renewed for BlobUri {BlobUri}. ", blob.Uri.AbsoluteUri);
+                                    _logger.LogInformation("RenewLeaseTask: The Lease could not be renewed for BlobUri {BlobUri}. ExpectedLeaseId {LeaseId}. CurrentLeaseId {CurrentLeaseId}",
+                                        blob.Uri.AbsoluteUri,
+                                        leaseId,
+                                        blobLockResult.LeaseId);
+                                    blobLockResult.BlobOperationToken.Cancel();
                                     break;
                                 }
                             }
                         }
                     }
                     token.ThrowIfCancellationRequested();
-                    return false;
-                }, token);
-            return true;
+                }, lockResult, token, TaskCreationOptions.LongRunning);
+            renewStatusTask.Start();
+            return lockResult;
         }
 
         /// <summary>
@@ -106,6 +125,17 @@ namespace Stats.AzureCdnLogs.Common
         public bool HasLease(CloudBlob blob, out string leaseId)
         {
             return _leasedBlobs.TryGetValue(blob.Uri, out leaseId);
+        }
+
+        /// <summary>
+        /// Returns true if a lease was taken through the <see cref="Stats.AzureCdnLogs.Common.AzureBlobLeaseManager"/>
+        /// </summary>
+        /// <param name="blobUri"></param>
+        /// <param name="leaseId"></param>
+        /// <returns></returns>
+        public bool HasLease(Uri blobUri, out string leaseId)
+        {
+            return _leasedBlobs.TryGetValue(blobUri, out leaseId);
         }
 
         /// <summary>
