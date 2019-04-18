@@ -20,7 +20,7 @@ namespace Stats.CDNLogsSanitizer
 {
     public class Job : JsonConfigurationJob
     {
-        private const int DefaultExecutionTimeoutInSeconds = 345600; // 4 days
+        private const int DefaultExecutionTimeoutInSeconds = 345600; // 10 days
         private const int DefaultMaxBlobsToProcess = 4;
 
         private JobConfiguration _configuration;
@@ -70,7 +70,7 @@ namespace Stats.CDNLogsSanitizer
 
         public override async Task Run()
         {
-            CancellationTokenSource cts = new CancellationTokenSource();
+            var cts = new CancellationTokenSource();
             cts.CancelAfter(_executionTimeoutInSeconds * 1000);
             await _processor.ProcessAsync(cts.Token, _blobPrefix);
 

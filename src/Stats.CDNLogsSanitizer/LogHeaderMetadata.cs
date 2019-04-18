@@ -1,6 +1,8 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+
 namespace Stats.CDNLogsSanitizer
 {
     public class LogHeaderMetadata
@@ -11,7 +13,7 @@ namespace Stats.CDNLogsSanitizer
 
         public LogHeaderMetadata(string header, char delimiter)
         {
-            Header = header;
+            Header = header ?? throw new ArgumentNullException(nameof(header));
             Delimiter = delimiter;
         }
 

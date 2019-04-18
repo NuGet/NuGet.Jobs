@@ -251,12 +251,11 @@ namespace Stats.AzureCdnLogs.Common.Collect
             string sourceLeaseId = null;
             if (_blobLeaseManager.HasLease(sourceBlobUri, out sourceLeaseId))
             {
-                var sourceAccessCondition = new AccessCondition() { LeaseId = sourceLeaseId };
                 try
                 {
                     if (!await destinationBlob.ExistsAsync(token))
                     { 
-                        return await TryCopyInternalAsync(sourceBlobUri, destinationBlob, destinationContainer, sourceAccessCondition: sourceAccessCondition, destinationAccessCondition: null);
+                        return await TryCopyInternalAsync(sourceBlobUri, destinationBlob, destinationContainer);
                     }
                     else
                     {
@@ -266,7 +265,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         var lease = destinationBlob.AcquireLease(TimeSpan.FromSeconds(CopyBlobLeaseTimeInSeconds), sourceLeaseId);
                         var destinationAccessCondition = new AccessCondition() { LeaseId = lease };
                         await destinationBlob.DeleteAsync(deleteSnapshotsOption: DeleteSnapshotsOption.IncludeSnapshots, accessCondition: destinationAccessCondition, options: null, operationContext: null);
-                        var result = await TryCopyInternalAsync(sourceBlobUri, destinationBlob, destinationContainer, sourceAccessCondition: sourceAccessCondition, destinationAccessCondition: destinationAccessCondition);
+                        var result = await TryCopyInternalAsync(sourceBlobUri, destinationBlob, destinationContainer, destinationAccessCondition: destinationAccessCondition);
                         try
                         {
                             destinationBlob.ReleaseLease(destinationAccessCondition);
@@ -287,10 +286,13 @@ namespace Stats.AzureCdnLogs.Common.Collect
             return false;
         }
 
-        private async Task<bool> TryCopyInternalAsync(Uri sourceblobUri, CloudBlob destinationBlob, CloudBlobContainer destinationContainer, AccessCondition sourceAccessCondition, AccessCondition destinationAccessCondition)
+        private async Task<bool> TryCopyInternalAsync(Uri sourceblobUri,
+            CloudBlob destinationBlob,
+            CloudBlobContainer destinationContainer,
+            AccessCondition destinationAccessCondition = null)
         {
             await destinationBlob.StartCopyAsync(sourceblobUri,
-                sourceAccessCondition: sourceAccessCondition,
+                sourceAccessCondition: null,
                 destAccessCondition: destinationAccessCondition,
                 options: null,
                 operationContext: null);

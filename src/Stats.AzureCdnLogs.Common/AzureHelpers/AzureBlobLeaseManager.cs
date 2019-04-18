@@ -19,7 +19,7 @@ namespace Stats.AzureCdnLogs.Common
     {
         private const int MaxRenewPeriodInSeconds = 60;
         // The lease will be renewed with a short interval before the the lease expires
-        private const int OverlapRenewPeriodInSeconds = 10;
+        private const int OverlapRenewPeriodInSeconds = 20;
         private ConcurrentDictionary<Uri, string> _leasedBlobs = new ConcurrentDictionary<Uri, string>();
         private BlobRequestOptions _blobRequestOptions;
         private readonly ILogger<AzureBlobLeaseManager> _logger;
@@ -98,9 +98,9 @@ namespace Stats.AzureCdnLogs.Common
                                         blob.Uri.AbsoluteUri,
                                         blobLockResult.LeaseId);
                                 }
-                                catch(StorageException)
+                                catch(StorageException exception)
                                 {
-                                    _logger.LogInformation("RenewLeaseTask: The Lease could not be renewed for BlobUri {BlobUri}. ExpectedLeaseId {LeaseId}. CurrentLeaseId {CurrentLeaseId}",
+                                    _logger.LogWarning(LogEvents.FailedBlobLease, exception, "RenewLeaseTask: The Lease could not be renewed for BlobUri {BlobUri}. ExpectedLeaseId {LeaseId}. CurrentLeaseId {CurrentLeaseId}.",
                                         blob.Uri.AbsoluteUri,
                                         leaseId,
                                         blobLockResult.LeaseId);

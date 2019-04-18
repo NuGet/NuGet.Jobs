@@ -9,9 +9,15 @@ namespace Stats.CDNLogsSanitizer
 {
     class ClientIPSanitizer : ISanitizer
     {
-        const string _headerValue = "c-ip";
-        int _headerValueIndex;
-        LogHeaderMetadata _headerMetadata;
+        private const string _headerValue = "c-ip";
+        private readonly int _headerValueIndex;
+        private readonly LogHeaderMetadata _headerMetadata;
+
+        public ClientIPSanitizer(LogHeaderMetadata headerMetadata)
+        {
+            _headerMetadata = headerMetadata ?? throw new ArgumentNullException(nameof(headerMetadata));
+            _headerValueIndex = headerMetadata.GetIndex(_headerValue) ?? throw new ArgumentException(nameof(headerMetadata.Header));
+        }
 
         public void SanitizeLogLine(ref string line)
         {
@@ -20,12 +26,6 @@ namespace Stats.CDNLogsSanitizer
             lineSegments[_headerValueIndex] = Obfuscator.ObfuscateIp(clientIp);
 
             line = string.Join(new string(_headerMetadata.Delimiter, 1), lineSegments);
-        }
-
-        public ClientIPSanitizer(LogHeaderMetadata headerMetadata)
-        {
-            _headerMetadata = headerMetadata ?? throw new ArgumentNullException(nameof(headerMetadata));
-            _headerValueIndex = headerMetadata.GetIndex(_headerValue) ?? throw new ArgumentException(nameof(headerMetadata.Header));
-        }
+        }  
     }
 }

@@ -116,7 +116,7 @@ namespace Stats.CDNLogsSanitizer
                                 targetStreamWriter.WriteLine(sanitizedLogLine);
                             }
                         }
-                    };
+                    }
                     _logger.LogInformation("ProcessStream: Finished writting to the destination stream.");
                 }
             }
