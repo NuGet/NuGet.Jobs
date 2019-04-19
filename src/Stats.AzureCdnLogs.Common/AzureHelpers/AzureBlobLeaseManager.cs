@@ -73,6 +73,11 @@ namespace Stats.AzureCdnLogs.Common
                             //it will renew the lease only if the lease was not explicitly released 
                             try
                             {
+                                if (!blobLockResult.Blob.Exists())
+                                {
+                                    blobLockResult.BlobOperationToken.Cancel();
+                                    break;
+                                }
                                 AccessCondition acc = new AccessCondition { LeaseId = blobLockResult.LeaseId };
                                 blob.RenewLease(accessCondition: acc, options: _blobRequestOptions, operationContext: null);
                                 _logger.LogInformation("RenewLeaseTask: Lease was renewed for BlobUri {BlobUri} and LeaseId {LeaseId}.",
@@ -101,10 +106,17 @@ namespace Stats.AzureCdnLogs.Common
             {
                 AccessCondition acc = new AccessCondition();
                 acc.LeaseId = releaseLock.LeaseId;
-                await releaseLock.Blob.ReleaseLeaseAsync(acc, options: _blobRequestOptions, operationContext: null);
-                releaseLock.BlobOperationToken.Cancel();
-                _logger.LogInformation("ReleaseLockAsync: ReleaseLeaseStatus: {LeaseReleased} on the {BlobUri}.", true, releaseLock.Blob.Uri);
-                return new AsyncOperationResult(true, null);
+                if(await releaseLock.Blob.ExistsAsync())
+                {
+                    await releaseLock.Blob.ReleaseLeaseAsync(acc, options: _blobRequestOptions, operationContext: null);
+                    releaseLock.BlobOperationToken.Cancel();
+                    _logger.LogInformation("ReleaseLockAsync: ReleaseLeaseStatus: {LeaseReleased} on the {BlobUri}.", true, releaseLock.Blob.Uri);
+                    return new AsyncOperationResult(true, null);
+                }
+                else
+                {
+                    return new AsyncOperationResult(false, null);
+                }
             }
             catch (Exception exception)
             {

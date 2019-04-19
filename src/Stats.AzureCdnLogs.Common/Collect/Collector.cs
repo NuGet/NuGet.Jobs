@@ -80,7 +80,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                     {
                         using (var inputStream = await _source.OpenReadAsync(file, sourceContentType, blobOperationToken))
                         {
-                            var blobToDeadLetter = await VerifyStreamInternalAsync(file, sourceContentType, blobOperationToken);
+                            var blobToDeadLetter = ! await VerifyStreamInternalAsync(file, sourceContentType, blobOperationToken);
                             // If verification passed continue with the rest of the action 
                             // If not just move the blob to deadletter
                             if (!blobToDeadLetter)
