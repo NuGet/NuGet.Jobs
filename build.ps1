@@ -100,7 +100,8 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\StatusAggregator\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs"
+            "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs",
+			"$PSScriptRoot\src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA

@@ -11,20 +11,57 @@ namespace Stats.AzureCdnLogs.Common.Collect
 {
     public interface ILogSource
     {
+        /// <summary>
+        /// Returns a max list of Uris.
+        /// </summary>
+        /// <param name="maxResults">The max number of files.</param>
+        /// <param name="token">A cancellation token for the async operation.</param>
+        /// <param name="prefix">A prefix for the files.</param>
+        /// <returns>An <see cref="IEnumerable{Uri}"/></returns>
         Task<IEnumerable<Uri>> GetFilesAsync(int maxResults, CancellationToken token, string prefix = null);
 
-        Task<bool> CleanAsync(Uri fileUri, bool onError, CancellationToken token);
-
-        Task<Stream> OpenReadAsync(Uri fileUri, ContentType contentType, CancellationToken token);
+        /// <summary>
+        /// Clean - up action.
+        /// This method will not throw an exception. 
+        /// If an exception it will be stored under <see cref="AsyncOperationResult.OperationException"/>. 
+        /// </summary>
+        /// <param name="blobLock">The <see cref="AzureBlobLockResult"/> for the blob that needs clean-up.</param>
+        /// <param name="onError">Flag to indicate if the cleanup is done because an error or not. </param>
+        /// <param name="token">A token to be used for cancellation.</param>
+        /// <returns>True is the cleanup was successful. If the blob does not exist the return value is false. 
+        /// If an Exception is thrown the exception will be stored under <see cref="AsyncOperationResult.OperationException"/>.
+        /// </returns>
+        Task<AsyncOperationResult> TryCleanAsync(AzureBlobLockResult blobLock, bool onError, CancellationToken token);
 
         /// <summary>
-        /// Take lock.
+        /// Returns a blob stream.
         /// </summary>
-        /// <param name="fileUri">The file uri.</param>
-        /// <param name="token">The token for cancellation.</param>
-        /// <returns>The result of the lock action. </returns>
-        Task<AzureBlobLockResult> TakeLockAsync(Uri fileUri, CancellationToken token);
+        /// <param name="blobUri">The uri.</param>
+        /// <param name="contentType">The <see cref="ContentType"/></param>
+        /// <param name="token">A cancellation token for the async operation.</param>
+        /// <returns></returns>
+        Task<Stream> OpenReadAsync(Uri blobUri, ContentType contentType, CancellationToken token);
 
-        Task<bool> ReleaseLockAsync(Uri fileUri, CancellationToken token);
+        /// <summary>
+        /// Take lease on a blob.
+        /// </summary>
+        /// <param name="blobUri">The blob uri.</param>
+        /// <param name="token">The token for cancellation.</param>
+        /// <returns>The result of the lock action. 
+        /// If an Exception is thrown the exception will be stored under <see cref="AsyncOperationResult.OperationException"/>.
+        /// </returns>
+        Task<AzureBlobLockResult> TakeLockAsync(Uri blobUri, CancellationToken token);
+
+        /// <summary>
+        /// Release the lock.
+        /// This method will not throw an exception. 
+        /// If an exception it will be stored in <see cref="AsyncOperationResult.OperationException"/>. 
+        /// </summary>
+        /// <param name="blobLock">The <see cref="AzureBlobLockResult"/> for the blob that needs clean-up.</param>
+        /// <param name="token">A cancellation token for the async operation.</param>
+        /// <returns>The result of the operation.
+        /// If an Exception is thrown the exception will be stored under <see cref="AsyncOperationResult.OperationException"/>.
+        /// </returns>
+        Task<AsyncOperationResult> TryReleaseLockAsync(AzureBlobLockResult blobLock, CancellationToken token);
     }
 }

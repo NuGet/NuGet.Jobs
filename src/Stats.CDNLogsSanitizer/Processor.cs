@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
+using Stats.AzureCdnLogs.Common;
 using Stats.AzureCdnLogs.Common.Collect;
 
 namespace Stats.CDNLogsSanitizer
@@ -53,12 +54,12 @@ namespace Stats.CDNLogsSanitizer
             {
                 foreach (var innerEx in aggregateExceptions.InnerExceptions)
                 {
-                    _logger.LogCritical("ProcessAsync: An exception was encountered. {Exception}", innerEx);
+                    _logger.LogCritical(LogEvents.JobRunFailed, innerEx, "ProcessAsync: An exception was encountered.");
                 }
             }
             catch (Exception exception)
             {
-                _logger.LogCritical("ProcessAsync: An exception was encountered. {Exception}", exception);
+                _logger.LogCritical(LogEvents.JobRunFailed, exception, "ProcessAsync: An exception was encountered.");
             }
         }
 
@@ -77,16 +78,16 @@ namespace Stats.CDNLogsSanitizer
                     var operationToken = lockResult.BlobOperationToken.Token;
                     using (var inputStream = await _source.OpenReadAsync(blobUri, ContentType.GZip, token))
                     {
-                        bool success = await _destination.WriteAsync(inputStream, ProcessStream, blobUri.Segments.Last(), ContentType.GZip, operationToken);
-                        await _source.CleanAsync(blobUri, onError: !success, token: operationToken);
-                        await _source.ReleaseLockAsync(blobUri, operationToken);
+                        var writeOperationResult = await _destination.TryWriteAsync(inputStream, ProcessStream, blobUri.Segments.Last(), ContentType.GZip, operationToken);
+                        await _source.TryCleanAsync(lockResult, onError: writeOperationResult.OperationException != null, token: operationToken);
+                        await _source.TryReleaseLockAsync(lockResult, operationToken);
                     }
                 }
             }
             _logger.LogInformation("ProcessBlobAsync: Finished to process blob {BlobName}", blobUri.AbsoluteUri);
         }
 
-        public virtual void ProcessStream(Stream sourceStream, Stream targetStream)
+        public void ProcessStream(Stream sourceStream, Stream targetStream)
         {
             try
             {
@@ -120,10 +121,10 @@ namespace Stats.CDNLogsSanitizer
                     _logger.LogInformation("ProcessStream: Finished writting to the destination stream.");
                 }
             }
-            catch (StorageException ex)
+            catch (StorageException exception)
             {
-                _logger.LogCritical("ProcessStream: An exception while processing the stream {Exception}.", ex);
-                throw ex;
+                _logger.LogCritical(LogEvents.FailedToProcessStream, exception, "ProcessStream: An exception while processing the stream.");
+                throw exception;
             }
         }
     }

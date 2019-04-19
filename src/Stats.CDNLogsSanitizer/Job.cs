@@ -60,10 +60,7 @@ namespace Stats.CDNLogsSanitizer
                 _configuration.AzureContainerNameDestination,
                 serviceProvider.GetRequiredService<ILogger<AzureStatsLogDestination>>());
 
-            List<ISanitizer> sanitizers = new List<ISanitizer>()
-            {
-                new ClientIPSanitizer(_logHeaderMetadata)
-            };
+            var sanitizers = new List<ISanitizer>{ new ClientIPSanitizer(_logHeaderMetadata) };
 
             _processor = new Processor(source, dest, _maxBlobsToProcess, sanitizers, serviceProvider.GetRequiredService<ILogger<Processor>>());
         }
