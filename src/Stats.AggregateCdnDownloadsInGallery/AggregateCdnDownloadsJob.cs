@@ -190,12 +190,19 @@ namespace Stats.AggregateCdnDownloadsInGallery
                     var packageId = packageRegistrationGroup.Key.ToLowerInvariant();
                     var packageRegistrationData = packageRegistrationLookup[packageId];
 
-                    Logger.LogInformation("{ToDataSource} {PackageId} {DownloadCount}", "GalleryPackageRegistration", packageId, packageRegistrationData.DownloadCount);
-
                     // Calculate the total sum of the new downloads 
                     // If it is not greater than the current download count there is not any need to update.
+
+                    // This data is from Statistics db.
                     long newDownloadCount = packageRegistrationGroup.Select(g => g.TotalDownloadCount).Sum();
+
+                    // This data is from Gallery db, PackageRegistration table.
                     long currentDownloadCount = long.Parse(packageRegistrationData.DownloadCount);
+                    Logger.LogInformation("PackageId:{PackageId} CurrentDownloadCount:{CurrentDownloadCount} NewDownloadCount:{NewDownloadCount}",
+                        packageId,
+                        currentDownloadCount,
+                        newDownloadCount);
+
                     if (newDownloadCount > currentDownloadCount)
                     {
                         // Set download count on individual packages
@@ -206,21 +213,16 @@ namespace Stats.AggregateCdnDownloadsInGallery
                             row["PackageVersion"] = package.PackageVersion;
                             row["DownloadCount"] = package.TotalDownloadCount;
                             aggregateCdnDownloadsInGalleryTable.Rows.Add(row);
-
-                            Logger.LogInformation("{FromDataSource} {PackageId} {PackageVersion} {DownloadCount}", "Statistics_FactDownloads", packageId, package.PackageVersion, package.TotalDownloadCount);
                         }
                     }
-                    else if(newDownloadCount == currentDownloadCount)
-                    {
-                        Logger.LogInformation("DownloadCount did not change for {PackageId}. {CurrentDownloadCount} {NewDownloadCount}", packageRegistrationGroup.Key, currentDownloadCount, newDownloadCount);
-                    }
-                    else
+                    if (newDownloadCount < currentDownloadCount)
                     {
                         Logger.LogCritical(LogEvents.DownloadCountDecreaseDetected, "{PackageId} {CurrentDownloadCount} {NewDownloadCount}", packageRegistrationGroup.Key, currentDownloadCount, newDownloadCount);
                     }
                 }
                 else
                 {
+                    // This is not expected to happen as it should be one id per group. 
                     Logger.LogCritical(LogEvents.IncorrectIdsInGroupBatch, "{GroupKey} {Ids}", packageRegistrationGroup.Key, string.Join(",", packageRegistrationGroup.Select(g => g.PackageId).Distinct()));
                 }
             }
