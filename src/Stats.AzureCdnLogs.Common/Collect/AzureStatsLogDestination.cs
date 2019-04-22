@@ -67,6 +67,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 // This should not happen if the renew task was correctly scheduled. Add the check just in case that the renew task was not scheduled in time and a different process already processed the file.
                 if (!(await blob.ExistsAsync()))
                 {
+                    // Do not use using to not automatically commit on dispose
+                    // https://github.com/Azure/azure-storage-net/issues/832
                     var resultStream = await blob.OpenWriteAsync();
                     if (destinationContentType == ContentType.GZip)
                     {

@@ -67,13 +67,15 @@ namespace Stats.CDNLogsSanitizer
 
         public override async Task Run()
         {
-            var cts = new CancellationTokenSource();
-            cts.CancelAfter(_executionTimeoutInSeconds * 1000);
-            await _processor.ProcessAsync(cts.Token, _blobPrefix);
-
-            if (cts.IsCancellationRequested)
+            using (var cts = new CancellationTokenSource())
             {
-                Logger.LogInformation("Execution exceeded the timeout of {ExecutionTimeoutInSeconds} seconds and it was cancelled.", _executionTimeoutInSeconds);
+                cts.CancelAfter(_executionTimeoutInSeconds * 1000);
+                await _processor.ProcessAsync(cts.Token, _blobPrefix);
+
+                if (cts.IsCancellationRequested)
+                {
+                    Logger.LogInformation("Execution exceeded the timeout of {ExecutionTimeoutInSeconds} seconds and it was cancelled.", _executionTimeoutInSeconds);
+                }
             }
         }
 

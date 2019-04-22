@@ -7,7 +7,7 @@ using Stats.AzureCdnLogs.Common;
 
 namespace Stats.CDNLogsSanitizer
 {
-    class ClientIPSanitizer : ISanitizer
+    public class ClientIPSanitizer : ISanitizer
     {
         private const string _headerValue = "c-ip";
         private readonly int _headerValueIndex;

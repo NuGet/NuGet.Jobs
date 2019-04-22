@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -76,23 +77,32 @@ namespace Stats.CDNLogsSanitizer
                 if (lockResult.LockIsTaken /*lockResult*/)
                 {
                     var operationToken = lockResult.BlobOperationToken.Token;
-                    using (var inputStream = await _source.OpenReadAsync(blobUri, ContentType.GZip, token))
+                    if (!operationToken.IsCancellationRequested)
                     {
-                        var writeOperationResult = await _destination.TryWriteAsync(inputStream, ProcessStream, blobUri.Segments.Last(), ContentType.GZip, operationToken);
-                        await _source.TryCleanAsync(lockResult, onError: writeOperationResult.OperationException != null, token: operationToken);
-                        await _source.TryReleaseLockAsync(lockResult, operationToken);
+                        using (var inputStream = await _source.OpenReadAsync(blobUri, ContentType.GZip, token))
+                        {
+                            var writeOperationResult = await _destination.TryWriteAsync(inputStream, ProcessStream, blobUri.Segments.Last(), ContentType.GZip, operationToken);
+                            await _source.TryCleanAsync(lockResult, onError: writeOperationResult.OperationException != null, token: operationToken);
+                            await _source.TryReleaseLockAsync(lockResult, operationToken);
+                        }
                     }
                 }
             }
             _logger.LogInformation("ProcessBlobAsync: Finished to process blob {BlobName}", blobUri.AbsoluteUri);
         }
 
+        /// <summary>
+        /// Process the input stream and writes to the output. The outputstream remains open.
+        /// </summary>
+        /// <param name="sourceStream"></param>
+        /// <param name="targetStream"></param>
         public void ProcessStream(Stream sourceStream, Stream targetStream)
         {
             try
             {
                 using (var sourceStreamReader = new StreamReader(sourceStream))
-                using (var targetStreamWriter = new StreamWriter(targetStream))
+                // Default encoding and buffer size:  and https://referencesource.microsoft.com/#mscorlib/system/io/streamwriter.cs,62bd8ad495f57b21
+                using (var targetStreamWriter = new StreamWriter(targetStream, new UTF8Encoding(false, true), 1024, true))
                 {
                     bool firstLine = true;
                     while (!sourceStreamReader.EndOfStream)
@@ -118,6 +128,7 @@ namespace Stats.CDNLogsSanitizer
                             }
                         }
                     }
+                    targetStreamWriter.Flush();
                     _logger.LogInformation("ProcessStream: Finished writting to the destination stream.");
                 }
             }
