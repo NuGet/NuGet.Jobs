@@ -25,6 +25,8 @@ namespace NuGet.Jobs
         public const string PackageDatabase = "PackageDatabase";
         public const string GalleryDatabase = "GalleryDatabase";
         public const string StatisticsDatabase = "StatisticsDatabase";
+        public const string SupportRequestDatabase = "SupportRequestDatabase";
+        public const string ValidationDatabase = "ValidationDatabase";
 
         // Catalog Collector argument names
         public const string ChecksumCollectorBatchSize = "ChecksumCollectorBatchSize";
