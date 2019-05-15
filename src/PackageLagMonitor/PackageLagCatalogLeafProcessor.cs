@@ -158,6 +158,10 @@ namespace NuGet.Jobs.Montoring.PackageLag
                                 shouldRetry = searchResultObject.Data[0].LastEdited < lastEdited;
                             }
                         }
+                        else
+                        {
+                            shouldRetry = true;
+                        }
                     }
                     if (shouldRetry)
                     {
@@ -190,7 +194,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
                     // We log both of these values here as they will differ if a package went through validation pipline.
                     _logger.LogInformation("{Timestamp}:{PackageId} {PackageVersion} Query: {Query} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, query, createdDelay, v3Delay);
                     _logger.LogInformation("LastReload:{LastReloadTimestamp} LastEdited:{LastEditedTimestamp} Created:{CreatedTimestamp} ", lastReloadTime, lastEdited, created);
-                    if (!isListOperation)
+                     if (!isListOperation)
                     {
                         _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
                     }
