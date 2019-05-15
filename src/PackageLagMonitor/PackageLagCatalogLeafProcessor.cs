@@ -187,10 +187,14 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
                     var timeStamp = (isListOperation ? lastEdited : created);
 
-
                     // We log both of these values here as they will differ if a package went through validation pipline.
                     _logger.LogInformation("{Timestamp}:{PackageId} {PackageVersion} Query: {Query} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, query, createdDelay, v3Delay);
-                    _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
+                    _logger.LogInformation("LastReload:{LastReloadTimestamp} LastEdited:{LastEditedTimestamp} Created:{CreatedTimestamp} ", lastReloadTime, lastEdited, created);
+                    if (!isListOperation)
+                    {
+                        _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
+                    }
+
                     _telemetryService.TrackV3Lag(timeStamp, instance, packageId, packageVersion, v3Delay);
 
                     return createdDelay;
