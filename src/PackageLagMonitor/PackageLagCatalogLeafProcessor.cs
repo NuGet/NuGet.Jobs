@@ -9,10 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using NuGet.Jobs.Montoring.PackageLag.Telemetry;
+using NuGet.Jobs.Monitoring.PackageLag.Telemetry;
 using NuGet.Protocol.Catalog;
 
-namespace NuGet.Jobs.Montoring.PackageLag
+namespace NuGet.Jobs.Monitoring.PackageLag
 {
     public class PackageLagCatalogLeafProcessor : ICatalogLeafProcessor
     {
@@ -27,12 +27,12 @@ namespace NuGet.Jobs.Montoring.PackageLag
         private List<Task> _packageProcessTasks;
 
         private List<Instance> _searchInstances;
-        private HttpClient _client;
+        private IHttpClientWrapper _client;
         private IPackageLagTelemetryService _telemetryService;
 
         public PackageLagCatalogLeafProcessor(
             List<Instance> searchInstances,
-            HttpClient client,
+            IHttpClientWrapper client,
             IPackageLagTelemetryService telemetryService,
             ILogger<PackageLagCatalogLeafProcessor> logger)
         {
@@ -61,23 +61,24 @@ namespace NuGet.Jobs.Montoring.PackageLag
             return Task.FromResult(true);
         }
 
-        private async Task<bool> ProcessPackageLagDetails(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
+        public async Task<TimeSpan> ProcessPackageLagDetails(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
         {
             var packageId = leaf.PackageId;
             var packageVersion = leaf.PackageVersion;
+            TimeSpan lag;
 
             _logger.LogInformation("Computing Lag for {PackageId} {PackageVersion}", packageId, packageVersion);
             try
             {
                 var cancellationToken = new CancellationToken();
-                var lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, isDelete, created, lastEdited, cancellationToken);
+                lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, isDelete, created, lastEdited, cancellationToken);
             }
             catch
             {
-                return false;
+                return TimeSpan.FromSeconds(0);
             }
 
-            return true;
+            return lag;
 
         }
 

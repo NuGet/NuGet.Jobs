@@ -14,14 +14,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NuGet.Jobs.Montoring.PackageLag.Telemetry;
+using NuGet.Jobs.Monitoring.PackageLag.Telemetry;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureManagement;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Logging;
 
-namespace NuGet.Jobs.Montoring.PackageLag
+namespace NuGet.Jobs.Monitoring.PackageLag
 {
     public class Job : JobBase
     {
@@ -35,7 +35,7 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
         private IAzureManagementAPIWrapper _azureManagementApiWrapper;
         private IPackageLagTelemetryService _telemetryService;
-        private HttpClient _httpClient;
+        private IHttpClientWrapper _httpClient;
         private ISearchServiceClient _searchServiceClient;
         private ICatalogClient _catalogClient;
         private IServiceProvider _serviceProvider;
@@ -48,8 +48,8 @@ namespace NuGet.Jobs.Montoring.PackageLag
 
             _configuration = _serviceProvider.GetService<PackageLagMonitorConfiguration>();
             _azureManagementApiWrapper = _serviceProvider.GetService<IAzureManagementAPIWrapper>();
-            _catalogClient = _serviceProvider.GetService<CatalogClient>();
-            _httpClient = _serviceProvider.GetService<HttpClient>();
+            _catalogClient = _serviceProvider.GetService<ICatalogClient>();
+            _httpClient = _serviceProvider.GetService<IHttpClientWrapper>();
             _searchServiceClient = _serviceProvider.GetService<ISearchServiceClient>();
 
             _telemetryService = _serviceProvider.GetService<IPackageLagTelemetryService>();
@@ -115,13 +115,13 @@ namespace NuGet.Jobs.Montoring.PackageLag
                 return handler;
             });
 
-            services.AddSingleton(p => new HttpClient(p.GetService<HttpClientHandler>()));
+            services.AddSingleton(p => new HttpClientWrapper(new HttpClient(p.GetService<HttpClientHandler>())));
             services.AddTransient<IPackageLagTelemetryService, PackageLagTelemetryService>();
             services.AddSingleton(new TelemetryClient());
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
             services.AddTransient<IAzureManagementAPIWrapperConfiguration>(p => p.GetService<IOptionsSnapshot<AzureManagementAPIWrapperConfiguration>>().Value);
             services.AddTransient<PackageLagMonitorConfiguration>(p => p.GetService<IOptionsSnapshot<PackageLagMonitorConfiguration>>().Value);
-            services.AddSingleton<CatalogClient>();
+            services.AddSingleton<ICatalogClient, CatalogClient>();
             services.AddSingleton<IAzureManagementAPIWrapper, AzureManagementAPIWrapper>();
             services.AddTransient<ISearchServiceClient, SearchServiceClient>();
         }
