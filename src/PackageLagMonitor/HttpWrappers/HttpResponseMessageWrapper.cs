@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -23,6 +24,12 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 return new HttpContentWrapper(_responseMessage.Content);
             }
         }
+
+        public bool IsSuccessStatusCode => _responseMessage.IsSuccessStatusCode;
+
+        public string ReasonPhrase { get => _responseMessage.ReasonPhrase; set => _responseMessage.ReasonPhrase = value; }
+
+        public HttpStatusCode StatusCode { get => _responseMessage.StatusCode; set => _responseMessage.StatusCode = value; }
 
         #region IDisposable Support
         private bool disposedValue = false;

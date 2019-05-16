@@ -116,7 +116,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             });
 
             services.AddSingleton(p => new HttpClient(p.GetService<HttpClientHandler>()));
-            services.AddSingleton(p => new HttpClientWrapper(p.GetService<HttpClient>()));
+            services.AddSingleton<IHttpClientWrapper>(p => new HttpClientWrapper(p.GetService<HttpClient>()));
             services.AddTransient<IPackageLagTelemetryService, PackageLagTelemetryService>();
             services.AddSingleton(new TelemetryClient());
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
@@ -170,7 +170,16 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                     return;
                 }
                 
-                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _httpClient, _telemetryService, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
+                var catalogLeafProcessor = new PackageLagCatalogLeafProcessor(instances, _searchServiceClient, _telemetryService, LoggerFactory.CreateLogger<PackageLagCatalogLeafProcessor>());
+                if (_configuration.RetryLimit > 0)
+                {
+                    catalogLeafProcessor.RetryLimit = _configuration.RetryLimit;
+                }
+
+                if(_configuration.WaitBetweenRetrySeconds > 0)
+                {
+                    catalogLeafProcessor.WaitBetweenPolls = TimeSpan.FromSeconds(_configuration.WaitBetweenRetrySeconds);
+                }
 
                 var settings = new CatalogProcessorSettings
                 {

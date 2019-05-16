@@ -18,8 +18,8 @@ namespace NuGet.Jobs.Monitoring.PackageLag
     {
         private const string SearchQueryTemplate = "?q=packageid:{0} version:{1}&ignorefilter=true&semverlevel=2.0.0";
 
-        private TimeSpan WaitBetweenPolls = TimeSpan.FromMinutes(2);
-        private const int MAX_RETRY_COUNT = 15;
+        public TimeSpan WaitBetweenPolls = TimeSpan.FromMinutes(2);
+        public int RetryLimit = 15;
 
         private const int FailAfterCommitCount = 10;
         private readonly ILogger<PackageLagCatalogLeafProcessor> _logger;
@@ -27,18 +27,18 @@ namespace NuGet.Jobs.Monitoring.PackageLag
         private List<Task> _packageProcessTasks;
 
         private List<Instance> _searchInstances;
-        private IHttpClientWrapper _client;
+        private ISearchServiceClient _searchClient;
         private IPackageLagTelemetryService _telemetryService;
 
         public PackageLagCatalogLeafProcessor(
             List<Instance> searchInstances,
-            IHttpClientWrapper client,
+            ISearchServiceClient searchClient,
             IPackageLagTelemetryService telemetryService,
             ILogger<PackageLagCatalogLeafProcessor> logger)
         {
             _logger = logger;
             _searchInstances = searchInstances;
-            _client = client;
+            _searchClient = searchClient;
             _telemetryService = telemetryService;
             _packageProcessTasks = new List<Task>();
         }
@@ -61,11 +61,11 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             return Task.FromResult(true);
         }
 
-        public async Task<TimeSpan> ProcessPackageLagDetails(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
+        public async Task<TimeSpan?> ProcessPackageLagDetails(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
         {
             var packageId = leaf.PackageId;
             var packageVersion = leaf.PackageVersion;
-            TimeSpan lag;
+            TimeSpan? lag;
 
             _logger.LogInformation("Computing Lag for {PackageId} {PackageVersion}", packageId, packageVersion);
             try
@@ -82,9 +82,9 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
         }
 
-        private async Task<TimeSpan> GetLagForPackageState(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
+        private async Task<TimeSpan?> GetLagForPackageState(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
         {
-            var Tasks = new List<Task<TimeSpan>>();
+            var Tasks = new List<Task<TimeSpan?>>();
             foreach (Instance instance in searchInstances)
             {
                 Tasks.Add(ComputeLagForQueries(instance, packageId, version, listed, created, lastEdited, isDelete, token));
@@ -92,12 +92,27 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
             var results = await Task.WhenAll(Tasks);
 
-            var averageTicks = (long)results.Average<TimeSpan>(t => t.Ticks);
+            try
+            {
+                var averageTicks = (long)results.Where(r => r.HasValue).Average(t => t.Value.Ticks);
 
-            return new TimeSpan(averageTicks);
+                return new TimeSpan(averageTicks);
+            }
+            catch(Exception e)
+            {
+                if (e is InvalidOperationException || e is ArgumentNullException)
+                {
+                    _logger.LogError("No queries succeeded for {PackageId} {PackageVersion}", packageId, version);
+                    return null;
+                }
+                else
+                {
+                    throw e;
+                }
+            }
         }
 
-        private async Task<TimeSpan> ComputeLagForQueries(
+        private async Task<TimeSpan?> ComputeLagForQueries(
             Instance instance,
             string packageId,
             string packageVersion,
@@ -108,7 +123,6 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             CancellationToken token)
         {
             await Task.Yield();
-            var query = instance.BaseQueryUrl + String.Format(SearchQueryTemplate, packageId, packageVersion);
 
             try
             {
@@ -119,64 +133,44 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 TimeSpan createdDelay, v3Delay;
                 DateTimeOffset lastReloadTime;
 
-                _logger.LogInformation("Queueing {Query}", query);
                 do
                 {
-                    using (var response = await _client.GetAsync(
-                        query,
-                        HttpCompletionOption.ResponseContentRead,
-                        token))
+                    var searchResultObject = await _searchClient.GetResultForPackageIdVersion(instance, packageId, packageVersion, token);
+                    resultCount = searchResultObject.TotalHits;
+
+                    shouldRetry = false;
+                    if (resultCount > 0)
                     {
-                        var content = response.Content;
-                        var searchResultRaw = await content.ReadAsStringAsync();
-                        var searchResultObject = JsonConvert.DeserializeObject<SearchResultResponse>(searchResultRaw);
-
-                        resultCount = searchResultObject.TotalHits;
-
-                        shouldRetry = false;
-                        if (resultCount > 0)
+                        if (deleted)
                         {
-                            if (deleted)
-                            {
-                                shouldRetry = true;
-                            }
-                            else
-                            {
-                                if (retryCount == 0)
-                                {
-                                    isListOperation = true;
-                                }
-
-                                shouldRetry = searchResultObject.Data[0].LastEdited < lastEdited;
-                            }
+                            shouldRetry = true;
                         }
                         else
                         {
-                            shouldRetry = !deleted;
+                            if (retryCount == 0)
+                            {
+                                isListOperation = true;
+                            }
+
+                            shouldRetry = searchResultObject.Data[0].LastEdited < lastEdited;
                         }
+                    }
+                    else
+                    {
+                        shouldRetry = !deleted;
                     }
                     if (shouldRetry)
                     {
                         ++retryCount;
-                        _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} Query:{Query}", WaitBetweenPolls.TotalSeconds, packageId, packageVersion, query);
+                        _logger.LogInformation("Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} against {SearchBaseUrl}", WaitBetweenPolls.TotalSeconds, packageId, packageVersion, instance.BaseQueryUrl);
                         await Task.Delay(WaitBetweenPolls);
                     }
-                } while (shouldRetry && retryCount < MAX_RETRY_COUNT);
+                } while (shouldRetry && retryCount < RetryLimit);
 
 
-                if (retryCount < MAX_RETRY_COUNT)
+                if (retryCount < RetryLimit)
                 {
-                    using (var diagResponse = await _client.GetAsync(
-                        instance.DiagUrl,
-                        HttpCompletionOption.ResponseContentRead,
-                        token))
-                    {
-                        var diagContent = diagResponse.Content;
-                        var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
-                        var searchDiagResultObject = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
-
-                        lastReloadTime = searchDiagResultObject.LastIndexReloadTime;
-                    }
+                    lastReloadTime = await _searchClient.GetIndexLastReloadTimeAsync(instance, token);
 
                     createdDelay = lastReloadTime - (isListOperation ? lastEdited : created);
                     v3Delay = lastReloadTime - (lastEdited == DateTimeOffset.MinValue ? created : lastEdited);
@@ -184,7 +178,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                     var timeStamp = (isListOperation ? lastEdited : created);
 
                     // We log both of these values here as they will differ if a package went through validation pipline.
-                    _logger.LogInformation("Lag {Timestamp}:{PackageId} {PackageVersion} Query: {Query} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, query, createdDelay, v3Delay);
+                    _logger.LogInformation("Lag {Timestamp}:{PackageId} {PackageVersion} SearchInstance:{Region}{Instance} Created: {CreatedLag} V3: {V3Lag}", timeStamp, packageId, packageVersion, instance.Region, instance.Index, createdDelay, v3Delay);
                     _logger.LogInformation("LastReload:{LastReloadTimestamp} LastEdited:{LastEditedTimestamp} Created:{CreatedTimestamp} ", lastReloadTime, lastEdited, created);
                     if (!isListOperation)
                     {
@@ -206,10 +200,10 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             }
             catch (Exception e)
             {
-                _logger.LogError("Failed to compute lag for {PackageId} {PackageVersion} with query: {Query}. {Exception}", packageId, packageVersion, query, e);
+                _logger.LogError("Failed to compute lag for {PackageId} {PackageVersion}. {Exception}", packageId, packageVersion, e);
             }
 
-            return new TimeSpan(0);
+            return null;
         }
     }
 }

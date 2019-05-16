@@ -1,0 +1,33 @@
+﻿{
+  "AzureManagement": {
+    "ClientId": "622f5d2f-0144-4f03-8b29-4432739d54f2",
+    "ClientSecret": "r2MuBfNHYFfZKjFtVyq80Pl0bjg0+1XG5zovTBA6ZUM="
+  },
+
+  "MonitorConfiguration": {
+    "RetryLimit": "15",
+    "WaitBetweenRetrySeconds": "120",
+    "InstancePortMinimum": "44301",
+    "ServiceIndexUrl": "https://apidev.nugettest.org/v3/index.json",
+    "Subscription": "fa8b3229-dc0f-4633-a285-ad597076921d",
+    "RegionInformations": [
+      {
+        "ResourceGroup": "nuget-dev-0-v2v3search",
+        "ServiceName": "nuget-dev-0-v2v3search",
+        "Region": "USE2"
+      },
+      {
+        "ResourceGroup": "nuget-dev-ussc-search",
+        "ServiceName": "nuget-dev-ussc-search",
+        "Region": "USSC"
+      }
+    ]
+  },
+
+  "KeyVault_VaultName": "NuGetDevKeyVault",
+  "KeyVault_ClientId": "2b286531-3623-4b65-8f85-b91a068da0f8",
+  "KeyVault_CertificateThumbprint": "916069d871eeec21bcc3f5de0c507bacb6b24027",
+  "KeyVault_ValidateCertificate": false,
+  "KeyVault_StoreName": "My",
+  "KeyVault_StoreLocation": "LocalMachine"
+}

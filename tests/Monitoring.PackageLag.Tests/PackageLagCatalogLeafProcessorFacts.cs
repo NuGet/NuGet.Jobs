@@ -104,7 +104,8 @@ namespace NuGet.Monitoring.PackageLag.Tests
                 instances.AddRange(_searchServiceClient.Object.GetSearchEndpointsAsync(regionInformation, _token).Result);
             }
 
-            _target = new PackageLagCatalogLeafProcessor(instances, _httpClientMock.Object, _telemetryService.Object, _logger);
+            _target = new PackageLagCatalogLeafProcessor(instances, _searchServiceClient.Object, _telemetryService.Object, _logger);
+            _target.WaitBetweenPolls = TimeSpan.FromSeconds(5);
         }
 
         [Fact]
@@ -125,58 +126,16 @@ namespace NuGet.Monitoring.PackageLag.Tests
             var newTime = currentTime + TimeSpan.FromSeconds(200);
             var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, newTime, newTime);
 
-            var successDiagResponse = new SearchDiagnosticResponse
-            {
-                LastIndexReloadTime = newTime
-            };
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
-            var oldResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var oldContentMock = new Mock<IHttpContentWrapper>();
-
-            oldContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(oldSearchResponse)));
-
-            oldResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(oldContentMock.Object);
-
-            var newResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var newContentMock = new Mock<IHttpContentWrapper>();
-
-            newContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(newSearchResponse)));
-
-            newResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(newContentMock.Object);
-
-            var diagResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var diagContentMock = new Mock<IHttpContentWrapper>();
-
-            diagContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(successDiagResponse)));
-
-            diagResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(diagContentMock.Object);
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .Setup(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(diagResponseMock.Object));
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(newTime));
 
             _telemetryService
                 .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
@@ -186,9 +145,9 @@ namespace NuGet.Monitoring.PackageLag.Tests
             {
                 var success = await _target.ProcessPackageDetailsAsync(listPackageLeaf);
                 Assert.True(await _target.WaitForProcessing());
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
             }
             catch (Exception e)
             {
@@ -214,58 +173,16 @@ namespace NuGet.Monitoring.PackageLag.Tests
             var newTime = currentTime + TimeSpan.FromSeconds(200);
             var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, currentTime, currentTime);
 
-            var successDiagResponse = new SearchDiagnosticResponse
-            {
-                LastIndexReloadTime = newTime
-            };
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
-            var oldResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var oldContentMock = new Mock<IHttpContentWrapper>();
-
-            oldContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(oldSearchResponse)));
-
-            oldResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(oldContentMock.Object);
-
-            var newResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var newContentMock = new Mock<IHttpContentWrapper>();
-
-            newContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(newSearchResponse)));
-
-            newResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(newContentMock.Object);
-
-            var diagResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var diagContentMock = new Mock<IHttpContentWrapper>();
-
-            diagContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(successDiagResponse)));
-
-            diagResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(diagContentMock.Object);
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .Setup(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(diagResponseMock.Object));
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(newTime));
 
             _telemetryService
                 .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
@@ -279,12 +196,11 @@ namespace NuGet.Monitoring.PackageLag.Tests
             {
                 var success = await _target.ProcessPackageDetailsAsync(listPackageLeaf);
                 Assert.True(await _target.WaitForProcessing());
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
 
-                _telemetryService.Verify(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.AtLeastOnce);
-                _telemetryService.Verify(ts => ts.TrackV3Lag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.AtLeastOnce);
+                _telemetryService.Verify();
             }
             catch (Exception e)
             {
@@ -300,7 +216,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
             {
                 PackageId = "Test",
                 PackageVersion = "1.0.0",
-                Created = currentTime,
+                Created = currentTime + TimeSpan.FromSeconds(50),
                 LastEdited = currentTime + TimeSpan.FromSeconds(100),
                 Listed = true
             };
@@ -308,60 +224,21 @@ namespace NuGet.Monitoring.PackageLag.Tests
             var oldSearchResponse = TestHelpers.GetEmptyTestSearchResponse(currentTime);
 
             var newTime = currentTime + TimeSpan.FromSeconds(200);
-            var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, currentTime, currentTime + TimeSpan.FromSeconds(100));
+            var newCreatedTime = listPackageLeaf.Created;
+            var newLastEditedTime = listPackageLeaf.LastEdited;
+            var expectedLag = newTime - listPackageLeaf.Created;
+            var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, newCreatedTime, newLastEditedTime);
 
-            var successDiagResponse = new SearchDiagnosticResponse
-            {
-                LastIndexReloadTime = newTime
-            };
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
-            var oldResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var oldContentMock = new Mock<IHttpContentWrapper>();
-
-            oldContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(oldSearchResponse)));
-
-            oldResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(oldContentMock.Object);
-
-            var newResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var newContentMock = new Mock<IHttpContentWrapper>();
-
-            newContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(newSearchResponse)));
-
-            newResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(newContentMock.Object);
-
-            var diagResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var diagContentMock = new Mock<IHttpContentWrapper>();
-
-            diagContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(successDiagResponse)));
-
-            diagResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(diagContentMock.Object);
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .Setup(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(diagResponseMock.Object));
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(newTime));
 
             _telemetryService
                 .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
@@ -375,21 +252,18 @@ namespace NuGet.Monitoring.PackageLag.Tests
             {
                 var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
                 Assert.True(await _target.WaitForProcessing());
-                Assert.Equal(TimeSpan.FromSeconds(200), lag);
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+                Assert.Equal(expectedLag, lag);
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
 
-                _telemetryService.Verify(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.AtLeastOnce);
-                _telemetryService.Verify(ts => ts.TrackV3Lag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.AtLeastOnce);
+                _telemetryService.Verify();
             }
             catch (Exception e)
             {
                 throw e;
             }
         }
-
-
 
         [Fact]
         public async Task ListOperationLogsCorrectLag()
@@ -399,7 +273,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
             {
                 PackageId = "Test",
                 PackageVersion = "1.0.0",
-                Created = currentTime,
+                Created = currentTime + TimeSpan.FromSeconds(50),
                 LastEdited = currentTime + TimeSpan.FromSeconds(100),
                 Listed = true
             };
@@ -407,60 +281,21 @@ namespace NuGet.Monitoring.PackageLag.Tests
             var oldSearchResponse = TestHelpers.GetTestSearchResponse(currentTime, currentTime, currentTime, listed: false);
 
             var newTime = currentTime + TimeSpan.FromSeconds(200);
-            var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, currentTime, currentTime + TimeSpan.FromSeconds(100));
+            var newCreatedTime = newTime - TimeSpan.FromSeconds(50);
+            var newLastEditedTime = listPackageLeaf.LastEdited;
+            var expectedLag = newTime - listPackageLeaf.LastEdited;
+            var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, newCreatedTime, newLastEditedTime);
 
-            var successDiagResponse = new SearchDiagnosticResponse
-            {
-                LastIndexReloadTime = newTime
-            };
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
 
-            var oldResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var oldContentMock = new Mock<IHttpContentWrapper>();
-
-            oldContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(oldSearchResponse)));
-
-            oldResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(oldContentMock.Object);
-
-            var newResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var newContentMock = new Mock<IHttpContentWrapper>();
-
-            newContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(newSearchResponse)));
-
-            newResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(newContentMock.Object);
-
-            var diagResponseMock = new Mock<IHttpResponseMessageWrapper>();
-            var diagContentMock = new Mock<IHttpContentWrapper>();
-
-            diagContentMock
-                .Setup(cm => cm.ReadAsStringAsync())
-                .Returns(Task.FromResult(JsonConvert.SerializeObject(successDiagResponse)));
-
-            diagResponseMock
-                .Setup(rm => rm.Content)
-                .Returns(diagContentMock.Object);
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .SetupSequence(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(oldResponseMock.Object))
-                .Returns(Task.FromResult(newResponseMock.Object));
-
-            _httpClientMock
-                .Setup(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(diagResponseMock.Object));
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(newTime));
 
             _telemetryService
                 .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
@@ -473,18 +308,160 @@ namespace NuGet.Monitoring.PackageLag.Tests
             try
             {
                 var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
-                Assert.True(await _target.WaitForProcessing());
-                Assert.Equal(TimeSpan.FromSeconds(100), lag);
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("801") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("802") && y.Contains("query")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                _httpClientMock.Verify(x => x.GetAsync(It.Is<string>(y => y.Contains("search/diag")), It.IsAny<HttpCompletionOption>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+                Assert.Equal(expectedLag, lag);
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                _searchServiceClient.Verify(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
 
-                _telemetryService.Verify(ts => ts.TrackV3Lag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.AtLeastOnce);
+                _telemetryService.Verify();
             }
             catch (Exception e)
             {
                 throw e;
             }
+        }
+
+        [Fact]
+        public async Task QueryAbandonedIfRetryLimitReached()
+        {
+            var currentTime = DateTimeOffset.UtcNow;
+            PackageDetailsCatalogLeaf listPackageLeaf = new PackageDetailsCatalogLeaf
+            {
+                PackageId = "Test",
+                PackageVersion = "1.0.0",
+                Created = currentTime,
+                LastEdited = currentTime,
+                Listed = true
+            };
+
+            var oldSearchResponse = TestHelpers.GetEmptyTestSearchResponse(currentTime);
+
+            var newTime = currentTime + TimeSpan.FromSeconds(200);
+            var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, currentTime, currentTime);
+
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
+
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(oldSearchResponse))
+                .Returns(Task.FromResult(newSearchResponse));
+
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Throws(new Exception("Unexpected call to get reload time"));
+
+            _telemetryService
+                .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Throws(new Exception("Unexpected Logging"));
+
+            _telemetryService
+                .Setup(ts => ts.TrackV3Lag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Throws(new Exception("Unexpected Logging"));
+
+            _target.RetryLimit = 2;
+
+            try
+            {
+                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                Assert.Null(lag);
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(_target.RetryLimit));
+                _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(_target.RetryLimit));
+
+                _telemetryService.Verify();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        [Fact]
+        public async Task NoInstancesDoesNotLog()
+        {
+            var currentTime = DateTimeOffset.UtcNow;
+            PackageDetailsCatalogLeaf listPackageLeaf = new PackageDetailsCatalogLeaf
+            {
+                PackageId = "Test",
+                PackageVersion = "1.0.0",
+                Created = currentTime,
+                LastEdited = currentTime,
+                Listed = true
+            };
+
+            var emptyInstances = new List<Instance>();
+            var newTarget = new PackageLagCatalogLeafProcessor(emptyInstances, _searchServiceClient.Object, _telemetryService.Object, _logger);
+
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Throws(new Exception("Unexpectd call to get search result"));
+
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Throws(new Exception("Unexpected call to get reload time"));
+
+            _telemetryService
+                .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Throws(new Exception("Unexpected Logging"));
+
+            _telemetryService
+                .Setup(ts => ts.TrackV3Lag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Throws(new Exception("Unexpected Logging"));
+
+            try
+            {
+                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                Assert.Null(lag);
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        [Fact]
+        public async Task LagComputeReturnsNullWhenExceptionIsThrown()
+        {
+            var currentTime = DateTimeOffset.UtcNow;
+            PackageDetailsCatalogLeaf listPackageLeaf = new PackageDetailsCatalogLeaf
+            {
+                PackageId = "Test",
+                PackageVersion = "1.0.0",
+                Created = currentTime,
+                LastEdited = currentTime,
+                Listed = true
+            };
+
+            var oldSearchResponse = TestHelpers.GetEmptyTestSearchResponse(currentTime);
+
+            var newTime = currentTime + TimeSpan.FromSeconds(200);
+            var newSearchResponse = TestHelpers.GetTestSearchResponse(newTime, currentTime, currentTime);
+
+            _searchServiceClient.SetupSequence(ssc => ssc.GetResultForPackageIdVersion(It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Throws(new Exception("Emulating Failure"));
+
+            _searchServiceClient.Setup(ssc => ssc.GetIndexLastReloadTimeAsync(It.IsAny<Instance>(), It.IsAny<CancellationToken>()))
+                .Throws(new Exception("Unexpected call to get reload time"));
+
+            _telemetryService
+                .Setup(ts => ts.TrackPackageCreationLag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Throws(new Exception("Unexpected Logging"));
+
+            _telemetryService
+                .Setup(ts => ts.TrackV3Lag(It.IsAny<DateTimeOffset>(), It.IsAny<Instance>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()))
+                .Throws(new Exception("Unexpected Logging"));
+
+            _target.RetryLimit = 2;
+
+            try
+            {
+                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                Assert.Null(lag);
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+
         }
     }
 }

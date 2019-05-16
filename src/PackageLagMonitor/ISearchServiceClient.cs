@@ -14,6 +14,25 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             Instance instance,
             CancellationToken token);
 
+        Task<DateTimeOffset> GetIndexLastReloadTimeAsync(
+            Instance instance,
+            CancellationToken token);
+
+        Task<SearchResultResponse> GetSearchResultAsync(
+            Instance instance,
+            string query,
+            CancellationToken token);
+
+        Task<SearchResultResponse> GetResultForPackageIdVersion(
+            Instance instance,
+            string packageId,
+            string packageVersion,
+            CancellationToken token);
+
+        Task<SearchDiagnosticResponse> GetSearchDiagnosticResponseAsync(
+            Instance instance,
+            CancellationToken token);
+
         Task<IReadOnlyList<Instance>> GetSearchEndpointsAsync(
             RegionInformation regionInformation,
             CancellationToken token);

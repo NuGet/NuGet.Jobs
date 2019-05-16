@@ -7,5 +7,9 @@ namespace NuGet.Jobs.Monitoring.PackageLag
     public class PackageLagMonitorConfiguration : SearchServiceConfiguration
     {
         public string ServiceIndexUrl { get; set; }
+
+        public int RetryLimit { get; set; }
+
+        public int WaitBetweenRetrySeconds { get; set; }
     }
 }
