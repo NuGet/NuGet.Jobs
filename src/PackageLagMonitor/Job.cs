@@ -115,7 +115,8 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 return handler;
             });
 
-            services.AddSingleton(p => new HttpClientWrapper(new HttpClient(p.GetService<HttpClientHandler>())));
+            services.AddSingleton(p => new HttpClient(p.GetService<HttpClientHandler>()));
+            services.AddSingleton(p => new HttpClientWrapper(p.GetService<HttpClient>()));
             services.AddTransient<IPackageLagTelemetryService, PackageLagTelemetryService>();
             services.AddSingleton(new TelemetryClient());
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();

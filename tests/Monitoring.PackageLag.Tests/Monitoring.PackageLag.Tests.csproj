@@ -42,7 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PackageLagMonitorFacts.cs" />
+    <Compile Include="PackageLagCatalogLeafProcessorFacts.cs" />
+    <Compile Include="TestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PackageLagMonitor\Monitoring.PackageLag.csproj">
