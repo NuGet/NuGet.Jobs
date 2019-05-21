@@ -24,19 +24,22 @@ namespace Search.GenerateAuxiliaryData
 
         private Func<Task<SqlConnection>> OpenSqlConnectionAsync { get; }
 
+        private readonly TimeSpan _commandTimeout;
+
         public SqlExporter(
             ILogger<SqlExporter> logger,
             Func<Task<SqlConnection>> openSqlConnectionAsync,
             CloudBlobContainer defaultDestinationContainer,
-            string defaultName)
+            string defaultName,
+            TimeSpan commandTimeout)
             : base(logger, defaultDestinationContainer, defaultName)
         {
-            _logger = logger;
             OpenSqlConnectionAsync = openSqlConnectionAsync;
+            _commandTimeout = commandTimeout;
         }
 
         [SuppressMessage("Microsoft.Security", "CA2100", Justification = "Query string comes from embedded resource, not user input.")]
-        protected static SqlCommand GetEmbeddedSqlCommand(SqlConnection connection, string resourceName)
+        protected SqlCommand GetEmbeddedSqlCommand(SqlConnection connection, string resourceName)
         {
             using (var reader = new StreamReader(_executingAssembly.GetManifestResourceStream(_assemblyName + "." + resourceName)))
             {
@@ -44,7 +47,8 @@ namespace Search.GenerateAuxiliaryData
 
                 return new SqlCommand(commandText, connection)
                 {
-                    CommandType = CommandType.Text
+                    CommandType = CommandType.Text,
+                    CommandTimeout = (int)_commandTimeout.TotalSeconds,
                 };
             }
         }
@@ -55,12 +59,12 @@ namespace Search.GenerateAuxiliaryData
             using (var connection = await OpenSqlConnectionAsync())
             {
                 _logger.LogInformation("Generating {ReportName} report from {DataSource}/{InitialCatalog}.",
-                    _name, connection.DataSource, connection.Database);
+                    Name, connection.DataSource, connection.Database);
 
                 result = GetResultOfQuery(connection);
             }
 
-            await WriteToBlobAsync(_logger, _destinationContainer, result.ToString(Formatting.None), _name);
+            await WriteToBlobAsync(_logger, _destinationContainer, result.ToString(Formatting.None), Name);
         }
 
         protected abstract JContainer GetResultOfQuery(SqlConnection connection);

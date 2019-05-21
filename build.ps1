@@ -9,7 +9,7 @@ param (
     [string]$SemanticVersion = '1.0.0-zlocal',
     [string]$Branch = 'zlocal',
     [string]$CommitSHA,
-    [string]$BuildBranch = 'b5f9d1c89da96c462935e2195ceb00e69287b93e'
+    [string]$BuildBranch = '2d8feecabe3aeaed7f5b4d50b9be78c94faf39ec'
 )
 
 $msBuildVersion = 15;
@@ -100,7 +100,8 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\StatusAggregator\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs"
+            "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs",
+            "$PSScriptRoot\src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
@@ -150,7 +151,6 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj", `
             "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj", `
             "src/CopyAzureContainer/CopyAzureContainer.csproj", `
-            "src/NuGetCDNRedirect/NuGetCDNRedirect.csproj", `
             "src/NuGet.Services.Validation.Orchestrator/Validation.Orchestrator.nuspec", `
             "src/NuGet.Services.Validation.Orchestrator/Validation.SymbolsOrchestrator.nuspec", `
             "src/NuGet.Services.Revalidate/NuGet.Services.Revalidate.csproj", `
@@ -162,11 +162,17 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Monitoring.RebootSearchInstance/Monitoring.RebootSearchInstance.csproj", `
             "src/StatusAggregator/StatusAggregator.csproj", `
             "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj", `
-            "src/Validation.Symbols/Validation.Symbols.csproj"
+            "src/Validation.Symbols/Validation.Symbols.Job.csproj", `
+            "src/Stats.CDNLogsSanitizer/Stats.CDNLogsSanitizer.csproj"
 
         Foreach ($Project in $NuspecProjects) {
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "$msBuildVersion"
         }
+    } `
+    -ev +BuildErrors
+
+Invoke-BuildStep 'Signing the packages' {
+        Sign-Packages -Configuration $Configuration -BuildNumber $BuildNumber -MSBuildVersion $msBuildVersion `
     } `
     -ev +BuildErrors
 

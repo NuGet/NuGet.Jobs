@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
+using Search.GenerateAuxiliaryData.Telemetry;
 
 namespace Search.GenerateAuxiliaryData
 {
@@ -37,12 +39,14 @@ namespace Search.GenerateAuxiliaryData
         private List<Exporter> _exportersToRun;
 
         private InitializationConfiguration Configuration { get; set; }
+        public ITelemetryService TelemetryService { get; private set; }
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
             Configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<InitializationConfiguration>>().Value;
+            TelemetryService = _serviceProvider.GetRequiredService<ITelemetryService>();
 
             var destinationContainer = CloudStorageAccount.Parse(Configuration.PrimaryDestination)
                 .CreateCloudBlobClient()
@@ -58,7 +62,8 @@ namespace Search.GenerateAuxiliaryData
                     OpenSqlConnectionAsync<GalleryDbConfiguration>,
                     destinationContainer,
                     ScriptVerifiedPackages,
-                    OutputNameVerifiedPackages),
+                    OutputNameVerifiedPackages,
+                    Configuration.SqlCommandTimeout),
 
                 new NestedJArrayExporter(
                     LoggerFactory.CreateLogger<NestedJArrayExporter>(),
@@ -67,14 +72,16 @@ namespace Search.GenerateAuxiliaryData
                     ScriptOwners,
                     OutputNameOwners,
                     Col0Owners,
-                    Col1Owners),
+                    Col1Owners,
+                    Configuration.SqlCommandTimeout),
 
                 new RankingsExporter(
                     LoggerFactory.CreateLogger<RankingsExporter>(),
                     OpenSqlConnectionAsync<StatisticsDbConfiguration>,
                     destinationContainer,
                     ScriptRankingsTotal,
-                    OutputNameRankings),
+                    OutputNameRankings,
+                    Configuration.SqlCommandTimeout),
 
                 new BlobStorageExporter(
                     LoggerFactory.CreateLogger<BlobStorageExporter>(),
@@ -91,15 +98,23 @@ namespace Search.GenerateAuxiliaryData
 
             foreach (Exporter exporter in _exportersToRun)
             {
+                var exporterName = exporter.GetType().Name;
+                var reportName = exporter.Name;
+                var stopwatch = Stopwatch.StartNew();
+                var success = false;
                 try
                 {
                     await exporter.ExportAsync();
+                    success = true;
                 }
                 catch (Exception e)
                 {
-                    var exporterName = exporter.GetType().Name;
                     Logger.LogError("SQL exporter '{ExporterName}' failed: {Exception}", exporterName, e);
                     failedExporters.Add(exporterName);
+                }
+                finally
+                {
+                    TelemetryService.TrackExporterDuration(exporterName, reportName, stopwatch.Elapsed, success);
                 }
             }
             
@@ -116,6 +131,8 @@ namespace Search.GenerateAuxiliaryData
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             ConfigureInitializationSection<InitializationConfiguration>(services, configurationRoot);
+
+            services.AddTransient<ITelemetryService, TelemetryService>();
         }
     }
 }
