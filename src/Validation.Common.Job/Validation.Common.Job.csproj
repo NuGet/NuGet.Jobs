@@ -104,7 +104,7 @@
       <Version>5.0.0-preview1.5707</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.ServiceBus">
-      <Version>2.47.0-agr-sb-ex-log-2695529</Version>
+      <Version>2.48.0-agr-sb-ex-log-2695607</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Storage">
       <Version>2.46.0</Version>
