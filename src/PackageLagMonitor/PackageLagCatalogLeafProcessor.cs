@@ -93,13 +93,13 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
         private async Task<TimeSpan?> GetLagForPackageStateAsync(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
         {
-            var Tasks = new List<Task<TimeSpan?>>();
+            var tasks = new List<Task<TimeSpan?>>();
             foreach (Instance instance in searchInstances)
             {
-                Tasks.Add(ComputeLagForQueries(instance, packageId, version, listed, created, lastEdited, isDelete, token));
+                tasks.Add(ComputeLagForQueries(instance, packageId, version, listed, created, lastEdited, isDelete, token));
             }
 
-            var results = await Task.WhenAll(Tasks);
+            var results = await Task.WhenAll(tasks);
 
             try
             {
