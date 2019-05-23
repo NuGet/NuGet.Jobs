@@ -61,6 +61,15 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             return Task.FromResult(true);
         }
 
+        /// <summary>
+        /// Attempt to compute lag for a particular leaf against all configured search instances.
+        /// </summary>
+        /// <param name="leaf">Catalog leaf to operate on. Used to get package Id and Versionf</param>
+        /// <param name="created">Created timestamp</param>
+        /// <param name="lastEdited">last edited time stamp.</param>
+        /// <param name="expectListed">true if leaf has listed status true</param>
+        /// <param name="isDelete">true if leaf is a delete</param>
+        /// <returns>Returns the average lag for this leaf over all configured search instances if possible. null otherwise.</returns>
         public async Task<TimeSpan?> ProcessPackageLagDetailsAsync(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
         {
             var packageId = leaf.PackageId;
@@ -75,7 +84,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             }
             catch
             {
-                return TimeSpan.FromSeconds(0);
+                return null;
             }
 
             return lag;
