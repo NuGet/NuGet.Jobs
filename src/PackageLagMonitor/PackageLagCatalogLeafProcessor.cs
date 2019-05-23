@@ -51,17 +51,17 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
         public Task<bool> ProcessPackageDeleteAsync(PackageDeleteCatalogLeaf leaf)
         {
-            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, leaf.Published, leaf.Published, expectListed: false, isDelete: true));
+            _packageProcessTasks.Add(ProcessPackageLagDetailsAsync(leaf, leaf.Published, leaf.Published, expectListed: false, isDelete: true));
             return Task.FromResult(true);
         }
 
         public Task<bool> ProcessPackageDetailsAsync(PackageDetailsCatalogLeaf leaf)
         {
-            _packageProcessTasks.Add(ProcessPackageLagDetails(leaf, leaf.Created, leaf.LastEdited, leaf.IsListed(), isDelete: false));
+            _packageProcessTasks.Add(ProcessPackageLagDetailsAsync(leaf, leaf.Created, leaf.LastEdited, leaf.IsListed(), isDelete: false));
             return Task.FromResult(true);
         }
 
-        public async Task<TimeSpan?> ProcessPackageLagDetails(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
+        public async Task<TimeSpan?> ProcessPackageLagDetailsAsync(CatalogLeaf leaf, DateTimeOffset created, DateTimeOffset lastEdited, bool expectListed, bool isDelete)
         {
             var packageId = leaf.PackageId;
             var packageVersion = leaf.PackageVersion;
@@ -71,7 +71,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             try
             {
                 var cancellationToken = new CancellationToken();
-                lag = await GetLagForPackageState(_searchInstances, packageId, packageVersion, expectListed, isDelete, created, lastEdited, cancellationToken);
+                lag = await GetLagForPackageStateAsync(_searchInstances, packageId, packageVersion, expectListed, isDelete, created, lastEdited, cancellationToken);
             }
             catch
             {
@@ -82,7 +82,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
         }
 
-        private async Task<TimeSpan?> GetLagForPackageState(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
+        private async Task<TimeSpan?> GetLagForPackageStateAsync(List<Instance> searchInstances, string packageId, string version, bool listed, bool isDelete, DateTimeOffset created, DateTimeOffset lastEdited, CancellationToken token)
         {
             var Tasks = new List<Task<TimeSpan?>>();
             foreach (Instance instance in searchInstances)

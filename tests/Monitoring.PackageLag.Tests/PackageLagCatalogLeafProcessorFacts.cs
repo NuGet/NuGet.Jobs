@@ -250,7 +250,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
 
             try
             {
-                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                var lag = await _target.ProcessPackageLagDetailsAsync(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
                 Assert.True(await _target.WaitForProcessing());
                 Assert.Equal(expectedLag, lag);
                 _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -307,7 +307,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
 
             try
             {
-                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                var lag = await _target.ProcessPackageLagDetailsAsync(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
                 Assert.Equal(expectedLag, lag);
                 _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
                 _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -364,7 +364,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
 
             try
             {
-                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                var lag = await _target.ProcessPackageLagDetailsAsync(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
                 Assert.Null(lag);
                 _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("801")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(_target.RetryLimit));
                 _searchServiceClient.Verify(ssc => ssc.GetResultForPackageIdVersion(It.Is<Instance>(i => i.DiagUrl.Contains("802")), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(_target.RetryLimit));
@@ -409,7 +409,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
 
             try
             {
-                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                var lag = await _target.ProcessPackageLagDetailsAsync(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
                 Assert.Null(lag);
             }
             catch (Exception e)
@@ -454,7 +454,7 @@ namespace NuGet.Monitoring.PackageLag.Tests
 
             try
             {
-                var lag = await _target.ProcessPackageLagDetails(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
+                var lag = await _target.ProcessPackageLagDetailsAsync(listPackageLeaf, listPackageLeaf.Created, listPackageLeaf.LastEdited, expectListed: true, isDelete: false);
                 Assert.Null(lag);
             }
             catch (Exception e)
