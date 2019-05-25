@@ -158,6 +158,9 @@ namespace NuGet.Services.Validation.Orchestrator
         private void TrackTotalValidationDuration(PackageValidationSet validationSet, bool isSuccess)
         {
             _telemetryService.TrackTotalValidationDuration(
+                validationSet.PackageId,
+                validationSet.PackageNormalizedVersion,
+                validationSet.ValidationTrackingId,
                 DateTime.UtcNow - validationSet.Created,
                 isSuccess);
         }
@@ -250,7 +253,7 @@ namespace NuGet.Services.Validation.Orchestrator
                         validationSet.PackageNormalizedVersion,
                         duration);
 
-                    _telemetryService.TrackValidatorTimeout(validation.Type);
+                    _telemetryService.TrackValidatorTimeout(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId, validation.Type);
                 }
             }
 

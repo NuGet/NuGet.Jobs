@@ -81,7 +81,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             await processor.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, ProcessorStats);
 
             TelemetryServiceMock
-                .Verify(t => t.TrackValidatorTimeout("IncompleteButTimedOut"));
+                .Verify(t => t.TrackValidatorTimeout(ValidationSet.PackageId, ValidationSet.PackageNormalizedVersion, ValidationSet.ValidationTrackingId, "IncompleteButTimedOut"));
             ValidationEnqueuerMock
                 .Verify(ve => ve.StartValidationAsync(It.IsAny<PackageValidationMessageData>(), It.IsAny<DateTimeOffset>()), Times.Once);
             PackageFileServiceMock
@@ -324,8 +324,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             TimeSpan duration = default(TimeSpan);
             TelemetryServiceMock
-                .Setup(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()))
-                .Callback<TimeSpan, bool>((t, _) => duration = t);
+                .Setup(ts => ts.TrackTotalValidationDuration(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()))
+                .Callback<string, string, Guid, TimeSpan, bool>((_1, _2, _3, t, _4) => duration = t);
 
             ProcessorStats.AnyRequiredValidationSucceeded = true;
             ProcessorStats.AnyValidationSucceeded = true;
@@ -356,7 +356,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 x => x.DeletePackageForValidationSetAsync(ValidationSet),
                 Times.Once);
             TelemetryServiceMock
-                .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
+                .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
             Assert.InRange(duration, before - ValidationSet.Created, after - ValidationSet.Created);
         }
 
@@ -375,14 +375,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             if (expectedCompletionTracking)
             {
                 TelemetryServiceMock
-                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), true), Times.Once());
+                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<TimeSpan>(), true), Times.Once());
                 TelemetryServiceMock
-                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
+                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
             }
             else
             {
                 TelemetryServiceMock
-                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Never());
+                    .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Never());
             }
         }
 
