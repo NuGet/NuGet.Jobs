@@ -28,6 +28,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// A counter metric emitted when a package changes package status. This metric is not emitted if package status
         /// does not change. This metric is emitted for revalidation if the terminal state changes.
         /// </summary>
+        /// <param name="packageId">Id of the package that changed status.</param>
+        /// <param name="normalizedVersion">Normalized version of the package that changed status.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which change occurred.</param>
         /// <param name="fromStatus">The status that the package moved from.</param>
         /// <param name="toStatus">The status that the package moved to.</param>
         void TrackPackageStatusChange(string packageId, string normalizedVersion, Guid validationTrackingId, PackageStatus fromStatus, PackageStatus toStatus);
@@ -36,6 +39,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// The total duration of all validators. This is the time that the validation set is first created until all of
         /// the validators have completed. This metric is also emitted for revalidations.
         /// </summary>
+        /// <param name="packageId">Id of the package which was being validated.</param>
+        /// <param name="normalizedVersion">Normalized version of the package which was being validated.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID for which the duration was reported.</param>
         /// <param name="duration">The duration.</param>
         /// <param name="isSuccess">Whether or not all of the validations succeeded.</param>
         void TrackTotalValidationDuration(string packageId, string normalizedVersion, Guid validationTrackingId, TimeSpan duration, bool isSuccess);
@@ -54,6 +60,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// A counter metric emitted when a validation is past its validator's <see cref="ValidationConfigurationItem.TrackAfter"/>
         /// configuration.
         /// </summary>
+        /// <param name="packageId">Id of the package for which validator is running too long.</param>
+        /// <param name="normalizedVersion">Normalized version of the package for which validator is running too long.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which validator that timed out runs.</param>
         /// <param name="validatorType">The validator type (name).</param>
         void TrackValidatorTimeout(string packageId, string normalizedVersion, Guid validationTrackingId, string validatorType);
 
@@ -61,6 +70,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// The total duration of a single validator. This is the time from when the validation is first started until
         /// when the validation either completes or times out.
         /// </summary>
+        /// <param name="packageId">Id of the package which was being validated.</param>
+        /// <param name="normalizedVersion">Normalized version of the package which was being validated.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which validator had run.</param>
         /// <param name="duration">The duration.</param>
         /// <param name="validatorType">The validator type (name).</param>
         /// <param name="isSuccess">Whether or not the validation succeeded.</param>
@@ -69,6 +81,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// <summary>
         /// A counter metric emitted when a validator is started.
         /// </summary>
+        /// <param name="packageId">Id of the package that is being validated.</param>
+        /// <param name="normalizedVersion">Normalized version of the package that is being validated.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which validator runs.</param>
         /// <param name="validatorType">The validator type (name).</param>
         void TrackValidatorStarted(string packageId, string normalizedVersion, Guid validationTrackingId, string validatorType);
 
@@ -88,6 +103,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// issues. A count of zero is emitted if the validator does not produce any issues. This metric is not emitted
         /// if the validation is still at a non-terminal state.
         /// </summary>
+        /// <param name="packageId">Id of the package for which issues were reported.</param>
+        /// <param name="normalizedVersion">Normalized version of the package for which issues were reported.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which validator had run.</param>
         /// <param name="count">The number of issues.</param>
         /// <param name="validatorType">The validator type (name) that returned the issue list.</param>
         /// <param name="isSuccess">Whether or not the validation succeeded.</param>
@@ -96,6 +114,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// <summary>
         /// A counter metric emitted when a validation issue is created.
         /// </summary>
+        /// <param name="packageId">Id of the package for which issue is reported.</param>
+        /// <param name="normalizedVersion">Normalized version of the package for which issue is reported.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which validator had run.</param>
         /// <param name="validatorType">The validator type (name) the produced the issue.</param>
         /// <param name="code">The issue code.</param>
         void TrackValidationIssue(string packageId, string normalizedVersion, Guid validationTrackingId, string validatorType, ValidationIssueCode code);
@@ -103,6 +124,9 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// <summary>
         /// A counter metric emitted when a client-mastered validation issue is emitted.
         /// </summary>
+        /// <param name="packageId">Id of the package for which issue is reported.</param>
+        /// <param name="normalizedVersion">Normalized version of the package for which issue is reported.</param>
+        /// <param name="validationTrackingId">Validation set tracking ID in scope of which validator had run.</param>
         /// <param name="validatorType">The validator type (name) the produced the issue.</param>
         /// <param name="clientCode">The client code.</param>
         void TrackClientValidationIssue(string packageId, string normalizedVersion, Guid validationTrackingId, string validatorType, string clientCode);
@@ -128,6 +152,8 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// <summary>
         /// A metric to track the messages sent from Orchestrator to Validators and enqueued by validators. Ideally the messages should not duplicate.
         /// </summary>
+        /// <param name="packageId">Id of the package for which message is sent.</param>
+        /// <param name="normalizedVersion">Normalized version of the package for which message is sent.</param>
         /// <param name="validatorName">The validator name the message was sent to.</param>
         /// <param name="validationId">The validationId.</param>
         void TrackSymbolsMessageEnqueued(string packageId, string normalizedVersion, string validatorName, Guid validationId);
