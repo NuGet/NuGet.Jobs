@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -342,33 +343,79 @@ namespace Stats.ImportAzureCdnStatistics
         {
             _logger.LogDebug("Storing log file aggregates...");
 
-            using (var connection = await _openStatisticsSqlConnectionAsync())
+            try
             {
-                try
-                {
-                    var command = connection.CreateCommand();
-                    command.CommandText = "[dbo].[StoreLogFileAggregates]";
-                    command.CommandTimeout = _defaultCommandTimeout;
-                    command.CommandType = CommandType.StoredProcedure;
+                await RetrySql(() => RunStoreLogFileAggregatesQueryAsync(logFileAggregates));
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError("Failed to insert log file aggregates for {LogFile}.", logFileAggregates.LogFileName);
 
-                    var parameterValue = CreateDataTableForLogFileAggregatesPackageDownloadsByDate(logFileAggregates);
-                    var parameter = command.Parameters.AddWithValue("packageDownloadsByDate", parameterValue);
-                    parameter.SqlDbType = SqlDbType.Structured;
-                    parameter.TypeName = "[dbo].[LogFileAggregatesPackageDownloadsByDateTableType]";
+                ApplicationInsightsHelper.TrackException(exception, logFileAggregates.LogFileName);
 
-                    await command.ExecuteNonQueryAsync();
-                }
-                catch (Exception exception)
-                {
-                    _logger.LogError("Failed to insert log file aggregates for {LogFile}.", logFileAggregates.LogFileName);
-
-                    ApplicationInsightsHelper.TrackException(exception, logFileAggregates.LogFileName);
-
-                    throw;
-                }
+                throw;
             }
 
             _logger.LogDebug("  DONE");
+        }
+
+        private async Task RunStoreLogFileAggregatesQueryAsync(LogFileAggregates logFileAggregates)
+        {
+            using (var connection = await _openStatisticsSqlConnectionAsync())
+            {
+                var command = connection.CreateCommand();
+                command.CommandText = "[dbo].[StoreLogFileAggregates]";
+                command.CommandTimeout = _defaultCommandTimeout;
+                command.CommandType = CommandType.StoredProcedure;
+
+                var parameterValue = CreateDataTableForLogFileAggregatesPackageDownloadsByDate(logFileAggregates);
+                var parameter = command.Parameters.AddWithValue("packageDownloadsByDate", parameterValue);
+                parameter.SqlDbType = SqlDbType.Structured;
+                parameter.TypeName = "[dbo].[LogFileAggregatesPackageDownloadsByDateTableType]";
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        private async Task RetrySql(
+            Func<Task> executeSql,
+            int maxRetries = 10)
+        {
+            var success = false;
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                try
+                {
+                    await executeSql();
+                    success = true;
+                }
+                catch (SqlException ex)
+                {
+                    switch (ex.Number)
+                    {
+                        case -2:   // Client Timeout
+                        case 701:  // Out of Memory
+                        case 1204: // Lock Issue
+                        case 1205: // >>> Deadlock Victim
+                        case 1222: // Lock Request Timeout
+                        case 8645: // Timeout waiting for memory resource
+                        case 8651: // Low memory condition
+                            break;
+                        default:
+                            throw;
+                    }
+                }
+
+                if (success)
+                {
+                    break;
+                }
+            }
+
+            if (!success)
+            {
+                throw new OperationCanceledException("Failed to execute non-query after many attempts!");
+            }
         }
 
         public async Task<IReadOnlyCollection<string>> GetAlreadyAggregatedLogFilesAsync()
