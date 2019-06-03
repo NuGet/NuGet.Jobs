@@ -381,13 +381,12 @@ namespace Stats.ImportAzureCdnStatistics
             Func<Task> executeSql,
             int maxRetries = 10)
         {
-            var success = false;
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 try
                 {
                     await executeSql();
-                    success = true;
+                    break;
                 }
                 catch (SqlException ex)
                 {
@@ -400,21 +399,16 @@ namespace Stats.ImportAzureCdnStatistics
                         case 1222: // Lock Request Timeout
                         case 8645: // Timeout waiting for memory resource
                         case 8651: // Low memory condition
-                            break;
+                            if (attempt < maxRetries - 1)
+                            {
+                                break;
+                            }
+
+                            throw;
                         default:
                             throw;
                     }
                 }
-
-                if (success)
-                {
-                    break;
-                }
-            }
-
-            if (!success)
-            {
-                throw new OperationCanceledException("Failed to execute non-query after many attempts!");
             }
         }
 
