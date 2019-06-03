@@ -4,11 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Jobs;
 using Stats.AzureCdnLogs.Common;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -51,7 +51,8 @@ namespace Stats.ImportAzureCdnStatistics
 
             try
             {
-                await RetrySql(() => RunInsertDownloadFactsQueryAsync(downloadFactsDataTable, logFileName));
+                await SqlRetryUtility.RetrySql(
+                    () => RunInsertDownloadFactsQueryAsync(downloadFactsDataTable, logFileName));
 
                 stopwatch.Stop();
                 ApplicationInsightsHelper.TrackMetric("Insert facts duration (ms)", stopwatch.ElapsedMilliseconds, logFileName);
@@ -349,7 +350,7 @@ namespace Stats.ImportAzureCdnStatistics
 
             try
             {
-                await RetrySql(() => RunStoreLogFileAggregatesQueryAsync(logFileAggregates));
+                await SqlRetryUtility.RetrySql(() => RunStoreLogFileAggregatesQueryAsync(logFileAggregates));
             }
             catch (Exception exception)
             {
@@ -1240,41 +1241,6 @@ namespace Stats.ImportAzureCdnStatistics
             }
 
             return table;
-        }
-
-        private async Task RetrySql(
-            Func<Task> executeSql,
-            int maxRetries = 10)
-        {
-            for (int attempt = 0; attempt < maxRetries; attempt++)
-            {
-                try
-                {
-                    await executeSql();
-                    break;
-                }
-                catch (SqlException ex)
-                {
-                    switch (ex.Number)
-                    {
-                        case -2:   // Client Timeout
-                        case 701:  // Out of Memory
-                        case 1204: // Lock Issue
-                        case 1205: // >>> Deadlock Victim
-                        case 1222: // Lock Request Timeout
-                        case 8645: // Timeout waiting for memory resource
-                        case 8651: // Low memory condition
-                            if (attempt < maxRetries - 1)
-                            {
-                                break;
-                            }
-
-                            throw;
-                        default:
-                            throw;
-                    }
-                }
-            }
         }
     }
 }
