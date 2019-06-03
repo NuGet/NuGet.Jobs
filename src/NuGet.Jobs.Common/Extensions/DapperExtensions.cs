@@ -26,7 +26,8 @@ namespace System.Data.SqlClient
                     param, 
                     transaction, 
                     (int?)commandTimeout?.TotalSeconds, 
-                    commandType));
+                    commandType),
+                maxRetries);
         }
 
         public static Task<T> ExecuteScalarWithRetryAsync<T>(
@@ -44,7 +45,8 @@ namespace System.Data.SqlClient
                     param, 
                     transaction, 
                     (int?)commandTimeout?.TotalSeconds, 
-                    commandType));
+                    commandType),
+                maxRetries);
         }
     }
 }
