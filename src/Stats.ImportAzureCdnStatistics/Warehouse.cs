@@ -49,48 +49,52 @@ namespace Stats.ImportAzureCdnStatistics
             _logger.LogDebug("Inserting into facts table...");
             var stopwatch = Stopwatch.StartNew();
 
-            using (var connection = await _openStatisticsSqlConnectionAsync())
-            using (var transaction = connection.BeginTransaction(IsolationLevel.Snapshot))
+            try
             {
-                try
+                await RetrySql(() => RunInsertDownloadFactsQueryAsync(downloadFactsDataTable, logFileName));
+
+                stopwatch.Stop();
+                ApplicationInsightsHelper.TrackMetric("Insert facts duration (ms)", stopwatch.ElapsedMilliseconds, logFileName);
+            }
+            catch (Exception exception)
+            {
+                if (stopwatch.IsRunning)
                 {
-                    var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction)
-                    {
-                        BatchSize = 25000,
-                        DestinationTableName = downloadFactsDataTable.TableName,
-                        BulkCopyTimeout = _defaultCommandTimeout
-                    };
-
-                    // This avoids identity insert issues, as these are db-generated.
-                    foreach (DataColumn column in downloadFactsDataTable.Columns)
-                    {
-                        bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
-                    }
-
-                    await bulkCopy.WriteToServerAsync(downloadFactsDataTable);
-
-                    transaction.Commit();
-
                     stopwatch.Stop();
-                    ApplicationInsightsHelper.TrackMetric("Insert facts duration (ms)", stopwatch.ElapsedMilliseconds, logFileName);
                 }
-                catch (Exception exception)
-                {
-                    if (stopwatch.IsRunning)
-                    {
-                        stopwatch.Stop();
-                    }
 
-                    _logger.LogError("Failed to insert download facts for {LogFile}.", logFileName);
+                _logger.LogError("Failed to insert download facts for {LogFile}.", logFileName);
 
-                    ApplicationInsightsHelper.TrackException(exception, logFileName);
+                ApplicationInsightsHelper.TrackException(exception, logFileName);
 
-                    transaction.Rollback();
-                    throw;
-                }
+                throw;
             }
 
             _logger.LogDebug("  DONE");
+        }
+
+        private async Task RunInsertDownloadFactsQueryAsync(DataTable downloadFactsDataTable, string logFileName)
+        {
+            using (var connection = await _openStatisticsSqlConnectionAsync())
+            using (var transaction = connection.BeginTransaction(IsolationLevel.Snapshot))
+            {
+                var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction)
+                {
+                    BatchSize = 25000,
+                    DestinationTableName = downloadFactsDataTable.TableName,
+                    BulkCopyTimeout = _defaultCommandTimeout
+                };
+
+                // This avoids identity insert issues, as these are db-generated.
+                foreach (DataColumn column in downloadFactsDataTable.Columns)
+                {
+                    bulkCopy.ColumnMappings.Add(column.ColumnName, column.ColumnName);
+                }
+
+                await bulkCopy.WriteToServerAsync(downloadFactsDataTable);
+
+                transaction.Commit();
+            }
         }
 
         public async Task<DataTable> CreateAsync(IReadOnlyCollection<PackageStatistics> sourceData, string logFileName)
@@ -374,41 +378,6 @@ namespace Stats.ImportAzureCdnStatistics
                 parameter.TypeName = "[dbo].[LogFileAggregatesPackageDownloadsByDateTableType]";
 
                 await command.ExecuteNonQueryAsync();
-            }
-        }
-
-        private async Task RetrySql(
-            Func<Task> executeSql,
-            int maxRetries = 10)
-        {
-            for (int attempt = 0; attempt < maxRetries; attempt++)
-            {
-                try
-                {
-                    await executeSql();
-                    break;
-                }
-                catch (SqlException ex)
-                {
-                    switch (ex.Number)
-                    {
-                        case -2:   // Client Timeout
-                        case 701:  // Out of Memory
-                        case 1204: // Lock Issue
-                        case 1205: // >>> Deadlock Victim
-                        case 1222: // Lock Request Timeout
-                        case 8645: // Timeout waiting for memory resource
-                        case 8651: // Low memory condition
-                            if (attempt < maxRetries - 1)
-                            {
-                                break;
-                            }
-
-                            throw;
-                        default:
-                            throw;
-                    }
-                }
             }
         }
 
@@ -1271,6 +1240,41 @@ namespace Stats.ImportAzureCdnStatistics
             }
 
             return table;
+        }
+
+        private async Task RetrySql(
+            Func<Task> executeSql,
+            int maxRetries = 10)
+        {
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                try
+                {
+                    await executeSql();
+                    break;
+                }
+                catch (SqlException ex)
+                {
+                    switch (ex.Number)
+                    {
+                        case -2:   // Client Timeout
+                        case 701:  // Out of Memory
+                        case 1204: // Lock Issue
+                        case 1205: // >>> Deadlock Victim
+                        case 1222: // Lock Request Timeout
+                        case 8645: // Timeout waiting for memory resource
+                        case 8651: // Low memory condition
+                            if (attempt < maxRetries - 1)
+                            {
+                                break;
+                            }
+
+                            throw;
+                        default:
+                            throw;
+                    }
+                }
+            }
         }
     }
 }
