@@ -73,14 +73,9 @@ namespace NuGet.Jobs
                 {
                     return executeSql();
                 }
-                catch (SqlException ex)
+                catch (SqlException ex) when (attempt < maxRetries - 1 && retriableExceptionNumbers.Contains(ex.Number))
                 {
-                    if (attempt < maxRetries - 1 && retriableExceptionNumbers.Contains(ex.Number))
-                    {
-                        continue;
-                    }
-
-                    throw;
+                    continue;
                 }
             }
 
