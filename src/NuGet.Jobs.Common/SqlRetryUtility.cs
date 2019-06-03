@@ -81,7 +81,7 @@ namespace NuGet.Jobs
 
             // Ideally we should never get to this point, because if all iterations of the loop throw, we should rethrow the last exception encountered.
             // However, we need to have this throw here so this code will compile.
-            throw new OperationCanceledException("Failed to execute SQL call in retry loop.");
+            throw new InvalidOperationException("Failed to execute SQL call in retry loop.");
         }
     }
 }
