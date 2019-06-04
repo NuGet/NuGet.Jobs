@@ -19,6 +19,11 @@ namespace NuGet.Jobs
         /// <remarks>
         /// There are many more retriable SQL exception numbers, but these are ones we've encountered in the past.
         /// If we encounter more in the future, we should add them here as well.
+        /// 
+        /// Note that the current implementation does not do any special handling of the SQL connection used.
+        /// Some retriable SQL exceptions require reopening the connection, but none on the list currently.
+        /// The implementation will break if a <see cref="Func{Task}"/> is used that does not reopen the connection and an exception is thrown that requires reopening the connection.
+        /// Do not add any SQL exceptions of class 20 or higher to this list until the implementation is improved!
         /// </remarks>
         private static readonly IReadOnlyCollection<int> RetriableSqlExceptionNumbers = new[]
         {
@@ -42,6 +47,9 @@ namespace NuGet.Jobs
             -2, // Client timeout
         }).ToList();
 
+        /// <summary>
+        /// Runs <paramref name="executeSql"/> and retries it up to <paramref name="maxRetries"/> times if it fails due to a retriable error.
+        /// </summary>
         public static Task RetrySql(
             Func<Task> executeSql,
             int maxRetries = DefaultMaxRetries)
@@ -52,6 +60,9 @@ namespace NuGet.Jobs
                 maxRetries);
         }
 
+        /// <summary>
+        /// Runs <paramref name="executeSql"/> and retries it up to <paramref name="maxRetries"/> times if it fails due to a retriable error.
+        /// </summary>
         public static Task<T> RetryReadOnlySql<T>(
             Func<Task<T>> executeSql,
             int maxRetries = DefaultMaxRetries)
