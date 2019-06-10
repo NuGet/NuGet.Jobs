@@ -83,9 +83,6 @@
     <PackageReference Include="Microsoft.Data.Services.Client">
       <Version>5.8.4</Version>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>9.0.1</Version>
-    </PackageReference>
     <PackageReference Include="NuGet.Versioning">
       <Version>4.3.0-preview1-2524</Version>
     </PackageReference>

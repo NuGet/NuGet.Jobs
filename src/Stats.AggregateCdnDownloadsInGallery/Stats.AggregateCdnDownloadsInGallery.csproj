@@ -71,9 +71,6 @@
     <PackageReference Include="Microsoft.Data.Services.Client">
       <Version>5.8.4</Version>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>9.0.1</Version>
-    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

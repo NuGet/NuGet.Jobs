@@ -118,9 +118,6 @@
     <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
       <Version>1.0.5</Version>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>9.0.1</Version>
-    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Connected Services\Application Insights\ConnectedService.json" />
