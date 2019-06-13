@@ -29,10 +29,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             PackageStateProcessorMock.Verify(
                 x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, expectedPackageStatus),
                 Times.Once);
-            PackageFileServiceMock.Verify(
-                x => x.DeletePackageForValidationSetAsync(ValidationSet),
-                Times.Once);
-
             Assert.Equal(ValidationSetStatus.Completed, ValidationSet.ValidationSetStatus);
         }
 
@@ -303,10 +299,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 x => x.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available),
                 Times.Once);
 
-            PackageFileServiceMock.Verify(
-                x => x.DeletePackageForValidationSetAsync(ValidationSet),
-                Times.Once);
-
             MessageServiceMock
                 .Verify(ms => ms.SendPublishedMessageAsync(Package), Times.Once());
             MessageServiceMock
@@ -336,7 +328,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     nameof(IValidationStorageService.UpdateValidationSetAsync),
                     nameof(IMessageService<Package>.SendPublishedMessageAsync),
                     nameof(ITelemetryService.TrackTotalValidationDuration),
-                    nameof(IValidationFileService.DeletePackageForValidationSetAsync),
                 },
                 operations.ToArray());
         }
@@ -359,7 +350,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     nameof(IStatusProcessor<Package>.SetStatusAsync),
                     nameof(IValidationStorageService.UpdateValidationSetAsync),
                     nameof(ITelemetryService.TrackTotalValidationDuration),
-                    nameof(IValidationFileService.DeletePackageForValidationSetAsync),
                 },
                 operations.ToArray());
         }
@@ -456,9 +446,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     Times.Never);
             }
 
-            PackageFileServiceMock.Verify(
-                x => x.DeletePackageForValidationSetAsync(ValidationSet),
-                Times.Once);
             TelemetryServiceMock
                 .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
             Assert.InRange(duration, before - ValidationSet.Created, after - ValidationSet.Created);
