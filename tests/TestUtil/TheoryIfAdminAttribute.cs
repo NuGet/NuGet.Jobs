@@ -3,10 +3,12 @@
 
 using System;
 using Xunit;
+using Xunit.Sdk;
 
 namespace TestUtil
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    [XunitTestCaseDiscoverer("Xunit.Sdk.TheoryDiscoverer", "xunit.execution.{Platform}")]
     public class TheoryIfAdminAttribute : TheoryAttribute
     {
         public TheoryIfAdminAttribute()
