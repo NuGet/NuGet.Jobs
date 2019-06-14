@@ -8,14 +8,14 @@ using Xunit.Sdk;
 namespace TestUtil
 {
     /// <summary>
-    /// Indicates a test set that can be set up to be skipped when run as non-Admin user if environment
+    /// Indicates a test that can be set up to be skipped when run as non-Admin user if environment
     /// is set up appropriately. See <see cref="UserHelper.EnableSkipVariableName"/> for more details.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    [XunitTestCaseDiscoverer("Xunit.Sdk.TheoryDiscoverer", "xunit.execution.{Platform}")]
-    public class TheoryIfAdminAttribute : TheoryAttribute
+    [XunitTestCaseDiscoverer("Xunit.Sdk.FactDiscoverer", "xunit.execution.{Platform}")]
+    public class AdminOnlyFactAttribute : FactAttribute
     {
-        public TheoryIfAdminAttribute()
+        public AdminOnlyFactAttribute()
         {
             UserHelper.SetupFactSkipIfAdmin(this);
         }

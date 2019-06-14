@@ -53,7 +53,7 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
                 Mock.Of<ILogger<CertificateValidationMessageHandler>>());
         }
 
-        [TheoryIfAdmin]
+        [AdminOnlyTheory]
         [MemberData(nameof(ValidateSigningCertificateData))]
         public async Task ValidateSigningCertificate(
             Func<CertificateIntegrationTestFixture, Task<X509Certificate2>> createCertificateFunc,
@@ -214,7 +214,7 @@ namespace Validation.PackageSigning.ValidateCertificate.Tests
             };
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task ValidateTimestampingCertificate()
         {
             // Arrange

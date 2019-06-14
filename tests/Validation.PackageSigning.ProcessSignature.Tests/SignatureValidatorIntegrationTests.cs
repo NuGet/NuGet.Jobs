@@ -189,7 +189,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             return await _fixture.GetAuthorSignedPackageStream1Async(_output);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task AcceptsValidSignedPackage()
         {
             // Arrange
@@ -244,7 +244,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsUntrustedTimestampingCertificate()
         {
             // Arrange
@@ -289,7 +289,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task AcceptsTrustedTimestampingCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -342,7 +342,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task AcceptsTrustedSigningCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -383,7 +383,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsPackageWithAddedFile()
         {
             // Arrange
@@ -403,7 +403,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             VerifyNU3008(result);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsPackageWithModifiedFile()
         {
             // Arrange
@@ -439,7 +439,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             VerifyNU3008(result);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsInvalidSignedCms()
         {
             // Arrange
@@ -463,7 +463,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal("The package signature is invalid or cannot be verified on this platform.", typedIssue.ClientMessage);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsMultipleSignatures()
         {
             // Arrange
@@ -499,7 +499,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal("The package signature file does not contain exactly one primary signature.", typedIssue.ClientMessage);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsAuthorCounterSignatures()
         {
             // Arrange
@@ -536,7 +536,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal(ValidationIssueCode.AuthorCounterSignaturesNotSupported, issue.IssueCode);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task AcceptsAcceptableRepositorySignatures()
         {
             // Arrange
@@ -566,7 +566,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Null(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositorySignatureWithUnallowedSigningCertificate()
         {
             // Arrange
@@ -596,7 +596,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositorySignatureWithUnallowedRepositoryUrl()
         {
             // Arrange
@@ -627,7 +627,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositorySignatureWithUntrustedSigningCertificate()
         {
             // Arrange
@@ -658,7 +658,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositorySignatureWithNoTimestamp()
         {
             // Arrange
@@ -689,7 +689,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositorySignatureWithUntrustedTimestamp()
         {
             // Arrange
@@ -727,7 +727,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositorySignatureWithRevokedSigningCertificate_StripsAtIngestion()
         {
             // Arrange
@@ -762,7 +762,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositorySignatureWithRevokedTimestampingCertificate_StripsAtIngestion()
         {
             // Arrange
@@ -802,7 +802,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositorySignatureIsTampered_StripsAtIngestion()
         {
             // Arrange
@@ -834,7 +834,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositorySignatureWithRevokedSigningCertificate_ThrowsOnRevalidate()
         {
             // Arrange
@@ -873,7 +873,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositorySignatureWithRevokedTimestampingCertificate_ThrowsOnRevalidate()
         {
             // Arrange
@@ -917,7 +917,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositorySignatureIsTampered_ThrowsOnRevalidate()
         {
             // Arrange
@@ -953,7 +953,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task AcceptsAcceptableRepositoryCounterSignatures()
         {
             // Arrange
@@ -985,7 +985,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Null(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositoryCounterSignatureWithUnallowedSigningCertificate()
         {
             // Arrange
@@ -1013,7 +1013,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositoryCounterSignatureWithUnallowedRepositoryUrl()
         {
             // Arrange
@@ -1042,7 +1042,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositoryCounterSignatureWithUntrustedSigningCertificate()
         {
             // Arrange
@@ -1071,7 +1071,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositoryCounterSignatureWithNoTimestamp()
         {
             // Arrange
@@ -1099,7 +1099,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task StripsRepositoryCounterSignatureWithUntrustedTimestamp()
         {
             // Arrange
@@ -1134,7 +1134,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSignatureWithRevokedSigningCertificate_StripsAtIngestion()
         {
             // Arrange
@@ -1166,7 +1166,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.NotNull(result.NupkgUri);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSignatureWithRevokedTimestampingCertificate_StripsAtIngestion()
         {
             // Arrange
@@ -1203,7 +1203,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSignatureIsTampered_RejectsAtIngestion()
         {
             // Arrange
@@ -1231,7 +1231,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             VerifyNU3008(result);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSignatureWithRevokedSigningCertificate_ThrowsOnRevalidate()
         {
             // Arrange
@@ -1267,7 +1267,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSignatureWithRevokedTimestampingCertificate_ThrowsOnRevalidate()
         {
             // Arrange
@@ -1308,7 +1308,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSignatureIsTampered_ThrowsOnRevalidate()
         {
             // Arrange
@@ -1341,7 +1341,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal($"Package was repository signed with a signature that fails verification for validation id '{_message.ValidationId}'", e.Message);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSigned_RejectsUntrustedSigningCertificate()
         {
             // Arrange
@@ -1380,7 +1380,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal(AuthorPrimaryCertificateUntrustedMessage, clientIssue.ClientMessage);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSigned_RejectsUntrustedTimestampingCertificate()
         {
             // Arrange
@@ -1431,7 +1431,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSigned_AcceptsTrustedTimestampingCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -1490,7 +1490,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task WhenRepositoryCounterSigned_AcceptsTrustedSigningCertificateWithUnavailableRevocation()
         {
             // Arrange
@@ -1527,7 +1527,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             }
         }
 
-        [TheoryIfAdmin]
+        [AdminOnlyTheory]
         [InlineData(new[] { SignatureType.Author, SignatureType.Repository })]
         [InlineData(new[] { SignatureType.Repository, SignatureType.Author })]
         public async Task RejectsMutuallyExclusiveCounterSignaturesCommitmentTypes(SignatureType[] counterSignatureTypes)
@@ -1572,7 +1572,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal("The commitment-type-indication attribute contains an invalid combination of values.", typedIssue.ClientMessage);
         }
 
-        [TheoryIfAdmin]
+        [AdminOnlyTheory]
         [InlineData("MA0GCyqGSIb3DQEJEAYD")] // base64 of ASN.1 encoded "1.2.840.113549.1.9.16.6.3" OID.
         [InlineData(null)] // No commitment type.
         public async Task AllowsNonAuthorAndRepositoryCounterSignatures(string commitmentTypeOidBase64)
@@ -1623,7 +1623,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             VerifyNU3008(result);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsInvalidSignatureContent()
         {
             // Arrange
@@ -1649,7 +1649,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal("The package signature content is invalid.", typedIssue.ClientMessage);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectInvalidSignatureContentVersion()
         {
             // Arrange
@@ -1672,7 +1672,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal(ValidationIssueCode.OnlySignatureFormatVersion1Supported, issue.IssueCode);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsNonAuthorSignature()
         {
             // Arrange
@@ -1699,7 +1699,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             Assert.Equal(ValidationIssueCode.OnlyAuthorSignaturesSupported, issue.IssueCode);
         }
 
-        [FactIfAdmin]
+        [AdminOnlyFact]
         public async Task RejectsZip64Packages()
         {
             // Arrange
