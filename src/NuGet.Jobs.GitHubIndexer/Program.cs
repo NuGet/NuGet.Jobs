@@ -10,7 +10,8 @@ namespace NuGet.Jobs.GitHubIndexer
     {
         public static void Main(string[] args)
         {
-
+            var job = new Job();
+            JobRunner.RunOnce(job, args).GetAwaiter().GetResult();
         }
     }
 }
