@@ -12,16 +12,16 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class Job : JsonConfigurationJob
     {
-        private GitHubSearcher _gitHubSearcher;
+        private GitReposSearcher _gitSearcher;
         public Job()
         {
-            _gitHubSearcher = new GitHubSearcher();
+            _gitSearcher = new GitReposSearcher();
         }
 
         public override async Task  Run()
         {
             // Where the code will be :D
-            var repos = await _gitHubSearcher.GetRepos();
+            var repos = await _gitSearcher.GetPopularRepositories();
             File.WriteAllText("Repos.json", JsonConvert.SerializeObject(repos));
         }
 
