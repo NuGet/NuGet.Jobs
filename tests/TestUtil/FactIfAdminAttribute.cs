@@ -7,16 +7,17 @@ using Xunit.Sdk;
 
 namespace TestUtil
 {
+    /// <summary>
+    /// Indicates a test that can be set up to be skipped when run as non-Admin user if environment
+    /// is set up appropriately. See <see cref="UserHelper.EnableSkipVariableName"/> for more details.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [XunitTestCaseDiscoverer("Xunit.Sdk.FactDiscoverer", "xunit.execution.{Platform}")]
     public class FactIfAdminAttribute : FactAttribute
     {
         public FactIfAdminAttribute()
         {
-            if (!UserHelper.IsAdmin())
-            {
-                Skip = "Test will not run unless executed as Administrator";
-            }
+            UserHelper.SetupFactSkipIfAdmin(this);
         }
     }
 }
