@@ -450,9 +450,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     Times.Never);
             }
 
-            PackageFileServiceMock.Verify(
-                x => x.DeletePackageForValidationSetAsync(ValidationSet),
-                Times.Never);
             TelemetryServiceMock
                 .Verify(ts => ts.TrackTotalValidationDuration(It.IsAny<TimeSpan>(), It.IsAny<bool>()), Times.Once());
             Assert.InRange(duration, before - ValidationSet.Created, after - ValidationSet.Created);
