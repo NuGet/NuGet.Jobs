@@ -11,8 +11,7 @@ namespace TestUtil
         {
             var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);
-            bool isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
-            return isAdmin;
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
     }
 }
