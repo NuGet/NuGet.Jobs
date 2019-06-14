@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>NuGet.Jobs.GitHubIndexer</id>
+    <id>GitHubIndexer</id>
     <version>$version$</version>
     <title>NuGet.Jobs.GitHubIndexer</title>
     <authors>.NET Foundation</authors>
