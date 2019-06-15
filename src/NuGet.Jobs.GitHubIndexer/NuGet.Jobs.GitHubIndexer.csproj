@@ -46,7 +46,6 @@
   <ItemGroup>
     <Compile Include="GitRepoSearchers\GitHubSearcher.cs" />
     <Compile Include="GitRepoSearchers\IGitRepoSearcher.cs" />
-    <Compile Include="GitReposSearcher.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

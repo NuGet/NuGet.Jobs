@@ -11,11 +11,11 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class GitHubSearcher : IGitRepoSearcher
     {
-        private GitHubClient _client;
+        private IGitHubClient _client;
 
-        public GitHubSearcher()
+        public GitHubSearcher(IGitHubClient client)
         {
-            _client = new GitHubClient(new ProductHeaderValue("GitHubIndexer"));
+            _client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
         private async Task<List<Repository>> GetResultsForPage(int currPage, int totalCount, int maxStarCount = -1, string lastRecordName = null)

@@ -7,26 +7,27 @@ using Autofac;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using Octokit;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
     public class Job : JsonConfigurationJob
     {
-        private GitReposSearcher _gitSearcher;
-        public Job()
-        {
-            _gitSearcher = new GitReposSearcher();
-        }
-
         public override async Task  Run()
         {
-            // Where the code will be :D
-            var repos = await _gitSearcher.GetPopularRepositories();
+            var searcher = _serviceProvider.GetRequiredService<IGitRepoSearcher>();
+            var repos = await searcher.GetPopularRepositories();
+
             File.WriteAllText("Repos.json", JsonConvert.SerializeObject(repos));
         }
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
+            services.AddTransient<IGitRepoSearcher, GitHubSearcher>();
+            services.AddSingleton<IGitHubClient>(provider => 
+            {
+                return new GitHubClient(new ProductHeaderValue("GitHubIndexer"));
+            });
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
