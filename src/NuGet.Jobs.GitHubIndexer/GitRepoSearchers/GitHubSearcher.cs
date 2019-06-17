@@ -41,7 +41,7 @@ namespace NuGet.Jobs.GitHubIndexer
             List<Repository> resultList = new List<Repository>();
 
             SearchRepositoryResult response = _client.Search.SearchRepo(request).GetAwaiter().GetResult();
-            if (response.Items.Count > 0)
+            if (response.Items != null && response.Items.Count > 0)
             {
                 var toAdd =
                     lastRecordName == null ?
@@ -56,14 +56,12 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     if (currPage <= 10)
                     {
-                        //resultList.UnionWith(GetResultsForPage(currPage, resultList.Count + totalCount, maxStarCount));
                         resultList.AddRange(await GetResultsForPage(currPage, resultList.Count + totalCount, maxStarCount));
                     }
                     else
                     {
                         // Since we need to grab more than 1000 results, let's pick up where the $currLast$ repository is and build a new query from there
                         // This will make us count from the $recursivePage$ parameter and not the currPage anymore
-                        //resultList.UnionWith(GetResultsForPage(1, resultList.Count + totalCount, response.Items[response.Items.Count - 1].StargazersCount));
                         resultList.AddRange(await GetResultsForPage(1, resultList.Count + totalCount, response.Items[response.Items.Count - 1].StargazersCount, response.Items[response.Items.Count - 1].FullName));
                     }
                 }
