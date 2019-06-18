@@ -13,7 +13,7 @@ namespace NuGet.Jobs.GitHubIndexer
     {
         public const int MIN_STARS = 100;
         public const int RESULTS_PER_PAGE = 100; // Maximum is 100 :(
-        private IGitHubClient _client;
+        private readonly IGitHubClient _client;
 
         public GitHubSearcher(IGitHubClient client)
         {
