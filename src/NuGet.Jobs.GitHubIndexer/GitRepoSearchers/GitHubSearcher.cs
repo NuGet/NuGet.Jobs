@@ -11,6 +11,8 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class GitHubSearcher : IGitRepoSearcher
     {
+        public const int MIN_STARS = 100;
+        public const int RESULTS_PER_PAGE = 100; // Maximum is 100 :(
         private IGitHubClient _client;
 
         public GitHubSearcher(IGitHubClient client)
@@ -20,7 +22,6 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private async Task<List<Repository>> GetResultsForPage(int currPage, int totalCount, int maxStarCount = -1, string lastRecordName = null)
         {
-            const int MIN_STARS = 100;
             if (_client.GetLastApiInfo() != null && _client.GetLastApiInfo().RateLimit.Remaining == 0)
             {
                 Console.WriteLine("Waiting a minute to cooldown..");
@@ -34,7 +35,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 Language = Language.CSharp,
                 SortField = RepoSearchSort.Stars,
                 Order = SortDirection.Descending,
-                PerPage = 100, // Maximum is 100 :(
+                PerPage = RESULTS_PER_PAGE,
                 Page = currPage
             };
 
