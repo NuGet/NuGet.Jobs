@@ -47,7 +47,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
             var resultList = new List<Repository>();
 
-            SearchRepositoryResult response = _client.Search.SearchRepo(request).GetAwaiter().GetResult();
+            var response = await _client.Search.SearchRepo(request);
             if (response.Items == null || !response.Items.Any())
             {
                 return resultList;
