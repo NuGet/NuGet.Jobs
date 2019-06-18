@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Octokit;
 using Xunit;
@@ -59,7 +60,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             mockClient.SetupGet(c => c.Check).Returns(new ChecksClient(mockApiConnection));
             mockClient.SetupGet(c => c.Search).Returns(mockSearch.Object);
 
-            return new GitHubSearcher(mockClient.Object);
+            return new GitHubSearcher(mockClient.Object, new Mock<ILogger<GitHubSearcher>>().Object);
         }
 
         private static Repository CreateRepository(string fullName, int starCount = 100)
@@ -123,7 +124,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<Repository>();
                 const int totalCount = 4000;
-                const int maxStars = (totalCount + GitHubSearcher.MIN_STARS);
+                const int maxStars = (totalCount + GitHubSearcher.MinStars);
                 for (int i = 0; i < totalCount; i++)
                 {
                     items.Add(CreateRepository("owner/Hello" + i, maxStars - i));
@@ -134,7 +135,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 req =>
                     {
                         var isRange = req.Stars.ToString().Contains("..");
-                        var index = (req.Page - 1) * GitHubSearcher.RESULTS_PER_PAGE;
+                        var index = (req.Page - 1) * GitHubSearcher.ResultsPerPage;
 
                         // The user is asking for a min..max range of stars
                         if (isRange)
@@ -143,7 +144,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                             var max = str.Substring(str.LastIndexOf('.') + 1);
                             index += maxStars - int.Parse(max);
                         }
-                        var itemsCount = Math.Min(GitHubSearcher.RESULTS_PER_PAGE, items.Count - index); // To avoid overflowing
+                        var itemsCount = Math.Min(GitHubSearcher.ResultsPerPage, items.Count - index); // To avoid overflowing
                         var subItems = items.GetRange(index, itemsCount);
                         return Task.FromResult(new SearchRepositoryResult(totalCount, itemsCount == 100, subItems));
                     };
@@ -151,14 +152,14 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 var res = await GetMockClient(mockGitHubSearch).GetPopularRepositories();
                 Assert.Equal(items.Count, res.Count);
 
-                int resIdx = 0;
-                foreach (var resItem in res)
+                
+                for (int resIdx = 0; resIdx < res.Count; resIdx++)
                 {
+                    var resItem = res[resIdx];
                     Assert.Equal(items[resIdx].Name, resItem.Name);
                     Assert.Equal(items[resIdx].FullName, resItem.Id);
                     Assert.Equal(items[resIdx].StargazersCount, resItem.Stars);
                     Assert.Equal(items[resIdx].Owner.Login, resItem.Owner);
-                    resIdx++;
                 }
             }
         }

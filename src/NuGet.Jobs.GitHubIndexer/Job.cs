@@ -13,6 +13,8 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class Job : JsonConfigurationJob
     {
+        private const string GitHubIndexerName = "GitHubIndexer";
+
         public override async Task  Run()
         {
             var searcher = _serviceProvider.GetRequiredService<IGitRepoSearcher>();
@@ -26,7 +28,7 @@ namespace NuGet.Jobs.GitHubIndexer
             services.AddTransient<IGitRepoSearcher, GitHubSearcher>();
             services.AddSingleton<IGitHubClient>(provider => 
             {
-                return new GitHubClient(new ProductHeaderValue("GitHubIndexer"));
+                return new GitHubClient(new ProductHeaderValue(GitHubIndexerName));
             });
         }
 
