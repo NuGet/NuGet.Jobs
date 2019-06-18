@@ -12,7 +12,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 {
     public class GitHubSearcherFacts
     {
-        private static GitHubSearcher GetMockClient(SearchRepositoryResult searchResult = null)
+        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<SearchRepositoryResult>> searchResultFunc = null)
         {
             var connection = new Mock<IConnection>();
             var dummyApiInfo = new ApiInfo(
@@ -26,10 +26,18 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 .Returns(dummyApiInfo);
 
             var mockSearch = new Mock<ISearchClient>();
-            mockSearch
-                .Setup(s => s.SearchRepo(It.IsAny<SearchRepositoriesRequest>()))
-                .Returns(Task.FromResult(searchResult ?? new SearchRepositoryResult()));
-
+            if (searchResultFunc == null)
+            {
+                mockSearch
+                    .Setup(s => s.SearchRepo(It.IsAny<SearchRepositoriesRequest>()))
+                    .Returns(Task.FromResult(new SearchRepositoryResult()));
+            }
+            else
+            {
+                mockSearch
+                    .Setup(s => s.SearchRepo(It.IsAny<SearchRepositoriesRequest>()))
+                    .Returns(searchResultFunc);
+            }
             var mockClient = new Mock<IGitHubClient>();
             mockClient.SetupGet(c => c.Connection).Returns(connection.Object);
             var mockApiConnection = new ApiConnection(connection.Object);
@@ -54,7 +62,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             return new GitHubSearcher(mockClient.Object);
         }
 
-        private static Repository CreateRepository(string fullName)
+        private static Repository CreateRepository(string fullName, int starCount = 100)
         {
             var ownerName = fullName.Split('/')[0];
             var repoName = fullName.Split('/')[1];
@@ -78,7 +86,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     false, // Private
                     true, // Fork
                     10, // Fork Count
-                    100, // Star Count
+                    starCount, // Star Count
                     "master", // Default branch
                     0, // Open issues count
                     null, // Pushed at
@@ -112,15 +120,35 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             [Fact]
             public async Task GetMoreThanThousandResults()
             {
+                // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<Repository>();
                 const int totalCount = 4000;
+                const int maxStars = (totalCount + GitHubSearcher.MIN_STARS);
                 for (int i = 0; i < totalCount; i++)
                 {
-                    items.Add(CreateRepository("owner/Hello" + i));
+                    items.Add(CreateRepository("owner/Hello" + i, maxStars - i));
                 }
 
-                var mockResult = new SearchRepositoryResult(totalCount, true, items);
-                var res = await GetMockClient(mockResult).GetPopularRepositories();
+                // Create a mock GitHub Search API that serves those results
+                Func<SearchRepositoriesRequest, Task<SearchRepositoryResult>> mockGitHubSearch =
+                req =>
+                    {
+                        var isRange = req.Stars.ToString().Contains("..");
+                        var index = (req.Page - 1) * GitHubSearcher.RESULTS_PER_PAGE;
+
+                        // The user is asking for a min..max range of stars
+                        if (isRange)
+                        {
+                            var str = req.Stars.ToString();
+                            var max = str.Substring(str.LastIndexOf('.') + 1);
+                            index += maxStars - int.Parse(max);
+                        }
+                        var itemsCount = Math.Min(GitHubSearcher.RESULTS_PER_PAGE, items.Count - index); // To avoid overflowing
+                        var subItems = items.GetRange(index, itemsCount);
+                        return Task.FromResult(new SearchRepositoryResult(totalCount, itemsCount == 100, subItems));
+                    };
+
+                var res = await GetMockClient(mockGitHubSearch).GetPopularRepositories();
                 Assert.Equal(items.Count, res.Count);
 
                 int resIdx = 0;
