@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NuGetGallery;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
