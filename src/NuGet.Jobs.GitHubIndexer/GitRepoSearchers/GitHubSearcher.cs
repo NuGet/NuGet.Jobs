@@ -75,7 +75,6 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     // TODO: Block unwanted repos
                     resultList.AddRange(response.Items);
-                    upperStarBound = response.Items.Last().StargazersCount;
                     page++;
 
                     if (page >= lastPage && response.Items.First().StargazersCount == response.Items.Last().StargazersCount)
@@ -84,6 +83,8 @@ namespace NuGet.Jobs.GitHubIndexer
                         return resultList;
                     }
                 }
+
+                upperStarBound = resultList.Last().StargazersCount;
             }
 
             return resultList;
