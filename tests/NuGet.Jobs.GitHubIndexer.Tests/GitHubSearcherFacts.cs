@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Octokit;
 using Xunit;
@@ -13,6 +14,8 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 {
     public class GitHubSearcherFacts
     {
+        private static readonly GitHubSearcherConfiguration _configuration = new GitHubSearcherConfiguration();
+
         private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<SearchRepositoryResult>> searchResultFunc = null)
         {
             var connection = new Mock<IConnection>();
@@ -60,7 +63,14 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             mockClient.SetupGet(c => c.Check).Returns(new ChecksClient(mockApiConnection));
             mockClient.SetupGet(c => c.Search).Returns(mockSearch.Object);
 
-            return new GitHubSearcher(mockClient.Object, new Mock<ILogger<GitHubSearcher>>().Object);
+            
+            var optionsSnapshot = new Mock<IOptionsSnapshot<GitHubSearcherConfiguration>>();
+            optionsSnapshot
+                .Setup(x => x.Value)
+                .Returns(
+                () => _configuration);
+
+            return new GitHubSearcher(mockClient.Object, new Mock<ILogger<GitHubSearcher>>().Object, optionsSnapshot.Object);
         }
 
         private static Repository CreateRepository(string fullName, int starCount = 100)
@@ -118,13 +128,18 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 Assert.Empty(res);
             }
 
-            [Fact]
-            public async Task GetMoreThanThousandResults()
+            [Theory]
+            //[InlineData(4000, 10, 200,  2)] // This fails and causes a StackOverflowException (TODO: Fix it!)
+            [InlineData(4000, 10, 50, 50)]
+            public async Task GetMoreThanThousandResults(int totalCount, int minStars, int maxGithubResultPerQuery, int resultsPerPage)
             {
+                _configuration.ResultsPerPage = resultsPerPage;
+                _configuration.MinStars = minStars;
+                _configuration.MaxGithubResultPerQuery = maxGithubResultPerQuery;
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<Repository>();
-                const int totalCount = 4000;
-                const int maxStars = (totalCount + GitHubSearcher.MinStars);
+                
+                int maxStars = (totalCount + _configuration.MinStars);
                 for (int i = 0; i < totalCount; i++)
                 {
                     items.Add(CreateRepository("owner/Hello" + i, maxStars - i));
@@ -135,7 +150,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 req =>
                     {
                         var isRange = req.Stars.ToString().Contains("..");
-                        var index = (req.Page - 1) * GitHubSearcher.ResultsPerPage;
+                        var index = (req.Page - 1) * _configuration.ResultsPerPage;
 
                         // The user is asking for a min..max range of stars
                         if (isRange)
@@ -144,7 +159,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                             var max = str.Substring(str.LastIndexOf('.') + 1);
                             index += maxStars - int.Parse(max);
                         }
-                        var itemsCount = Math.Min(GitHubSearcher.ResultsPerPage, items.Count - index); // To avoid overflowing
+                        var itemsCount = Math.Min(_configuration.ResultsPerPage, items.Count - index); // To avoid overflowing
                         var subItems = items.GetRange(index, itemsCount);
                         return Task.FromResult(new SearchRepositoryResult(totalCount, itemsCount == 100, subItems));
                     };
@@ -152,7 +167,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 var res = await GetMockClient(mockGitHubSearch).GetPopularRepositories();
                 Assert.Equal(items.Count, res.Count);
 
-                
+
                 for (int resIdx = 0; resIdx < res.Count; resIdx++)
                 {
                     var resItem = res[resIdx];

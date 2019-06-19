@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NuGetGallery;
 using Octokit;
 
@@ -13,18 +14,30 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class GitHubSearcher : IGitRepoSearcher
     {
-        public const int MinStars = 100;
-        public const int ResultsPerPage = 100; // Maximum is 100 :(
-        public const int MaxGithubResultPerQuery = 1000; // The maximum number of results a query can return (1000 as of 6/18/2019)
         private readonly IGitHubClient _client;
         private readonly ILogger<GitHubSearcher> _logger;
         private readonly TimeSpan OneMinute = TimeSpan.FromMinutes(1);
+        private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
 
-        public GitHubSearcher(IGitHubClient client, ILogger<GitHubSearcher> logger)
+        public GitHubSearcher(
+            IGitHubClient client,
+            ILogger<GitHubSearcher> logger,
+            IOptionsSnapshot<GitHubSearcherConfiguration> configuration)
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
+            _logger.LogInformation(
+                $"GitHubSearcher created with params:\n" +
+                $"MinStars: {MinStars}\n" +
+                $"ResultsPerPage: {ResultsPerPage}\n" +
+                $"MaxGithubResultPerQuery: {MaxGithubResultPerQuery}\n");
         }
+
+        public int MinStars => _configuration.Value.MinStars;
+        public int ResultsPerPage => _configuration.Value.ResultsPerPage;
+        public int MaxGithubResultPerQuery => _configuration.Value.MaxGithubResultPerQuery;
 
         private async Task<List<Repository>> GetResultsForPage(int currPage, int totalCount, int? maxStarCount = null, string lastRecordName = null)
         {
@@ -37,7 +50,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
             var request = new SearchRepositoriesRequest
             {
-                Stars = maxStarCount.HasValue ? Range.GreaterThan(MinStars) : new Range(MinStars, maxStarCount.Value),
+                Stars = !maxStarCount.HasValue ? Range.GreaterThan(MinStars) : new Range(MinStars, maxStarCount.Value),
                 Language = Language.CSharp,
                 SortField = RepoSearchSort.Stars,
                 Order = SortDirection.Descending,
