@@ -119,18 +119,5 @@ namespace NuGet.Jobs.GitHubIndexer
                $"ResultsPerPage: {ResultsPerPage}\n" +
                $"MaxGithubResultPerQuery: {MaxGithubResultPerQuery}\n";
         }
-
-        private class ReposComparer : IEqualityComparer<Repository>
-        {
-            public bool Equals(Repository x, Repository y)
-            {
-                return string.Equals(x.FullName, y.FullName, StringComparison.OrdinalIgnoreCase);
-            }
-
-            public int GetHashCode(Repository obj)
-            {
-                return obj.HtmlUrl.ToLower().GetHashCode();
-            }
-        }
     }
 }
