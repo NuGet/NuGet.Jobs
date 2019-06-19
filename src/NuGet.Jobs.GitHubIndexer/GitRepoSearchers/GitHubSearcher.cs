@@ -29,17 +29,14 @@ namespace NuGet.Jobs.GitHubIndexer
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
             _logger.LogInformation(
-                $"GitHubSearcher created with params:\n" +
-                $"MinStars: {MinStars}\n" +
-                $"ResultsPerPage: {ResultsPerPage}\n" +
-                $"MaxGithubResultPerQuery: {MaxGithubResultPerQuery}\n");
+                $"GitHubSearcher created with params:\n" + GetConfigInfo());
         }
 
         public int MinStars => _configuration.Value.MinStars;
         public int ResultsPerPage => _configuration.Value.ResultsPerPage;
         public int MaxGithubResultPerQuery => _configuration.Value.MaxGithubResultPerQuery;
 
-        private async Task<List<Repository>> GetResultsForPage(int currPage, int totalCount, int? maxStarCount = null, string lastRecordName = null)
+        private async Task CheckThrottle()
         {
             if (_client.GetLastApiInfo() != null && _client.GetLastApiInfo().RateLimit.Remaining == 0)
             {
@@ -47,45 +44,45 @@ namespace NuGet.Jobs.GitHubIndexer
                 await Task.Delay(OneMinute);
                 _logger.LogInformation("Resuming search.");
             }
+        }
 
-            var request = new SearchRepositoriesRequest
-            {
-                Stars = !maxStarCount.HasValue ? Range.GreaterThan(MinStars) : new Range(MinStars, maxStarCount.Value),
-                Language = Language.CSharp,
-                SortField = RepoSearchSort.Stars,
-                Order = SortDirection.Descending,
-                PerPage = ResultsPerPage,
-                Page = currPage
-            };
-
+        private async Task<List<Repository>> GetResultsFromGitHub()
+        {
+            var upperStarBound = int.MaxValue;
             var resultList = new List<Repository>();
-
-            var response = await _client.Search.SearchRepo(request);
-            if (response.Items == null || !response.Items.Any())
+            var lastPage = Math.Ceiling(MaxGithubResultPerQuery / (double)ResultsPerPage);
+            while (upperStarBound >= MinStars)
             {
-                return resultList;
-            }
-
-            var toAdd =
-                lastRecordName == null ?
-                    response.Items :
-                    response.Items.Where(repo => repo.FullName != lastRecordName);
-            resultList.AddRange(toAdd);
-
-            // Since there can only be $RESULTS_PER_PAGE$ results per page, if the count is 100, it means we should query the next page
-            if (response.Items.Count == ResultsPerPage)
-            {
-                ++currPage;
-
-                if (currPage <= Math.Ceiling(MaxGithubResultPerQuery / (double)ResultsPerPage))
+                var page = 0;
+                while (page < lastPage)
                 {
-                    resultList.AddRange(await GetResultsForPage(currPage, resultList.Count + totalCount, maxStarCount));
-                }
-                else
-                {
-                    // Since we need to grab more than 1000 results, let's pick up where the $currLast$ repository is and build a new query from there
-                    // This will make us count from the $recursivePage$ parameter and not the currPage anymore
-                    resultList.AddRange(await GetResultsForPage(1, resultList.Count + totalCount, response.Items[response.Items.Count - 1].StargazersCount, response.Items[response.Items.Count - 1].FullName));
+                    await CheckThrottle();
+                    var request = new SearchRepositoriesRequest
+                    {
+                        Stars = new Range(MinStars, upperStarBound),
+                        Language = Language.CSharp,
+                        SortField = RepoSearchSort.Stars,
+                        Order = SortDirection.Descending,
+                        PerPage = ResultsPerPage,
+                        Page = page + 1
+                    };
+
+                    var response = await _client.Search.SearchRepo(request);
+                    if (response.Items == null || !response.Items.Any())
+                    {
+                        return resultList;
+                    }
+
+                    // TODO: Block unwanted repos
+                    resultList.AddRange(response.Items);
+                    upperStarBound = response.Items.Last().StargazersCount;
+                    page++;
+
+                    if (page >= lastPage && response.Items.First().StargazersCount == response.Items.Last().StargazersCount)
+                    {
+                        _logger.LogWarning($"Last page results have the same star count! StarCount: {response.Items.First().StargazersCount}\n{GetConfigInfo()}"); // TODO
+                        return resultList;
+                    }
                 }
             }
 
@@ -99,7 +96,7 @@ namespace NuGet.Jobs.GitHubIndexer
         public async Task<IReadOnlyList<RepositoryInformation>> GetPopularRepositories()
         {
             _logger.LogInformation("Starting search on GitHub...");
-            var result = await GetResultsForPage(1, 0);
+            var result = await GetResultsFromGitHub();
             return result
                 .GroupBy(x => x.FullName) // Used to remove duplicate repos (since the GH Search API may return a result that we already had in memory)
                 .Select(
@@ -112,7 +109,28 @@ namespace NuGet.Jobs.GitHubIndexer
                         repo.StargazersCount,
                         Array.Empty<string>());
                 })
+                .OrderByDescending(x => x.Stars)
                 .ToList();
+        }
+
+        private string GetConfigInfo()
+        {
+            return $"MinStars: {MinStars}\n" +
+               $"ResultsPerPage: {ResultsPerPage}\n" +
+               $"MaxGithubResultPerQuery: {MaxGithubResultPerQuery}\n";
+        }
+
+        private class ReposComparer : IEqualityComparer<Repository>
+        {
+            public bool Equals(Repository x, Repository y)
+            {
+                return string.Equals(x.FullName, y.FullName, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public int GetHashCode(Repository obj)
+            {
+                return obj.HtmlUrl.ToLower().GetHashCode();
+            }
         }
     }
 }

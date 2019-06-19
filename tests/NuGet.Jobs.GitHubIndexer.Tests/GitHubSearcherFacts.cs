@@ -63,7 +63,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             mockClient.SetupGet(c => c.Check).Returns(new ChecksClient(mockApiConnection));
             mockClient.SetupGet(c => c.Search).Returns(mockSearch.Object);
 
-            
+
             var optionsSnapshot = new Mock<IOptionsSnapshot<GitHubSearcherConfiguration>>();
             optionsSnapshot
                 .Setup(x => x.Value)
@@ -129,16 +129,18 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             }
 
             [Theory]
-            //[InlineData(4000, 10, 200,  2)] // This fails and causes a StackOverflowException (TODO: Fix it!)
-            [InlineData(4000, 10, 50, 50)]
+            [InlineData(4000, 10, 200, 2)] // Tests huge number of pages
+            [InlineData(4000, 10, 50, 2)] // Tests huge number of API calls
+            [InlineData(30000, 10, 1000, 100)] // Tests huge number of results in real conditions
             public async Task GetMoreThanThousandResults(int totalCount, int minStars, int maxGithubResultPerQuery, int resultsPerPage)
             {
                 _configuration.ResultsPerPage = resultsPerPage;
                 _configuration.MinStars = minStars;
                 _configuration.MaxGithubResultPerQuery = maxGithubResultPerQuery;
+
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<Repository>();
-                
+
                 int maxStars = (totalCount + _configuration.MinStars);
                 for (int i = 0; i < totalCount; i++)
                 {
@@ -149,24 +151,34 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 Func<SearchRepositoriesRequest, Task<SearchRepositoryResult>> mockGitHubSearch =
                 req =>
                     {
-                        var isRange = req.Stars.ToString().Contains("..");
-                        var index = (req.Page - 1) * _configuration.ResultsPerPage;
+                        // Stars are split as "min..max"
+                        var starsStr = req.Stars.ToString();
+                        var min = int.Parse(starsStr.Substring(0, starsStr.IndexOf('.')));
+                        var max = int.Parse(starsStr.Substring(starsStr.LastIndexOf('.') + 1));
+                        int idxMax = -1, idxMin = items.Count;
 
-                        // The user is asking for a min..max range of stars
-                        if (isRange)
+                        for (int i = 0; i < items.Count; i++)
                         {
-                            var str = req.Stars.ToString();
-                            var max = str.Substring(str.LastIndexOf('.') + 1);
-                            index += maxStars - int.Parse(max);
+                            var repo = items[i];
+                            if (repo.StargazersCount <= max && idxMax == -1)
+                            {
+                                idxMax = i;
+                            }
+
+                            if (repo.StargazersCount <= min)
+                            {
+                                idxMin = i;
+                                break;
+                            }
                         }
-                        var itemsCount = Math.Min(_configuration.ResultsPerPage, items.Count - index); // To avoid overflowing
-                        var subItems = items.GetRange(index, itemsCount);
-                        return Task.FromResult(new SearchRepositoryResult(totalCount, itemsCount == 100, subItems));
+
+                        var itemsCount = Math.Min(_configuration.ResultsPerPage, idxMin - idxMax); // To avoid overflowing
+                        var subItems = items.GetRange(idxMax, itemsCount);
+                        return Task.FromResult(new SearchRepositoryResult(totalCount, itemsCount == _configuration.ResultsPerPage, subItems));
                     };
 
                 var res = await GetMockClient(mockGitHubSearch).GetPopularRepositories();
                 Assert.Equal(items.Count, res.Count);
-
 
                 for (int resIdx = 0; resIdx < res.Count; resIdx++)
                 {
