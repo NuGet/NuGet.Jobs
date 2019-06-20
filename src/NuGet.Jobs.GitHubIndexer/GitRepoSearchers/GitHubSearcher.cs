@@ -1,14 +1,14 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGetGallery;
 using Octokit;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
@@ -18,6 +18,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly ILogger<GitHubSearcher> _logger;
         private readonly TimeSpan OneMinute = TimeSpan.FromMinutes(1);
         private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
+        private DateTimeOffset _throttleResetTime;
 
         public GitHubSearcher(
             IGitHubClient client,
@@ -40,23 +41,64 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             if (_client.GetLastApiInfo() != null && _client.GetLastApiInfo().RateLimit.Remaining == 0)
             {
-                _logger.LogInformation("Waiting a minute to cooldown.");
-                await Task.Delay(OneMinute);
+                //var sleepTime = _client.GetLastApiInfo().RateLimit.Reset - DateTimeOffset.Now;
+                var sleepTime = _throttleResetTime - DateTimeOffset.Now;
+                _throttleResetTime = DateTimeOffset.Now;
+                _logger.LogInformation($"Waiting {sleepTime.TotalSeconds} seconds to cooldown.");
+                if (sleepTime.TotalSeconds > 0)
+                {
+                    await Task.Delay(sleepTime);
+                }
+
                 _logger.LogInformation("Resuming search.");
             }
         }
 
+        private async Task<SearchRepositoryResult> SearchRepo(SearchRepositoriesRequest request)
+        {
+            _logger.LogInformation("Making request");
+
+            bool? error = null;
+            IApiResponse<SearchRepositoryResult> response = null;
+            while(!error.HasValue || error.Value)
+            {
+                try
+                {
+                    response = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
+                    error = false;
+                }
+                catch (RateLimitExceededException ex)
+                {
+                    _logger.LogError("Exceeded GitHub RateLimit! Waiting 5 seconds before retrying.");
+                    await Task.Delay(5_000);
+                }
+            }
+
+            if (_throttleResetTime < DateTimeOffset.Now)
+            {
+                var headers = response.HttpResponse.Headers;
+                var ghTime = DateTime.ParseExact(headers["Date"], "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", System.Globalization.CultureInfo.InvariantCulture).ToLocalTime();
+                var timeToWait = DateTimeOffset.FromUnixTimeSeconds(long.Parse(headers["X-RateLimit-Reset"])).ToLocalTime() - ghTime;
+                _throttleResetTime = DateTimeOffset.Now + timeToWait;
+            }
+
+            return response.Body;
+        }
+
         private async Task<List<Repository>> GetResultsFromGitHub()
         {
+            _throttleResetTime = DateTimeOffset.Now;
             var upperStarBound = int.MaxValue;
             var resultList = new List<Repository>();
             var lastPage = Math.Ceiling(MaxGithubResultPerQuery / (double)ResultsPerPage);
+
             while (upperStarBound >= MinStars)
             {
                 var page = 0;
                 while (page < lastPage)
                 {
                     await CheckThrottle();
+
                     var request = new SearchRepositoriesRequest
                     {
                         Stars = new Range(MinStars, upperStarBound),
@@ -67,9 +109,11 @@ namespace NuGet.Jobs.GitHubIndexer
                         Page = page + 1
                     };
 
-                    var response = await _client.Search.SearchRepo(request);
+                    var response = await SearchRepo(request);
+
                     if (response.Items == null || !response.Items.Any())
                     {
+                        _logger.LogWarning($"Search request didn't return any item. Page: {request.Page} {GetConfigInfo()}");
                         return resultList;
                     }
 
@@ -77,7 +121,7 @@ namespace NuGet.Jobs.GitHubIndexer
                     resultList.AddRange(response.Items);
                     page++;
 
-                    if (page >= lastPage && response.Items.First().StargazersCount == response.Items.Last().StargazersCount)
+                    if (page == lastPage && response.Items.First().StargazersCount == response.Items.Last().StargazersCount)
                     {
                         _logger.LogWarning($"Last page results have the same star count! StarCount: {response.Items.First().StargazersCount}\n{GetConfigInfo()}"); // TODO
                         return resultList;
