@@ -18,10 +18,10 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
         {
             var connection = new Mock<IConnection>();
             var dummyApiInfo = new ApiInfo(
-                            new Dictionary<string, Uri>(),
-                            Array.Empty<string>(),
-                            Array.Empty<string>(),
-                            "",
+                            new Dictionary<string, Uri>(), // links
+                            Array.Empty<string>(), // Oauth scopes
+                            Array.Empty<string>(), // accepted Oauth scopes
+                            "", // Etag
                             new RateLimit(10, 10, 10));
             connection
                 .Setup(c => c.GetLastApiInfo())
