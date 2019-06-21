@@ -136,7 +136,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             {
                 _configuration.ResultsPerPage = resultsPerPage;
                 _configuration.MinStars = minStars;
-                _configuration.MaxGithubResultPerQuery = maxGithubResultPerQuery;
+                _configuration.MaxGitHubResultPerQuery = maxGithubResultPerQuery;
 
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<Repository>();

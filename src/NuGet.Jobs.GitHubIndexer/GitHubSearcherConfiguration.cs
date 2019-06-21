@@ -9,7 +9,6 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public int ResultsPerPage { get; set; } = 100;
 
-        public int MaxGithubResultPerQuery { get; set; } = 1000;
-
+        public int MaxGitHubResultPerQuery { get; set; } = 1000;
     }
 }
