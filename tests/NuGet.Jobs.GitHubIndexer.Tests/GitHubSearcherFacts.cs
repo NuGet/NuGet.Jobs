@@ -14,9 +14,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 {
     public class GitHubSearcherFacts
     {
-        private static readonly GitHubSearcherConfiguration _configuration = new GitHubSearcherConfiguration();
-
-        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<SearchRepositoryResult>> searchResultFunc = null)
+        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<SearchRepositoryResult>> searchResultFunc = null, GitHubSearcherConfiguration configuration = null)
         {
             var connection = new Mock<IConnection>();
             var dummyApiInfo = new ApiInfo(
@@ -68,7 +66,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             optionsSnapshot
                 .Setup(x => x.Value)
                 .Returns(
-                () => _configuration);
+                () => configuration ?? new GitHubSearcherConfiguration());
 
             return new GitHubSearcher(mockClient.Object, new Mock<ILogger<GitHubSearcher>>().Object, optionsSnapshot.Object);
         }
@@ -121,6 +119,8 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 
         public class GetPopularRepositoriesMethod
         {
+            private readonly GitHubSearcherConfiguration _configuration = new GitHubSearcherConfiguration();
+
             [Fact]
             public async Task GetZeroResult()
             {
@@ -177,7 +177,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                         return Task.FromResult(new SearchRepositoryResult(totalCount, itemsCount == _configuration.ResultsPerPage, subItems));
                     };
 
-                var res = await GetMockClient(mockGitHubSearch).GetPopularRepositories();
+                var res = await GetMockClient(mockGitHubSearch, _configuration).GetPopularRepositories();
                 Assert.Equal(items.Count, res.Count);
 
                 for (int resIdx = 0; resIdx < res.Count; resIdx++)
