@@ -28,14 +28,11 @@ namespace NuGet.Jobs.GitHubIndexer
             _client = client ?? throw new ArgumentNullException(nameof(client));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-
-            _logger.LogInformation(
-                $"GitHubSearcher created with params:\n" + GetConfigInfo());
         }
 
-        public int MinStars => _configuration.Value.MinStars;
-        public int ResultsPerPage => _configuration.Value.ResultsPerPage;
-        public int MaxGithubResultPerQuery => _configuration.Value.MaxGitHubResultPerQuery;
+        private int _minStars => _configuration.Value.MinStars;
+        private int _resultsPerPage => _configuration.Value.ResultsPerPage;
+        private int _maxGithubResultPerQuery => _configuration.Value.MaxGitHubResultPerQuery;
 
         private async Task CheckThrottle()
         {
@@ -90,9 +87,9 @@ namespace NuGet.Jobs.GitHubIndexer
             _throttleResetTime = DateTimeOffset.Now;
             var upperStarBound = int.MaxValue;
             var resultList = new List<Repository>();
-            var lastPage = Math.Ceiling(MaxGithubResultPerQuery / (double)ResultsPerPage);
+            var lastPage = Math.Ceiling(_maxGithubResultPerQuery / (double)_resultsPerPage);
 
-            while (upperStarBound >= MinStars)
+            while (upperStarBound >= _minStars)
             {
                 var page = 0;
                 while (page < lastPage)
@@ -101,11 +98,11 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     var request = new SearchRepositoriesRequest
                     {
-                        Stars = new Range(MinStars, upperStarBound),
+                        Stars = new Range(_minStars, upperStarBound),
                         Language = Language.CSharp,
                         SortField = RepoSearchSort.Stars,
                         Order = SortDirection.Descending,
-                        PerPage = ResultsPerPage,
+                        PerPage = _resultsPerPage,
                         Page = page + 1
                     };
 
@@ -160,9 +157,9 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private string GetConfigInfo()
         {
-            return $"MinStars: {MinStars}\n" +
-               $"ResultsPerPage: {ResultsPerPage}\n" +
-               $"MaxGithubResultPerQuery: {MaxGithubResultPerQuery}\n";
+            return $"MinStars: {_minStars}\n" +
+               $"ResultsPerPage: {_resultsPerPage}\n" +
+               $"MaxGithubResultPerQuery: {_maxGithubResultPerQuery}\n";
         }
     }
 }
