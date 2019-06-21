@@ -13,7 +13,7 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class Job : JsonConfigurationJob
     {
-        private const string GitHubIndexerName = "GitHubIndexer";
+        private const string GitHubIndexerUserAgent = "NuGet-NuGet.Jobs-GitHubIndexer";
         private const string GitHubSearcherConfigurationSectionName = "GitHubSearcher";
 
         public override async Task  Run()
@@ -29,7 +29,7 @@ namespace NuGet.Jobs.GitHubIndexer
             services.AddTransient<IGitRepoSearcher, GitHubSearcher>();
             services.AddSingleton<IGitHubClient>(provider => 
             {
-                return new GitHubClient(new ProductHeaderValue(GitHubIndexerName));
+                return new GitHubClient(new ProductHeaderValue(GitHubIndexerUserAgent));
             });
 
             services.Configure<GitHubSearcherConfiguration>(configurationRoot.GetSection(GitHubSearcherConfigurationSectionName));
