@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Globalization;
+using System.IO;
 using System.Threading.Tasks;
 using Octokit;
 
@@ -19,16 +21,28 @@ namespace NuGet.Jobs.GitHubIndexer
         public int? GetRemainingRequestCount()
         {
             var apiInfo = _client.GetLastApiInfo();
-            return apiInfo == null ? (int?)null : apiInfo.RateLimit.Remaining;
+            return apiInfo?.RateLimit.Remaining;
         }
 
         public async Task<GitHubSearchApiResponse> GetResponse(SearchRepositoriesRequest request)
         {
             var apiResponse = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
+            if(!apiResponse.HttpResponse.Headers.TryGetValue("Date", out var ghStrDate) 
+                || !DateTime.TryParseExact(ghStrDate, "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ghTime))
+            {
+                throw new InvalidDataException("Date is required to compute the throttling time.");
+            }
+
+            if(!apiResponse.HttpResponse.Headers.TryGetValue("X-RateLimit-Reset", out var ghStrResetLimit) 
+                || !long.TryParse(ghStrResetLimit, out var ghResetTime))
+            {
+                throw new InvalidDataException("X-RateLimit-Reset is required to compute the throttling time.");
+            }
+
             return new GitHubSearchApiResponse(
-                         apiResponse.Body,
-                         DateTime.ParseExact(apiResponse.HttpResponse.Headers["Date"], "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", System.Globalization.CultureInfo.InvariantCulture).ToLocalTime(),
-                         DateTimeOffset.FromUnixTimeSeconds(long.Parse(apiResponse.HttpResponse.Headers["X-RateLimit-Reset"])).ToLocalTime());
+                apiResponse.Body,
+                ghTime.ToLocalTime(),
+                DateTimeOffset.FromUnixTimeSeconds(ghResetTime).ToLocalTime());
         }
     }
 }
