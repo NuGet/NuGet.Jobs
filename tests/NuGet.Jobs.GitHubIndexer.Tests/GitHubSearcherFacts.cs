@@ -28,7 +28,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 .Setup(c => c.GetLastApiInfo())
                 .Returns(dummyApiInfo);
 
-            var mockSearchApiRequester = new Mock<IGitHubSearchApiRequester>();
+            var mockSearchApiRequester = new Mock<IGitHubSearchWrapper>();
             mockSearchApiRequester
                 .Setup(r => r.GetResponse(It.IsAny<IGitHubClient>(), It.IsAny<SearchRepositoriesRequest>()))
                 .Returns(async (IGitHubClient client, SearchRepositoriesRequest request) =>
@@ -143,7 +143,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             {
                 _configuration.ResultsPerPage = resultsPerPage;
                 _configuration.MinStars = minStars;
-                _configuration.MaxGitHubResultPerQuery = maxGithubResultPerQuery;
+                _configuration.MaxGitHubResultsPerQuery = maxGithubResultPerQuery;
 
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<Repository>();

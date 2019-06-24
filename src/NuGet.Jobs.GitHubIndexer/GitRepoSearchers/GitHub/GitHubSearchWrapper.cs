@@ -5,14 +5,26 @@ using System;
 using System.Threading.Tasks;
 using Octokit;
 
-
 namespace NuGet.Jobs.GitHubIndexer
 {
-    public class GitHubSearchApiRequester : IGitHubSearchApiRequester
+    public class GitHubSearchWrapper : IGitHubSearchWrapper
     {
-        public async Task<GitHubSearchApiResponse> GetResponse(IGitHubClient client, SearchRepositoriesRequest request)
+        private readonly IGitHubClient _client;
+
+        public GitHubSearchWrapper(IGitHubClient client)
         {
-            var apiResponse = await client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
+            _client = client ?? throw new ArgumentNullException(nameof(client));
+        }
+
+        public int? GetRemainingRequestCount()
+        {
+            var apiInfo = _client.GetLastApiInfo();
+            return apiInfo == null ? (int?)null : apiInfo.RateLimit.Remaining;
+        }
+
+        public async Task<GitHubSearchApiResponse> GetResponse(SearchRepositoriesRequest request)
+        {
+            var apiResponse = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
             return new GitHubSearchApiResponse(
                          apiResponse.Body,
                          DateTime.ParseExact(apiResponse.HttpResponse.Headers["Date"], "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", System.Globalization.CultureInfo.InvariantCulture).ToLocalTime(),

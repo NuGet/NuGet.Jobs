@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -14,21 +14,18 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class GitHubSearcher : IGitRepoSearcher
     {
-        private readonly IGitHubClient _client;
         private readonly ILogger<GitHubSearcher> _logger;
         private readonly TimeSpan OneMinute = TimeSpan.FromMinutes(1);
         private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
-        private readonly IGitHubSearchApiRequester _searchApiRequester;
+        private readonly IGitHubSearchWrapper _searchApiRequester;
 
         private DateTimeOffset _throttleResetTime;
 
         public GitHubSearcher(
-            IGitHubClient client,
-            IGitHubSearchApiRequester searchApiRequester,
+            IGitHubSearchWrapper searchApiRequester,
             ILogger<GitHubSearcher> logger,
             IOptionsSnapshot<GitHubSearcherConfiguration> configuration)
         {
-            _client = client ?? throw new ArgumentNullException(nameof(client));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _searchApiRequester = searchApiRequester ?? throw new ArgumentNullException(nameof(searchApiRequester));
@@ -36,18 +33,17 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private int _minStars => _configuration.Value.MinStars;
         private int _resultsPerPage => _configuration.Value.ResultsPerPage;
-        private int _maxGithubResultPerQuery => _configuration.Value.MaxGitHubResultPerQuery;
+        private int _maxGithubResultPerQuery => _configuration.Value.MaxGitHubResultsPerQuery;
 
         private async Task CheckThrottle()
         {
-            if (_client.GetLastApiInfo() != null && _client.GetLastApiInfo().RateLimit.Remaining == 0)
+            if (_searchApiRequester.GetRemainingRequestCount() == 0)
             {
-                //var sleepTime = _client.GetLastApiInfo().RateLimit.Reset - DateTimeOffset.Now;
                 var sleepTime = _throttleResetTime - DateTimeOffset.Now;
                 _throttleResetTime = DateTimeOffset.Now;
-                _logger.LogInformation($"Waiting {sleepTime.TotalSeconds} seconds to cooldown.");
                 if (sleepTime.TotalSeconds > 0)
                 {
+                    _logger.LogInformation($"Waiting {sleepTime.TotalSeconds} seconds to cooldown.");
                     await Task.Delay(sleepTime);
                 }
 
@@ -57,7 +53,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private async Task<SearchRepositoryResult> SearchRepo(SearchRepositoriesRequest request)
         {
-            _logger.LogInformation($"Requesting page {request.Page} for stars {request.Stars}");
+            _logger.LogInformation("Requesting page {Page} for stars {Stars}", request.Page, request.Stars);
 
             bool? error = null;
             GitHubSearchApiResponse response = null;
@@ -65,10 +61,10 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 try
                 {
-                    response = await _searchApiRequester.GetResponse(_client, request);
+                    response = await _searchApiRequester.GetResponse(request);
                     error = false;
                 }
-                catch (RateLimitExceededException ex)
+                catch (RateLimitExceededException)
                 {
                     _logger.LogError("Exceeded GitHub RateLimit! Waiting 5 seconds before retrying.");
                     await Task.Delay(5_000);
@@ -116,13 +112,15 @@ namespace NuGet.Jobs.GitHubIndexer
                         return resultList;
                     }
 
-                    // TODO: Block unwanted repos
+                    // TODO: Block unwanted repos (https://github.com/NuGet/NuGetGallery/issues/7298)
                     resultList.AddRange(response.Items);
                     page++;
 
                     if (page == lastPage && response.Items.First().StargazersCount == response.Items.Last().StargazersCount)
                     {
-                        _logger.LogWarning($"Last page results have the same star count! StarCount: {response.Items.First().StargazersCount}\n{GetConfigInfo()}"); // TODO
+                        // This may result in missing data since more the entire result set produced by a query has the same star count, we can't produce
+                        // an "all the repos with the same star count but that are not these ones" query
+                        _logger.LogWarning("Last page results have the same star count! This may result in missing data. StarCount: {Stars} {ConfigInfo}", response.Items.First().StargazersCount, GetConfigInfo());
                         return resultList;
                     }
                 }
