@@ -44,10 +44,10 @@ namespace NuGet.Jobs.GitHubIndexer
             return new GitHubSearchApiResponse(
                 apiResponse.Body.Items
                     .Select(repo => new RepositoryInformation(
-                                        $"{repo.Owner.Login}/{repo.Name}",
-                                        repo.HtmlUrl,
-                                        repo.StargazersCount,
-                                        Array.Empty<string>())).ToList(),
+                        $"{repo.Owner.Login}/{repo.Name}",
+                        repo.HtmlUrl,
+                        repo.StargazersCount,
+                        Array.Empty<string>())).ToList(),
                 ghTime.ToLocalTime(),
                 DateTimeOffset.FromUnixTimeSeconds(ghResetTime).ToLocalTime());
         }
