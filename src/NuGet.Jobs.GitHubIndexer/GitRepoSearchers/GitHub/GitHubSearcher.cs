@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -33,6 +33,30 @@ namespace NuGet.Jobs.GitHubIndexer
         private int _minStars => _configuration.Value.MinStars;
         private int _resultsPerPage => _configuration.Value.ResultsPerPage;
         private int _maxGithubResultPerQuery => _configuration.Value.MaxGitHubResultsPerQuery;
+
+        /// <summary>
+        /// Searches for all the C# repos that have more than 100 stars on GitHub, orders them in Descending order and returns them.
+        /// </summary>
+        /// <returns>List of C# repos on GitHub that have more than 100 stars</returns>
+        public async Task<IReadOnlyList<RepositoryInformation>> GetPopularRepositories()
+        {
+            _logger.LogInformation("Starting search on GitHub...");
+            var result = await GetResultsFromGitHub();
+            return result
+                .GroupBy(x => x.FullName) // Used to remove duplicate repos (since the GH Search API may return a result that we already had in memory)
+                .Select(
+                group =>
+                {
+                    var repo = group.First();
+                    return new RepositoryInformation(
+                        $"{repo.Owner.Login}/{repo.Name}",
+                        repo.HtmlUrl,
+                        repo.StargazersCount,
+                        Array.Empty<string>());
+                })
+                .OrderByDescending(x => x.Stars)
+                .ToList();
+        }
 
         private async Task CheckThrottle()
         {
@@ -107,7 +131,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     if (response.Items == null || !response.Items.Any())
                     {
-                        _logger.LogWarning($"Search request didn't return any item. Page: {request.Page} {GetConfigInfo()}");
+                        _logger.LogWarning("Search request didn't return any item. Page: {Page} {ConfigInfo}", request.Page, GetConfigInfo());
                         return resultList;
                     }
 
@@ -128,30 +152,6 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             return resultList;
-        }
-
-        /// <summary>
-        /// Searches for all the C# repos that have more than 100 stars on GitHub, orders them in Descending order and returns them.
-        /// </summary>
-        /// <returns>List of C# repos on GitHub that have more than 100 stars</returns>
-        public async Task<IReadOnlyList<RepositoryInformation>> GetPopularRepositories()
-        {
-            _logger.LogInformation("Starting search on GitHub...");
-            var result = await GetResultsFromGitHub();
-            return result
-                .GroupBy(x => x.FullName) // Used to remove duplicate repos (since the GH Search API may return a result that we already had in memory)
-                .Select(
-                group =>
-                {
-                    var repo = group.First();
-                    return new RepositoryInformation(
-                        $"{repo.Owner.Login}/{repo.Name}",
-                        repo.HtmlUrl,
-                        repo.StargazersCount,
-                        Array.Empty<string>());
-                })
-                .OrderByDescending(x => x.Stars)
-                .ToList();
         }
 
         private string GetConfigInfo()
