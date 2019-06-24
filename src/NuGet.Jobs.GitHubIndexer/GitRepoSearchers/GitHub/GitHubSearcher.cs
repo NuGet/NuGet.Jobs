@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -14,6 +14,8 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class GitHubSearcher : IGitRepoSearcher
     {
+        private static readonly TimeSpan LimitExceededRetryTime = TimeSpan.FromSeconds(5);
+
         private readonly ILogger<GitHubSearcher> _logger;
         private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
         private readonly IGitHubSearchWrapper _searchApiRequester;
@@ -66,7 +68,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 _throttleResetTime = DateTimeOffset.Now;
                 if (sleepTime.TotalSeconds > 0)
                 {
-                    _logger.LogInformation($"Waiting {sleepTime.TotalSeconds} seconds to cooldown.");
+                    _logger.LogInformation("Waiting {TotalSeconds} seconds to cooldown.", sleepTime.TotalSeconds);
                     await Task.Delay(sleepTime);
                 }
 
@@ -89,8 +91,8 @@ namespace NuGet.Jobs.GitHubIndexer
                 }
                 catch (RateLimitExceededException)
                 {
-                    _logger.LogError("Exceeded GitHub RateLimit! Waiting 5 seconds before retrying.");
-                    await Task.Delay(5_000);
+                    _logger.LogError("Exceeded GitHub RateLimit! Waiting for {time} before retrying.", LimitExceededRetryTime);
+                    await Task.Delay(LimitExceededRetryTime);
                 }
             }
 
