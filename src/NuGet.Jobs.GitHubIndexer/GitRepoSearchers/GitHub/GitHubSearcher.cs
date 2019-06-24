@@ -1,14 +1,14 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using NuGetGallery;
-using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using NuGetGallery;
+using Octokit;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
@@ -18,16 +18,20 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly ILogger<GitHubSearcher> _logger;
         private readonly TimeSpan OneMinute = TimeSpan.FromMinutes(1);
         private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
+        private readonly IGitHubSearchApiRequester _searchApiRequester;
+
         private DateTimeOffset _throttleResetTime;
 
         public GitHubSearcher(
             IGitHubClient client,
+            IGitHubSearchApiRequester searchApiRequester,
             ILogger<GitHubSearcher> logger,
             IOptionsSnapshot<GitHubSearcherConfiguration> configuration)
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _searchApiRequester = searchApiRequester ?? throw new ArgumentNullException(nameof(searchApiRequester));
         }
 
         private int _minStars => _configuration.Value.MinStars;
@@ -53,15 +57,15 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private async Task<SearchRepositoryResult> SearchRepo(SearchRepositoriesRequest request)
         {
-            _logger.LogInformation("Making request");
+            _logger.LogInformation($"Requesting page {request.Page} for stars {request.Stars}");
 
             bool? error = null;
-            IApiResponse<SearchRepositoryResult> response = null;
-            while(!error.HasValue || error.Value)
+            GitHubSearchApiResponse response = null;
+            while (!error.HasValue || error.Value)
             {
                 try
                 {
-                    response = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
+                    response = await _searchApiRequester.GetResponse(_client, request);
                     error = false;
                 }
                 catch (RateLimitExceededException ex)
@@ -73,13 +77,11 @@ namespace NuGet.Jobs.GitHubIndexer
 
             if (_throttleResetTime < DateTimeOffset.Now)
             {
-                var headers = response.HttpResponse.Headers;
-                var ghTime = DateTime.ParseExact(headers["Date"], "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", System.Globalization.CultureInfo.InvariantCulture).ToLocalTime();
-                var timeToWait = DateTimeOffset.FromUnixTimeSeconds(long.Parse(headers["X-RateLimit-Reset"])).ToLocalTime() - ghTime;
+                var timeToWait = response.ThrottleResetTime - response.Date;
                 _throttleResetTime = DateTimeOffset.Now + timeToWait;
             }
 
-            return response.Body;
+            return response.Result;
         }
 
         private async Task<List<Repository>> GetResultsFromGitHub()
