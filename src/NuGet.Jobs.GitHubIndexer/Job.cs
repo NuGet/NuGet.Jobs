@@ -16,7 +16,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private const string GitHubIndexerUserAgent = "NuGet-NuGet.Jobs-GitHubIndexer";
         private const string GitHubSearcherConfigurationSectionName = "GitHubSearcher";
 
-        public override async Task  Run()
+        public override async Task Run()
         {
             var searcher = _serviceProvider.GetRequiredService<IGitRepoSearcher>();
             var repos = await searcher.GetPopularRepositories();

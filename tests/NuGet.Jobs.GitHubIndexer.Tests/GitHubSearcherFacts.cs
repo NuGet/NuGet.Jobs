@@ -65,7 +65,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 }
 
                 // Create a mock GitHub Search API that serves those results
-                Func <SearchRepositoriesRequest, Task<IReadOnlyList<RepositoryInformation>>> mockGitHubSearch =
+                Func<SearchRepositoriesRequest, Task<IReadOnlyList<RepositoryInformation>>> mockGitHubSearch =
                   req =>
                       {
                           //Stars are split as "min..max"
