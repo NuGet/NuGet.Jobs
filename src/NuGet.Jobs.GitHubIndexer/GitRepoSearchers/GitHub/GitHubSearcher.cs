@@ -15,7 +15,6 @@ namespace NuGet.Jobs.GitHubIndexer
     public class GitHubSearcher : IGitRepoSearcher
     {
         private readonly ILogger<GitHubSearcher> _logger;
-        private readonly TimeSpan OneMinute = TimeSpan.FromMinutes(1);
         private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
         private readonly IGitHubSearchWrapper _searchApiRequester;
 
