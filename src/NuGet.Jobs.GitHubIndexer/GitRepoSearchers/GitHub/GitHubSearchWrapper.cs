@@ -4,7 +4,9 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using NuGetGallery;
 using Octokit;
 
 namespace NuGet.Jobs.GitHubIndexer
@@ -27,20 +29,25 @@ namespace NuGet.Jobs.GitHubIndexer
         public async Task<GitHubSearchApiResponse> GetResponse(SearchRepositoriesRequest request)
         {
             var apiResponse = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
-            if(!apiResponse.HttpResponse.Headers.TryGetValue("Date", out var ghStrDate) 
+            if (!apiResponse.HttpResponse.Headers.TryGetValue("Date", out var ghStrDate)
                 || !DateTime.TryParseExact(ghStrDate, "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ghTime))
             {
                 throw new InvalidDataException("Date is required to compute the throttling time.");
             }
 
-            if(!apiResponse.HttpResponse.Headers.TryGetValue("X-RateLimit-Reset", out var ghStrResetLimit) 
+            if (!apiResponse.HttpResponse.Headers.TryGetValue("X-RateLimit-Reset", out var ghStrResetLimit)
                 || !long.TryParse(ghStrResetLimit, out var ghResetTime))
             {
                 throw new InvalidDataException("X-RateLimit-Reset is required to compute the throttling time.");
             }
 
             return new GitHubSearchApiResponse(
-                apiResponse.Body,
+                apiResponse.Body.Items
+                    .Select(repo => new RepositoryInformation(
+                                        $"{repo.Owner.Login}/{repo.Name}",
+                                        repo.HtmlUrl,
+                                        repo.StargazersCount,
+                                        Array.Empty<string>())).ToList(),
                 ghTime.ToLocalTime(),
                 DateTimeOffset.FromUnixTimeSeconds(ghResetTime).ToLocalTime());
         }

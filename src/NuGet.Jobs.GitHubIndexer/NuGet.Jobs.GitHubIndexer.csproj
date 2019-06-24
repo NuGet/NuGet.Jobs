@@ -45,10 +45,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GitHubSearcherConfiguration.cs" />
-    <Compile Include="GitRepoSearchers\GitHub\GitHubSearchApiRequester.cs" />
+    <Compile Include="GitRepoSearchers\GitHub\GitHubSearchWrapper.cs" />
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearchApiResponse.cs" />
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearcher.cs" />
-    <Compile Include="GitRepoSearchers\GitHub\IGitHubSearchApiRequester.cs" />
+    <Compile Include="GitRepoSearchers\GitHub\IGitHubSearchWrapper.cs" />
     <Compile Include="GitRepoSearchers\IGitRepoSearcher.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />

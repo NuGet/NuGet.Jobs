@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -45,17 +45,8 @@ namespace NuGet.Jobs.GitHubIndexer
             _logger.LogInformation("Starting search on GitHub...");
             var result = await GetResultsFromGitHub();
             return result
-                .GroupBy(x => x.FullName) // Used to remove duplicate repos (since the GH Search API may return a result that we already had in memory)
-                .Select(
-                group =>
-                {
-                    var repo = group.First();
-                    return new RepositoryInformation(
-                        $"{repo.Owner.Login}/{repo.Name}",
-                        repo.HtmlUrl,
-                        repo.StargazersCount,
-                        Array.Empty<string>());
-                })
+                .GroupBy(x => x.Id) // Used to remove duplicate repos (since the GH Search API may return a result that we already had in memory)
+                .Select(g => g.First())
                 .OrderByDescending(x => x.Stars)
                 .ToList();
         }
@@ -76,7 +67,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
         }
 
-        private async Task<SearchRepositoryResult> SearchRepo(SearchRepositoriesRequest request)
+        private async Task<IReadOnlyList<RepositoryInformation>> SearchRepo(SearchRepositoriesRequest request)
         {
             _logger.LogInformation("Requesting page {Page} for stars {Stars}", request.Page, request.Stars);
 
@@ -105,11 +96,11 @@ namespace NuGet.Jobs.GitHubIndexer
             return response.Result;
         }
 
-        private async Task<List<Repository>> GetResultsFromGitHub()
+        private async Task<List<RepositoryInformation>> GetResultsFromGitHub()
         {
             _throttleResetTime = DateTimeOffset.Now;
             var upperStarBound = int.MaxValue;
-            var resultList = new List<Repository>();
+            var resultList = new List<RepositoryInformation>();
             var lastPage = Math.Ceiling(_maxGithubResultPerQuery / (double)_resultsPerPage);
 
             while (upperStarBound >= _minStars)
@@ -131,26 +122,29 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     var response = await SearchRepo(request);
 
-                    if (response.Items == null || !response.Items.Any())
+                    if (response == null || !response.Any())
                     {
                         _logger.LogWarning("Search request didn't return any item. Page: {Page} {ConfigInfo}", request.Page, GetConfigInfo());
                         return resultList;
                     }
 
                     // TODO: Block unwanted repos (https://github.com/NuGet/NuGetGallery/issues/7298)
-                    resultList.AddRange(response.Items);
+                    resultList.AddRange(response);
                     page++;
 
-                    if (page == lastPage && response.Items.First().StargazersCount == response.Items.Last().StargazersCount)
+                    if (page == lastPage && response.First().Stars == response.Last().Stars)
                     {
                         // This may result in missing data since more the entire result set produced by a query has the same star count, we can't produce
                         // an "all the repos with the same star count but that are not these ones" query
-                        _logger.LogWarning("Last page results have the same star count! This may result in missing data. StarCount: {Stars} {ConfigInfo}", response.Items.First().StargazersCount, GetConfigInfo());
+                        _logger.LogWarning("Last page results have the same star count! This may result in missing data. StarCount: {Stars} {ConfigInfo}",
+                            response.First().Stars,
+                            GetConfigInfo());
+
                         return resultList;
                     }
                 }
 
-                upperStarBound = resultList.Last().StargazersCount;
+                upperStarBound = resultList.Last().Stars;
             }
 
             return resultList;
