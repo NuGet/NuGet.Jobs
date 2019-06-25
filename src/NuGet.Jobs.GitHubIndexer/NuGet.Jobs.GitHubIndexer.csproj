@@ -50,7 +50,6 @@
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearcher.cs" />
     <Compile Include="GitRepoSearchers\GitHub\IGitHubSearchWrapper.cs" />
     <Compile Include="Filters.cs" />
-    <Compile Include="GitRepoSearchers\GitHubSearcher.cs" />
     <Compile Include="GitRepoSearchers\IGitRepoSearcher.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
