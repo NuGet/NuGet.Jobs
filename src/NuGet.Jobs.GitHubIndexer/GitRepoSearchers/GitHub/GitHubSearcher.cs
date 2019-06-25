@@ -82,7 +82,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 }
                 catch (RateLimitExceededException)
                 {
-                    _logger.LogError("Exceeded GitHub RateLimit! Waiting for {time} before retrying.", LimitExceededRetryTime);
+                    _logger.LogError("Exceeded GitHub RateLimit! Waiting for {LimitExceededRetryTime} before retrying.", LimitExceededRetryTime);
                     await Task.Delay(LimitExceededRetryTime);
                 }
             }
@@ -134,8 +134,10 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     if (page == lastPage && response.First().Stars == response.Last().Stars)
                     {
-                        // This may result in missing data since more the entire result set produced by a query has the same star count, we can't produce
-                        // an "all the repos with the same star count but that are not these ones" query
+                        // GitHub throttles us after a certain number of results per query.
+                        // We can only construct queries based on number of stars a repository has.
+                        // As a result, if too many repositories have the same number of stars, 
+                        // we will lose data because we can't create another query that filters out the results that we have already seen with the same number of stars.
                         _logger.LogWarning("Last page results have the same star count! This may result in missing data. StarCount: {Stars} {ConfigInfo}",
                             response.First().Stars,
                             GetConfigInfo());
