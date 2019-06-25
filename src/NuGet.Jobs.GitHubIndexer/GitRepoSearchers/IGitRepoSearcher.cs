@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NuGetGallery;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
@@ -12,6 +13,6 @@ namespace NuGet.Jobs.GitHubIndexer
         /// Searches for all popular C# repos, orders them in Descending order and returns a list containing their basic information
         /// </summary>
         /// <returns>List of popular C# repositories</returns>
-        Task<IReadOnlyCollection<RepositoryInformation>> GetPopularRepositories();
+        Task<IReadOnlyList<RepositoryInformation>> GetPopularRepositories();
     }
 }
