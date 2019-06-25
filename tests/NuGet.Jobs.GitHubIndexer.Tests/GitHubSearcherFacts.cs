@@ -111,6 +111,5 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 }
             }
         }
-
     }
 }
