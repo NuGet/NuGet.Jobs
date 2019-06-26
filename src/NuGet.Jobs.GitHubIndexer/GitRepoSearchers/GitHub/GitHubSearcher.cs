@@ -40,7 +40,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// Searches for all the C# repos that have more than 100 stars on GitHub, orders them in Descending order and returns them.
         /// </summary>
         /// <returns>List of C# repos on GitHub that have more than 100 stars</returns>
-        public async Task<IReadOnlyList<RepositoryInformation>> GetPopularRepositories()
+        public async Task<IReadOnlyList<WritableRepositoryInformation>> GetPopularRepositories()
         {
             _logger.LogInformation("Starting search on GitHub...");
             var result = await GetResultsFromGitHub();
@@ -67,7 +67,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
         }
 
-        private async Task<IReadOnlyList<RepositoryInformation>> SearchRepo(SearchRepositoriesRequest request)
+        private async Task<IReadOnlyList<WritableRepositoryInformation>> SearchRepo(SearchRepositoriesRequest request)
         {
             _logger.LogInformation("Requesting page {Page} for stars {Stars}", request.Page, request.Stars);
 
@@ -96,11 +96,11 @@ namespace NuGet.Jobs.GitHubIndexer
             return response.Result;
         }
 
-        private async Task<List<RepositoryInformation>> GetResultsFromGitHub()
+        private async Task<List<WritableRepositoryInformation>> GetResultsFromGitHub()
         {
             _throttleResetTime = DateTimeOffset.Now;
             var upperStarBound = int.MaxValue;
-            var resultList = new List<RepositoryInformation>();
+            var resultList = new List<WritableRepositoryInformation>();
             var lastPage = Math.Ceiling(_maxGithubResultPerQuery / (double)_resultsPerPage);
 
             while (upperStarBound >= _minStars)

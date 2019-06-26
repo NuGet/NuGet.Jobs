@@ -51,6 +51,7 @@
     <Compile Include="GitRepoSearchers\GitHub\IGitHubSearchWrapper.cs" />
     <Compile Include="Filters.cs" />
     <Compile Include="GitRepoSearchers\IGitRepoSearcher.cs" />
+    <Compile Include="GitRepoSearchers\WritableRepositoryInformation.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

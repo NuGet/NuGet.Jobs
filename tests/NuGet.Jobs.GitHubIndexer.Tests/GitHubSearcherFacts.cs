@@ -15,14 +15,14 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 {
     public class GitHubSearcherFacts
     {
-        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<IReadOnlyList<RepositoryInformation>>> searchResultFunc = null, GitHubSearcherConfiguration configuration = null)
+        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> searchResultFunc = null, GitHubSearcherConfiguration configuration = null)
         {
             var mockSearchApiRequester = new Mock<IGitHubSearchWrapper>();
             mockSearchApiRequester
                 .Setup(r => r.GetResponse(It.IsAny<SearchRepositoriesRequest>()))
                 .Returns(async (SearchRepositoriesRequest request) =>
                 {
-                    return new GitHubSearchApiResponse(searchResultFunc == null ? new List<RepositoryInformation>() : await searchResultFunc(request), DateTimeOffset.Now, DateTimeOffset.Now);
+                    return new GitHubSearchApiResponse(searchResultFunc == null ? new List<WritableRepositoryInformation>() : await searchResultFunc(request), DateTimeOffset.Now, DateTimeOffset.Now);
                 });
 
             var optionsSnapshot = new Mock<IOptionsSnapshot<GitHubSearcherConfiguration>>();
@@ -56,16 +56,16 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 _configuration.MaxGitHubResultsPerQuery = maxGithubResultPerQuery;
 
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
-                var items = new List<RepositoryInformation>();
+                var items = new List<WritableRepositoryInformation>();
 
                 int maxStars = (totalCount + _configuration.MinStars);
                 for (int i = 0; i < totalCount; i++)
                 {
-                    items.Add(new RepositoryInformation("owner/Hello" + i, "dummyUrl", maxStars - i, Array.Empty<string>()));
+                    items.Add(new WritableRepositoryInformation("owner/Hello" + i, "dummyUrl", maxStars - i));
                 }
 
                 // Create a mock GitHub Search API that serves those results
-                Func<SearchRepositoriesRequest, Task<IReadOnlyList<RepositoryInformation>>> mockGitHubSearch =
+                Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> mockGitHubSearch =
                   req =>
                       {
                           //Stars are split as "min..max"
@@ -93,7 +93,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                           var startId = idxMax + req.PerPage * page > idxMin ? idxMin : idxMax + req.PerPage * page;
 
                           var itemsCount = Math.Min(_configuration.ResultsPerPage, idxMin - startId); // To avoid overflowing
-                          IReadOnlyList<RepositoryInformation> subItems = itemsCount == 0 ? new List<RepositoryInformation>() : items.GetRange(startId, itemsCount);
+                          IReadOnlyList<WritableRepositoryInformation> subItems = itemsCount == 0 ? new List<WritableRepositoryInformation>() : items.GetRange(startId, itemsCount);
 
                           return Task.FromResult(subItems);
                       };

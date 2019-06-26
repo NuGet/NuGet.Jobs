@@ -3,11 +3,14 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
     public static class Filters
     {
+        private static readonly Regex IdRegex = new Regex(@"^\w+([_.-]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
         public enum ConfigFileType
         {
             PROJ,
@@ -15,6 +18,21 @@ namespace NuGet.Jobs.GitHubIndexer
             TARGETS,
             PKG_CONFIG,
             NONE
+        }
+
+        public static bool IsValidPackageId(string packageId)
+        {
+            if (packageId == null)
+            {
+                throw new ArgumentNullException(nameof(packageId));
+            }
+
+            if (String.Equals(packageId, "$id$", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return IdRegex.IsMatch(packageId);
         }
 
         /// <summary>
