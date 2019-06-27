@@ -28,8 +28,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             var optionsSnapshot = new Mock<IOptionsSnapshot<GitHubSearcherConfiguration>>();
             optionsSnapshot
                 .Setup(x => x.Value)
-                .Returns(
-                () => configuration ?? new GitHubSearcherConfiguration());
+                .Returns(() => configuration ?? new GitHubSearcherConfiguration());
 
             return new GitHubSearcher(mockSearchApiRequester.Object, new Mock<ILogger<GitHubSearcher>>().Object, optionsSnapshot.Object);
         }

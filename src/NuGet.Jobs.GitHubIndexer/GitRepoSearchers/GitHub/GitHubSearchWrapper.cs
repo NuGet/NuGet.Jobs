@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using NuGetGallery;
 using Octokit;
 
 namespace NuGet.Jobs.GitHubIndexer
@@ -46,7 +45,8 @@ namespace NuGet.Jobs.GitHubIndexer
                     .Select(repo => new WritableRepositoryInformation(
                         $"{repo.Owner.Login}/{repo.Name}",
                         repo.HtmlUrl,
-                        repo.StargazersCount)).ToList(),
+                        repo.StargazersCount))
+                    .ToList(),
                 ghTime.ToLocalTime(),
                 DateTimeOffset.FromUnixTimeSeconds(ghResetTime).ToLocalTime());
         }

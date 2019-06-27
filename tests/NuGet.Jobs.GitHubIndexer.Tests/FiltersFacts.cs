@@ -37,6 +37,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 Assert.Equal(Filters.ConfigFileType.PROPS, Filters.GetConfigFileType("File.props"));
                 Assert.Equal(Filters.ConfigFileType.TARGETS, Filters.GetConfigFileType("File.targets"));
                 Assert.Equal(Filters.ConfigFileType.PKG_CONFIG, Filters.GetConfigFileType("packages.config"));
+                Assert.Equal(Filters.ConfigFileType.PKG_CONFIG, Filters.GetConfigFileType(@"shadowsocks-csharp\packages.config"));
             }
 
             [Fact]

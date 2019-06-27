@@ -2,10 +2,10 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using NuGetGallery;
 
@@ -17,21 +17,27 @@ namespace NuGet.Jobs.GitHubIndexer
         private static readonly string EXECUTION_DIRECTORY = WORKING_DIRECTORY + Path.DirectorySeparatorChar + "exec"; // TODO: Make this in config file?
 
         private readonly IGitRepoSearcher _searcher;
+        private readonly ILogger<ReposIndexer> _logger;
+        private readonly RepoUtils _repoUtils;
 
-        public ReposIndexer(IGitRepoSearcher searcher)
+        public ReposIndexer(IGitRepoSearcher searcher, ILogger<ReposIndexer> logger, RepoUtils repoUtils)
         {
             _searcher = searcher ?? throw new ArgumentNullException(nameof(searcher));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
         }
 
         public async Task Run()
         {
-            var repos = await _searcher.GetPopularRepositories(); // TODO: Create type that RepositoryInformation extends and return it here. That type doesn't have Dependencies
-            var finalList = repos
-                .Select(ProcessSingleRepo)
+            var repos = await _searcher.GetPopularRepositories();
+            var processed = repos
+                .Select(ProcessSingleRepo).ToList();
+            var finalList = processed
                 .Where(repo => repo.Dependencies.Any())
                 .ToList();
 
             File.WriteAllText("Repos.json", JsonConvert.SerializeObject(repos));
+            File.WriteAllText("Repos-proc.json", JsonConvert.SerializeObject(repos));
             File.WriteAllText("FinalRepos.json", JsonConvert.SerializeObject(finalList));
         }
 
@@ -56,54 +62,62 @@ namespace NuGet.Jobs.GitHubIndexer
                 // Get the files tree
                 string mainBranchRef = "refs/remotes/origin/" + headRef[0].Substring(headRef[0].LastIndexOf("/") + 1);
                 var fileTree = localRepo.Branches[mainBranchRef].Commits.ToList()[0].Tree;
+                var fullPath = Path.GetFullPath(repoFolder);
+                var filesToParse = _repoUtils
+                    .ListTree(fileTree, "", localRepo, file =>
+                    {
+                        if (file.Path.ToLower().EndsWith("harvestPackages.props"))
+                        {
+                            _logger.LogWarning("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
+                        }
+                        else
+                        {
+                            //_logger.LogDebug("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
+                        }
 
-                var filesToParse = ListTree(fileTree, "", localRepo, fileName => Filters.GetConfigFileType(fileName) != Filters.ConfigFileType.NONE);
+                        return Filters.GetConfigFileType(file.Path) != Filters.ConfigFileType.NONE;
+                    })
+                    .Where(f => (fullPath + Path.DirectorySeparatorChar + f.Path).Length < 260)
+                    .ToList();
                 if (filesToParse.Any())
                 {
+                    _logger.LogInformation("Found {0} config files.", filesToParse.Count);
+
                     // Checkout the files
-                    localRepo.CheckoutPaths(mainBranchRef, filesToParse, new LibGit2Sharp.CheckoutOptions());
+                    localRepo.CheckoutPaths(mainBranchRef, filesToParse.Select(f => f.Path), new LibGit2Sharp.CheckoutOptions());
 
-                    // TODO: Parse files
-
-                }
-
-                CleanDirectory(new DirectoryInfo(repoFolder)); //Directory.Delete(repoFolder, true); does not work!
-            }
-
-            return repo; // TODO: Change this
-        }
-
-        /// <summary>
-        /// Returns all the files at a specific commit by listing the file tree
-        /// </summary>
-        private List<string> ListTree(LibGit2Sharp.Tree tree, string currentPath, LibGit2Sharp.Repository repo, Predicate<string> resultFilter = null)
-        {
-            List<string> files = new List<string>();
-            foreach (var node in tree)
-            {
-                string nodePath = string.IsNullOrWhiteSpace(currentPath) ? node.Path : currentPath + Path.DirectorySeparatorChar + node.Path;
-                if (node.TargetType == LibGit2Sharp.TreeEntryTargetType.Tree)
-                {
-                    files.AddRange(ListTree((LibGit2Sharp.Tree)repo.Lookup(node.Target.Id), nodePath, repo, resultFilter));
-                    continue;
-                }
-
-                if (resultFilter == null || (resultFilter != null && resultFilter(node.Path.ToString())))
-                {
-                    long blobSize = (node.Target as LibGit2Sharp.Blob).Size; // TODO: Use this to limit fileSize!
-                    files.Add(nodePath);
+                    // Parse files and add them to the repo
+                    repo.AddDependencies(filesToParse
+                        .SelectMany(file =>
+                        {
+                            _logger.LogDebug("[{RepoName}] Parsing file: {FileName}", repo.Id, file.Path);
+                            using (var fileStream = new FileStream(Path.Combine(repoFolder, file.Path), System.IO.FileMode.Open))
+                            {
+                                if (Filters.GetConfigFileType(file.Path) == Filters.ConfigFileType.PKG_CONFIG)
+                                {
+                                    return _repoUtils.ParsePackagesConfig(fileStream, repo.Id);
+                                }
+                                else
+                                {
+                                    return _repoUtils.ParseProjFile(fileStream, repo.Id);
+                                }
+                            }
+                        }));
                 }
             }
 
-            return files;
+            CleanDirectory(new DirectoryInfo(repoFolder)); //Directory.Delete(repoFolder, true); does not work!
+
+            return repo;
         }
+
+
 
         /// <summary>
         /// Recursivly deletes all the files and sub-directories in a directory
         /// </summary>
-        private static void CleanDirectory(DirectoryInfo dir)
+        private void CleanDirectory(DirectoryInfo dir)
         {
-
             foreach (var childDir in dir.GetDirectories())
             {
                 CleanDirectory(childDir);
@@ -121,7 +135,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
             else
             {
-                Console.Error.WriteLine("The directory {0} is not empty!", dir.FullName);
+                _logger.LogError("The directory {0} is not empty!", dir.FullName);
             }
         }
     }

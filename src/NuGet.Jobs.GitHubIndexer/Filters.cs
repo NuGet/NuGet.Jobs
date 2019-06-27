@@ -39,12 +39,13 @@ namespace NuGet.Jobs.GitHubIndexer
         /// Returns the type of configuration file the filename points to. If the file type is not a valid config file,
         /// a ConfigFileType.NONE value is returned.
         /// </summary>
-        /// <param name="fileName">The name of the file to look at</param>
+        /// <param name="file">The name or path of the file to look at</param>
         /// <exception cref="ArgumentNullException">Thrown then the filename is null</exception>
         /// <exception cref="ArgumentException">Thrown then the filename is invalid</exception>
         /// <returns>An enum indicating the file type</returns>
-        public static ConfigFileType GetConfigFileType(string fileName)
+        public static ConfigFileType GetConfigFileType(string file)
         {
+            var fileName = Path.GetFileName(file);
             if (fileName == null)
             {
                 throw new ArgumentNullException(nameof(fileName));
@@ -56,6 +57,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             var ext = Path.GetExtension(fileName).ToLower();
+            
             var cfgFileType = ConfigFileType.NONE;
 
             if (ext.EndsWith("proj"))

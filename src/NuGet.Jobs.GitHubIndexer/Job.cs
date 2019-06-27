@@ -28,6 +28,7 @@ namespace NuGet.Jobs.GitHubIndexer
             services.AddTransient<IGitRepoSearcher, GitHubSearcher>();
             services.AddSingleton<IGitHubClient>(provider => new GitHubClient(new ProductHeaderValue(assemblyName, assemblyVersion)));
             services.AddSingleton<IGitHubSearchWrapper, GitHubSearchWrapper>();
+            services.AddSingleton<RepoUtils>();
             services.AddSingleton<ReposIndexer>();
 
             services.Configure<GitHubSearcherConfiguration>(configurationRoot.GetSection(GitHubSearcherConfigurationSectionName));

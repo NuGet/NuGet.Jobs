@@ -130,6 +130,10 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     // TODO: Block unwanted repos (https://github.com/NuGet/NuGetGallery/issues/7298)
                     resultList.AddRange(response);
+                    if (true)
+                    {
+                        return resultList.Take(2).ToList();
+                    }
                     page++;
 
                     if (page == lastPage && response.First().Stars == response.Last().Stars)

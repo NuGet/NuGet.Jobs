@@ -9,11 +9,22 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class WritableRepositoryInformation : RepositoryInformation
     {
+        private readonly List<string> _writableDependencies = new List<string>();
+
         public WritableRepositoryInformation(string id, string url, int stars) : base(id, url, stars, Array.Empty<string>())
         {
         }
 
-        public new IReadOnlyList<string> Dependencies { get => WritableDependencies; }
-        public List<string> WritableDependencies { get; } = new List<string>();
+        public void AddDependency(string dependency)
+        {
+            _writableDependencies.Add(dependency);
+        }
+
+        public void AddDependencies(IEnumerable<string> dependencies)
+        {
+            _writableDependencies.AddRange(dependencies);
+        }
+
+        public new IReadOnlyList<string> Dependencies => _writableDependencies;
     }
 }
