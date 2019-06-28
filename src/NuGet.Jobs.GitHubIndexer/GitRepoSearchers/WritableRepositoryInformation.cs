@@ -3,13 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NuGetGallery;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
     public class WritableRepositoryInformation : RepositoryInformation
     {
-        private readonly List<string> _writableDependencies = new List<string>();
+        private readonly HashSet<string> _writableDependencies = new HashSet<string>();
 
         public WritableRepositoryInformation(string id, string url, int stars) : base(id, url, stars, Array.Empty<string>())
         {
@@ -22,9 +23,13 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public void AddDependencies(IEnumerable<string> dependencies)
         {
-            _writableDependencies.AddRange(dependencies);
+            foreach(var elem in dependencies)
+            {
+                _writableDependencies.Add(elem);
+            }
+            //_writableDependencies.AddRange(dependencies);
         }
 
-        public new IReadOnlyList<string> Dependencies => _writableDependencies;
+        public new IReadOnlyList<string> Dependencies => _writableDependencies.ToList();
     }
 }

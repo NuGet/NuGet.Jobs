@@ -2,8 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -13,6 +17,7 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class ReposIndexer
     {
+        private const int MaxDegreeOfParallelism = 100;//64
         private static readonly string WORKING_DIRECTORY = "workdir"; // TODO: Make this in config file?
         private static readonly string EXECUTION_DIRECTORY = WORKING_DIRECTORY + Path.DirectorySeparatorChar + "exec"; // TODO: Make this in config file?
 
@@ -29,20 +34,38 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public async Task Run()
         {
+            ThreadPool.SetMinThreads(MaxDegreeOfParallelism, completionPortThreads: 4);
+            ServicePointManager.DefaultConnectionLimit = MaxDegreeOfParallelism;
+            ServicePointManager.MaxServicePointIdleTime = 10000;
+
             var repos = await _searcher.GetPopularRepositories();
-            var processed = repos
-                .Select(ProcessSingleRepo).ToList();
-            var finalList = processed
+            var inputBag = new ConcurrentBag<WritableRepositoryInformation>(repos);
+            var outputBag = new ConcurrentBag<RepositoryInformation>();
+            await ProcessInParallel(inputBag, repo =>
+            {
+                outputBag.Add(ProcessSingleRepo(repo));
+            });
+
+            //var processed = repos
+            //    .Select(ProcessSingleRepo).ToList();
+            var finalList = outputBag
                 .Where(repo => repo.Dependencies.Any())
                 .ToList();
 
+            var finalList2 = outputBag
+                .Where(repo => repo.Dependencies.Count > 0)
+                .ToList();
+
             File.WriteAllText("Repos.json", JsonConvert.SerializeObject(repos));
-            File.WriteAllText("Repos-proc.json", JsonConvert.SerializeObject(repos));
+            File.WriteAllText("Repos-proc.json", JsonConvert.SerializeObject(outputBag));
             File.WriteAllText("FinalRepos.json", JsonConvert.SerializeObject(finalList));
+            File.WriteAllText("FinalRepos2.json", JsonConvert.SerializeObject(finalList2));
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
         {
+            _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
+
             Directory.CreateDirectory(EXECUTION_DIRECTORY);
             var repoFolder = EXECUTION_DIRECTORY + Path.DirectorySeparatorChar + repo.Id;
 
@@ -66,14 +89,14 @@ namespace NuGet.Jobs.GitHubIndexer
                 var filesToParse = _repoUtils
                     .ListTree(fileTree, "", localRepo, file =>
                     {
-                        if (file.Path.ToLower().EndsWith("harvestPackages.props"))
-                        {
-                            _logger.LogWarning("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
-                        }
-                        else
-                        {
-                            //_logger.LogDebug("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
-                        }
+                        //if (file.Path.ToLower().EndsWith("harvestPackages.props"))
+                        //{
+                        //    _logger.LogWarning("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
+                        //}
+                        //else
+                        //{
+                        //    //_logger.LogDebug("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
+                        //}
 
                         return Filters.GetConfigFileType(file.Path) != Filters.ConfigFileType.NONE;
                     })
@@ -81,7 +104,7 @@ namespace NuGet.Jobs.GitHubIndexer
                     .ToList();
                 if (filesToParse.Any())
                 {
-                    _logger.LogInformation("Found {0} config files.", filesToParse.Count);
+                    _logger.LogInformation("[{RepoName}] Found {0} config files.", repo.Id, filesToParse.Count);
 
                     // Checkout the files
                     localRepo.CheckoutPaths(mainBranchRef, filesToParse.Select(f => f.Path), new LibGit2Sharp.CheckoutOptions());
@@ -91,16 +114,20 @@ namespace NuGet.Jobs.GitHubIndexer
                         .SelectMany(file =>
                         {
                             _logger.LogDebug("[{RepoName}] Parsing file: {FileName}", repo.Id, file.Path);
-                            using (var fileStream = new FileStream(Path.Combine(repoFolder, file.Path), System.IO.FileMode.Open))
+                            using (var fileStream = new FileStream(Path.Combine(repoFolder, file.Path), FileMode.Open))
                             {
+                                List<string> res;
                                 if (Filters.GetConfigFileType(file.Path) == Filters.ConfigFileType.PKG_CONFIG)
                                 {
-                                    return _repoUtils.ParsePackagesConfig(fileStream, repo.Id);
+                                    res = _repoUtils.ParsePackagesConfig(fileStream, repo.Id);
                                 }
                                 else
                                 {
-                                    return _repoUtils.ParseProjFile(fileStream, repo.Id);
+                                    res = _repoUtils.ParseProjFile(fileStream, repo.Id);
                                 }
+                                _logger.LogDebug("[{RepoName}] Found {Count} dependencies!", repo.Id, res.Count);
+
+                                return res;
                             }
                         }));
                 }
@@ -137,6 +164,23 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 _logger.LogError("The directory {0} is not empty!", dir.FullName);
             }
+        }
+
+        private static async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
+        {
+            var tasks = Enumerable
+                .Range(0, MaxDegreeOfParallelism)
+                .Select(async i =>
+                {
+                    await Task.Yield();
+                    while (items.TryTake(out var item))
+                    {
+                        work(item);
+                    }
+                })
+                .ToList();
+
+            await Task.WhenAll(tasks);
         }
     }
 }
