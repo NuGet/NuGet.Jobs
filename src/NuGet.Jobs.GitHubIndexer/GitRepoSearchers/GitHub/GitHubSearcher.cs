@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -130,10 +130,6 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     // TODO: Block unwanted repos (https://github.com/NuGet/NuGetGallery/issues/7298)
                     resultList.AddRange(response);
-                    if (true)
-                    {
-                        return resultList.Take(2).ToList();
-                    }
                     page++;
 
                     if (page == lastPage && response.First().Stars == response.Last().Stars)
