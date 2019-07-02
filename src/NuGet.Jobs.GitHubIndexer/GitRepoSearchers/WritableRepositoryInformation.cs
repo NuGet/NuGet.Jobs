@@ -12,9 +12,12 @@ namespace NuGet.Jobs.GitHubIndexer
     {
         private readonly HashSet<string> _writableDependencies = new HashSet<string>();
 
-        public WritableRepositoryInformation(string id, string url, int stars) : base(id, url, stars, Array.Empty<string>())
+        public WritableRepositoryInformation(string id, string url, int stars, string mainBranch) : base(id, url, stars, Array.Empty<string>())
         {
+            MainBranch = mainBranch ?? throw new ArgumentNullException(nameof(mainBranch));
         }
+
+        public string MainBranch { get; }
 
         public void AddDependency(string dependency)
         {

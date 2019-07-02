@@ -45,7 +45,8 @@ namespace NuGet.Jobs.GitHubIndexer
                     .Select(repo => new WritableRepositoryInformation(
                         $"{repo.Owner.Login}/{repo.Name}",
                         repo.HtmlUrl,
-                        repo.StargazersCount))
+                        repo.StargazersCount,
+                        repo.DefaultBranch))
                     .ToList(),
                 ghTime.ToLocalTime(),
                 DateTimeOffset.FromUnixTimeSeconds(ghResetTime).ToLocalTime());

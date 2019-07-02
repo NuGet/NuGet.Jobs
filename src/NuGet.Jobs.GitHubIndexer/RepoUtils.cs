@@ -84,7 +84,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
             catch (Exception e)
             {
-                _logger.LogError("[{RepoName}] Cannot parse file: {Error}", repoName, e.StackTrace);
+                _logger.LogError(0, e, "[{RepoName}] Cannot parse file", repoName);
             }
 
             return new List<string>();
@@ -95,7 +95,7 @@ namespace NuGet.Jobs.GitHubIndexer
             try
             {
                 var projDocument = XDocument.Load(fileStream);
-                var refs = projDocument.DescendantNodes().Where(node => node is XElement && ((XElement) node ).Name.LocalName.Equals("PackageReference")).Select(n => (XElement) n);
+                var refs = projDocument.DescendantNodes().Where(node => node is XElement && ((XElement)node).Name.LocalName.Equals("PackageReference")).Select(n => (XElement)n);
 
                 return refs
                     .Where(p => // Select all that have an "Include" attribute
@@ -109,7 +109,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
             catch (Exception e)
             {
-                _logger.LogError("[{RepoName}] Cannot parse file: {Error}", repoName, e.StackTrace);
+                _logger.LogError(0, e, "[{RepoName}] Cannot parse file", repoName);
             }
 
             return new List<string>();
