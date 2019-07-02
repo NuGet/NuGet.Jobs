@@ -20,6 +20,11 @@ namespace NuGet.Jobs.GitHubIndexer
             NONE
         }
 
+        /// <summary>
+        /// Checks whether a packageId is a valid one
+        /// </summary>
+        /// <param name="packageId">The packageId to verify</param>
+        /// <returns>true if the packageId is of valid format, false otherwhise</returns>
         public static bool IsValidPackageId(string packageId)
         {
             if (packageId == null)
@@ -41,7 +46,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// </summary>
         /// <param name="file">The name or path of the file to look at</param>
         /// <exception cref="ArgumentNullException">Thrown then the filename is null</exception>
-        /// <exception cref="ArgumentException">Thrown then the filename is invalid</exception>
+        /// <exception cref="ArgumentException">Thrown then the filename is invalid (Contains one or more chars defined in System.IO.Path.GetInvalidPathChars)</exception>
         /// <returns>An enum indicating the file type</returns>
         public static ConfigFileType GetConfigFileType(string file)
         {
