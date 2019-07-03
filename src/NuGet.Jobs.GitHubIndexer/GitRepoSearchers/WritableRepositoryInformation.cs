@@ -8,6 +8,9 @@ using NuGetGallery;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
+    /// <summary>
+    /// Builder class to construct a RepositoryInformation
+    /// </summary>
     public class WritableRepositoryInformation
     {
         private readonly HashSet<string> _writableDependencies = new HashSet<string>(); // Using a HashSet to avoid duplicates
@@ -28,11 +31,19 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public int Stars { get; }
 
+        /// <summary>
+        /// Adds the specified dependency if it's not already present
+        /// </summary>
+        /// <param name="dependency">Dependency to add</param>
         public void AddDependency(string dependency)
         {
             _writableDependencies.Add(dependency);
         }
 
+        /// <summary>
+        /// Adds the dependencies by ignoring duplicates
+        /// </summary>
+        /// <param name="dependencies">Dependencies to add</param>
         public void AddDependencies(IEnumerable<string> dependencies)
         {
             foreach(var elem in dependencies)
