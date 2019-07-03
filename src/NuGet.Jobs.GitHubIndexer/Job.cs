@@ -13,6 +13,7 @@ namespace NuGet.Jobs.GitHubIndexer
     public class Job : JsonConfigurationJob
     {
         private const string GitHubSearcherConfigurationSectionName = "GitHubSearcher";
+        private const string GitHubIndexerConfigurationSectionName = "GitHubIndexer";
 
         public override async Task Run()
         {
@@ -32,6 +33,7 @@ namespace NuGet.Jobs.GitHubIndexer
             services.AddSingleton<ReposIndexer>();
 
             services.Configure<GitHubSearcherConfiguration>(configurationRoot.GetSection(GitHubSearcherConfigurationSectionName));
+            services.Configure<GitHubIndexerConfiguration>(configurationRoot.GetSection(GitHubIndexerConfigurationSectionName));
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
