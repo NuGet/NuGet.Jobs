@@ -8,16 +8,25 @@ using NuGetGallery;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
-    public class WritableRepositoryInformation : RepositoryInformation
+    public class WritableRepositoryInformation
     {
-        private readonly HashSet<string> _writableDependencies = new HashSet<string>();
+        private readonly HashSet<string> _writableDependencies = new HashSet<string>(); // Using a HashSet to avoid duplicates
 
-        public WritableRepositoryInformation(string id, string url, int stars, string mainBranch) : base(id, url, stars, Array.Empty<string>())
+        public WritableRepositoryInformation(string id, string url, int stars, string mainBranch)
         {
+            Id = id ?? throw new ArgumentNullException(nameof(id));
+            Url = url ?? throw new ArgumentNullException(nameof(url));
+            Stars = stars;
             MainBranch = mainBranch ?? throw new ArgumentNullException(nameof(mainBranch));
         }
 
         public string MainBranch { get; }
+
+        public string Id { get; }
+
+        public string Url { get; }
+
+        public int Stars { get; }
 
         public void AddDependency(string dependency)
         {
@@ -30,9 +39,11 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 _writableDependencies.Add(elem);
             }
-            //_writableDependencies.AddRange(dependencies);
         }
 
-        public new IReadOnlyList<string> Dependencies => _writableDependencies.ToList();
+        public RepositoryInformation ToRepositoryInformation()
+        {
+            return new RepositoryInformation(Id, Url, Stars, _writableDependencies.ToList());
+        }
     }
 }
