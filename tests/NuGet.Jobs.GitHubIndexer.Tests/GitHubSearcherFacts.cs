@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using NuGetGallery;
 using Octokit;
 using Xunit;
 
@@ -60,7 +59,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 int maxStars = (totalCount + _configuration.MinStars);
                 for (int i = 0; i < totalCount; i++)
                 {
-                    items.Add(new WritableRepositoryInformation("owner/Hello" + i, "dummyUrl", maxStars - i));
+                    items.Add(new WritableRepositoryInformation("owner/Hello" + i, "dummyUrl", maxStars - i, "master"));
                 }
 
                 // Create a mock GitHub Search API that serves those results

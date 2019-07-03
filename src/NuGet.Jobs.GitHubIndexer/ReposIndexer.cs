@@ -38,13 +38,6 @@ namespace NuGet.Jobs.GitHubIndexer
             ServicePointManager.DefaultConnectionLimit = MaxDegreeOfParallelism;
             ServicePointManager.MaxServicePointIdleTime = 10000;
 
-            var r = JsonConvert.DeserializeObject < IReadOnlyList<RepositoryInformation>>(File.ReadAllText("Repos.json"));
-            File.WriteAllText("Repos-org.json", JsonConvert.SerializeObject(r.Where(x => x.Dependencies.Any()).OrderByDescending(x => x.Stars).ThenBy(x => x.Id).ToList()));
-            if(true)
-            {
-                return;
-            }
-
             var repos = await _searcher.GetPopularRepositories();
             var inputBag = new ConcurrentBag<WritableRepositoryInformation>(repos);
             var outputBag = new ConcurrentBag<RepositoryInformation>();
@@ -61,20 +54,15 @@ namespace NuGet.Jobs.GitHubIndexer
                 }
             });
 
-            //var processed = repos
-            //    .Select(ProcessSingleRepo).ToList();
             var finalList = outputBag
                 .Where(repo => repo.Dependencies.Any())
-                .ToList();
-
-            var finalList2 = outputBag
-                .Where(repo => repo.Dependencies.Count > 0)
+                .OrderByDescending(x => x.Stars)
+                .ThenBy(x => x.Id)
                 .ToList();
 
             File.WriteAllText("Repos.json", JsonConvert.SerializeObject(repos));
             File.WriteAllText("Repos-proc.json", JsonConvert.SerializeObject(outputBag));
-            File.WriteAllText("FinalRepos.json", JsonConvert.SerializeObject(finalList));
-            File.WriteAllText("FinalRepos2.json", JsonConvert.SerializeObject(finalList2));
+            File.WriteAllText("GitHubUsage.v1.json", JsonConvert.SerializeObject(finalList));
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
@@ -93,7 +81,6 @@ namespace NuGet.Jobs.GitHubIndexer
             }
             else
             {
-
                 // Init an empty Git Repo
                 LibGit2Sharp.Repository.Init(repoFolder);
                 using (var localRepo = new LibGit2Sharp.Repository(repoFolder))
@@ -117,19 +104,7 @@ namespace NuGet.Jobs.GitHubIndexer
                     var fileTree = localRepo.Branches[mainBranchRef].Commits.ToList()[0].Tree;
                     var fullPath = Path.GetFullPath(repoFolder);
                     var filesToParse = _repoUtils
-                        .ListTree(fileTree, "", localRepo, file =>
-                        {
-                            //if (file.Path.ToLower().EndsWith("harvestPackages.props"))
-                            //{
-                            //    _logger.LogWarning("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
-                            //}
-                            //else
-                            //{
-                            //    //_logger.LogDebug("Is Pkg_Cfg: {value} FileName: {fileName} TYPE: {type}", file.Path.ToLower().EndsWith("config"), file.Path, Filters.GetConfigFileType(file.Path));
-                            //}
-
-                            return Filters.GetConfigFileType(file.Path) != Filters.ConfigFileType.NONE;
-                        })
+                        .ListTree(fileTree, "", localRepo, file => Filters.GetConfigFileType(file.Path) != Filters.ConfigFileType.NONE)
                         .Where(f => (fullPath + Path.DirectorySeparatorChar + f.Path).Length < 260)
                         .ToList();
                     if (filesToParse.Any())
@@ -163,13 +138,12 @@ namespace NuGet.Jobs.GitHubIndexer
                     }
                 }
             }
-            File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(repo.Dependencies));
+            var result = repo.ToRepositoryInformation();
+            File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(result.Dependencies));
             CleanDirectory(new DirectoryInfo(repoFolder)); //Directory.Delete(repoFolder, true); does not work!
 
-            return repo;
+            return result;
         }
-
-
 
         /// <summary>
         /// Recursivly deletes all the files and sub-directories in a directory
@@ -203,42 +177,33 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private static async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
         {
-            for (int i = 0; i < MaxDegreeOfParallelism; ++i)
+            using (var sem = new SemaphoreSlim(MaxDegreeOfParallelism))
             {
-                var thread = new Thread(() =>
-                    {
-                        while (items.TryTake(out var item))
-                        {
-                            work(item);
-                        }
-                    })
+                for (int i = 0; i < MaxDegreeOfParallelism; ++i)
                 {
-                    // This is important as it allows the process to exit while this thread is running
-                    IsBackground = true
-                };
-                thread.Start();
+                    await sem.WaitAsync();
+                    var thread = new Thread(() =>
+                        {
+                            while (items.TryTake(out var item))
+                            {
+                                work(item);
+                            }
+                            sem.Release();
+                    })
+                    {
+                        // This is important as it allows the process to exit while this thread is running
+                        IsBackground = true
+                    };
+                    thread.Start();
+                }
+
+                // Wait for all Threads to complete
+                for (int i = 0; i < MaxDegreeOfParallelism; ++i)
+                {
+                    await sem.WaitAsync();
+                }
             }
 
-            while (!items.IsEmpty)
-            {
-                await Task.Delay(TimeSpan.FromMinutes(1));
-            }
-
-
-
-            //var tasks = Enumerable
-            //    .Range(0, MaxDegreeOfParallelism)
-            //    .Select(async i =>
-            //    {
-            //        await Task.Yield();
-            //        while (items.TryTake(out var item))
-            //        {
-            //            work(item);
-            //        }
-            //    })
-            //    .ToList();
-
-            //await Task.WhenAll(tasks);
         }
     }
 }

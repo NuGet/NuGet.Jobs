@@ -96,7 +96,6 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 var projDocument = XDocument.Load(fileStream);
                 var refs = projDocument.DescendantNodes().Where(node => node is XElement && ((XElement)node).Name.LocalName.Equals("PackageReference")).Select(n => (XElement)n);
-
                 return refs
                     .Where(p => // Select all that have an "Include" attribute
                     {

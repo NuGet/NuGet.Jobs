@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NuGetGallery;
 using Octokit;
 
 namespace NuGet.Jobs.GitHubIndexer
@@ -132,7 +131,7 @@ namespace NuGet.Jobs.GitHubIndexer
                     resultList.AddRange(response);
                     //if (true)
                     //{
-                    //    return resultList;
+                    //    return resultList.Take(20).ToList();
                     //}
                     page++;
 
