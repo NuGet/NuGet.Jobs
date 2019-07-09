@@ -15,21 +15,24 @@ namespace NuGet.Jobs.GitHubIndexer
     {
         private readonly HashSet<string> _writableDependencies = new HashSet<string>(); // Using a HashSet to avoid duplicates
 
-        public WritableRepositoryInformation(string id, string url, int stars, string mainBranch)
+        public WritableRepositoryInformation(string id, string url, int stars, string description, string mainBranch)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
+            Description = description ?? throw new ArgumentNullException(nameof(description));
             Url = url ?? throw new ArgumentNullException(nameof(url));
             Stars = stars;
             MainBranch = mainBranch ?? throw new ArgumentNullException(nameof(mainBranch));
         }
 
-        public string MainBranch { get; }
 
         public string Id { get; }
+        public string Description { get; }
 
         public string Url { get; }
 
         public int Stars { get; }
+
+        public string MainBranch { get; }
 
         /// <summary>
         /// Adds the specified dependency if it's not already present
@@ -46,7 +49,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="dependencies">Dependencies to add</param>
         public void AddDependencies(IEnumerable<string> dependencies)
         {
-            foreach(var elem in dependencies)
+            foreach (var elem in dependencies)
             {
                 _writableDependencies.Add(elem);
             }
@@ -54,7 +57,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public RepositoryInformation ToRepositoryInformation()
         {
-            return new RepositoryInformation(Id, Url, Stars, _writableDependencies.ToList());
+            return new RepositoryInformation(Id, Url, Stars, Description, _writableDependencies.ToList());
         }
     }
 }

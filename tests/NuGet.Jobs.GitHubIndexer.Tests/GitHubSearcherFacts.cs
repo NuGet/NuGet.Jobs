@@ -59,7 +59,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 int maxStars = (totalCount + _configuration.MinStars);
                 for (int i = 0; i < totalCount; i++)
                 {
-                    items.Add(new WritableRepositoryInformation("owner/Hello" + i, "dummyUrl", maxStars - i, "master"));
+                    items.Add(new WritableRepositoryInformation("owner/Hello" + i, "dummyUrl", maxStars - i, "Some random repo description.", "master"));
                 }
 
                 // Create a mock GitHub Search API that serves those results
@@ -102,10 +102,11 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 for (int resIdx = 0; resIdx < res.Count; resIdx++)
                 {
                     var resItem = res[resIdx];
-                    Assert.Equal(items[resIdx].Name, resItem.Name);
                     Assert.Equal(items[resIdx].Id, resItem.Id);
+                    Assert.Equal(items[resIdx].MainBranch, resItem.MainBranch);
                     Assert.Equal(items[resIdx].Stars, resItem.Stars);
-                    Assert.Equal(items[resIdx].Owner, resItem.Owner);
+                    Assert.Equal(items[resIdx].Description, resItem.Description);
+                    Assert.Equal(items[resIdx].Url, resItem.Url);
                 }
             }
         }

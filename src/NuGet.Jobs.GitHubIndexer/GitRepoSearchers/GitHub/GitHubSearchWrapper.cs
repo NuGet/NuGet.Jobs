@@ -46,6 +46,7 @@ namespace NuGet.Jobs.GitHubIndexer
                         $"{repo.Owner.Login}/{repo.Name}",
                         repo.HtmlUrl,
                         repo.StargazersCount,
+                        repo.Description ?? "No Description.",
                         repo.DefaultBranch))
                     .ToList(),
                 ghTime.ToLocalTime(),

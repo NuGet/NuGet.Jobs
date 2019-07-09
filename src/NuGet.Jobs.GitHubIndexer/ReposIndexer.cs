@@ -18,8 +18,8 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class ReposIndexer
     {
-        private const string GitHubUsageFileName = "GitHubUsage.v1.json";
-        private static readonly string WorkingDirectory = "workdir";
+        private const string WorkingDirectory = "workdir";
+        private const string GitHubUsageFilePath = WorkingDirectory + "GitHubUsage.v1.json";
         private static readonly string ExecutionDirectory = WorkingDirectory + Path.DirectorySeparatorChar + "exec";
 
         private readonly IGitRepoSearcher _searcher;
@@ -53,6 +53,7 @@ namespace NuGet.Jobs.GitHubIndexer
             var inputBag = new ConcurrentBag<WritableRepositoryInformation>(repos);
             var outputBag = new ConcurrentBag<RepositoryInformation>();
 
+            // Create the exec directory
             Directory.CreateDirectory(ExecutionDirectory);
 
             await ProcessInParallel(inputBag, repo =>
@@ -73,7 +74,10 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ThenBy(x => x.Id)
                 .ToList();
 
-            File.WriteAllText(GitHubUsageFileName, JsonConvert.SerializeObject(finalList));
+            File.WriteAllText(GitHubUsageFilePath, JsonConvert.SerializeObject(finalList));
+            
+            // Delete the exec directory
+            Directory.CreateDirectory(ExecutionDirectory);
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
@@ -149,6 +153,8 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             var result = repo.ToRepositoryInformation();
+
+            // Write the cache file. In case the job crashes, we can resume the progress
             File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(result.Dependencies));
             CleanDirectory(new DirectoryInfo(repoFolder)); //Directory.Delete(repoFolder, true); does not work!
 
@@ -213,7 +219,6 @@ namespace NuGet.Jobs.GitHubIndexer
                     await sem.WaitAsync();
                 }
             }
-
         }
     }
 }

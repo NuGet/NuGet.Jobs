@@ -72,6 +72,12 @@ namespace NuGet.Jobs.GitHubIndexer
             return files;
         }
 
+        /// <summary>
+        /// Parses a packages.config file and retreives NuGet dependencies in it
+        /// </summary>
+        /// <param name="fileStream">Stream to the packages.config file</param>
+        /// <param name="repoName">The name of the repository containing the file (for logging purposes)</param>
+        /// <returns>A list of NuGet packages listed in this config file</returns>
         public List<string> ParsePackagesConfig(Stream fileStream, string repoName)
         {
             try
@@ -90,6 +96,12 @@ namespace NuGet.Jobs.GitHubIndexer
             return new List<string>();
         }
 
+        /// <summary>
+        /// Parses any XML file containign PackageReference nodes and retreives those NuGet dependencies
+        /// </summary>
+        /// <param name="fileStream">Stream to the packages.config file</param>
+        /// <param name="repoName">The name of the repository containing the file (for logging purposes)</param>
+        /// <returns>A list of NuGet packages listed in this config file</returns>
         public List<string> ParseProjFile(Stream fileStream, string repoName)
         {
             try
