@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Reflection;
@@ -31,6 +31,9 @@ namespace NuGet.Jobs.GitHubIndexer
             services.AddSingleton<IGitHubSearchWrapper, GitHubSearchWrapper>();
             services.AddSingleton<RepoUtils>();
             services.AddSingleton<ReposIndexer>();
+            services.AddSingleton<IRepositoriesCache, DiskRepositoriesCache>();
+            services.AddSingleton<IConfigFileParser, ConfigFileParser>();
+            services.AddSingleton<IRepoFetcher, RepoFetcher>();
 
             services.Configure<GitHubSearcherConfiguration>(configurationRoot.GetSection(GitHubSearcherConfigurationSectionName));
             services.Configure<GitHubIndexerConfiguration>(configurationRoot.GetSection(GitHubIndexerConfigurationSectionName));

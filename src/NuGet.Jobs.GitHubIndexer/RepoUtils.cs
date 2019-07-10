@@ -13,9 +13,9 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class RepoUtils
     {
-        public class TreeNodeInfo
+        public class GitFileInfo
         {
-            public TreeNodeInfo(string path, long blobSize)
+            public GitFileInfo(string path, long blobSize)
             {
                 Path = path;
                 BlobSize = blobSize;
@@ -38,11 +38,10 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="tree">The file tree</param>
         /// <param name="currentPath">The initial file path. (Default is "")</param>
         /// <param name="repo">The repository containing the file tree</param>
-        /// <param name="resultFilter">A filter predicate that is used to filter out results. If null, all results are included in the returned list.</param>
         /// <returns>List of nodes that are in the file tree.</returns>
-        public List<TreeNodeInfo> ListTree(LibGit2Sharp.Tree tree, string currentPath, LibGit2Sharp.Repository repo, Predicate<TreeNodeInfo> resultFilter = null)
+        public List<GitFileInfo> ListTree(LibGit2Sharp.Tree tree, string currentPath, LibGit2Sharp.Repository repo)
         {
-            var files = new List<TreeNodeInfo>();
+            var files = new List<GitFileInfo>();
             foreach (var node in tree)
             {
                 var nodePath = string.IsNullOrWhiteSpace(currentPath) ?
@@ -51,7 +50,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
                 if (node.TargetType == LibGit2Sharp.TreeEntryTargetType.Tree)
                 {
-                    files.AddRange(ListTree((LibGit2Sharp.Tree)repo.Lookup(node.Target.Id), nodePath, repo, resultFilter));
+                    files.AddRange(ListTree((LibGit2Sharp.Tree)repo.Lookup(node.Target.Id), nodePath, repo));
                     continue;
                 }
 
@@ -62,11 +61,11 @@ namespace NuGet.Jobs.GitHubIndexer
                 }
 
                 var blobSize = (node.Target as LibGit2Sharp.Blob).Size;
-                var nodeInfo = new TreeNodeInfo(nodePath, blobSize);
-                if (resultFilter == null || (resultFilter != null && resultFilter(nodeInfo)))
-                {
+                var nodeInfo = new GitFileInfo(nodePath, blobSize);
+                //if (resultFilter == null || (resultFilter != null && resultFilter(nodeInfo)))
+                //{
                     files.Add(nodeInfo);
-                }
+                //}
             }
 
             return files;

@@ -13,28 +13,35 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NuGetGallery;
+using static NuGet.Jobs.GitHubIndexer.RepoUtils;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
     public class ReposIndexer
     {
         private const string WorkingDirectory = "workdir";
-        private const string GitHubUsageFilePath = WorkingDirectory + "GitHubUsage.v1.json";
-        private static readonly string ExecutionDirectory = WorkingDirectory + Path.DirectorySeparatorChar + "exec";
+        private static readonly string GitHubUsageFilePath = WorkingDirectory + Path.DirectorySeparatorChar + "GitHubUsage.v1.json";
+        public static readonly string ExecutionDirectory = WorkingDirectory + Path.DirectorySeparatorChar + "exec";
 
         private readonly IGitRepoSearcher _searcher;
         private readonly ILogger<ReposIndexer> _logger;
-        private readonly RepoUtils _repoUtils;
         private readonly int _maxDegreeOfParallelism;
+        private readonly IRepositoriesCache _repoCache;
+        private readonly IRepoFetcher _repoFetcher;
+        private readonly IConfigFileParser _configFileParser;
 
         public ReposIndexer(IGitRepoSearcher searcher,
             ILogger<ReposIndexer> logger,
-            RepoUtils repoUtils,
+            IRepositoriesCache repoCache,
+            IConfigFileParser configFileParser,
+            IRepoFetcher repoFetcher,
             IOptionsSnapshot<GitHubIndexerConfiguration> configuration)
         {
             _searcher = searcher ?? throw new ArgumentNullException(nameof(searcher));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
+            _repoCache = repoCache ?? throw new ArgumentNullException(nameof(repoCache));
+            _configFileParser = configFileParser ?? throw new ArgumentNullException(nameof(configFileParser));
+            _repoFetcher = repoFetcher ?? throw new ArgumentNullException(nameof(repoFetcher));
 
             if (configuration == null)
             {
@@ -82,114 +89,116 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
         {
-            _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
-
-            var repoFolder = ExecutionDirectory + Path.DirectorySeparatorChar + repo.Id;
-            var repoCacheFile = repoFolder + "-Cache.json";
-
-            // Clean previous fetched stuff if it's there (to avoid checkout conflicts)
-            CleanDirectory(new DirectoryInfo(repoFolder));
-
-            // Check Repo cache file
-            if (File.Exists(repoCacheFile))
+            if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
             {
-                repo.AddDependencies(JsonConvert.DeserializeObject<IReadOnlyList<string>>(File.ReadAllText(repoCacheFile)));
-                return repo.ToRepositoryInformation();
+              return cachedVersion;
             }
 
-            // Init an empty Git Repo
-            LibGit2Sharp.Repository.Init(repoFolder);
-            using (var localRepo = new LibGit2Sharp.Repository(repoFolder))
-            {
-                // Add the origin remote
-                localRepo.Network.Remotes.Add("origin", repo.Url);
+            _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
+            using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo)) {
+                List<GitFileInfo> filePaths = fetchedRepo.GetFileInfos(); // Paths in the Git Repo
+                IReadOnlyList<ICheckedOutFile> checkedOutFiles = 
+                    fetchedRepo.CheckoutFiles(
+                        filePaths
+                        .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None) // TODO: Filter by blobSize too!
+                        .Select(x => x.Path) 
+                        .ToList()); // List of Git files that are on-disk
 
-                var remote = localRepo.Network.Remotes["origin"];
-                // Get the HEAD ref to only fetch the main branch
-                var headRef = new string[] { "refs/heads/" + repo.MainBranch };
-
-                // Fetch
-                LibGit2Sharp.Commands.Fetch(localRepo, remote.Name, headRef, null, "");
-
-                // Get the files tree
-                string mainBranchRef = "refs/remotes/origin/" + repo.MainBranch;
-                var fileTree = localRepo.Branches[mainBranchRef].Commits.ToList()[0].Tree;
-                var fullPath = Path.GetFullPath(repoFolder);
-                var filesToParse = _repoUtils
-                    .ListTree(fileTree, "", localRepo, file => Filters.GetConfigFileType(file.Path) != Filters.ConfigFileType.NONE)
-                    .Where(f => (fullPath + Path.DirectorySeparatorChar + f.Path).Length < 260)
-                    .ToList();
-
-                if (filesToParse.Any())
-                {
-                    _logger.LogInformation("[{RepoName}] Found {0} config files.", repo.Id, filesToParse.Count);
-
-                    // Checkout the files
-                    localRepo.CheckoutPaths(mainBranchRef, filesToParse.Select(f => f.Path), new LibGit2Sharp.CheckoutOptions());
-
-                    // Parse files and add them to the repo
-                    repo.AddDependencies(filesToParse
-                        .SelectMany(file =>
-                        {
-                            _logger.LogDebug("[{RepoName}] Parsing file: {FileName}", repo.Id, file.Path);
-                            using (var fileStream = new FileStream(Path.Combine(repoFolder, file.Path), FileMode.Open))
-                            {
-                                List<string> res;
-                                if (Filters.GetConfigFileType(file.Path) == Filters.ConfigFileType.PKG_CONFIG)
-                                {
-                                    res = _repoUtils.ParsePackagesConfig(fileStream, repo.Id);
-                                }
-                                else
-                                {
-                                    res = _repoUtils.ParseProjFile(fileStream, repo.Id);
-                                }
-
-                                _logger.LogDebug("[{RepoName}] Found {Count} dependencies!", repo.Id, res.Count);
-
-                                return res;
-                            }
-                        }));
+                foreach (var cfgFile in checkedOutFiles) {
+                    IReadOnlyList<string> dependencies = _configFileParser.Parse(cfgFile);
+                    repo.AddDependencies(dependencies);
                 }
             }
 
             var result = repo.ToRepositoryInformation();
-
-            // Write the cache file. In case the job crashes, we can resume the progress
-            File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(result.Dependencies));
-            CleanDirectory(new DirectoryInfo(repoFolder)); //Directory.Delete(repoFolder, true); does not work!
-
+            _repoCache.Persist(result);
             return result;
+             ///////////////////////////////////////////////////////////////////////
+             ///////////////////////////////////////////////////////////////////////
+             ///////////////////////////////////////////////////////////////////////
+             ///////////////////////////////////////////////////////////////////////
+             ///////////////////////////////////////////////////////////////////////
+             ///////////////////////////////////////////////////////////////////////
+            //_logger.LogInformation("Starting indexing for repo {name}", repo.Id);
+
+            //var repoFolder = ExecutionDirectory + Path.DirectorySeparatorChar + repo.Id;
+            //var repoCacheFile = repoFolder + "-Cache.json";
+
+            //// Clean previous fetched stuff if it's there (to avoid checkout conflicts)
+            //CleanDirectory(new DirectoryInfo(repoFolder));
+
+            //// Check Repo cache file
+            //if (File.Exists(repoCacheFile))
+            //{
+            //    repo.AddDependencies(JsonConvert.DeserializeObject<IReadOnlyList<string>>(File.ReadAllText(repoCacheFile)));
+            //    return repo.ToRepositoryInformation();
+            //}
+
+            //// Init an empty Git Repo
+            //LibGit2Sharp.Repository.Init(repoFolder);
+            //using (var localRepo = new LibGit2Sharp.Repository(repoFolder))
+            //{
+            //    //// Add the origin remote
+            //    //localRepo.Network.Remotes.Add("origin", repo.Url);
+
+            //    //var remote = localRepo.Network.Remotes["origin"];
+            //    //// Get the HEAD ref to only fetch the main branch
+            //    //var headRef = new string[] { "refs/heads/" + repo.MainBranch };
+
+            //    //// Fetch
+            //    //LibGit2Sharp.Commands.Fetch(localRepo, remote.Name, headRef, null, "");
+
+            //    // Get the files tree
+            //                    //string mainBranchRef = "refs/remotes/origin/" + repo.MainBranch;
+            //                    //var fileTree = localRepo.Branches[mainBranchRef].Commits.ToList()[0].Tree;
+            //                    //var fullPath = Path.GetFullPath(repoFolder);
+            //                    //var filesToParse = _repoUtils
+            //                    //    .ListTree(fileTree, "", localRepo, file => Filters.GetConfigFileType(file.Path) != Filters.ConfigFileType.None)
+            //                    //    .Where(f => (fullPath + Path.DirectorySeparatorChar + f.Path).Length < 260)
+            //                    //    .ToList();
+
+            //    if (filesToParse.Any())
+            //    {
+            //        _logger.LogInformation("[{RepoName}] Found {0} config files.", repo.Id, filesToParse.Count);
+
+            //        // Checkout the files
+            //        localRepo.CheckoutPaths(mainBranchRef, filesToParse.Select(f => f.Path), new LibGit2Sharp.CheckoutOptions());
+
+            //        // Parse files and add them to the repo
+            //        repo.AddDependencies(filesToParse
+            //            .SelectMany(file =>
+            //            {
+            //                _logger.LogDebug("[{RepoName}] Parsing file: {FileName}", repo.Id, file.Path);
+            //                using (var fileStream = new FileStream(Path.Combine(repoFolder, file.Path), FileMode.Open))
+            //                {
+            //                    List<string> res;
+            //                    if (Filters.GetConfigFileType(file.Path) == Filters.ConfigFileType.PkgConfig)
+            //                    {
+            //                        res = _repoUtils.ParsePackagesConfig(fileStream, repo.Id);
+            //                    }
+            //                    else
+            //                    {
+            //                        res = _repoUtils.ParseProjFile(fileStream, repo.Id);
+            //                    }
+
+            //                    _logger.LogDebug("[{RepoName}] Found {Count} dependencies!", repo.Id, res.Count);
+
+            //                    return res;
+            //                }
+            //            }));
+            //    }
+            //}
+
+            //var result = repo.ToRepositoryInformation();
+
+            //// Write the cache file. In case the job crashes, we can resume the progress
+            //File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(result.Dependencies));
+            //CleanDirectory(new DirectoryInfo(repoFolder)); //Directory.Delete(repoFolder, true); does not work!
+
+            //return result;
         }
 
-        /// <summary>
-        /// Recursivly deletes all the files and sub-directories in a directory
-        /// </summary>
-        private void CleanDirectory(DirectoryInfo dir)
-        {
-            if (!dir.Exists)
-            {
-                return;
-            }
-            foreach (var childDir in dir.GetDirectories())
-            {
-                CleanDirectory(childDir);
-            }
-
-            foreach (var file in dir.GetFiles())
-            {
-                file.IsReadOnly = false;
-                file.Delete();
-            }
-
-            if (dir.GetFiles().Length == 0)
-            {
-                dir.Delete();
-            }
-            else
-            {
-                _logger.LogError("The directory {0} is not empty!", dir.FullName);
-            }
-        }
+       
 
         private async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
         {
