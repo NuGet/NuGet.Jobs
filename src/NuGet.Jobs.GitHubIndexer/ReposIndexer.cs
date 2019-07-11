@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -13,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NuGetGallery;
-using static NuGet.Jobs.GitHubIndexer.RepoUtils;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
