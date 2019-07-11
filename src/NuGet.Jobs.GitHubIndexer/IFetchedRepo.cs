@@ -9,8 +9,8 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public interface IFetchedRepo : IDisposable
     {
-        List<GitFileInfo> GetFileInfos();
+        IReadOnlyList<GitFileInfo> GetFileInfos();
 
-        List<ICheckedOutFile> CheckoutFiles(IReadOnlyCollection<string> filePaths);
+        IReadOnlyList<ICheckedOutFile> CheckoutFiles(IReadOnlyCollection<string> filePaths);
     }
 }

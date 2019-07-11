@@ -96,8 +96,8 @@ namespace NuGet.Jobs.GitHubIndexer
 
             _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
             using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo)) {
-                List<GitFileInfo> filePaths = fetchedRepo.GetFileInfos(); // Paths in the Git Repo
-                IReadOnlyList<ICheckedOutFile> checkedOutFiles = 
+                var filePaths = fetchedRepo.GetFileInfos(); // Paths in the Git Repo
+                var checkedOutFiles = 
                     fetchedRepo.CheckoutFiles(
                         filePaths
                         .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None) // TODO: Filter by blobSize too!
@@ -105,7 +105,7 @@ namespace NuGet.Jobs.GitHubIndexer
                         .ToList()); // List of Git files that are on-disk
 
                 foreach (var cfgFile in checkedOutFiles) {
-                    IReadOnlyList<string> dependencies = _configFileParser.Parse(cfgFile);
+                    var dependencies = _configFileParser.Parse(cfgFile);
                     repo.AddDependencies(dependencies);
                 }
             }

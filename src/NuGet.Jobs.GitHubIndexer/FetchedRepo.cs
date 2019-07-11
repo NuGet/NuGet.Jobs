@@ -44,7 +44,7 @@ namespace NuGet.Jobs.GitHubIndexer
             LibGit2Sharp.Commands.Fetch(_repo, remote.Name, headRef, null, "");
         }
 
-        public List<ICheckedOutFile> CheckoutFiles(IReadOnlyCollection<string> filePaths)
+        public IReadOnlyList<ICheckedOutFile> CheckoutFiles(IReadOnlyCollection<string> filePaths)
         {
             if(!filePaths.Any())
             {
@@ -64,7 +64,7 @@ namespace NuGet.Jobs.GitHubIndexer
             CleanDirectory(new DirectoryInfo(_repoFolder));
         }
 
-        public List<GitFileInfo> GetFileInfos()
+        public IReadOnlyList<GitFileInfo> GetFileInfos()
         {
             string mainBranchRef = "refs/remotes/origin/" + _repoInfo.MainBranch;
             var fileTree = _repo.Branches[mainBranchRef].Commits.ToList()[0].Tree;
