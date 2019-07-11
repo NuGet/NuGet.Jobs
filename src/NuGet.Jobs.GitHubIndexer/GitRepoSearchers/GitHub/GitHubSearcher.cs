@@ -95,8 +95,9 @@ namespace NuGet.Jobs.GitHubIndexer
             return response.Result;
         }
 
-        private async Task<List<WritableRepositoryInformation>> GetResultsFromGitHub()
+        private async Task<IReadOnlyList<WritableRepositoryInformation>> GetResultsFromGitHub()
         {
+            _logger.LogInformation("Starting GitHub search with configuration: {ConfigInfo}", GetConfigInfo());
             _throttleResetTime = DateTimeOffset.Now;
             var upperStarBound = int.MaxValue;
             var resultList = new List<WritableRepositoryInformation>();

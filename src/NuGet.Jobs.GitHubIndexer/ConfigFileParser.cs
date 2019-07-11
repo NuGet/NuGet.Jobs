@@ -18,14 +18,25 @@ namespace NuGet.Jobs.GitHubIndexer
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Parses a file and returns the NuGet dependencies stored in the file.
+        /// If the file is an invalid config or project file, the call returns an empty list.
+        /// </summary>
+        /// <param name="file">File to parse</param>
+        /// <returns>List of NuGet dependencies listed in the file</returns>
         public IReadOnlyList<string> Parse(ICheckedOutFile file)
         {
-            _logger.LogTrace("[{RepoName}] Parsing file {FileName} !", file.RepoId, file.Path);
+            var fileType = Filters.GetConfigFileType(file.Path);
+            if (fileType == Filters.ConfigFileType.None)
+            {
+                return Array.Empty<string>();
+            }
 
+            _logger.LogTrace("[{RepoName}] Parsing file {FileName} !", file.RepoId, file.Path);
             using (var fileStream = file.openFile())
             {
                 IReadOnlyList<string> res;
-                if (Filters.GetConfigFileType(file.Path) == Filters.ConfigFileType.PkgConfig)
+                if (fileType == Filters.ConfigFileType.PkgConfig)
                 {
                     res = _repoUtils.ParsePackagesConfig(fileStream, file.RepoId);
                 }

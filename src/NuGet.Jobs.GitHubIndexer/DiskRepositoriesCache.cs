@@ -19,6 +19,10 @@ namespace NuGet.Jobs.GitHubIndexer
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Creates a cache file for the specified repo that contains the repo's dependencies.
+        /// </summary>
+        /// <param name="repo">Repo to persist on disk</param>
         public void Persist(RepositoryInformation repo)
         {
             var repoFolder = ReposIndexer.ExecutionDirectory + Path.DirectorySeparatorChar + repo.Id;
@@ -27,6 +31,12 @@ namespace NuGet.Jobs.GitHubIndexer
             File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(repo.Dependencies));
         }
 
+        /// <summary>
+        /// Tries to read the cache file of a repository.
+        /// </summary>
+        /// <param name="repo">Repo to read the cache file for</param>
+        /// <param name="cached">The read cached version or null if none has been created.</param>
+        /// <returns>true if a cache file has been found and loaded.</returns>
         public bool TryGetCachedVersion(WritableRepositoryInformation repo, out RepositoryInformation cached)
         {
             var repoFolder = ReposIndexer.ExecutionDirectory + Path.DirectorySeparatorChar + repo.Id;

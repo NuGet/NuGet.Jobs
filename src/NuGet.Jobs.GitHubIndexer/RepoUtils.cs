@@ -39,7 +39,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="currentPath">The initial file path. (Default is "")</param>
         /// <param name="repo">The repository containing the file tree</param>
         /// <returns>List of nodes that are in the file tree.</returns>
-        public List<GitFileInfo> ListTree(LibGit2Sharp.Tree tree, string currentPath, LibGit2Sharp.Repository repo)
+        public IReadOnlyList<GitFileInfo> ListTree(LibGit2Sharp.Tree tree, string currentPath, LibGit2Sharp.Repository repo)
         {
             var files = new List<GitFileInfo>();
             foreach (var node in tree)
@@ -77,7 +77,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="fileStream">Stream to the packages.config file</param>
         /// <param name="repoName">The name of the repository containing the file (for logging purposes)</param>
         /// <returns>A list of NuGet packages listed in this config file</returns>
-        public List<string> ParsePackagesConfig(Stream fileStream, string repoName)
+        public IReadOnlyList<string> ParsePackagesConfig(Stream fileStream, string repoName)
         {
             try
             {
@@ -92,7 +92,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 _logger.LogError(0, e, "[{RepoName}] Cannot parse file", repoName);
             }
 
-            return new List<string>();
+            return Array.Empty<string>();
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="fileStream">Stream to the packages.config file</param>
         /// <param name="repoName">The name of the repository containing the file (for logging purposes)</param>
         /// <returns>A list of NuGet packages listed in this config file</returns>
-        public List<string> ParseProjFile(Stream fileStream, string repoName)
+        public IReadOnlyList<string> ParseProjFile(Stream fileStream, string repoName)
         {
             try
             {
@@ -122,7 +122,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 _logger.LogError(0, e, "[{RepoName}] Cannot parse file", repoName);
             }
 
-            return new List<string>();
+            return Array.Empty<string>();
         }
     }
 }

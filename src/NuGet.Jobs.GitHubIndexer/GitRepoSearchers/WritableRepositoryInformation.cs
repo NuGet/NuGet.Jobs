@@ -27,11 +27,8 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public string Id { get; }
         public string Description { get; }
-
         public string Url { get; }
-
         public int Stars { get; }
-
         public string MainBranch { get; }
 
         /// <summary>

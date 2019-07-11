@@ -5,6 +5,11 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public interface IRepoFetcher
     {
+        /// <summary>
+        /// Fetches a repo.
+        /// </summary>
+        /// <param name="repo">Repo to fetch</param>
+        /// <returns>Fetched repository.</returns>
         IFetchedRepo FetchRepo(WritableRepositoryInformation repo);
     }
 }

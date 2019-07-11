@@ -7,10 +7,20 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public interface ICheckedOutFile
     {
+        /// <summary>
+        /// Opens a Stream to the checkedout file.
+        /// </summary>
+        /// <returns>Stream containing the file data.</returns>
         Stream openFile();
 
+        /// <summary>
+        /// Path to the file.
+        /// </summary>
         string Path { get; }
 
+        /// <summary>
+        /// Id of the repository containing the file.
+        /// </summary>
         string RepoId { get; }
     }
 }

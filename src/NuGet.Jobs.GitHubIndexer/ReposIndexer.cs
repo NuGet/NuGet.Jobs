@@ -96,13 +96,13 @@ namespace NuGet.Jobs.GitHubIndexer
             _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
             using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo))
             {
-                var filePaths = fetchedRepo.GetFileInfos(); // Paths in the Git Repo
+                var filePaths = fetchedRepo.GetFileInfos(); // Paths of all files in the Git Repo
                 var checkedOutFiles =
                     fetchedRepo.CheckoutFiles(
                         filePaths
-                        .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None) // TODO: Filter by blobSize too!
+                        .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None) // TODO: Filter by blobSize too! (https://github.com/NuGet/NuGetGallery/issues/7339)
                         .Select(x => x.Path)
-                        .ToList()); // List of Git files that are on-disk
+                        .ToList()); // List of config files that are on-disk
 
                 foreach (var cfgFile in checkedOutFiles)
                 {
@@ -115,8 +115,6 @@ namespace NuGet.Jobs.GitHubIndexer
             _repoCache.Persist(result);
             return result;
         }
-
-
 
         private async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
         {

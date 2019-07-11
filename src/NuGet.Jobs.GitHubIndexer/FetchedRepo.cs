@@ -45,11 +45,16 @@ namespace NuGet.Jobs.GitHubIndexer
             LibGit2Sharp.Commands.Fetch(_repo, remote.Name, headRef, null, "");
         }
 
+        /// <summary>
+        /// Persists the specified files to disk.
+        /// </summary>
+        /// <param name="filePaths">Paths to files in the repository</param>
+        /// <returns>List of the persisted files on disk. The list is empty if filePaths is empty.</returns>
         public IReadOnlyList<ICheckedOutFile> CheckoutFiles(IReadOnlyCollection<string> filePaths)
         {
             if(!filePaths.Any())
             {
-                return new List<ICheckedOutFile>();
+                return Array.Empty<ICheckedOutFile>();
             }
 
             _logger.LogInformation("[{RepoName}] Checking out {0} files.", _repoInfo.Id, filePaths.Count);
@@ -59,6 +64,9 @@ namespace NuGet.Jobs.GitHubIndexer
             return filePaths.Select(x => new CheckedOutFile(Path.Combine(_repoFolder, x), _repoInfo.Id) as ICheckedOutFile).ToList();
         }
 
+        /// <summary>
+        /// Cleans the repository folder and releases LibGit2Sharp hooks to the .git folder
+        /// </summary>
         public void Dispose()
         {
             _logger.LogTrace("[{RepoName}] Cleaning repo folder.", _repoInfo.Id);
@@ -66,6 +74,10 @@ namespace NuGet.Jobs.GitHubIndexer
             CleanDirectory(new DirectoryInfo(_repoFolder));
         }
 
+        /// <summary>
+        /// Returns a list of all files in the repository that are available in the repo's default branch.
+        /// </summary>
+        /// <returns>List of files in the repository</returns>
         public IReadOnlyList<GitFileInfo> GetFileInfos()
         {
             string mainBranchRef = "refs/remotes/origin/" + _repoInfo.MainBranch;

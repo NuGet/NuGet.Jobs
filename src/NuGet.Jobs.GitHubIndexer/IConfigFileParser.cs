@@ -7,6 +7,11 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public interface IConfigFileParser
     {
+        /// <summary>
+        /// Parses a file and returns the NuGet dependencies stored in the file.
+        /// </summary>
+        /// <param name="file">File to parse</param>
+        /// <returns>List of NuGet dependencies listed in the file</returns>
         IReadOnlyList<string> Parse(ICheckedOutFile file);
     }
 }
