@@ -51,7 +51,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             mockFetchedRepo
                 .Setup(x => x.CheckoutFiles(It.IsAny<IReadOnlyCollection<string>>()))
                 .Returns((IReadOnlyCollection<string> paths) =>
-                    paths.Select(x => new CheckedOutFile(filePath: "", repoId: searchResult.Id) as ICheckedOutFile).ToList());
+                    paths.Select(x => new CheckedOutFile(filePath: x, repoId: searchResult.Id) as ICheckedOutFile).ToList());
 
             var mockRepoFetcher = new Mock<IRepoFetcher>();
             mockRepoFetcher
@@ -106,7 +106,12 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     new GitFileInfo(configFileNames[3], 1)
                 };
 
-                var indexer = CreateIndexer(repo, repoFiles, (ICheckedOutFile file) => repoDependencies);
+                var indexer = CreateIndexer(repo, repoFiles, (ICheckedOutFile file) =>
+                    {
+                        // Make sure that the Indexer filters out the non-config files
+                        Assert.True(Array.Exists(configFileNames, x => string.Equals(x, file.Path)));
+                        return repoDependencies;
+                    });
                 await indexer.Run();
 
                 var result = repo.ToRepositoryInformation();

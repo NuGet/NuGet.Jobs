@@ -81,7 +81,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
             // TODO: Replace with upload to Azure Blob Storage (https://github.com/NuGet/NuGetGallery/issues/7211)
             File.WriteAllText(GitHubUsageFilePath, JsonConvert.SerializeObject(finalList));
-            
+
             // Delete the exec directory
             Directory.Delete(ExecutionDirectory, true);
         }
@@ -90,20 +90,22 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
             {
-              return cachedVersion;
+                return cachedVersion;
             }
 
             _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
-            using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo)) {
+            using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo))
+            {
                 var filePaths = fetchedRepo.GetFileInfos(); // Paths in the Git Repo
-                var checkedOutFiles = 
+                var checkedOutFiles =
                     fetchedRepo.CheckoutFiles(
                         filePaths
                         .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None) // TODO: Filter by blobSize too!
-                        .Select(x => x.Path) 
+                        .Select(x => x.Path)
                         .ToList()); // List of Git files that are on-disk
 
-                foreach (var cfgFile in checkedOutFiles) {
+                foreach (var cfgFile in checkedOutFiles)
+                {
                     var dependencies = _configFileParser.Parse(cfgFile);
                     repo.AddDependencies(dependencies);
                 }
@@ -114,7 +116,7 @@ namespace NuGet.Jobs.GitHubIndexer
             return result;
         }
 
-       
+
 
         private async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
         {
