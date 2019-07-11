@@ -79,10 +79,11 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ThenBy(x => x.Id)
                 .ToList();
 
+            // TODO: Replace with upload to Azure Blob Storage (https://github.com/NuGet/NuGetGallery/issues/7211)
             File.WriteAllText(GitHubUsageFilePath, JsonConvert.SerializeObject(finalList));
             
             // Delete the exec directory
-            Directory.CreateDirectory(ExecutionDirectory);
+            Directory.Delete(ExecutionDirectory, true);
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)

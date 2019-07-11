@@ -15,16 +15,16 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly WritableRepositoryInformation _repoInfo;
         private readonly string _repoFolder;
         private readonly RepoUtils _repoUtils;
-        private readonly ILogger<FetchedRepo> _logger;
+        private readonly ILogger _logger;
         private LibGit2Sharp.Repository _repo;
 
-        private FetchedRepo(WritableRepositoryInformation repoInfo, RepoUtils repoUtils)
+        private FetchedRepo(WritableRepositoryInformation repoInfo, RepoUtils repoUtils, ILogger logger)
         {
             _repoInfo = repoInfo ?? throw new ArgumentNullException(nameof(repoInfo));
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
             _repoFolder = ReposIndexer.ExecutionDirectory + Path.DirectorySeparatorChar + repoInfo.Id;
-            
-            _logger = new LoggerFactory().CreateLogger<FetchedRepo>(); // TODO: OMG PLZ REMOVE THIS (Maybe?)
+
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger)); // TODO: OMG PLZ REMOVE THIS (Maybe?)
         }
 
         private void Init()
@@ -40,6 +40,7 @@ namespace NuGet.Jobs.GitHubIndexer
             // Get the HEAD ref to only fetch the main branch
             var headRef = new string[] { "refs/heads/" + _repoInfo.MainBranch };
 
+            _logger.LogTrace("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
             // Fetch
             LibGit2Sharp.Commands.Fetch(_repo, remote.Name, headRef, null, "");
         }
@@ -60,6 +61,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public void Dispose()
         {
+            _logger.LogTrace("[{RepoName}] Cleaning repo folder.", _repoInfo.Id);
             _repo.Dispose();
             CleanDirectory(new DirectoryInfo(_repoFolder));
         }
@@ -76,9 +78,9 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ToList();
         }
 
-        public static FetchedRepo GetInstance(WritableRepositoryInformation repo, RepoUtils repoUtils)
+        public static FetchedRepo GetInstance(WritableRepositoryInformation repo, RepoUtils repoUtils, ILogger logger)
         {
-            var fetchedRepo = new FetchedRepo(repo, repoUtils);
+            var fetchedRepo = new FetchedRepo(repo, repoUtils, logger);
             fetchedRepo.Init();
             return fetchedRepo;
         }
