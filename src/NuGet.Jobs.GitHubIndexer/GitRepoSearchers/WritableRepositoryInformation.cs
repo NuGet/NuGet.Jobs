@@ -24,7 +24,6 @@ namespace NuGet.Jobs.GitHubIndexer
             MainBranch = mainBranch ?? throw new ArgumentNullException(nameof(mainBranch));
         }
 
-
         public string Id { get; }
         public string Description { get; }
         public string Url { get; }
