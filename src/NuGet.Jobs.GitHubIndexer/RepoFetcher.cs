@@ -9,17 +9,17 @@ namespace NuGet.Jobs.GitHubIndexer
     public class RepoFetcher : IRepoFetcher
     {
         private readonly RepoUtils _repoUtils;
-        private readonly ILogger<RepoFetcher> _logger;
+        private readonly ILoggerFactory _loggerFactory;
 
-        public RepoFetcher(RepoUtils repoUtils, ILogger<RepoFetcher> logger)
+        public RepoFetcher(RepoUtils repoUtils, ILoggerFactory loggerFactory)
         {
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         public IFetchedRepo FetchRepo(WritableRepositoryInformation repo)
         {
-            return FetchedRepo.GetInstance(repo, _repoUtils, _logger);
+            return FetchedRepo.GetInstance(repo, _repoUtils, _loggerFactory.CreateLogger<FetchedRepo>());
         }
     }
 }

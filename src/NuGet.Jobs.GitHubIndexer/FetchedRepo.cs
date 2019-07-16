@@ -15,10 +15,10 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly WritableRepositoryInformation _repoInfo;
         private readonly string _repoFolder;
         private readonly RepoUtils _repoUtils;
-        private readonly ILogger _logger;
+        private readonly ILogger<FetchedRepo> _logger;
         private LibGit2Sharp.Repository _repo;
 
-        private FetchedRepo(WritableRepositoryInformation repoInfo, RepoUtils repoUtils, ILogger logger)
+        private FetchedRepo(WritableRepositoryInformation repoInfo, RepoUtils repoUtils, ILogger<FetchedRepo> logger)
         {
             _repoInfo = repoInfo ?? throw new ArgumentNullException(nameof(repoInfo));
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
@@ -89,7 +89,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ToList();
         }
 
-        public static FetchedRepo GetInstance(WritableRepositoryInformation repo, RepoUtils repoUtils, ILogger logger)
+        public static FetchedRepo GetInstance(WritableRepositoryInformation repo, RepoUtils repoUtils, ILogger<FetchedRepo> logger)
         {
             var fetchedRepo = new FetchedRepo(repo, repoUtils, logger);
             fetchedRepo.Init();
