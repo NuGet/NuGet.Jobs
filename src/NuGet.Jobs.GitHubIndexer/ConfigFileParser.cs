@@ -33,7 +33,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             _logger.LogTrace("[{RepoName}] Parsing file {FileName} !", file.RepoId, file.Path);
-            using (var fileStream = file.openFile())
+            using (var fileStream = file.OpenFile())
             {
                 IReadOnlyList<string> res;
                 if (fileType == Filters.ConfigFileType.PkgConfig)

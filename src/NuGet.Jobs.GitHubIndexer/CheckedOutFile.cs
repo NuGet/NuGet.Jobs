@@ -52,7 +52,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// </exception>
         /// 
         /// <returns>FileStream in FileMode.Open mode</returns>
-        public Stream openFile()
+        public Stream OpenFile()
         {
             return new FileStream(Path, FileMode.Open);
         }

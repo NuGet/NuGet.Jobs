@@ -11,7 +11,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// Opens a Stream to the checkedout file.
         /// </summary>
         /// <returns>Stream containing the file data.</returns>
-        Stream openFile();
+        Stream OpenFile();
 
         /// <summary>
         /// Path to the file.
