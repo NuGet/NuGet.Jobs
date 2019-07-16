@@ -13,7 +13,7 @@ namespace NuGet.Jobs.GitHubIndexer
     /// </summary>
     public class WritableRepositoryInformation
     {
-        private readonly HashSet<string> _writableDependencies = new HashSet<string>(); // Using a HashSet to avoid duplicates
+        private readonly HashSet<string> _writableDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // Using a HashSet to avoid duplicates
 
         public WritableRepositoryInformation(string id, string url, int stars, string description, string mainBranch)
         {
