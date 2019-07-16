@@ -69,7 +69,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 return new PackagesConfigReader(fileStream)
                     .GetPackages()
                     .Select(p => p.PackageIdentity.Id)
-                    .Where(pId => Filters.IsValidPackageId(pId))
+                    .Where(Filters.IsValidPackageId)
                     .ToList();
             }
             catch (Exception e)
@@ -99,7 +99,7 @@ namespace NuGet.Jobs.GitHubIndexer
                         return includeAttr != null && !includeAttr.ToString().Contains("$");
                     })
                     .Select(p => p.Attribute("Include").Value)
-                    .Where(pId => Filters.IsValidPackageId(pId))
+                    .Where(Filters.IsValidPackageId)
                     .ToList();
             }
             catch (Exception e)
