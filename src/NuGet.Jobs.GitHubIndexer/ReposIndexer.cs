@@ -87,8 +87,8 @@ namespace NuGet.Jobs.GitHubIndexer
             File.WriteAllText(GitHubUsageFilePath, JsonConvert.SerializeObject(finalList));
 
             // Delete the repos and cache directory
-            Directory.Delete(RepositoriesDirectory, true);
-            Directory.Delete(CacheDirectory, true);
+            Directory.Delete(RepositoriesDirectory, recursive: true);
+            Directory.Delete(CacheDirectory, recursive: true);
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
