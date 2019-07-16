@@ -91,14 +91,16 @@ namespace NuGet.Jobs.GitHubIndexer
             try
             {
                 var projDocument = XDocument.Load(fileStream);
-                var refs = projDocument.DescendantNodes().Where(node => node is XElement && ((XElement)node).Name.LocalName.Equals("PackageReference")).Select(n => (XElement)n);
+                var refs = 
+                    projDocument
+                        .DescendantNodes()
+                        .Where(node => node is XElement)
+                        .Where(node => ((XElement)node).Name.LocalName.Equals("PackageReference"))
+                        .Select(n => (XElement)n);
                 return refs
-                    .Where(p => // Select all that have an "Include" attribute
-                    {
-                        var includeAttr = p.Attribute("Include");
-                        return includeAttr != null && !includeAttr.ToString().Contains("$");
-                    })
-                    .Select(p => p.Attribute("Include").Value)
+                    .Select(p => p.Attribute("Include"))
+                    .Where(includeAttr => includeAttr != null && !includeAttr.ToString().Contains("$"))// Select all that have an "Include" attribute
+                    .Select(includeAttr => includeAttr.Value)
                     .Where(Filters.IsValidPackageId)
                     .ToList();
             }
