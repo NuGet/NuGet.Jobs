@@ -48,7 +48,7 @@ namespace NuGet.Jobs.GitHubIndexer
                     continue;
                 }
 
-                var blobSize = (node.Target as LibGit2Sharp.Blob).Size;
+                var blobSize = ((LibGit2Sharp.Blob)node.Target).Size;
                 var nodeInfo = new GitFileInfo(nodePath, blobSize);
                 files.Add(nodeInfo);
             }
