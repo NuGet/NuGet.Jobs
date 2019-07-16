@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
-using static NuGet.Jobs.GitHubIndexer.RepoUtils;
 
 namespace NuGet.Jobs.GitHubIndexer
 {

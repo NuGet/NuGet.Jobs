@@ -10,7 +10,6 @@ using Microsoft.Extensions.Options;
 using Moq;
 using NuGetGallery;
 using Xunit;
-using static NuGet.Jobs.GitHubIndexer.RepoUtils;
 
 namespace NuGet.Jobs.GitHubIndexer.Tests
 {
