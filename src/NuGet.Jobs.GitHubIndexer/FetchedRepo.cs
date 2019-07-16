@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
 using static NuGet.Jobs.GitHubIndexer.RepoUtils;
 
@@ -16,7 +17,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly string _repoFolder;
         private readonly RepoUtils _repoUtils;
         private readonly ILogger<FetchedRepo> _logger;
-        private LibGit2Sharp.Repository _repo;
+        private Repository _repo;
 
         private FetchedRepo(WritableRepositoryInformation repoInfo, RepoUtils repoUtils, ILogger<FetchedRepo> logger)
         {
@@ -29,8 +30,8 @@ namespace NuGet.Jobs.GitHubIndexer
         private void Init()
         {
             CleanDirectory(new DirectoryInfo(_repoFolder));
-            LibGit2Sharp.Repository.Init(_repoFolder);
-            _repo = new LibGit2Sharp.Repository(_repoFolder);
+            Repository.Init(_repoFolder);
+            _repo = new Repository(_repoFolder);
 
             // Add the origin remote
             _repo.Network.Remotes.Add("origin", _repoInfo.Url);
@@ -41,7 +42,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
             _logger.LogTrace("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
             // Fetch
-            LibGit2Sharp.Commands.Fetch(_repo, remote.Name, headRef, null, "");
+            Commands.Fetch(_repo, remote.Name, headRef, options: null, logMessage: "");
         }
 
         /// <summary>
@@ -56,9 +57,9 @@ namespace NuGet.Jobs.GitHubIndexer
                 return Array.Empty<ICheckedOutFile>();
             }
 
-            _logger.LogInformation("[{RepoName}] Checking out {0} files.", _repoInfo.Id, filePaths.Count);
+            _logger.LogInformation("[{RepoName}] Checking out {FileCount} files.", _repoInfo.Id, filePaths.Count);
             string mainBranchRef = "refs/remotes/origin/" + _repoInfo.MainBranch;
-            _repo.CheckoutPaths(mainBranchRef, filePaths, new LibGit2Sharp.CheckoutOptions());
+            _repo.CheckoutPaths(mainBranchRef, filePaths, new CheckoutOptions());
 
             return filePaths.Select(x => new CheckedOutFile(Path.Combine(_repoFolder, x), _repoInfo.Id) as ICheckedOutFile).ToList();
         }
@@ -105,6 +106,9 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 return;
             }
+
+            // I manually delete the dirs/folders because, for some reason, the Directory.Delete() 
+            // method throws that the .git files are locked (even if they aren't since the Repository's Dispose() method is called before cleaning)
             foreach (var childDir in dir.GetDirectories())
             {
                 CleanDirectory(childDir);
@@ -122,7 +126,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
             else
             {
-                _logger.LogError("The directory {0} is not empty!", dir.FullName);
+                _logger.LogError("The directory {DirName} is not empty!", dir.FullName);
             }
         }
     }
