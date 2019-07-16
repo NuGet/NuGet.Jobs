@@ -82,11 +82,11 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             string mainBranchRef = "refs/remotes/origin/" + _repoInfo.MainBranch;
             var fileTree = _repo.Branches[mainBranchRef].Commits.ToList()[0].Tree;
-            var fullPath = Path.GetFullPath(_repoFolder);
+            var basePathLength = Path.GetFullPath(_repoFolder).Length + 1; // Adding 1 for the separator size
 
             return _repoUtils
                 .ListTree(fileTree, "", _repo)
-                .Where(f => (fullPath + Path.DirectorySeparatorChar + f.Path).Length < 260)
+                .Where(f => ( basePathLength + f.Path.Length) < 260)
                 .ToList();
         }
 
