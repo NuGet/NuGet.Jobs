@@ -25,7 +25,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="repo">Repo to persist on disk</param>
         public void Persist(RepositoryInformation repo)
         {
-            var repoFolder = ReposIndexer.ExecutionDirectory + Path.DirectorySeparatorChar + repo.Id;
+            var repoFolder = Path.Combine(ReposIndexer.ExecutionDirectory, repo.Id);
             var repoCacheFile = repoFolder + CacheFileSuffix;
             _logger.LogTrace("Saving cache for repo {RepoId} to file {FileName}", repo.Id, repoCacheFile);
             File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(repo.Dependencies));
@@ -39,7 +39,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <returns>true if a cache file has been found and loaded.</returns>
         public bool TryGetCachedVersion(WritableRepositoryInformation repo, out RepositoryInformation cached)
         {
-            var repoFolder = ReposIndexer.ExecutionDirectory + Path.DirectorySeparatorChar + repo.Id;
+            var repoFolder = Path.Combine(ReposIndexer.ExecutionDirectory, repo.Id);
             var repoCacheFile = repoFolder + CacheFileSuffix;
 
             _logger.LogTrace("Cache lookup for repo {RepoId}", repo.Id);
