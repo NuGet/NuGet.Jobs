@@ -9,7 +9,7 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public static class Filters
     {
-        private static readonly Regex IdRegex = new Regex(@"^\w+([_.-]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+        private static readonly Regex IdRegex = new Regex(@"^\w+([_.-]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
 
         public enum ConfigFileType
         {
