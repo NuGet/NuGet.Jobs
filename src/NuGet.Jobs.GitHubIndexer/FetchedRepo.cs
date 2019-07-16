@@ -29,7 +29,7 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             _repoInfo = repoInfo ?? throw new ArgumentNullException(nameof(repoInfo));
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
-            _repoFolder = ReposIndexer.RepositoriesDirectory + Path.DirectorySeparatorChar + repoInfo.Id;
+            _repoFolder = Path.Combine(ReposIndexer.RepositoriesDirectory , repoInfo.Id);
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 

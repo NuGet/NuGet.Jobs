@@ -18,10 +18,10 @@ namespace NuGet.Jobs.GitHubIndexer
     public class ReposIndexer
     {
         private const string WorkingDirectory = "workdir";
+
         private static readonly string GitHubUsageFilePath = Path.Combine(WorkingDirectory, "GitHubUsage.v1.json");
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
-
 
         private readonly IGitRepoSearcher _searcher;
         private readonly ILogger<ReposIndexer> _logger;
