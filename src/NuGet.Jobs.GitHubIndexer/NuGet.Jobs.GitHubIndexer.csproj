@@ -46,6 +46,7 @@
     <Compile Include="CheckedOutFile.cs" />
     <Compile Include="ConfigFileParser.cs" />
     <Compile Include="FetchedRepo.cs" />
+    <Compile Include="GitFileInfo.cs" />
     <Compile Include="GitHubIndexerConfiguration.cs" />
     <Compile Include="GitHubSearcherConfiguration.cs" />
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearchWrapper.cs" />

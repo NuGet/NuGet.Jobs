@@ -13,18 +13,6 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class RepoUtils
     {
-        public class GitFileInfo
-        {
-            public GitFileInfo(string path, long blobSize)
-            {
-                Path = path;
-                BlobSize = blobSize;
-            }
-
-            public string Path { get; }
-            public long BlobSize { get; }
-        }
-
         private readonly ILogger<RepoUtils> _logger;
 
         public RepoUtils(ILogger<RepoUtils> logger)
