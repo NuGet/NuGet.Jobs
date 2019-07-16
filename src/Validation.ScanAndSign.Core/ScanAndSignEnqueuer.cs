@@ -38,7 +38,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
             _configuration = configurationAccessor.Value;
         }
 
-        public Task EnqueueScanAsync(Guid validationId, string nupkgUrl)
+        public Task EnqueueScanAsync(Guid validationId, string nupkgUrl, DateTimeOffset? scheduledEnqueueTimeOverride = null)
         {
             if (nupkgUrl == null)
             {
@@ -49,10 +49,11 @@ namespace NuGet.Jobs.Validation.ScanAndSign
                 new ScanAndSignMessage(
                     OperationRequestType.Scan,
                     validationId,
-                    new Uri(nupkgUrl)));
+                    new Uri(nupkgUrl)),
+                scheduledEnqueueTimeOverride);
         }
 
-        public Task EnqueueScanAndSignAsync(Guid validationId, string nupkgUrl, string v3ServiceIndexUrl, IReadOnlyList<string> owners)
+        public Task EnqueueScanAndSignAsync(Guid validationId, string nupkgUrl, string v3ServiceIndexUrl, IReadOnlyList<string> owners, DateTimeOffset? scheduledEnqueueTimeOverride = null)
         {
             if (nupkgUrl == null)
             {
@@ -79,14 +80,15 @@ namespace NuGet.Jobs.Validation.ScanAndSign
                     validationId,
                     new Uri(nupkgUrl),
                     v3ServiceIndexUrl,
-                    owners));
+                    owners),
+                scheduledEnqueueTimeOverride);
         }
 
-        private Task SendScanAndSignMessageAsync(ScanAndSignMessage message)
+        private Task SendScanAndSignMessageAsync(ScanAndSignMessage message, DateTimeOffset? scheduledEnqueueTimeOverride)
         {
             var brokeredMessage = _serializer.Serialize(message);
 
-            var visibleAt = DateTimeOffset.UtcNow + (_configuration.MessageDelay ?? TimeSpan.Zero);
+            var visibleAt = scheduledEnqueueTimeOverride ?? DateTimeOffset.UtcNow + (_configuration.MessageDelay ?? TimeSpan.Zero);
             brokeredMessage.ScheduledEnqueueTimeUtc = visibleAt;
 
             return _topicClient.SendAsync(brokeredMessage);
