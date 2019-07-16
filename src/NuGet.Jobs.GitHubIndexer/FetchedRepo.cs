@@ -23,8 +23,7 @@ namespace NuGet.Jobs.GitHubIndexer
             _repoInfo = repoInfo ?? throw new ArgumentNullException(nameof(repoInfo));
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
             _repoFolder = ReposIndexer.ExecutionDirectory + Path.DirectorySeparatorChar + repoInfo.Id;
-
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger)); // TODO: OMG PLZ REMOVE THIS (Maybe?)
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         private void Init()
