@@ -13,6 +13,13 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class FetchedRepo : IFetchedRepo
     {
+        public static FetchedRepo GetInstance(WritableRepositoryInformation repo, RepoUtils repoUtils, ILogger<FetchedRepo> logger)
+        {
+            var fetchedRepo = new FetchedRepo(repo, repoUtils, logger);
+            fetchedRepo.Init();
+            return fetchedRepo;
+        }
+
         private readonly WritableRepositoryInformation _repoInfo;
         private readonly string _repoFolder;
         private readonly RepoUtils _repoUtils;
@@ -86,15 +93,8 @@ namespace NuGet.Jobs.GitHubIndexer
 
             return _repoUtils
                 .ListTree(fileTree, "", _repo)
-                .Where(f => ( basePathLength + f.Path.Length) < 260)
+                .Where(f => (basePathLength + f.Path.Length) < 260)
                 .ToList();
-        }
-
-        public static FetchedRepo GetInstance(WritableRepositoryInformation repo, RepoUtils repoUtils, ILogger<FetchedRepo> logger)
-        {
-            var fetchedRepo = new FetchedRepo(repo, repoUtils, logger);
-            fetchedRepo.Init();
-            return fetchedRepo;
         }
 
         /// <summary>
