@@ -52,7 +52,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <returns>List of the persisted files on disk. The list is empty if filePaths is empty.</returns>
         public IReadOnlyList<ICheckedOutFile> CheckoutFiles(IReadOnlyCollection<string> filePaths)
         {
-            if(!filePaths.Any())
+            if (!filePaths.Any())
             {
                 return Array.Empty<ICheckedOutFile>();
             }
