@@ -13,9 +13,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public enum ConfigFileType
         {
-            Proj,
-            Props,
-            Targets,
+            MsBuild,
             PkgConfig,
             None
         }
@@ -62,20 +60,11 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             var ext = Path.GetExtension(fileName).ToLower();
-            
             var cfgFileType = ConfigFileType.None;
 
-            if (ext.EndsWith("proj"))
+            if (ext.EndsWith("proj") || ext.EndsWith(".props") || ext.EndsWith(".targets"))
             {
-                cfgFileType = ConfigFileType.Proj;
-            }
-            else if (ext.EndsWith(".props"))
-            {
-                cfgFileType = ConfigFileType.Props;
-            }
-            else if (ext.EndsWith(".targets"))
-            {
-                cfgFileType = ConfigFileType.Targets;
+                cfgFileType = ConfigFileType.MsBuild;
             }
 
             return cfgFileType;
