@@ -28,7 +28,8 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly IRepoFetcher _repoFetcher;
         private readonly IConfigFileParser _configFileParser;
 
-        public ReposIndexer(IGitRepoSearcher searcher,
+        public ReposIndexer(
+            IGitRepoSearcher searcher,
             ILogger<ReposIndexer> logger,
             IRepositoriesCache repoCache,
             IConfigFileParser configFileParser,
