@@ -18,8 +18,10 @@ namespace NuGet.Jobs.GitHubIndexer
     public class ReposIndexer
     {
         private const string WorkingDirectory = "workdir";
-        private static readonly string GitHubUsageFilePath = WorkingDirectory + Path.DirectorySeparatorChar + "GitHubUsage.v1.json";
-        public static readonly string ExecutionDirectory = WorkingDirectory + Path.DirectorySeparatorChar + "exec";
+        private static readonly string GitHubUsageFilePath = Path.Combine(WorkingDirectory, "GitHubUsage.v1.json");
+        public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
+        public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
+
 
         private readonly IGitRepoSearcher _searcher;
         private readonly ILogger<ReposIndexer> _logger;
@@ -59,8 +61,9 @@ namespace NuGet.Jobs.GitHubIndexer
             var inputBag = new ConcurrentBag<WritableRepositoryInformation>(repos);
             var outputBag = new ConcurrentBag<RepositoryInformation>();
 
-            // Create the exec directory
-            Directory.CreateDirectory(ExecutionDirectory);
+            // Create the repos and cache directories
+            Directory.CreateDirectory(RepositoriesDirectory);
+            Directory.CreateDirectory(CacheDirectory);
 
             await ProcessInParallel(inputBag, repo =>
             {
@@ -83,8 +86,9 @@ namespace NuGet.Jobs.GitHubIndexer
             // TODO: Replace with upload to Azure Blob Storage (https://github.com/NuGet/NuGetGallery/issues/7211)
             File.WriteAllText(GitHubUsageFilePath, JsonConvert.SerializeObject(finalList));
 
-            // Delete the exec directory
-            Directory.Delete(ExecutionDirectory, true);
+            // Delete the repos and cache directory
+            Directory.Delete(RepositoriesDirectory, true);
+            Directory.Delete(CacheDirectory, true);
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
