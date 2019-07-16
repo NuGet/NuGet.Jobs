@@ -62,10 +62,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
                 var blobSize = (node.Target as LibGit2Sharp.Blob).Size;
                 var nodeInfo = new GitFileInfo(nodePath, blobSize);
-                //if (resultFilter == null || (resultFilter != null && resultFilter(nodeInfo)))
-                //{
-                    files.Add(nodeInfo);
-                //}
+                files.Add(nodeInfo);
             }
 
             return files;
