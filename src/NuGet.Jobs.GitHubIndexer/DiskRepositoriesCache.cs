@@ -46,7 +46,7 @@ namespace NuGet.Jobs.GitHubIndexer
             cached = null;
             if (File.Exists(repoCacheFile))
             {
-                _logger.LogTrace("Cache hit for repo {RepoId} on file {FileName}", repo.Id, repoCacheFile);
+                _logger.LogInformation("Cache hit for repo {RepoId} on file {FileName}", repo.Id, repoCacheFile);
                 repo.AddDependencies(JsonConvert.DeserializeObject<IReadOnlyList<string>>(File.ReadAllText(repoCacheFile)));
                 cached = repo.ToRepositoryInformation();
             }
