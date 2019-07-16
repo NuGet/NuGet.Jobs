@@ -131,11 +131,8 @@ namespace NuGet.Jobs.GitHubIndexer
                                 work(item);
                             }
                             sem.Release();
-                        })
-                    {
-                        // This is important as it allows the process to exit while this thread is running
-                        IsBackground = true
-                    };
+                        });
+                    thread.IsBackground = true; // This is important as it allows the process to exit while this thread is running
                     thread.Start();
                 }
 
