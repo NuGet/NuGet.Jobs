@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -18,8 +18,9 @@ namespace NuGet.Jobs.GitHubIndexer
     public class ReposIndexer
     {
         private const string WorkingDirectory = "work";
+        private const string GitHubUsageFileName = "GitHubUsage.v1.json";
 
-        private static readonly string GitHubUsageFilePath = Path.Combine(WorkingDirectory, "GitHubUsage.v1.json");
+        private static readonly string GitHubUsageFilePath = Path.Combine(WorkingDirectory, GitHubUsageFileName);
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
 
@@ -29,6 +30,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly IRepositoriesCache _repoCache;
         private readonly IRepoFetcher _repoFetcher;
         private readonly IConfigFileParser _configFileParser;
+        private readonly ICloudBlobClient _cloudClient;
 
         public ReposIndexer(
             IGitRepoSearcher searcher,
@@ -50,6 +52,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             _maxDegreeOfParallelism = configuration.Value.MaxDegreeOfParallelism;
+             _cloudClient = new CloudBlobClientWrapper(configuration.Value.StorageConnectionString, configuration.Value.StorageReadAccessGeoRedundant);
         }
 
         public async Task RunAsync()
@@ -80,12 +83,25 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ThenBy(x => x.Id)
                 .ToList();
 
-            // TODO: Replace with upload to Azure Blob Storage (https://github.com/NuGet/NuGetGallery/issues/7211)
-            File.WriteAllText(GitHubUsageFilePath, JsonConvert.SerializeObject(finalList));
+            await WriteFinalBlob(finalList);
 
             // Delete the repos and cache directory
             Directory.Delete(RepositoriesDirectory, recursive: true);
             Directory.Delete(CacheDirectory, recursive: true);
+        }
+
+        private async Task WriteFinalBlob(List<RepositoryInformation> finalList)
+        {
+            var serializer = new JsonSerializer();
+            var blobReference = _cloudClient.GetContainerReference("Content").GetBlobReference(GitHubUsageFileName);
+
+            using (var stream = await blobReference.OpenWriteAsync(accessCondition: null))
+            using (var streamWriter = new StreamWriter(stream))
+            using (var jsonTextWriter = new JsonTextWriter(streamWriter))
+            {
+                blobReference.Properties.ContentType = "application/json";
+                serializer.Serialize(jsonTextWriter, finalList);
+            }
         }
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
