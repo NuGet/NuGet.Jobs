@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -54,9 +54,6 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public async Task RunAsync()
         {
-            ServicePointManager.DefaultConnectionLimit = _maxDegreeOfParallelism;
-            ServicePointManager.MaxServicePointIdleTime = 10000;
-
             var repos = await _searcher.GetPopularRepositories();
             var inputBag = new ConcurrentBag<WritableRepositoryInformation>(repos);
             var outputBag = new ConcurrentBag<RepositoryInformation>();
