@@ -36,13 +36,16 @@ namespace NuGet.Jobs.GitHubIndexer
             using (var fileStream = file.OpenFile())
             {
                 IReadOnlyList<string> res;
-                if (fileType == Filters.ConfigFileType.PkgConfig)
+                switch (fileType)
                 {
-                    res = _repoUtils.ParsePackagesConfig(fileStream, file.RepoId);
-                }
-                else
-                {
-                    res = _repoUtils.ParseProjFile(fileStream, file.RepoId);
+                    case Filters.ConfigFileType.PkgConfig:
+                        res = _repoUtils.ParsePackagesConfig(fileStream, file.RepoId);
+                        break;
+                    case Filters.ConfigFileType.MsBuild:
+                        res = _repoUtils.ParseProjFile(fileStream, file.RepoId);
+                        break;
+                    default:
+                        throw new ArgumentException("Unhandled fileType " + fileType.ToString());
                 }
 
                 _logger.LogDebug("[{RepoName}] Found {Count} dependencies!", file.RepoId, res.Count);
