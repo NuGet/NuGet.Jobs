@@ -100,12 +100,13 @@ namespace NuGet.Jobs.GitHubIndexer
                 var refs =
                     projDocument
                         .DescendantNodes()
-                        .Where(node => node is XElement)
-                        .Where(node => ((XElement)node).Name.LocalName.Equals("PackageReference"))
-                        .Select(n => (XElement)n);
+                        .OfType<XElement>()
+                        .Where(node => (node).Name.LocalName.Equals("PackageReference"));
+
                 return refs
                     .Select(p => p.Attribute("Include"))
-                    .Where(includeAttr => includeAttr != null && !includeAttr.ToString().Contains("$"))// Select all that have an "Include" attribute
+                    .Where(includeAttr => includeAttr != null)// Select all that have an "Include" attribute
+                    .Where(includeAttr => !includeAttr.ToString().Contains("$"))
                     .Select(includeAttr => includeAttr.Value)
                     .Where(IsValidPackageId)
                     .ToList();
