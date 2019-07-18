@@ -34,7 +34,7 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 var nodePath = string.IsNullOrWhiteSpace(currentPath) ?
                     node.Path :
-                    currentPath + Path.DirectorySeparatorChar + node.Path;
+                    Path.Combine(currentPath, node.Path);
 
                 if (node.TargetType == LibGit2Sharp.TreeEntryTargetType.Tree)
                 {
@@ -91,7 +91,7 @@ namespace NuGet.Jobs.GitHubIndexer
             try
             {
                 var projDocument = XDocument.Load(fileStream);
-                var refs = 
+                var refs =
                     projDocument
                         .DescendantNodes()
                         .Where(node => node is XElement)
