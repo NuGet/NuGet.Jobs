@@ -32,7 +32,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 return Array.Empty<string>();
             }
 
-            _logger.LogTrace("[{RepoName}] Parsing file {FileName} !", file.RepoId, file.Path);
+            _logger.LogInformation("[{RepoName}] Parsing file {FileName} !", file.RepoId, file.Path);
             using (var fileStream = file.OpenFile())
             {
                 IReadOnlyList<string> res;
@@ -48,7 +48,7 @@ namespace NuGet.Jobs.GitHubIndexer
                         throw new ArgumentException("Unhandled fileType " + fileType.ToString());
                 }
 
-                _logger.LogDebug("[{RepoName}] Found {Count} dependencies!", file.RepoId, res.Count);
+                _logger.LogInformation("[{RepoName}] Found {Count} dependencies!", file.RepoId, res.Count);
 
                 return res;
             }
