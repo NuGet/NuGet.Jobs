@@ -25,7 +25,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="repo">Repo to persist on disk</param>
         public void Persist(RepositoryInformation repo)
         {
-            var repoCacheFile = CreateCacheFile(repo.Id);
+            var repoCacheFile = GetCachePath(repo.Id);
             _logger.LogTrace("Saving cache for repo {RepoId} to file {FileName}", repo.Id, repoCacheFile);
             File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(repo.Dependencies));
         }
@@ -38,7 +38,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <returns>true if a cache file has been found and loaded.</returns>
         public bool TryGetCachedVersion(WritableRepositoryInformation repo, out RepositoryInformation cached)
         {
-            var repoCacheFile = CreateCacheFile(repo.Id);
+            var repoCacheFile = GetCachePath(repo.Id);
             _logger.LogTrace("Cache lookup for repo {RepoId}", repo.Id);
             cached = null;
             if (File.Exists(repoCacheFile))
@@ -51,7 +51,7 @@ namespace NuGet.Jobs.GitHubIndexer
             return cached != null;
         }
 
-        private string CreateCacheFile(string repoId)
+        private string GetCachePath(string repoId)
         {
             return Path.Combine(ReposIndexer.CacheDirectory, $"{repoId.Replace('/', '_')}.json"); // Replacing the '/' by '_' to avoid having sub-directories
         }
