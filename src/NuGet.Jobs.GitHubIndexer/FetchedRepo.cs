@@ -92,7 +92,15 @@ namespace NuGet.Jobs.GitHubIndexer
 
             return _repoUtils
                 .ListTree(fileTree, "", _repo)
-                .Where(f => (basePathLength + f.Path.Length) < 260)
+                .Where(f => 
+                    {
+                        var isValid = (basePathLength + f.Path.Length) < 260;
+                        if (!isValid)
+                        {
+                            _logger.LogWarning("[{RepoName}] Path too long for file {FileName}", _repoInfo.Id, f.Path);
+                        }
+                        return isValid;
+                    })
                 .ToList();
         }
 
