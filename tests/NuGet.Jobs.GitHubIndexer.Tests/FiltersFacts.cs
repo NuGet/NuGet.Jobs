@@ -32,22 +32,22 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             [Fact]
             public void KnownConfigFileTypes()
             {
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.proj"));
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.csproj"));
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.props"));
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.targets"));
-                Assert.Equal(Filters.ConfigFileType.PkgConfig, Filters.GetConfigFileType("packages.config"));
-                Assert.Equal(Filters.ConfigFileType.PkgConfig, Filters.GetConfigFileType(@"shadowsocks-csharp\packages.config"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.proj"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.csproj"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.props"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.targets"));
+                Assert.Equal(Filters.ConfigFileType.PackagesConfig, Filters.GetConfigFileType("packages.config"));
+                Assert.Equal(Filters.ConfigFileType.PackagesConfig, Filters.GetConfigFileType(@"shadowsocks-csharp\packages.config"));
             }
 
             [Fact]
             public void KnownConfigFileTypesCaseInsensitive()
             {
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.pRoj"));
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.CsProj"));
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.proPS"));
-                Assert.Equal(Filters.ConfigFileType.MsBuild, Filters.GetConfigFileType("File.tarGETs"));
-                Assert.Equal(Filters.ConfigFileType.PkgConfig, Filters.GetConfigFileType("paCkAges.cONfiG"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.pRoj"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.CsProj"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.proPS"));
+                Assert.Equal(Filters.ConfigFileType.PackageReference, Filters.GetConfigFileType("File.tarGETs"));
+                Assert.Equal(Filters.ConfigFileType.PackagesConfig, Filters.GetConfigFileType("paCkAges.cONfiG"));
             }
         }
     }

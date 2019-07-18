@@ -38,10 +38,10 @@ namespace NuGet.Jobs.GitHubIndexer
                 IReadOnlyList<string> res;
                 switch (fileType)
                 {
-                    case Filters.ConfigFileType.PkgConfig:
+                    case Filters.ConfigFileType.PackagesConfig:
                         res = _repoUtils.ParsePackagesConfig(fileStream, file.RepoId);
                         break;
-                    case Filters.ConfigFileType.MsBuild:
+                    case Filters.ConfigFileType.PackageReference:
                         res = _repoUtils.ParseProjFile(fileStream, file.RepoId);
                         break;
                     default:
