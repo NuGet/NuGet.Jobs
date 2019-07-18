@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -105,7 +105,8 @@ namespace NuGet.Jobs.GitHubIndexer
                 var checkedOutFiles =
                     fetchedRepo.CheckoutFiles(
                         filePaths
-                        .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None) // TODO: Filter by blobSize too! (https://github.com/NuGet/NuGetGallery/issues/7339)
+                        // TODO: Filter by blobSize too! (https://github.com/NuGet/NuGetGallery/issues/7339)
+                        .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None)
                         .Select(x => x.Path)
                         .ToList()); // List of config files that are on-disk
 
