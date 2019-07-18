@@ -83,7 +83,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 };
 
                 var indexer = CreateIndexer(repo, repoFiles);
-                await indexer.Run();
+                await indexer.RunAsync();
 
                 var result = repo.ToRepositoryInformation();
                 Assert.Equal(0, result.Dependencies.Count);
@@ -111,7 +111,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                         Assert.True(Array.Exists(configFileNames, x => string.Equals(x, file.Path)));
                         return repoDependencies;
                     });
-                await indexer.Run();
+                await indexer.RunAsync();
 
                 var result = repo.ToRepositoryInformation();
 

@@ -52,7 +52,7 @@ namespace NuGet.Jobs.GitHubIndexer
             _maxDegreeOfParallelism = configuration.Value.MaxDegreeOfParallelism;
         }
 
-        public async Task Run()
+        public async Task RunAsync()
         {
             ServicePointManager.DefaultConnectionLimit = _maxDegreeOfParallelism;
             ServicePointManager.MaxServicePointIdleTime = 10000;

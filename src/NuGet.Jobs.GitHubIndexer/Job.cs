@@ -16,7 +16,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public override async Task Run()
         {
-            await _serviceProvider.GetRequiredService<ReposIndexer>().Run();
+            await _serviceProvider.GetRequiredService<ReposIndexer>().RunAsync();
         }
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
