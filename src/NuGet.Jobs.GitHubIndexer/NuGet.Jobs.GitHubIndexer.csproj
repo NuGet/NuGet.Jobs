@@ -48,7 +48,6 @@
     <Compile Include="FetchedRepo.cs" />
     <Compile Include="GitFileInfo.cs" />
     <Compile Include="GitHubIndexerConfiguration.cs" />
-    <Compile Include="GitHubSearcherConfiguration.cs" />
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearchWrapper.cs" />
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearchApiResponse.cs" />
     <Compile Include="GitRepoSearchers\GitHub\GitHubSearcher.cs" />

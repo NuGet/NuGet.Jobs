@@ -16,7 +16,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private static readonly TimeSpan LimitExceededRetryTime = TimeSpan.FromSeconds(5);
 
         private readonly ILogger<GitHubSearcher> _logger;
-        private readonly IOptionsSnapshot<GitHubSearcherConfiguration> _configuration;
+        private readonly IOptionsSnapshot<GitHubIndexerConfiguration> _configuration;
         private readonly IGitHubSearchWrapper _searchApiRequester;
 
         private DateTimeOffset _throttleResetTime;
@@ -24,7 +24,7 @@ namespace NuGet.Jobs.GitHubIndexer
         public GitHubSearcher(
             IGitHubSearchWrapper searchApiRequester,
             ILogger<GitHubSearcher> logger,
-            IOptionsSnapshot<GitHubSearcherConfiguration> configuration)
+            IOptionsSnapshot<GitHubIndexerConfiguration> configuration)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));

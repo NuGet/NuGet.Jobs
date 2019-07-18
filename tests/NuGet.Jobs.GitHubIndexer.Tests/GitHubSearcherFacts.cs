@@ -14,7 +14,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 {
     public class GitHubSearcherFacts
     {
-        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> searchResultFunc = null, GitHubSearcherConfiguration configuration = null)
+        private static GitHubSearcher GetMockClient(Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> searchResultFunc = null, GitHubIndexerConfiguration configuration = null)
         {
             var mockSearchApiRequester = new Mock<IGitHubSearchWrapper>();
             mockSearchApiRequester
@@ -24,17 +24,17 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     return new GitHubSearchApiResponse(searchResultFunc == null ? new List<WritableRepositoryInformation>() : await searchResultFunc(request), DateTimeOffset.Now, DateTimeOffset.Now);
                 });
 
-            var optionsSnapshot = new Mock<IOptionsSnapshot<GitHubSearcherConfiguration>>();
+            var optionsSnapshot = new Mock<IOptionsSnapshot<GitHubIndexerConfiguration>>();
             optionsSnapshot
                 .Setup(x => x.Value)
-                .Returns(() => configuration ?? new GitHubSearcherConfiguration());
+                .Returns(() => configuration ?? new GitHubIndexerConfiguration());
 
             return new GitHubSearcher(mockSearchApiRequester.Object, new Mock<ILogger<GitHubSearcher>>().Object, optionsSnapshot.Object);
         }
 
         public class GetPopularRepositoriesMethod
         {
-            private readonly GitHubSearcherConfiguration _configuration = new GitHubSearcherConfiguration();
+            private readonly GitHubIndexerConfiguration _configuration = new GitHubIndexerConfiguration();
 
             [Fact]
             public async Task GetZeroResult()
