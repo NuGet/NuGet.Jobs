@@ -39,7 +39,7 @@ namespace NuGet.Jobs.GitHubIndexer
         public bool TryGetCachedVersion(WritableRepositoryInformation repo, out RepositoryInformation cached)
         {
             var repoCacheFile = GetCachePath(repo.Id);
-            _logger.LogTrace("Cache lookup for repo {RepoId}", repo.Id);
+            _logger.LogInformation("Cache lookup for repo {RepoId}", repo.Id);
             cached = null;
             if (File.Exists(repoCacheFile))
             {
