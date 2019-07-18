@@ -3,42 +3,16 @@
 
 using System;
 using System.IO;
-using System.Text.RegularExpressions;
 
 namespace NuGet.Jobs.GitHubIndexer
 {
     public static class Filters
     {
-        private static readonly Regex IdRegex =
-            new Regex(@"^\w+([_.-]\w+)*$",
-                RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture,
-                TimeSpan.FromSeconds(1));
-
         public enum ConfigFileType
         {
             MsBuild,
             PkgConfig,
             None
-        }
-
-        /// <summary>
-        /// Checks whether a packageId is a valid one
-        /// </summary>
-        /// <param name="packageId">The packageId to verify</param>
-        /// <returns>true if the packageId is of valid format, false otherwhise</returns>
-        public static bool IsValidPackageId(string packageId)
-        {
-            if (packageId == null)
-            {
-                throw new ArgumentNullException(nameof(packageId));
-            }
-
-            if (String.Equals(packageId, "$id$", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            return IdRegex.IsMatch(packageId);
         }
 
         /// <summary>

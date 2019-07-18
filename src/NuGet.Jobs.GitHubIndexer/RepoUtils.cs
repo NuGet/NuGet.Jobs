@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using NuGet.Packaging;
@@ -13,6 +14,11 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class RepoUtils
     {
+        private static readonly Regex IdRegex =
+            new Regex(@"^\w+([_.-]\w+)*$",
+                RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture,
+                TimeSpan.FromSeconds(1));
+
         private readonly ILogger<RepoUtils> _logger;
 
         public RepoUtils(ILogger<RepoUtils> logger)
@@ -69,7 +75,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 return new PackagesConfigReader(fileStream)
                     .GetPackages()
                     .Select(p => p.PackageIdentity.Id)
-                    .Where(Filters.IsValidPackageId)
+                    .Where(IsValidPackageId)
                     .ToList();
             }
             catch (Exception e)
@@ -101,7 +107,7 @@ namespace NuGet.Jobs.GitHubIndexer
                     .Select(p => p.Attribute("Include"))
                     .Where(includeAttr => includeAttr != null && !includeAttr.ToString().Contains("$"))// Select all that have an "Include" attribute
                     .Select(includeAttr => includeAttr.Value)
-                    .Where(Filters.IsValidPackageId)
+                    .Where(IsValidPackageId)
                     .ToList();
             }
             catch (Exception e)
@@ -110,6 +116,26 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             return Array.Empty<string>();
+        }
+
+        /// <summary>
+        /// Checks whether a packageId is a valid one
+        /// </summary>
+        /// <param name="packageId">The packageId to verify</param>
+        /// <returns>true if the packageId is of valid format, false otherwhise</returns>
+        private static bool IsValidPackageId(string packageId)
+        {
+            if (packageId == null)
+            {
+                throw new ArgumentNullException(nameof(packageId));
+            }
+
+            if (String.Equals(packageId, "$id$", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return IdRegex.IsMatch(packageId);
         }
     }
 }
