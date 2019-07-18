@@ -36,10 +36,10 @@ namespace NuGet.Jobs.GitHubIndexer
                 return ConfigFileType.PackagesConfig;
             }
 
-            var ext = Path.GetExtension(fileName).ToLower();
+            var ext = Path.GetExtension(fileName);
             var cfgFileType = ConfigFileType.None;
 
-            if (ext.EndsWith("proj") || ext.EndsWith(".props") || ext.EndsWith(".targets"))
+            if (ext.EndsWith("proj", StringComparison.OrdinalIgnoreCase) || ext.EndsWith(".props", StringComparison.OrdinalIgnoreCase) || ext.EndsWith(".targets", StringComparison.OrdinalIgnoreCase))
             {
                 cfgFileType = ConfigFileType.PackageReference;
             }
