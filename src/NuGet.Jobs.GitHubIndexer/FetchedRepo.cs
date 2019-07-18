@@ -29,7 +29,7 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             _repoInfo = repoInfo ?? throw new ArgumentNullException(nameof(repoInfo));
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
-            _repoFolder = Path.Combine(ReposIndexer.RepositoriesDirectory , repoInfo.Id);
+            _repoFolder = Path.Combine(ReposIndexer.RepositoriesDirectory, repoInfo.Id);
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -67,7 +67,7 @@ namespace NuGet.Jobs.GitHubIndexer
             string mainBranchRef = "refs/remotes/origin/" + _repoInfo.MainBranch;
             _repo.CheckoutPaths(mainBranchRef, filePaths, new CheckoutOptions());
 
-            return filePaths.Select(x => new CheckedOutFile(Path.Combine(_repoFolder, x), _repoInfo.Id) as ICheckedOutFile).ToList();
+            return filePaths.Select(x => (ICheckedOutFile)new CheckedOutFile(Path.Combine(_repoFolder, x), _repoInfo.Id)).ToList();
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
             return _repoUtils
                 .ListTree(fileTree, "", _repo)
-                .Where(f => 
+                .Where(f =>
                     {
                         var isValid = (basePathLength + f.Path.Length) < 260;
                         if (!isValid)
