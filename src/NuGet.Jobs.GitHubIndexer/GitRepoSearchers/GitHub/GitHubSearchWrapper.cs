@@ -43,7 +43,7 @@ namespace NuGet.Jobs.GitHubIndexer
             return new GitHubSearchApiResponse(
                 apiResponse.Body.Items
                     .Select(repo => new WritableRepositoryInformation(
-                        $"{repo.Owner.Login}/{repo.Name}",
+                        repo.FullName,
                         repo.HtmlUrl,
                         repo.StargazersCount,
                         repo.Description ?? "No Description.",
