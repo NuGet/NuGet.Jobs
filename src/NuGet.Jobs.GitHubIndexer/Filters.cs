@@ -37,14 +37,12 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             var ext = Path.GetExtension(fileName);
-            var cfgFileType = ConfigFileType.None;
-
             if (ext.EndsWith("proj", StringComparison.OrdinalIgnoreCase) || ext.EndsWith(".props", StringComparison.OrdinalIgnoreCase) || ext.EndsWith(".targets", StringComparison.OrdinalIgnoreCase))
             {
-                cfgFileType = ConfigFileType.PackageReference;
+                return ConfigFileType.PackageReference;
             }
 
-            return cfgFileType;
+            return ConfigFileType.None;
         }
     }
 }
