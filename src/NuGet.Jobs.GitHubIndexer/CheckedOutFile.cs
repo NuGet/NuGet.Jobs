@@ -18,7 +18,7 @@ namespace NuGet.Jobs.GitHubIndexer
         public string RepoId { get; }
 
         /// <summary>
-        /// Opens a FileStream to the checkedout file
+        /// Opens a FileStream to the checked out file
         /// </summary>
         /// <returns>FileStream in FileMode.Open mode</returns>
         public Stream OpenFile()
