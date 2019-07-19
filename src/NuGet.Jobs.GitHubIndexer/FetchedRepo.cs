@@ -46,7 +46,7 @@ namespace NuGet.Jobs.GitHubIndexer
             // Get the HEAD ref to only fetch the main branch
             var headRef = new string[] { "refs/heads/" + _repoInfo.MainBranch };
 
-            _logger.LogTrace("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
+            _logger.LogInformation("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
             // Fetch
             Commands.Fetch(_repo, remote.Name, headRef, options: null, logMessage: "");
         }
@@ -75,7 +75,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// </summary>
         public void Dispose()
         {
-            _logger.LogTrace("[{RepoName}] Cleaning repo folder.", _repoInfo.Id);
+            _logger.LogInformation("[{RepoName}] Cleaning repo folder.", _repoInfo.Id);
             _repo.Dispose();
             CleanDirectory(new DirectoryInfo(_repoFolder));
         }

@@ -26,7 +26,7 @@ namespace NuGet.Jobs.GitHubIndexer
         public void Persist(RepositoryInformation repo)
         {
             var repoCacheFile = GetCachePath(repo.Id);
-            _logger.LogTrace("Saving cache for repo {RepoId} to file {FileName}", repo.Id, repoCacheFile);
+            _logger.LogInformation("Saving cache for repo {RepoId} to file {FileName}", repo.Id, repoCacheFile);
             File.WriteAllText(repoCacheFile, JsonConvert.SerializeObject(repo.Dependencies));
         }
 
