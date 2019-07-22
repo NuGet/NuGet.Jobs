@@ -66,7 +66,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
-      <Version>4.4.5-dev-2842864</Version>
+      <Version>4.4.5-agr-stg-folders-2873446</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
