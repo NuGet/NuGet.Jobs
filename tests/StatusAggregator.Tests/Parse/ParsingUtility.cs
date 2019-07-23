@@ -48,8 +48,16 @@ namespace StatusAggregator.Tests.Parse
 
             foreach (var pair in pairs)
             {
-                pattern += $@"\[(?<{pair.Key}>.*)\]";
-                input += $"[{pair.Value}]";
+                var additionalPattern = $@"\[(?<{pair.Key}>.*)\]";
+                var additionalInput = $"[{pair.Value}]";
+                if (pair.Value == null)
+                {
+                    additionalPattern = $"({additionalPattern})+";
+                    additionalInput = "";
+                }
+
+                pattern += additionalPattern;
+                input += additionalInput;
             }
 
             return Regex.Match(input, pattern);
