@@ -21,7 +21,7 @@ namespace NuGet.Jobs.GitHubIndexer
         public int MaxGitHubResultsPerQuery { get; set; } = 1000;
 
         /// <summary>
-        /// Minimum number of stars that a GitHub Repo needs to have to be included in the indexing
+        /// The number of concurrent threads running to index Git repositories
         /// </summary>
         public int MaxDegreeOfParallelism { get; set; } = 32;
 
