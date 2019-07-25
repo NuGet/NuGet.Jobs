@@ -44,7 +44,11 @@ namespace NuGet.Jobs.GitHubIndexer
 
                 if (node.TargetType == LibGit2Sharp.TreeEntryTargetType.Tree)
                 {
-                    files.AddRange(ListTree((LibGit2Sharp.Tree)repo.Lookup(node.Target.Id), nodePath, repo));
+                    files.AddRange(
+                        ListTree(
+                            (LibGit2Sharp.Tree)repo.Lookup(node.Target.Id),
+                            nodePath,
+                            repo));
                     continue;
                 }
 
