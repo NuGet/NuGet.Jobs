@@ -45,7 +45,7 @@ namespace NuGet.Jobs.GitHubIndexer
                         res = _repoUtils.ParseProjFile(fileStream, file.RepoId);
                         break;
                     default:
-                        throw new ArgumentException("Unhandled fileType " + fileType.ToString());
+                        throw new ArgumentException($"Unhandled fileType {fileType}");
                 }
 
                 _logger.LogInformation("[{RepoName}] Found {Count} dependencies!", file.RepoId, res.Count);
