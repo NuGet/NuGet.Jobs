@@ -28,11 +28,11 @@ namespace NuGet.Jobs.GitHubIndexer
             services.AddTransient<IGitRepoSearcher, GitHubSearcher>();
             services.AddSingleton<IGitHubClient>(provider => new GitHubClient(new ProductHeaderValue(assemblyName, assemblyVersion)));
             services.AddSingleton<IGitHubSearchWrapper, GitHubSearchWrapper>();
-            services.AddSingleton<RepoUtils>();
-            services.AddSingleton<ReposIndexer>();
-            services.AddSingleton<IRepositoriesCache, DiskRepositoriesCache>();
-            services.AddSingleton<IConfigFileParser, ConfigFileParser>();
-            services.AddSingleton<IRepoFetcher, RepoFetcher>();
+            services.AddTransient<RepoUtils>();
+            services.AddTransient<ReposIndexer>();
+            services.AddTransient<IRepositoriesCache, DiskRepositoriesCache>();
+            services.AddTransient<IConfigFileParser, ConfigFileParser>();
+            services.AddTransient<IRepoFetcher, RepoFetcher>();
 
             services.Configure<GitHubIndexerConfiguration>(configurationRoot.GetSection(GitHubIndexerConfigurationSectionName));
         }
