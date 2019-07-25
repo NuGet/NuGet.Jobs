@@ -37,7 +37,9 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             var ext = Path.GetExtension(fileName);
-            if (ext.EndsWith("proj", StringComparison.OrdinalIgnoreCase) || ext.EndsWith(".props", StringComparison.OrdinalIgnoreCase) || ext.EndsWith(".targets", StringComparison.OrdinalIgnoreCase))
+            if (ext.EndsWith("proj", StringComparison.OrdinalIgnoreCase) 
+                || ext.Equals(".props", StringComparison.OrdinalIgnoreCase) 
+                || ext.Equals(".targets", StringComparison.OrdinalIgnoreCase))
             {
                 return ConfigFileType.PackageReference;
             }
