@@ -301,8 +301,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Times.Once);
 
             PackageFileServiceMock.Verify(
-                x => x.DeletePackageForValidationSetAsync(ValidationSet),
-                Times.Never);
+               x => x.DeletePackageForValidationSetAsync(ValidationSet),
+               Times.Never);
 
             MessageServiceMock
                 .Verify(ms => ms.SendPublishedMessageAsync(Package), Times.Once());
