@@ -341,7 +341,7 @@ namespace StatusAggregator
                 BaseUri = 
                     new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri)),
                 Certificate = 
-                    GetCertificateFromJson(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate))
+                    GetCertificateFromConfiguration(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate))
             };
 
             serviceCollection.AddSingleton(incidentApiConfiguration);
@@ -353,7 +353,7 @@ namespace StatusAggregator
             serviceCollection.AddLogging();
         }
 
-        private static X509Certificate2 GetCertificateFromJson(string certSecret)
+        private static X509Certificate2 GetCertificateFromConfiguration(string certSecret)
         {
             // Certificates are persisted in two different ways in KeyVault.
             // Try both before failing.
