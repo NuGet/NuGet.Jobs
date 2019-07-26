@@ -13,6 +13,7 @@ using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Jobs;
 using NuGet.Services.Incidents;
@@ -352,15 +353,27 @@ namespace StatusAggregator
             serviceCollection.AddLogging();
         }
 
-        private static X509Certificate2 GetCertificateFromJson(string certJson)
+        private static X509Certificate2 GetCertificateFromJson(string certSecret)
         {
-            var certJObject = JObject.Parse(certJson);
+            // Certificates are persisted in two different ways in KeyVault.
+            // Try both before failing.
+            try
+            {
+                // Legacy KeyVault certificates are stored as JSON objects with Base64 data and a password.
+                var certJObject = JObject.Parse(certSecret);
 
-            var certData = certJObject["Data"].Value<string>();
-            var certPassword = certJObject["Password"].Value<string>();
+                var certData = certJObject["Data"].Value<string>();
+                var certPassword = certJObject["Password"].Value<string>();
 
-            var certBytes = Convert.FromBase64String(certData);
-            return new X509Certificate2(certBytes, certPassword);
+                var certBytes = Convert.FromBase64String(certData);
+                return new X509Certificate2(certBytes, certPassword);
+            }
+            catch (JsonReaderException)
+            {
+                // New KeyVault certificates are stored as Base64 strings and have no password.
+                var certBytes = Convert.FromBase64String(certSecret);
+                return new X509Certificate2(certBytes);
+            }
         }
     }
 }
