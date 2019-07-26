@@ -95,7 +95,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 return cachedVersion;
             }
 
-            _logger.LogInformation("Starting indexing for repo {name}", repo.Id);
+            using (_logger.BeginScope("Starting indexing for repo {name}", repo.Id))
             using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo))
             {
                 var filePaths = fetchedRepo.GetFileInfos(); // Paths of all files in the Git Repo
