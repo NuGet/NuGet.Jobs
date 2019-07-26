@@ -14,7 +14,7 @@ namespace StatusAggregator.Parse
     {
         public const string TestGroupName = "Test";
         public const string AffectedComponentPathGroupName = "AffectedComponentPath";
-        private static string SubtitleRegEx = $@"AI Availability test '(?<{TestGroupName}>.*)' is failing!( \((?<{AffectedComponentPathGroupName}>.*)\))?";
+        private static string SubtitleRegEx = $@"AI Availability test '(?<{TestGroupName}>.+)' is failing!( \((?<{AffectedComponentPathGroupName}>.+)\))?";
 
         private readonly ILogger<AIAvailabilityIncidentRegexParsingHandler> _logger;
 

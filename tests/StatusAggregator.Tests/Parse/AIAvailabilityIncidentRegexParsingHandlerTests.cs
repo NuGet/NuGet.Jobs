@@ -6,8 +6,10 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NuGet.Services.Incidents;
+using NuGet.Services.Status;
 using StatusAggregator.Parse;
 using Xunit;
+using Match = System.Text.RegularExpressions.Match;
 
 namespace StatusAggregator.Tests.Parse
 {
@@ -15,45 +17,40 @@ namespace StatusAggregator.Tests.Parse
     {
         public class TheTryParseAffectedComponentPathMethod : AIAvailabilityIncidentRegexParsingHandlerTest
         {
-            [Fact]
-            public void ReturnsFalseIfNoComponentPath()
+            [Theory]
+            [InlineData("blah blah blah blah", false, "")]
+            [InlineData("[env] AI Availability test 'test' is failing!", false, "")]
+            [InlineData("[env] AI Availability test '' is failing! (path)", false, "")]
+            [InlineData("[env] AI Availability test 'test' is failing! ()", false, "")]
+            [InlineData("[env] AI Availability test 'test' is failing! (path)", true, "path")]
+            public void ReturnsExpectedResponse(string title, bool success, string affectedComponentPath)
             {
-                var match = ParsingUtility.GetMatchWithGroups(
-                    new KeyValuePair<string, string>(AIAvailabilityIncidentRegexParsingHandler.TestGroupName, "test"),
-                    new KeyValuePair<string, string>(EnvironmentRegexParsingFilter.EnvironmentGroupName, Environment),
-                    new KeyValuePair<string, string>(AIAvailabilityIncidentRegexParsingHandler.AffectedComponentPathGroupName, null));
-
-                var result = Handler.TryParseAffectedComponentPath(Incident, match.Groups, out var affectedComponentPath);
-
-                Assert.False(result);
+                var incident = new Incident { Title = title };
+                IncidentParsingHandlerTestUtility.AssertTryParseAffectedComponentPath(
+                    Handler, incident, success, affectedComponentPath);
             }
+        }
+
+        public class TheTryParseAffectedComponentStatusMethod : AIAvailabilityIncidentRegexParsingHandlerTest
+        {
             [Fact]
-            public void ReturnsTrueIfComponentPathSpecified()
+            public void ReturnsExpectedResponse()
             {
-                var expectedPath = "hello/hi/howdy";
-
-                var match = ParsingUtility.GetMatchWithGroups(
-                    new KeyValuePair<string, string>(AIAvailabilityIncidentRegexParsingHandler.TestGroupName, "test"),
-                    new KeyValuePair<string, string>(EnvironmentRegexParsingFilter.EnvironmentGroupName, Environment),
-                    new KeyValuePair<string, string>(AIAvailabilityIncidentRegexParsingHandler.AffectedComponentPathGroupName, expectedPath));
-
-                var result = Handler.TryParseAffectedComponentPath(Incident, match.Groups, out var actualPath);
-
+                var result = Handler.TryParseAffectedComponentStatus(new Incident(), Match.Empty.Groups, out var status);
                 Assert.True(result);
-                Assert.Equal(expectedPath, actualPath);
+                Assert.Equal(ComponentStatus.Down, status);
             }
         }
 
         public class AIAvailabilityIncidentRegexParsingHandlerTest
         {
             public string Environment = "env";
-            public Incident Incident = new Incident();
             public AIAvailabilityIncidentRegexParsingHandler Handler { get; }
 
             public AIAvailabilityIncidentRegexParsingHandlerTest()
             {
                 Handler = Construct(
-                    new[] { ParsingUtility.CreateEnvironmentFilter(Environment) });
+                    new[] { IncidentParsingHandlerTestUtility.CreateEnvironmentFilter(Environment) });
             }
         }
 
@@ -62,7 +59,7 @@ namespace StatusAggregator.Tests.Parse
         {
             protected override AIAvailabilityIncidentRegexParsingHandler Construct(IEnumerable<IIncidentRegexParsingFilter> filters)
             {
-                return Construct(filters.ToArray());
+                return AIAvailabilityIncidentRegexParsingHandlerTests.Construct(filters.ToArray());
             }
         }
 
