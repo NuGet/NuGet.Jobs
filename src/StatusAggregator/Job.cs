@@ -303,7 +303,7 @@ namespace StatusAggregator
         private const int _defaultEventEndDelayMinutes = 15;
         private const int _defaultEventVisibilityPeriod = 10;
 
-        private static void AddConfiguration(IServiceCollection serviceCollection, IDictionary<string, string> jobArgsDictionary)
+        private void AddConfiguration(IServiceCollection serviceCollection, IDictionary<string, string> jobArgsDictionary)
         {
             var configuration = new StatusAggregatorConfiguration()
             {
@@ -341,7 +341,9 @@ namespace StatusAggregator
                 BaseUri = 
                     new Uri(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiBaseUri)),
                 Certificate = 
-                    GetCertificateFromConfiguration(JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate))
+                    GetCertificateFromConfiguration(
+                        JobConfigurationManager.GetArgument(jobArgsDictionary, JobArgumentNames.StatusIncidentApiCertificate),
+                        Logger)
             };
 
             serviceCollection.AddSingleton(incidentApiConfiguration);
@@ -353,27 +355,34 @@ namespace StatusAggregator
             serviceCollection.AddLogging();
         }
 
-        private static X509Certificate2 GetCertificateFromConfiguration(string certSecret)
+        public static X509Certificate2 GetCertificateFromConfiguration(string certSecret, ILogger logger)
         {
             // Certificates are persisted in two different ways in KeyVault.
             // Try both before failing.
+            logger.LogInformation("Parsing certificate from configuration.");
+            X509Certificate2 certificate;
             try
             {
                 // Legacy KeyVault certificates are stored as JSON objects with Base64 data and a password.
+                logger.LogInformation("Attempting to parse certificate as JSON.");
                 var certJObject = JObject.Parse(certSecret);
 
                 var certData = certJObject["Data"].Value<string>();
                 var certPassword = certJObject["Password"].Value<string>();
 
                 var certBytes = Convert.FromBase64String(certData);
-                return new X509Certificate2(certBytes, certPassword);
+                certificate = new X509Certificate2(certBytes, certPassword);
             }
             catch (JsonReaderException)
             {
                 // New KeyVault certificates are stored as Base64 strings and have no password.
+                logger.LogInformation("Failed to parse certificate as JSON. Attempting to parse certificate as Base64.");
                 var certBytes = Convert.FromBase64String(certSecret);
-                return new X509Certificate2(certBytes);
+                certificate = new X509Certificate2(certBytes);
             }
+
+            logger.LogInformation("Successfully parsed certificate.");
+            return certificate;
         }
     }
 }
