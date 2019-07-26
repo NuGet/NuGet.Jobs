@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -46,7 +46,7 @@ namespace NuGet.Jobs.GitHubIndexer
             // Get the HEAD ref to only fetch the main branch
             var headRef = new string[] { "refs/heads/" + _repoInfo.MainBranch };
 
-            _logger.LogTrace("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
+            _logger.LogInformation("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
             // Fetch
             Commands.Fetch(_repo, remote.Name, headRef, options: null, logMessage: "");
         }
@@ -75,7 +75,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// </summary>
         public void Dispose()
         {
-            _logger.LogTrace("[{RepoName}] Cleaning repo folder.", _repoInfo.Id);
+            _logger.LogInformation("[{RepoName}] Cleaning repo folder.", _repoInfo.Id);
             _repo.Dispose();
             CleanDirectory(new DirectoryInfo(_repoFolder));
         }
@@ -115,7 +115,10 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             // I manually delete the dirs/folders because, for some reason, the Directory.Delete() 
-            // method throws that the .git files are locked (even if they aren't since the Repository's Dispose() method is called before cleaning)
+            // doesn't handle deleting Readonly files really well (which some files in the .git folder are).
+            //
+            // An alternative wouild have been to set the FileAttribute for each file and then call Directory.Delete(...)
+            // but that would be redundant
             foreach (var childDir in dir.GetDirectories())
             {
                 CleanDirectory(childDir);

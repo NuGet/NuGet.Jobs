@@ -44,7 +44,11 @@ namespace NuGet.Jobs.GitHubIndexer
 
                 if (node.TargetType == LibGit2Sharp.TreeEntryTargetType.Tree)
                 {
-                    files.AddRange(ListTree((LibGit2Sharp.Tree)repo.Lookup(node.Target.Id), nodePath, repo));
+                    files.AddRange(
+                        ListTree(
+                            (LibGit2Sharp.Tree)repo.Lookup(node.Target.Id),
+                            nodePath,
+                            repo));
                     continue;
                 }
 
@@ -106,8 +110,8 @@ namespace NuGet.Jobs.GitHubIndexer
                 return refs
                     .Select(p => p.Attribute("Include"))
                     .Where(includeAttr => includeAttr != null)// Select all that have an "Include" attribute
-                    .Where(includeAttr => !includeAttr.ToString().Contains("$"))
                     .Select(includeAttr => includeAttr.Value)
+                    .Where(includeAttrValue => !includeAttrValue.Contains("$"))
                     .Where(IsValidPackageId)
                     .ToList();
             }
