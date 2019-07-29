@@ -23,6 +23,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
+        private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         private readonly IGitRepoSearcher _searcher;
         private readonly ILogger<ReposIndexer> _logger;
@@ -92,7 +93,6 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private async Task WriteFinalBlob(List<RepositoryInformation> finalList)
         {
-            var serializer = new JsonSerializer();
             var blobReference = _cloudClient.GetContainerReference(BlobStorageContainerName).GetBlobReference(GitHubUsageFileName);
 
             using (var stream = await blobReference.OpenWriteAsync(accessCondition: null))
@@ -100,7 +100,7 @@ namespace NuGet.Jobs.GitHubIndexer
             using (var jsonTextWriter = new JsonTextWriter(streamWriter))
             {
                 blobReference.Properties.ContentType = "application/json";
-                serializer.Serialize(jsonTextWriter, finalList);
+                Serializer.Serialize(jsonTextWriter, finalList);
             }
         }
 
