@@ -18,9 +18,9 @@ namespace NuGet.Jobs.GitHubIndexer
     public class ReposIndexer
     {
         private const string WorkingDirectory = "work";
+        private const string BlobStorageContainerName = "content";
         private const string GitHubUsageFileName = "GitHubUsage.v1.json";
 
-        private static readonly string GitHubUsageFilePath = Path.Combine(WorkingDirectory, GitHubUsageFileName);
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
 
@@ -93,7 +93,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private async Task WriteFinalBlob(List<RepositoryInformation> finalList)
         {
             var serializer = new JsonSerializer();
-            var blobReference = _cloudClient.GetContainerReference("Content").GetBlobReference(GitHubUsageFileName);
+            var blobReference = _cloudClient.GetContainerReference(BlobStorageContainerName).GetBlobReference(GitHubUsageFileName);
 
             using (var stream = await blobReference.OpenWriteAsync(accessCondition: null))
             using (var streamWriter = new StreamWriter(stream))
