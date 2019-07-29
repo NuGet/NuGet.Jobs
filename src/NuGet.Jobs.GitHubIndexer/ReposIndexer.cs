@@ -39,6 +39,7 @@ namespace NuGet.Jobs.GitHubIndexer
             IRepositoriesCache repoCache,
             IConfigFileParser configFileParser,
             IRepoFetcher repoFetcher,
+            ICloudBlobClient cloudClient,
             IOptionsSnapshot<GitHubIndexerConfiguration> configuration)
         {
             _searcher = searcher ?? throw new ArgumentNullException(nameof(searcher));
@@ -53,7 +54,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             _maxDegreeOfParallelism = configuration.Value.MaxDegreeOfParallelism;
-            _cloudClient = new CloudBlobClientWrapper(configuration.Value.StorageConnectionString, configuration.Value.StorageReadAccessGeoRedundant);
+            _cloudClient = cloudClient ?? throw new ArgumentNullException(nameof(cloudClient));
         }
 
         public async Task RunAsync()
