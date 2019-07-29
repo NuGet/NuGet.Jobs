@@ -29,9 +29,9 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             var apiResponse = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
             if (!apiResponse.HttpResponse.Headers.TryGetValue("Date", out var ghStrDate)
-                || !DateTime.TryParseExact(ghStrDate, "ddd',' dd MMM yyyy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ghTime))
+                || !DateTimeOffset.TryParseExact(ghStrDate.Replace("GMT", "+0"), "ddd',' dd MMM yyyy HH:mm:ss z", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ghTime))
             {
-                throw new InvalidDataException("Date is required to compute the throttling time.");
+                throw new InvalidDataException("Date is missing, has a wrong format or is not in GMT timezone");
             }
 
             if (!apiResponse.HttpResponse.Headers.TryGetValue("X-RateLimit-Reset", out var ghStrResetLimit)
@@ -49,8 +49,8 @@ namespace NuGet.Jobs.GitHubIndexer
                         repo.Description ?? "",
                         repo.DefaultBranch))
                     .ToList(),
-                ghTime.ToLocalTime(),
-                DateTimeOffset.FromUnixTimeSeconds(ghResetTime).ToLocalTime());
+                ghTime,
+                DateTimeOffset.FromUnixTimeSeconds(ghResetTime));
         }
     }
 }

@@ -54,8 +54,8 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             if (_searchApiRequester.GetRemainingRequestCount() == 0)
             {
-                var sleepTime = _throttleResetTime - DateTimeOffset.Now;
-                _throttleResetTime = DateTimeOffset.Now;
+                var sleepTime = _throttleResetTime - DateTimeOffset.UtcNow;
+                _throttleResetTime = DateTimeOffset.UtcNow;
                 if (sleepTime.TotalSeconds > 0)
                 {
                     _logger.LogInformation("Waiting {TotalSeconds} seconds to cooldown.", sleepTime.TotalSeconds);
@@ -86,10 +86,10 @@ namespace NuGet.Jobs.GitHubIndexer
                 }
             }
 
-            if (_throttleResetTime < DateTimeOffset.Now)
+            if (_throttleResetTime < DateTimeOffset.UtcNow)
             {
                 var timeToWait = response.ThrottleResetTime - response.Date;
-                _throttleResetTime = DateTimeOffset.Now + timeToWait;
+                _throttleResetTime = DateTimeOffset.UtcNow + timeToWait;
             }
 
             return response.Result;
@@ -98,7 +98,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private async Task<IReadOnlyList<WritableRepositoryInformation>> GetResultsFromGitHub()
         {
             _logger.LogInformation("Starting GitHub search with configuration: {ConfigInfo}", GetConfigInfo());
-            _throttleResetTime = DateTimeOffset.Now;
+            _throttleResetTime = DateTimeOffset.UtcNow;
             var upperStarBound = int.MaxValue;
             var resultList = new List<WritableRepositoryInformation>();
             var lastPage = Math.Ceiling(_maxGithubResultPerQuery / (double)_resultsPerPage);
