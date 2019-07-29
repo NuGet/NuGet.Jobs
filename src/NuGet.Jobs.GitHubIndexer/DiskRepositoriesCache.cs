@@ -40,9 +40,9 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             var repoCacheFile = GetCachePath(repo.Id);
             _logger.LogInformation("Cache lookup for repo {RepoId}", repo.Id);
-            cached = null;
             if (!File.Exists(repoCacheFile))
             {
+                cached = null;
                 return false;
             }
 
