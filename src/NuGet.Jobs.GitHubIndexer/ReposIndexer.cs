@@ -84,14 +84,14 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ThenBy(x => x.Id)
                 .ToList();
 
-            await WriteFinalBlob(finalList);
+            await WriteFinalBlobAsync(finalList);
 
             // Delete the repos and cache directory
             Directory.Delete(RepositoriesDirectory, recursive: true);
             Directory.Delete(CacheDirectory, recursive: true);
         }
 
-        private async Task WriteFinalBlob(List<RepositoryInformation> finalList)
+        private async Task WriteFinalBlobAsync(List<RepositoryInformation> finalList)
         {
             var blobReference = _cloudClient.GetContainerReference(BlobStorageContainerName).GetBlobReference(GitHubUsageFileName);
 
