@@ -112,7 +112,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             using (_logger.BeginScope("Starting indexing for repo {name}", repo.Id))
-            using (IFetchedRepo fetchedRepo = _repoFetcher.FetchRepo(repo))
+            using (var fetchedRepo = _repoFetcher.FetchRepo(repo))
             {
                 var filePaths = fetchedRepo.GetFileInfos(); // Paths of all files in the Git Repo
                 var checkedOutFiles =

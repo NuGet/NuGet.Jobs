@@ -40,15 +40,17 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             var repoCacheFile = GetCachePath(repo.Id);
             _logger.LogInformation("Cache lookup for repo {RepoId}", repo.Id);
-            cached = null;
-            if (File.Exists(repoCacheFile))
+            if (!File.Exists(repoCacheFile))
             {
-                _logger.LogInformation("Cache hit for repo {RepoId} on file {FileName}", repo.Id, repoCacheFile);
-                repo.AddDependencies(JsonConvert.DeserializeObject<IReadOnlyList<string>>(File.ReadAllText(repoCacheFile)));
-                cached = repo.ToRepositoryInformation();
+                cached = null;
+                return false;
             }
 
-            return cached != null;
+            _logger.LogInformation("Cache hit for repo {RepoId} on file {FileName}", repo.Id, repoCacheFile);
+            repo.AddDependencies(JsonConvert.DeserializeObject<IReadOnlyList<string>>(File.ReadAllText(repoCacheFile)));
+            cached = repo.ToRepositoryInformation();
+
+            return true;
         }
 
         private string GetCachePath(string repoId)

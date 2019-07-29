@@ -117,7 +117,7 @@ namespace NuGet.Jobs.GitHubIndexer
             // I manually delete the dirs/folders because, for some reason, the Directory.Delete() 
             // doesn't handle deleting Readonly files really well (which some files in the .git folder are).
             //
-            // An alternative wouild have been to set the FileAttribute for each file and then call Directory.Delete(...)
+            // An alternative would have been to set the FileAttribute for each file and then call Directory.Delete(...)
             // but that would be redundant
             foreach (var childDir in dir.GetDirectories())
             {
