@@ -85,7 +85,10 @@ namespace NuGet.Jobs.GitHubIndexer
                 .ThenBy(x => x.Id)
                 .ToList();
 
-            await WriteFinalBlobAsync(finalList);
+            if (finalList.Any())
+            {
+                await WriteFinalBlobAsync(finalList);
+            }
 
             // Delete the repos and cache directory
             Directory.Delete(RepositoriesDirectory, recursive: true);
