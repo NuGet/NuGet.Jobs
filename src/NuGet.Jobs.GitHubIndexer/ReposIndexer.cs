@@ -89,6 +89,11 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 await WriteFinalBlobAsync(finalList);
             }
+            else
+            {
+                // TODO: Add telemetry for this (https://github.com/NuGet/NuGetGallery/issues/7359)
+                _logger.LogError("The final blob is empty!");
+            }
 
             // Delete the repos and cache directory
             Directory.Delete(RepositoriesDirectory, recursive: true);
