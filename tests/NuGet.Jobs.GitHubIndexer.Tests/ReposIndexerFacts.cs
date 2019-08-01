@@ -176,7 +176,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 {
                     new GitFileInfo("file1.txt", 1),
                     new GitFileInfo("file2.txt", 1),
-                    new GitFileInfo(configFileNames[0], ReposIndexer.MaxBlobSize + 1),
+                    new GitFileInfo(configFileNames[0], ReposIndexer.MaxBlobSizeBytes + 1),
                     new GitFileInfo(configFileNames[1], 1),
                     new GitFileInfo(configFileNames[2], 1),
                     new GitFileInfo(configFileNames[3], 1)
@@ -190,7 +190,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                         Assert.True(idx != -1);
                         Assert.True(
                             repoFiles[repoFiles.FindIndex(f => string.Equals(f.Path, file.Path))]
-                                .BlobSize < ReposIndexer.MaxBlobSize);
+                                .BlobSize < ReposIndexer.MaxBlobSizeBytes);
                         return repoDependencies;
                     },
                     onDisposeHandler: (string serializedText) =>

@@ -20,7 +20,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private const string WorkingDirectory = "work";
         private const string BlobStorageContainerName = "content";
         private const string GitHubUsageFileName = "GitHubUsage.v1.json";
-        public const int MaxBlobSize = 1 << 20; // 1 MB = 2^20
+        public const int MaxBlobSizeBytes = 1 << 20; // 1 MB = 2^20
 
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
@@ -131,10 +131,10 @@ namespace NuGet.Jobs.GitHubIndexer
                         .Where(x => Filters.GetConfigFileType(x.Path) != Filters.ConfigFileType.None)
                         .Where(x =>
                         {
-                            var isValidBlob = x.BlobSize <= MaxBlobSize;
+                            var isValidBlob = x.BlobSize <= MaxBlobSizeBytes;
                             if (!isValidBlob)
                             {
-                                _logger.LogWarning("File is too big! {FilePath}", x.Path);
+                                _logger.LogWarning("File is too big! {FilePath} {FileSizeBytes} bytes", x.Path, x.BlobSize);
                             }
 
                             return isValidBlob;
