@@ -129,11 +129,11 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
                     var cloudService = AzureHelper.ParseCloudServiceProperties(result);
 
-                    var instances = GetInstances(cloudService.Uri, cloudService.InstanceCount, regionInformation, ServiceType.LuceneSearch);
+                    var instances = GetInstances(endpointUri: cloudService.Uri, instanceCount: cloudService.InstanceCount, regionInformation: regionInformation, serviceType: ServiceType.LuceneSearch);
 
                     return instances;
                 case ServiceType.AzureSearch:
-                    return GetInstances(new Uri(regionInformation.BaseUrl), instanceCount: 1, regionInformation, ServiceType.AzureSearch);
+                    return GetInstances(endpointUri: new Uri(regionInformation.BaseUrl), instanceCount: 1, regionInformation: regionInformation, serviceType: ServiceType.AzureSearch);
                 default:
                     throw new UnknownServiceTypeException();
             }
