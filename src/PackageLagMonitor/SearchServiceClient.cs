@@ -86,7 +86,17 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
                     var diagContent = diagResponse.Content;
                     var searchDiagResultRaw = await diagContent.ReadAsStringAsync();
-                    var response = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
+                    SearchDiagnosticResponse response = null;
+                    switch (instance.ServiceType)
+                    {
+                        case ServiceType.LuceneSearch:
+                            response = JsonConvert.DeserializeObject<SearchDiagnosticResponse>(searchDiagResultRaw);
+                            break;
+                        case ServiceType.AzureSearch:
+                            var tempResponse = JsonConvert.DeserializeObject<AzureSearchDiagnosticResponse>(searchDiagResultRaw);
+                            response = ConvertAzureSearchResponse(tempResponse);
+                            break;
+                    }
 
                     return response;
                 }
@@ -109,7 +119,6 @@ namespace NuGet.Jobs.Monitoring.PackageLag
         {
             switch (regionInformation.ServiceType)
             {
-
                 case ServiceType.LuceneSearch:
                     var result = await _azureManagementApiWrapper.GetCloudServicePropertiesAsync(
                         _configuration.Value.Subscription,
@@ -120,11 +129,11 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
                     var cloudService = AzureHelper.ParseCloudServiceProperties(result);
 
-                    var instances = GetInstances(cloudService.Uri, cloudService.InstanceCount, regionInformation, );
+                    var instances = GetInstances(cloudService.Uri, cloudService.InstanceCount, regionInformation, ServiceType.LuceneSearch);
 
                     return instances;
                 case ServiceType.AzureSearch:
-                    return GetInstances(new Uri(regionInformation.BaseUrl), instanceCount: 1, regionInformation, instancePortMinimum: 0);
+                    return GetInstances(new Uri(regionInformation.BaseUrl), instanceCount: 1, regionInformation, ServiceType.AzureSearch);
                 default:
                     throw new UnknownServiceTypeException();
             }
@@ -177,7 +186,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 case ServiceType.LuceneSearch:
                     _logger.LogInformation(
                         "{ServiceType}: Testing {InstanceCount} instances, starting at port {InstancePortMinimum} for region {Region}.",
-                        Enum.GetName(typeof(ServiceType), ServiceType.AzureSearch),
+                        Enum.GetName(typeof(ServiceType), ServiceType.LuceneSearch),
                         instanceCount,
                         instancePortMinimum,
                         regionInformation.Region);
@@ -221,6 +230,24 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                         serviceType);
                 })
                 .ToList();
+        }
+
+        private SearchDiagnosticResponse ConvertAzureSearchResponse(AzureSearchDiagnosticResponse azureSearchDiagnosticResponse)
+        {
+            var result = new SearchDiagnosticResponse()
+            {
+                NumDocs = azureSearchDiagnosticResponse.SearchIndex.DocumentCount,
+                IndexName = azureSearchDiagnosticResponse.SearchIndex.Name,
+                LastIndexReloadTime = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp,
+                LastIndexReloadDurationInMilliseconds = (long)azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestampDuration.TotalMilliseconds,
+                LastReopen = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp,
+                CommitUserData = new CommitUserData()
+                {
+                    CommitTimeStamp = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp.ToString()
+                }
+            };
+
+            return result;
         }
     }
 }
