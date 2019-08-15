@@ -67,8 +67,10 @@
     <Compile Include="SearchResultResponse.cs" />
     <Compile Include="SearchServiceClient.cs" />
     <Compile Include="SearchServiceConfiguration.cs" />
+    <Compile Include="ServiceType.cs" />
     <Compile Include="Telemetry\IPackageLagTelemetryService.cs" />
     <Compile Include="Telemetry\PackageLagTelemetryService.cs" />
+    <Compile Include="UnknownServiceTypeException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">
