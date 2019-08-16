@@ -130,7 +130,6 @@ namespace NuGet.Jobs.Monitoring.PackageLag
             CancellationToken token)
         {
             await Task.Yield();
-            var serviceTypeString = Enum.GetName(typeof(ServiceType), instance.ServiceType);
 
             try
             {
@@ -170,7 +169,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                     if (shouldRetry)
                     {
                         ++retryCount;
-                        _logger.LogInformation("{ServiceType}: Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} against {SearchBaseUrl}", serviceTypeString, WaitBetweenPolls.TotalSeconds, packageId, packageVersion, instance.BaseQueryUrl);
+                        _logger.LogInformation("{ServiceType}: Waiting for {RetryTime} seconds before retrying {PackageId} {PackageVersion} against {SearchBaseUrl}", instance.ServiceType, WaitBetweenPolls.TotalSeconds, packageId, packageVersion, instance.BaseQueryUrl);
                         await Task.Delay(WaitBetweenPolls);
                     }
                 } while (shouldRetry && retryCount < RetryLimit);
@@ -186,8 +185,8 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                     var timeStamp = (isListOperation ? lastEdited : created);
 
                     // We log both of these values here as they will differ if a package went through validation pipline.
-                    _logger.LogInformation("{ServiceType}: Lag {Timestamp}:{PackageId} {PackageVersion} SearchInstance:{Region}{Instance} Created: {CreatedLag} V3: {V3Lag}", serviceTypeString, timeStamp, packageId, packageVersion, instance.Region, instance.Index, createdDelay, v3Delay);
-                    _logger.LogInformation("{ServiceType}: LastReload:{LastReloadTimestamp} LastEdited:{LastEditedTimestamp} Created:{CreatedTimestamp} ", serviceTypeString, lastReloadTime, lastEdited, created);
+                    _logger.LogInformation("{ServiceType}: Lag {Timestamp}:{PackageId} {PackageVersion} SearchInstance:{Region}{Instance} Created: {CreatedLag} V3: {V3Lag}", instance.ServiceType, timeStamp, packageId, packageVersion, instance.Region, instance.Index, createdDelay, v3Delay);
+                    _logger.LogInformation("{ServiceType}: LastReload:{LastReloadTimestamp} LastEdited:{LastEditedTimestamp} Created:{CreatedTimestamp} ", instance.ServiceType, lastReloadTime, lastEdited, created);
                     if (!isListOperation)
                     {
                         _telemetryService.TrackPackageCreationLag(timeStamp, instance, packageId, packageVersion, createdDelay);
@@ -203,12 +202,12 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 }
                 else
                 {
-                    _logger.LogInformation("{ServiceType}: Lag check for {PackageId} {PackageVersion} was abandoned. Retry limit reached.", serviceTypeString, packageId, packageVersion);
+                    _logger.LogInformation("{ServiceType}: Lag check for {PackageId} {PackageVersion} was abandoned. Retry limit reached.", instance.ServiceType, packageId, packageVersion);
                 }
             }
             catch (Exception e)
             {
-                _logger.LogError("{ServiceType}: Failed to compute lag for {PackageId} {PackageVersion}. {Exception}", serviceTypeString, packageId, packageVersion, e);
+                _logger.LogError("{ServiceType}: Failed to compute lag for {PackageId} {PackageVersion}. {Exception}", instance.ServiceType, packageId, packageVersion, e);
             }
 
             return null;

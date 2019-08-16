@@ -129,13 +129,13 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
                     var cloudService = AzureHelper.ParseCloudServiceProperties(result);
 
-                    var instances = GetInstances(endpointUri: cloudService.Uri, instanceCount: cloudService.InstanceCount, regionInformation: regionInformation, serviceType: ServiceType.LuceneSearch);
+                    var instances = GetInstances(cloudService.Uri, cloudService.InstanceCount, regionInformation, ServiceType.LuceneSearch);
 
                     return instances;
                 case ServiceType.AzureSearch:
-                    return GetInstances(endpointUri: new Uri(regionInformation.BaseUrl), instanceCount: 1, regionInformation: regionInformation, serviceType: ServiceType.AzureSearch);
+                    return GetInstances(new Uri(regionInformation.BaseUrl), instanceCount: 1, regionInformation: regionInformation, serviceType: ServiceType.AzureSearch);
                 default:
-                    throw new UnknownServiceTypeException();
+                    throw new NotImplementedException($"Unknown ServiceType: {regionInformation.ServiceType}");
             }
         }
 
@@ -186,7 +186,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 case ServiceType.LuceneSearch:
                     _logger.LogInformation(
                         "{ServiceType}: Testing {InstanceCount} instances, starting at port {InstancePortMinimum} for region {Region}.",
-                        Enum.GetName(typeof(ServiceType), ServiceType.LuceneSearch),
+                        ServiceType.LuceneSearch,
                         instanceCount,
                         instancePortMinimum,
                         regionInformation.Region);
@@ -194,7 +194,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
                 case ServiceType.AzureSearch:
                     _logger.LogInformation(
                         "{ServiceType}: Testing for region {Region}.",
-                        Enum.GetName(typeof(ServiceType), ServiceType.AzureSearch),
+                        ServiceType.AzureSearch,
                         regionInformation.Region);
                     break;
             }
@@ -236,11 +236,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag
         {
             var result = new SearchDiagnosticResponse()
             {
-                NumDocs = azureSearchDiagnosticResponse.SearchIndex.DocumentCount,
-                IndexName = azureSearchDiagnosticResponse.SearchIndex.Name,
-                LastIndexReloadTime = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp,
-                LastIndexReloadDurationInMilliseconds = (long)azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestampDuration.TotalMilliseconds,
-                LastReopen = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp,
+                LastIndexReloadTime = DateTimeOffset.UtcNow,
                 CommitUserData = new CommitUserData()
                 {
                     CommitTimeStamp = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp.ToString()
