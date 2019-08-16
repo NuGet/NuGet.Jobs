@@ -234,10 +234,12 @@ namespace NuGet.Jobs.Monitoring.PackageLag
 
         private SearchDiagnosticResponse ConvertAzureSearchResponse(AzureSearchDiagnosticResponse azureSearchDiagnosticResponse)
         {
-            var result = new SearchDiagnosticResponse()
+            var result = new SearchDiagnosticResponse
             {
+                // We will use UtcNow here since AzureSearch diagnostic endpoint doesn't currently have last reloaded information.
+                // See https://github.com/NuGet/Engineering/issues/2651 for more information
                 LastIndexReloadTime = DateTimeOffset.UtcNow,
-                CommitUserData = new CommitUserData()
+                CommitUserData = new CommitUserData
                 {
                     CommitTimeStamp = azureSearchDiagnosticResponse.SearchIndex.LastCommitTimestamp.ToString()
                 }

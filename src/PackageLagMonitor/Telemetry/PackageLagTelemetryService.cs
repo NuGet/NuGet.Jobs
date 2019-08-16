@@ -38,7 +38,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag.Telemetry
                 { Region, instance.Region },
                 { Subscription, _subscription },
                 { InstanceIndex, instance.Index.ToString() },
-                { ServiceType, Enum.GetName(typeof(ServiceType), instance.ServiceType) }
+                { ServiceType, instance.ServiceType.ToString() }
             });
         }
 
@@ -51,7 +51,7 @@ namespace NuGet.Jobs.Monitoring.PackageLag.Telemetry
                 { Region,  instance.Region },
                 { Subscription, _subscription },
                 { InstanceIndex, instance.Index.ToString() },
-                { ServiceType, Enum.GetName(typeof(ServiceType), instance.ServiceType) }
+                { ServiceType, instance.ServiceType.ToString() }
             });
         }
     }
