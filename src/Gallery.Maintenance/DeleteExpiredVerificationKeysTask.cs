@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Gallery.Maintenance
 {
-    internal class DeleteExpiredVerificationKeysTask : DeleteExpiredEntityTask<PackageVerificationKey>
+    internal class DeleteExpiredVerificationKeysTask : UpdateEntityTask<PackageVerificationKey>
     {
         public DeleteExpiredVerificationKeysTask(ILogger<DeleteExpiredVerificationKeysTask> logger)
             : base(logger)
@@ -21,7 +21,7 @@ INNER JOIN [dbo].[Users] u ON u.[Key] = c.[UserKey]
 WHERE c.[Type] LIKE 'apikey.verify%' AND c.[Expires] < GETUTCDATE()
 ";
 
-        protected override string GetDeleteQuery() => @"
+        protected override string GetUpdateQuery() => @"
 DELETE FROM [dbo].[Scopes] WHERE [CredentialKey] IN ({0})
 DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})
 ";
@@ -29,7 +29,7 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})
         /// <remarks>
         /// Both the credential and the scopes are deleted for each credential key.
         /// </remarks>
-        protected override int GetDeletedRowsPerKey() => 2;
+        protected override int GetUpdatedRowsPerKey() => 2;
 
         protected override int GetKey(PackageVerificationKey expiredKey)
         {

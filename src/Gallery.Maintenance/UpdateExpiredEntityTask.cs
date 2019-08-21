@@ -12,20 +12,20 @@ using NuGet.Jobs.Configuration;
 
 namespace Gallery.Maintenance
 {
-    public abstract class DeleteExpiredEntityTask<TEntity> : MaintenanceTask
+    public abstract class UpdateEntityTask<TEntity> : MaintenanceTask
     {
         private readonly TimeSpan _commandTimeout = TimeSpan.FromMinutes(5);
 
-        public DeleteExpiredEntityTask(ILogger<DeleteExpiredEntityTask<TEntity>> logger)
+        public UpdateEntityTask(ILogger<UpdateEntityTask<TEntity>> logger)
             : base(logger)
         {
         }
 
         protected abstract string GetSelectQuery();
 
-        protected abstract string GetDeleteQuery();
+        protected abstract string GetUpdateQuery();
 
-        protected virtual int GetDeletedRowsPerKey() => 1;
+        protected virtual int GetUpdatedRowsPerKey() => 1;
 
         protected abstract int GetKey(TEntity entity);
 
@@ -44,7 +44,7 @@ namespace Gallery.Maintenance
             var expiredKeys = expiredEntities.Select(GetKey);
 
             var rowCount = 0;
-            var expectedRowCount = expiredEntities.Count() * GetDeletedRowsPerKey();
+            var expectedRowCount = expiredEntities.Count() * GetUpdatedRowsPerKey();
 
             if (expectedRowCount > 0)
             {
@@ -56,7 +56,7 @@ namespace Gallery.Maintenance
                     var parameters = expiredKeys.Select(c => new SqlParameter("@Key" + numKeys++, SqlDbType.Int) { Value = c }).ToArray();
                     command.Parameters.AddRange(parameters);
 
-                    command.CommandText = string.Format(GetDeleteQuery(), string.Join(",", parameters.Select(p => p.ParameterName)));
+                    command.CommandText = string.Format(GetUpdateQuery(), string.Join(",", parameters.Select(p => p.ParameterName)));
                     command.CommandType = CommandType.Text;
                     command.CommandTimeout = (int)_commandTimeout.TotalSeconds;
                     command.Transaction = transaction;
@@ -67,11 +67,11 @@ namespace Gallery.Maintenance
                 }
             }
 
-            _logger.LogInformation("Deleted {0} expired entities. Expected={1}.", rowCount, expectedRowCount);
+            _logger.LogInformation("Updated {0} entities. Expected={1}.", rowCount, expectedRowCount);
 
             if (expectedRowCount != rowCount)
             {
-                throw new Exception($"Expected to delete {expectedRowCount} entities, but only deleted {rowCount}!");
+                throw new Exception($"Expected to update {expectedRowCount} entities, but only updated {rowCount}!");
             }
         }
     }

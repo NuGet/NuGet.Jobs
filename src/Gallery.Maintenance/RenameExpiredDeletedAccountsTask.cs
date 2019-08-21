@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Gallery.Maintenance
 {
-    public class DeleteExpiredDeletedAccountsTask : DeleteExpiredEntityTask<ExpiredDeletedAccount>
+    public class RenameExpiredDeletedAccountsTask : UpdateEntityTask<ExpiredDeletedAccount>
     {
-        public DeleteExpiredDeletedAccountsTask(ILogger<DeleteExpiredDeletedAccountsTask> logger)
+        public RenameExpiredDeletedAccountsTask(ILogger<RenameExpiredDeletedAccountsTask> logger)
             : base(logger)
         {
         }
@@ -19,7 +19,7 @@ INNER JOIN [dbo].[AccountDeletes] d ON u.[Key] = d.[DeletedAccountKey]
 WHERE GETUTCDATE() > DATEADD(year, 1, d.[DeletedOn]) AND [WasUsernameReleased] = 0
 ";
 
-        protected override string GetDeleteQuery() => @"
+        protected override string GetUpdateQuery() => @"
 UPDATE [dbo].[Users]
 SET [Username] = NEWID()
 WHERE [Key] IN ({0})
@@ -37,5 +37,10 @@ WHERE [DeletedAccountKey] IN ({0})
 
             return deletedAccount.Key;
         }
+
+        /// <summary>
+        /// The User row and the AccountDeletes row for each deleted account will both be updated.
+        /// </summary>
+        protected override int GetUpdatedRowsPerKey() => 2;
     }
 }
