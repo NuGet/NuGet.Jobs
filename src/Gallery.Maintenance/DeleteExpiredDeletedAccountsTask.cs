@@ -16,11 +16,17 @@ namespace Gallery.Maintenance
 SELECT u.[Key], u.[Username], d.[DeletedOn]
 FROM [dbo].[Users] u
 INNER JOIN [dbo].[AccountDeletes] d ON u.[Key] = d.[DeletedAccountKey]
-WHERE GETUTCDATE() > DATEADD(year, 1, d.[DeletedOn])
+WHERE GETUTCDATE() > DATEADD(year, 1, d.[DeletedOn]) AND [WasUsernameReleased] = 0
 ";
 
         protected override string GetDeleteQuery() => @"
-DELETE FROM [dbo].[Users] WHERE [Key] IN ({0})
+UPDATE [dbo].[Users]
+SET [Username] = NEWID()
+WHERE [Key] IN ({0})
+
+UPDATE [dbo].[AccountDeletes]
+SET [WasUsernameReleased] = 1
+WHERE [DeletedAccountKey] IN ({0})
 ";
 
         protected override int GetKey(ExpiredDeletedAccount deletedAccount)
