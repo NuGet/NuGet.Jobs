@@ -46,19 +46,20 @@ namespace NuGet.Monitoring.PackageLag.Tests
         }
 
         [Fact]
-        public void CommitTimeStampDataIsCorrect()
+        public async Task CommitTimeStampDataIsCorrect()
         {
             // Arrange
             var token = new CancellationToken();
             var httpClientMock = new Mock<IHttpClientWrapper>();
+            var luceneExpectedTicks = 5;
             httpClientMock.Setup(hcm => hcm.GetAsync(It.Is<string>(it => it.Equals("Lucene-DiagUrl")), HttpCompletionOption.ResponseContentRead, It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IHttpResponseMessageWrapper)new TestHttpResponseMessage(HttpStatusCode.OK, JsonConvert.SerializeObject(new SearchDiagnosticResponse
                 {
                     CommitUserData = new CommitUserData
                     {
-                        CommitTimeStamp = new DateTimeOffset().ToString()
+                        CommitTimeStamp = new DateTimeOffset(luceneExpectedTicks, new TimeSpan(0)).ToString()
                     },
-                    LastIndexReloadTime = new DateTimeOffset()
+                    LastIndexReloadTime = new DateTimeOffset(luceneExpectedTicks, new TimeSpan(0))
                 }))));
             httpClientMock.Setup(hcm => hcm.GetAsync(It.Is<string>(it => it.Equals("Azure-DiagUrl")), HttpCompletionOption.ResponseContentRead, It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IHttpResponseMessageWrapper)new TestHttpResponseMessage(HttpStatusCode.OK, JsonConvert.SerializeObject(new AzureSearchDiagnosticResponse
@@ -70,11 +71,15 @@ namespace NuGet.Monitoring.PackageLag.Tests
                 }))));
             var searchClient = new SearchServiceClient(_azureApiWrapper, httpClientMock.Object, _options, _logger);
 
-            var luceneResponse = searchClient.GetIndexLastReloadTimeAsync(_luceneInstance, token).Result;
-            var azureResponse = searchClient.GetIndexLastReloadTimeAsync(_azureSearchInstance, token).Result;
+            var azureStartTimestamp = DateTime.UtcNow;
 
-            Assert.True(azureResponse - DateTimeOffset.UtcNow < new TimeSpan(hours: 0, minutes: 0, seconds: 10));
-            Assert.True(luceneResponse.Equals(new DateTimeOffset()));
+            var luceneResponse = await searchClient.GetIndexLastReloadTimeAsync(_luceneInstance, token);
+            var azureResponse = await searchClient.GetIndexLastReloadTimeAsync(_azureSearchInstance, token);
+
+            var azureStopTimestamp = DateTime.UtcNow;
+
+            Assert.InRange(azureResponse, azureStartTimestamp, azureStopTimestamp);
+            Assert.Equal(luceneResponse, new DateTimeOffset(luceneExpectedTicks, new TimeSpan(0)));
         }
 
         private class TestHttpResponseMessage : IHttpResponseMessageWrapper
