@@ -39,7 +39,7 @@ WHERE [DeletedAccountKey] IN ({0})
         }
 
         /// <summary>
-        /// The User row and the AccountDeletes row for each deleted account will both be updated.
+        /// Both the User row and the AccountDelete row are updated for each deleted account.
         /// </summary>
         protected override int GetUpdatedRowsPerKey() => 2;
     }
