@@ -12,7 +12,7 @@ namespace NuGet.Services.CDNRedirect
         protected void Application_Start()
         {
             // Ensure that SSLv3 is disabled and that TLS v1.2 is enabled.
-            ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;;
+            ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
             // Ensure that certificate validation check for online revocations.
