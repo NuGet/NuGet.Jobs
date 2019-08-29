@@ -66,6 +66,13 @@ namespace NuGet.Jobs
                 Debugger.Launch();
             }
 
+            // Ensure that SSLv3 is disabled and that Tls v1.2 is enabled.
+            ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+
+            // Ensure that certificate validation check for online revocations.
+            ServicePointManager.CheckCertificateRevocationList = true;
+
             // Configure logging before Application Insights is enabled.
             // This is done so, in case Application Insights fails to initialize, we still see output.
             var loggerFactory = ConfigureLogging(job);
@@ -149,10 +156,6 @@ namespace NuGet.Jobs
                         $"The job is designed to run once so the -{JobArgumentNames.ReinitializeAfterSeconds} " +
                         $"argument is ignored.");
                 }
-
-                // Ensure that SSLv3 is disabled and that Tls v1.2 is enabled.
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
                 // Run the job loop
                 exitCode = await JobLoop(job, runContinuously.Value, sleepDuration.Value, reinitializeAfterSeconds, jobArgsDictionary);
