@@ -364,15 +364,15 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var lazyStream = new Lazy<Task<Stream>>(() => Task.FromResult<Stream>(stream));
 
                 _fileStorageService.Setup(x => x.SetMetadataAsync(
-                            It.Is<string>(folderName => folderName == testFolderName),
-                            It.Is<string>(fileName => fileName == testFileName),
-                            It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
-                        .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
-                            (folderName, fileName, updateMetadataAsync) =>
-                            {
-                                wasUpdated = updateMetadataAsync(lazyStream, metadata).Result;
-                            })
-                        .Returns(Task.CompletedTask);
+                        It.Is<string>(folderName => folderName == testFolderName),
+                        It.Is<string>(fileName => fileName == testFileName),
+                        It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
+                    .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
+                        (folderName, fileName, updateMetadataAsync) =>
+                        {
+                            wasUpdated = updateMetadataAsync(lazyStream, metadata).Result;
+                        })
+                    .Returns(Task.CompletedTask);
 
                 _telemetryService.Setup(
                     x => x.TrackDurationToHashPackage(
