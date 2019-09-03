@@ -14,6 +14,7 @@ using NuGet.Jobs.Validation;
 using NuGet.Services.Entities;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
+using NuGetGallery.Packaging;
 using Xunit;
 
 namespace NuGet.Services.Validation.Orchestrator.Tests
@@ -302,26 +303,76 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Fact]
-        public async Task UpdatePackageBlobMetadataAsync()
+        public async Task UpdatePackageBlobMetadataInValidationSetAsync()
+        {
+            await VerifyUpdatePackageBlobMetadata(_validationContainerName,
+                _validationSetPackageFileName,
+                f => _target.UpdatePackageBlobMetadataInValidationSetAsync(_validationSet));
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataInValidationSetAndThrowExceptionsAsync()
+        {
+            await UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_validationContainerName,
+                _validationSetPackageFileName,
+                f => _target.UpdatePackageBlobMetadataInValidationSetAsync(_validationSet));
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataInValidationAsync()
+        {
+            await VerifyUpdatePackageBlobMetadata(_validationContainerName,
+                _packageFileName,
+                f => _target.UpdatePackageBlobMetadataInValidationAsync(_validationSet));
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataInValidationAndThrowExceptionsAsync()
+        {
+            await UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_validationContainerName,
+                _packageFileName,
+                f => _target.UpdatePackageBlobMetadataInValidationAsync(_validationSet));
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataInPackageAsync()
+        {
+            await VerifyUpdatePackageBlobMetadata(_packagesContainerName,
+                _packageFileName,
+                f => _target.UpdatePackageBlobMetadataInPackageAsync(_validationSet));
+        }
+
+        [Fact]
+        public async Task UpdatePackageBlobMetadataInPackageAndThrowExceptionsAsync()
+        {
+            await UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_packagesContainerName,
+                _packageFileName,
+                f => _target.UpdatePackageBlobMetadataInPackageAsync(_validationSet));
+        }
+
+        private async Task VerifyUpdatePackageBlobMetadata(string testFolderName,
+            string testFileName, Func<PackageValidationSet,
+            Task<PackageStreamMetadata>> UpdatePackageBlobMetadata)
         {
             const string expectedHash = "NJAwUJVdN8HOjha9VNbopjFMaPVZlAPYFef4CpiYGvVEYmafbYo5CB9KtPFXF5pG7Tj7jBb4/axBJpxZKGEY2Q==";
 
             using (var stream = new MemoryStream(Encoding.UTF8.GetBytes("peach")))
             {
-                var lazyStream = new Lazy<Task<Stream>>(() => Task.FromResult<Stream>(stream));
                 var metadata = new Dictionary<string, string>();
                 var wasUpdated = false;
 
+                var lazyStream = new Lazy<Task<Stream>>(() => Task.FromResult<Stream>(stream));
+
                 _fileStorageService.Setup(x => x.SetMetadataAsync(
-                        It.Is<string>(folderName => folderName == CoreConstants.Folders.PackagesFolderName),
-                        It.Is<string>(fileName => fileName == _packageFileName),
-                        It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
-                    .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
-                        (folderName, fileName, updateMetadataAsync) =>
-                        {
-                            wasUpdated = updateMetadataAsync(lazyStream, metadata).Result;
-                        })
-                    .Returns(Task.CompletedTask);
+                            It.Is<string>(folderName => folderName == testFolderName),
+                            It.Is<string>(fileName => fileName == testFileName),
+                            It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
+                        .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
+                            (folderName, fileName, updateMetadataAsync) =>
+                            {
+                                wasUpdated = updateMetadataAsync(lazyStream, metadata).Result;
+                            })
+                        .Returns(Task.CompletedTask);
 
                 _telemetryService.Setup(
                     x => x.TrackDurationToHashPackage(
@@ -333,7 +384,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                         "System.IO.MemoryStream"))
                     .Returns(Mock.Of<IDisposable>());
 
-                var streamMetadata = await _target.UpdatePackageBlobMetadataAsync(_validationSet);
+                var streamMetadata = await UpdatePackageBlobMetadata(_validationSet);
 
                 Assert.True(wasUpdated);
                 Assert.Single(metadata);
@@ -348,8 +399,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
         }
 
-        [Fact]
-        public async Task UpdatePackageBlobMetadataAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws()
+        private async Task UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(string testFolderName,
+            string testFileName,
+            Func<PackageValidationSet, Task<PackageStreamMetadata>> UpdatePackageBlobMetadata)
         {
             const string expectedHash = "NJAwUJVdN8HOjha9VNbopjFMaPVZlAPYFef4CpiYGvVEYmafbYo5CB9KtPFXF5pG7Tj7jBb4/axBJpxZKGEY2Q==";
 
@@ -360,8 +412,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var wasUpdated = false;
 
                 _fileStorageService.Setup(x => x.SetMetadataAsync(
-                        It.Is<string>(folderName => folderName == CoreConstants.Folders.PackagesFolderName),
-                        It.Is<string>(fileName => fileName == _packageFileName),
+                        It.Is<string>(folderName => folderName == testFolderName),
+                        It.Is<string>(fileName => fileName == testFileName),
                         It.IsNotNull<Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>()))
                     .Callback<string, string, Func<Lazy<Task<Stream>>, IDictionary<string, string>, Task<bool>>>(
                         (folderName, fileName, updateMetadataAsync) =>
@@ -380,8 +432,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                         "System.IO.MemoryStream"))
                     .Returns(Mock.Of<IDisposable>());
 
-                await Assert.ThrowsAsync<StorageException>(
-                    () => _target.UpdatePackageBlobMetadataAsync(_validationSet));
+                await Assert.ThrowsAsync<StorageException>(() => UpdatePackageBlobMetadata(_validationSet));
 
                 Assert.True(wasUpdated);
                 Assert.Single(metadata);
