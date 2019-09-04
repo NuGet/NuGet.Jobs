@@ -271,6 +271,12 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 metaData = await _packageFileService.UpdatePackageBlobMetadataInValidationSetAsync(validationSet);
 
+                _logger.LogInformation(
+                        "Update the blob metadata of validation set {ValidationSetId} package {PackageId} {PackageVersion} with SHA512 hash value",
+                        validationSet.ValidationTrackingId,
+                        validationSet.PackageId,
+                        validationSet.PackageNormalizedVersion);
+
                 // Failures here should result in an unhandled exception. This means that this validation set has
                 // modified the package but is unable to copy the modified package into the packages container because
                 // another validation set completed first.
@@ -290,6 +296,12 @@ namespace NuGet.Services.Validation.Orchestrator
                     validationSet.ValidationTrackingId);
 
                 metaData = await _packageFileService.UpdatePackageBlobMetadataInValidationAsync(validationSet);
+
+                _logger.LogInformation(
+                        "Update the blob metadata of validation {ValidationSetId} package {PackageId} {PackageVersion} with SHA512 hash value",
+                        validationSet.ValidationTrackingId,
+                        validationSet.PackageId,
+                        validationSet.PackageNormalizedVersion);
 
                 try
                 {
