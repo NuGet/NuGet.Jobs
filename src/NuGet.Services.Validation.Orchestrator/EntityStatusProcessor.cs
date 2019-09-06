@@ -91,7 +91,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         protected virtual async Task MakePackageAvailableAsync(IValidatingEntity<T> validatingEntity, PackageValidationSet validationSet)
         {
-            // 1) Operate on blob storage, and update the metadata with SHA512 hash value before the copy.
+            // 1) Operate on blob storage, and update the metadata.
             var packageStreamMetadataAndCopyStatusWrapper = await UpdatePublicPackageAsync(validationSet);
 
             // 2) Update the package's blob properties in the public blob storage container.
@@ -217,7 +217,7 @@ namespace NuGet.Services.Validation.Orchestrator
             return Task.CompletedTask;
         }
 
-        private async Task<PackageStreamMetadataAndCopiedStatusWrapper> UpdatePublicPackageAsync(PackageValidationSet validationSet)
+        private async Task<UpdatePublicPackageResult> UpdatePublicPackageAsync(PackageValidationSet validationSet)
         {
             _logger.LogInformation("Copying .nupkg to public storage for package {PackageId} {PackageVersion}, validation set {ValidationSetId}",
                 validationSet.PackageId,
@@ -272,10 +272,10 @@ namespace NuGet.Services.Validation.Orchestrator
                 metaData = await _packageFileService.UpdatePackageBlobMetadataInValidationSetAsync(validationSet);
 
                 _logger.LogInformation(
-                        "Update the blob metadata of validation set {ValidationSetId} package {PackageId} {PackageVersion} with SHA512 hash value",
-                        validationSet.ValidationTrackingId,
-                        validationSet.PackageId,
-                        validationSet.PackageNormalizedVersion);
+                    "Update the blob metadata of validation set {ValidationSetId} package {PackageId} {PackageVersion}",
+                    validationSet.ValidationTrackingId,
+                    validationSet.PackageId,
+                    validationSet.PackageNormalizedVersion);
 
                 // Failures here should result in an unhandled exception. This means that this validation set has
                 // modified the package but is unable to copy the modified package into the packages container because
@@ -298,10 +298,10 @@ namespace NuGet.Services.Validation.Orchestrator
                 metaData = await _packageFileService.UpdatePackageBlobMetadataInValidationAsync(validationSet);
 
                 _logger.LogInformation(
-                        "Update the blob metadata of validation {ValidationSetId} package {PackageId} {PackageVersion} with SHA512 hash value",
-                        validationSet.ValidationTrackingId,
-                        validationSet.PackageId,
-                        validationSet.PackageNormalizedVersion);
+                    "Update the blob metadata of validation {ValidationSetId} package {PackageId} {PackageVersion}",
+                    validationSet.ValidationTrackingId,
+                    validationSet.PackageId,
+                    validationSet.PackageNormalizedVersion);
 
                 try
                 {
@@ -326,7 +326,20 @@ namespace NuGet.Services.Validation.Orchestrator
                 }
             }
 
-            return new PackageStreamMetadataAndCopiedStatusWrapper(metaData, copied);
+            return new UpdatePublicPackageResult(metaData, copied);
+        }
+
+        private class UpdatePublicPackageResult
+        {
+            public PackageStreamMetadata PackageStreamMetadata { get; }
+
+            public bool Copied { get; }
+
+            public UpdatePublicPackageResult(PackageStreamMetadata packageStreamMetadata, bool copied)
+            {
+                PackageStreamMetadata = packageStreamMetadata;
+                Copied = copied;
+            }
         }
     }
 }

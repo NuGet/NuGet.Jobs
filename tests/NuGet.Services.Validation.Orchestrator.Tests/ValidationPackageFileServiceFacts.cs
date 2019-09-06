@@ -334,22 +334,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 f => _target.UpdatePackageBlobMetadataInValidationAsync(_validationSet));
         }
 
-        [Fact]
-        public async Task UpdatePackageBlobMetadataInPackageAsync()
-        {
-            await VerifyUpdatePackageBlobMetadata(_packagesContainerName,
-                _packageFileName,
-                f => _target.UpdatePackageBlobMetadataInPackageAsync(_validationSet));
-        }
-
-        [Fact]
-        public async Task UpdatePackageBlobMetadataInPackageAndThrowExceptionsAsync()
-        {
-            await UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_packagesContainerName,
-                _packageFileName,
-                f => _target.UpdatePackageBlobMetadataInPackageAsync(_validationSet));
-        }
-
         private async Task VerifyUpdatePackageBlobMetadata(string testFolderName,
             string testFileName, Func<PackageValidationSet,
             Task<PackageStreamMetadata>> UpdatePackageBlobMetadata)

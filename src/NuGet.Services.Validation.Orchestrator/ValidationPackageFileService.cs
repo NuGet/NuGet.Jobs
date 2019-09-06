@@ -262,12 +262,6 @@ namespace NuGet.Services.Validation.Orchestrator
             return await UpdatePackageBlobMetadataAsync(validationSet, _fileMetadataService.ValidationFolderName, fileName);
         }
 
-        public async Task<PackageStreamMetadata> UpdatePackageBlobMetadataInPackageAsync(PackageValidationSet validationSet)
-        {
-            var fileName = BuildFileName(validationSet, _fileMetadataService.FileSavePathTemplate, _fileMetadataService.FileExtension);
-            return await UpdatePackageBlobMetadataAsync(validationSet, _fileMetadataService.FileFolderName, fileName);
-        }
-
         private async Task<PackageStreamMetadata> UpdatePackageBlobMetadataAsync(PackageValidationSet validationSet, string fileFolderName, string fileName)
         {
             PackageStreamMetadata streamMetadata = null;
