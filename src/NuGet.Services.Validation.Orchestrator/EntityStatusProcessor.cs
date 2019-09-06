@@ -272,7 +272,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 metaData = await _packageFileService.UpdatePackageBlobMetadataInValidationSetAsync(validationSet);
 
                 _logger.LogInformation(
-                    "Update the blob metadata of validation set {ValidationSetId} package {PackageId} {PackageVersion}",
+                    "Updated the blob metadata of validation set {ValidationSetId} package {PackageId} {PackageVersion}",
                     validationSet.ValidationTrackingId,
                     validationSet.PackageId,
                     validationSet.PackageNormalizedVersion);
@@ -298,7 +298,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 metaData = await _packageFileService.UpdatePackageBlobMetadataInValidationAsync(validationSet);
 
                 _logger.LogInformation(
-                    "Update the blob metadata of validation {ValidationSetId} package {PackageId} {PackageVersion}",
+                    "Updated the blob metadata of validation {ValidationSetId} package {PackageId} {PackageVersion}",
                     validationSet.ValidationTrackingId,
                     validationSet.PackageId,
                     validationSet.PackageNormalizedVersion);
