@@ -110,12 +110,7 @@ namespace NuGet.Jobs.GitHubIndexer
                         };
 
                         projDocument.Load(xmlReader);
-                        var refs = projDocument
-                            .ChildNodes
-                            .Cast<XmlNode>()
-                            .Where(node => node.LocalName.Equals("PackageReference"));
-
-                        return refs
+                        return GetAllPackageReferenceNodes(projDocument)
                             .Select(p => p.Attributes["Include"])
                             .Where(includeAttr => includeAttr != null) // Select all that have an "Include" attribute
                             .Select(includeAttr => includeAttr.Value)
@@ -131,6 +126,27 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             return Array.Empty<string>();
+        }
+
+        private IEnumerable<XmlNode> GetAllPackageReferenceNodes(XmlNode parent)
+        {
+            foreach (var node in parent.ChildNodes.Cast<XmlNode>())
+            {
+                if (IsPackageReferenceNode(node))
+                {
+                    yield return node;
+                }
+
+                foreach (var childPackageReferenceNode in GetAllPackageReferenceNodes(node))
+                {
+                    yield return childPackageReferenceNode;
+                }
+            }
+        }
+
+        private bool IsPackageReferenceNode(XmlNode node)
+        {
+            return node.LocalName.Equals("PackageReference");
         }
 
         /// <summary>
