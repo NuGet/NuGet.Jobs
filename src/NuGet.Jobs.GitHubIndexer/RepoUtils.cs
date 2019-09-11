@@ -132,7 +132,7 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             foreach (var node in parent.ChildNodes.Cast<XmlNode>())
             {
-                if (IsPackageReferenceNode(node))
+                if (node.LocalName.Equals("PackageReference"))
                 {
                     yield return node;
                 }
@@ -142,11 +142,6 @@ namespace NuGet.Jobs.GitHubIndexer
                     yield return childPackageReferenceNode;
                 }
             }
-        }
-
-        private bool IsPackageReferenceNode(XmlNode node)
-        {
-            return node.LocalName.Equals("PackageReference");
         }
 
         /// <summary>
