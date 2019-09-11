@@ -305,7 +305,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public async Task UpdatePackageBlobMetadataInValidationSetAsync()
         {
-            await VerifyUpdatePackageBlobMetadata(_validationContainerName,
+            await UpdatePackageBlobMetadataAsync(_validationContainerName,
                 _validationSetPackageFileName,
                 f => _target.UpdatePackageBlobMetadataInValidationSetAsync(_validationSet));
         }
@@ -313,7 +313,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public async Task UpdatePackageBlobMetadataInValidationSetAndThrowExceptionsAsync()
         {
-            await UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_validationContainerName,
+            await UpdatePackageBlobMetadataAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_validationContainerName,
                 _validationSetPackageFileName,
                 f => _target.UpdatePackageBlobMetadataInValidationSetAsync(_validationSet));
         }
@@ -321,7 +321,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public async Task UpdatePackageBlobMetadataInValidationAsync()
         {
-            await VerifyUpdatePackageBlobMetadata(_validationContainerName,
+            await UpdatePackageBlobMetadataAsync(_validationContainerName,
                 _packageFileName,
                 f => _target.UpdatePackageBlobMetadataInValidationAsync(_validationSet));
         }
@@ -329,14 +329,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public async Task UpdatePackageBlobMetadataInValidationAndThrowExceptionsAsync()
         {
-            await UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_validationContainerName,
+            await UpdatePackageBlobMetadataAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(_validationContainerName,
                 _packageFileName,
                 f => _target.UpdatePackageBlobMetadataInValidationAsync(_validationSet));
         }
 
-        private async Task VerifyUpdatePackageBlobMetadata(string testFolderName,
+        private async Task UpdatePackageBlobMetadataAsync(string testFolderName,
             string testFileName, Func<PackageValidationSet,
-            Task<PackageStreamMetadata>> UpdatePackageBlobMetadata)
+            Task<PackageStreamMetadata>> UpdateBlobMetadataAsync)
         {
             const string expectedHash = "NJAwUJVdN8HOjha9VNbopjFMaPVZlAPYFef4CpiYGvVEYmafbYo5CB9KtPFXF5pG7Tj7jBb4/axBJpxZKGEY2Q==";
 
@@ -368,7 +368,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                         "System.IO.MemoryStream"))
                     .Returns(Mock.Of<IDisposable>());
 
-                var streamMetadata = await UpdatePackageBlobMetadata(_validationSet);
+                var streamMetadata = await UpdateBlobMetadataAsync(_validationSet);
 
                 Assert.True(wasUpdated);
                 Assert.Single(metadata);
@@ -383,9 +383,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             }
         }
 
-        private async Task UpdatePackageBlobMetadataInValidationSetAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(string testFolderName,
+        private async Task UpdatePackageBlobMetadataAsync_WhenETagChangesBetweenSuccessiveReadAndWriteOperations_Throws(string testFolderName,
             string testFileName,
-            Func<PackageValidationSet, Task<PackageStreamMetadata>> UpdatePackageBlobMetadata)
+            Func<PackageValidationSet, Task<PackageStreamMetadata>> UpdateBlobMetadataAsync)
         {
             const string expectedHash = "NJAwUJVdN8HOjha9VNbopjFMaPVZlAPYFef4CpiYGvVEYmafbYo5CB9KtPFXF5pG7Tj7jBb4/axBJpxZKGEY2Q==";
 
@@ -416,7 +416,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                         "System.IO.MemoryStream"))
                     .Returns(Mock.Of<IDisposable>());
 
-                await Assert.ThrowsAsync<StorageException>(() => UpdatePackageBlobMetadata(_validationSet));
+                await Assert.ThrowsAsync<StorageException>(() => UpdateBlobMetadataAsync(_validationSet));
 
                 Assert.True(wasUpdated);
                 Assert.Single(metadata);
