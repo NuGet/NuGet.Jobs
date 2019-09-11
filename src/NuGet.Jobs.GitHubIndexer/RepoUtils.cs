@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
+using System.Xml;
 using Microsoft.Extensions.Logging;
 using NuGet.Packaging;
 
@@ -100,20 +100,30 @@ namespace NuGet.Jobs.GitHubIndexer
         {
             try
             {
-                var projDocument = XDocument.Load(fileStream);
-                var refs =
-                    projDocument
-                        .DescendantNodes()
-                        .OfType<XElement>()
-                        .Where(node => (node).Name.LocalName.Equals("PackageReference"));
+                using (var streamReader = new StreamReader(fileStream))
+                {
+                    using (var xmlReader = XmlReader.Create(streamReader))
+                    {
+                        var projDocument = new XmlDocument
+                        {
+                            XmlResolver = null
+                        };
 
-                return refs
-                    .Select(p => p.Attribute("Include"))
-                    .Where(includeAttr => includeAttr != null)// Select all that have an "Include" attribute
-                    .Select(includeAttr => includeAttr.Value)
-                    .Where(includeAttrValue => !includeAttrValue.Contains("$"))
-                    .Where(IsValidPackageId)
-                    .ToList();
+                        projDocument.Load(xmlReader);
+                        var refs = projDocument
+                            .ChildNodes
+                            .Cast<XmlNode>()
+                            .Where(node => node.LocalName.Equals("PackageReference"));
+
+                        return refs
+                            .Select(p => p.Attributes["Include"])
+                            .Where(includeAttr => includeAttr != null) // Select all that have an "Include" attribute
+                            .Select(includeAttr => includeAttr.Value)
+                            .Where(includeAttrValue => !includeAttrValue.Contains("$"))
+                            .Where(IsValidPackageId)
+                            .ToList();
+                    }
+                }
             }
             catch (Exception e)
             {
