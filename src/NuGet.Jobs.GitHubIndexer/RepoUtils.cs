@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -101,23 +102,21 @@ namespace NuGet.Jobs.GitHubIndexer
             try
             {
                 using (var streamReader = new StreamReader(fileStream))
+                using (var xmlReader = XmlReader.Create(streamReader))
                 {
-                    using (var xmlReader = XmlReader.Create(streamReader))
+                    var projDocument = new XmlDocument
                     {
-                        var projDocument = new XmlDocument
-                        {
-                            XmlResolver = null
-                        };
+                        XmlResolver = null
+                    };
 
-                        projDocument.Load(xmlReader);
-                        return GetAllPackageReferenceNodes(projDocument)
-                            .Select(p => p.Attributes["Include"])
-                            .Where(includeAttr => includeAttr != null) // Select all that have an "Include" attribute
-                            .Select(includeAttr => includeAttr.Value)
-                            .Where(includeAttrValue => !includeAttrValue.Contains("$"))
-                            .Where(IsValidPackageId)
-                            .ToList();
-                    }
+                    projDocument.Load(xmlReader);
+                    return GetAllPackageReferenceNodes(projDocument)
+                        .Select(p => p.Attributes["Include"])
+                        .Where(includeAttr => includeAttr != null) // Select all that have an "Include" attribute
+                        .Select(includeAttr => includeAttr.Value)
+                        .Where(includeAttrValue => !includeAttrValue.Contains("$"))
+                        .Where(IsValidPackageId)
+                        .ToList();
                 }
             }
             catch (Exception e)
@@ -128,18 +127,20 @@ namespace NuGet.Jobs.GitHubIndexer
             return Array.Empty<string>();
         }
 
-        private IEnumerable<XmlNode> GetAllPackageReferenceNodes(XmlNode parent)
+        private IEnumerable<XmlNode> GetAllPackageReferenceNodes(XmlNode root)
         {
-            foreach (var node in parent.ChildNodes.Cast<XmlNode>())
+            // Using ConcurrentQueue here because Queue does not support TryDequeue in our version of .NET Framework.
+            var queue = new ConcurrentQueue<XmlNode>(new[] { root });
+            while (queue.TryDequeue(out var parent))
             {
-                if (node.LocalName.Equals("PackageReference"))
+                foreach (var node in parent.ChildNodes.Cast<XmlNode>())
                 {
-                    yield return node;
-                }
+                    if (node.LocalName.Equals("PackageReference"))
+                    {
+                        yield return node;
+                    }
 
-                foreach (var childPackageReferenceNode in GetAllPackageReferenceNodes(node))
-                {
-                    yield return childPackageReferenceNode;
+                    queue.Enqueue(node);
                 }
             }
         }
