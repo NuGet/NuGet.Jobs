@@ -129,10 +129,10 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private IEnumerable<XmlNode> GetAllPackageReferenceNodes(XmlNode root)
         {
-            // Using ConcurrentQueue here because Queue does not support TryDequeue in our version of .NET Framework.
-            var queue = new ConcurrentQueue<XmlNode>(new[] { root });
-            while (queue.TryDequeue(out var parent))
+            var queue = new Queue<XmlNode>(new[] { root });
+            while (queue.Any())
             {
+                var parent = queue.Dequeue();
                 foreach (var node in parent.ChildNodes.Cast<XmlNode>())
                 {
                     if (node.LocalName.Equals("PackageReference"))
