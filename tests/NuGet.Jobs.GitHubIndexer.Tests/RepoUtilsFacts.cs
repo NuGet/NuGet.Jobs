@@ -6,6 +6,7 @@ using Moq;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace NuGet.Jobs.GitHubIndexer.Tests
@@ -109,7 +110,10 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
         public void ReturnsCorrectReferences()
         {
             // Arrange
-            var stream = File.OpenRead("NuGetGallery.csproj.test");
+            var stream = Assembly
+                .GetExecutingAssembly()
+                .GetManifestResourceStream("NuGet.Jobs.GitHubIndexer.Tests.NuGetGallery.csproj.test");
+
             var utils = new RepoUtils(Mock.Of<ILogger<RepoUtils>>());
             
             // Act

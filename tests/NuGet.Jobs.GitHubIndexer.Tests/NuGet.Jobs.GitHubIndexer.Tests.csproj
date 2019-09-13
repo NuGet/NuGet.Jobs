@@ -66,9 +66,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="NuGetGallery.csproj.test">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <EmbeddedResource Include="NuGetGallery.csproj.test" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
