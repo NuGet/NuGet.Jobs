@@ -109,7 +109,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 using (var streamReader = new StreamReader(fileStream))
                 using (var xmlReader = XmlReader.Create(streamReader, xmlSettings))
                 {
-                    var projDocument = new XmlDocument;
+                    var projDocument = new XmlDocument();
                     projDocument.XmlResolver = null;
 
                     projDocument.Load(xmlReader);
