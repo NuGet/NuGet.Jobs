@@ -21,6 +21,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private const string BlobStorageContainerName = "content";
         private const string GitHubUsageFileName = "GitHubUsage.v1.json";
         public const int MaxBlobSizeBytes = 1 << 20; // 1 MB = 2^20
+        private static TimeSpan RepoIndexingTimeout = TimeSpan.FromMinutes(90);
 
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
@@ -185,22 +186,31 @@ namespace NuGet.Jobs.GitHubIndexer
             return true;
         }
 
+        /// <remarks>
+        /// Normally, for parallel code like this, we would be using tasks, but <paramref name="work"/> consists primarily of synchronous code (through LibGit2Sharp).
+        /// If we were to do this expensive synchronous code on the main thread pool, it would lead to performance impacts.
+        /// As a result, we are using <see cref="Thread"/>s here, which live in their own pool.
+        /// </remarks>
         private async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
         {
             using (var sem = new SemaphoreSlim(_maxDegreeOfParallelism))
             {
-                for (int i = 0; i < _maxDegreeOfParallelism; ++i)
+                while (items.TryTake(out var item))
                 {
-                    await sem.WaitAsync();
+                    using (var cancellationTokenSource = new CancellationTokenSource(RepoIndexingTimeout))
+                    {
+                        await sem.WaitAsync(cancellationTokenSource.Token);
+                    }
+
                     var thread = new Thread(() =>
-                        {
-                            while (items.TryTake(out var item))
-                            {
-                                work(item);
-                            }
-                            sem.Release();
-                        });
-                    thread.IsBackground = true; // This is important as it allows the process to exit while this thread is running
+                    {
+                        work(item);
+                        sem.Release();
+                    })
+                    {
+                        IsBackground = true // This is important as it allows the process to exit while this thread is running
+                    };
+
                     thread.Start();
                 }
 
