@@ -110,6 +110,8 @@ namespace NuGet.Jobs.GitHubIndexer
                 using (var xmlReader = XmlReader.Create(streamReader, xmlSettings))
                 {
                     var projDocument = new XmlDocument();
+                    projDocument.XmlResolver = null;
+
                     projDocument.Load(xmlReader);
                     return GetAllPackageReferenceNodes(projDocument)
                         .Select(p => p.Attributes["Include"])
