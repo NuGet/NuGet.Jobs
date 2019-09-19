@@ -125,10 +125,10 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
         {
-            if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
+            /*if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
             {
                 return cachedVersion;
-            }
+            }*/
 
             using (_telemetry.TrackIndexRepositoryDuration(repo.Id))
             using (_logger.BeginScope("Starting indexing for repo {Name}", repo.Id))
