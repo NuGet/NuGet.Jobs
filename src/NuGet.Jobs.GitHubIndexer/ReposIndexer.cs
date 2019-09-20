@@ -125,10 +125,10 @@ namespace NuGet.Jobs.GitHubIndexer
 
         private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
         {
-            /*if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
+            if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
             {
                 return cachedVersion;
-            }*/
+            }
 
             using (_telemetry.TrackIndexRepositoryDuration(repo.Id))
             using (_logger.BeginScope("Starting indexing for repo {Name}", repo.Id))
@@ -186,39 +186,61 @@ namespace NuGet.Jobs.GitHubIndexer
             return true;
         }
 
+        private async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
+        {
+            using (var cancellationTokenSource = new CancellationTokenSource())
+            {
+                // We cannot return this task directly because, if we do, the CancellationTokenSource will be disposed before the tasks are complete.
+                await Task.WhenAll(Enumerable
+                    .Repeat(0, _maxDegreeOfParallelism)
+                    .Select(x => ProcessFromBag(items, work, cancellationTokenSource)));
+            }
+        }
+
         /// <remarks>
         /// Normally, for parallel code like this, we would be using tasks, but <paramref name="work"/> consists primarily of synchronous code (through LibGit2Sharp).
         /// If we were to do this expensive synchronous code on the main thread pool, it would lead to performance impacts.
         /// As a result, we are using <see cref="Thread"/>s here, which live in their own pool.
         /// </remarks>
-        private async Task ProcessInParallel<T>(ConcurrentBag<T> items, Action<T> work)
+        private async Task ProcessFromBag<T>(ConcurrentBag<T> items, Action<T> work, CancellationTokenSource parentCancellationTokenSource)
         {
-            using (var sem = new SemaphoreSlim(_maxDegreeOfParallelism))
+            try
             {
-                while (items.TryTake(out var item))
+                using (var sem = new SemaphoreSlim(1))
                 {
-                    using (var cancellationTokenSource = new CancellationTokenSource(RepoIndexingTimeout))
+                    while (items.TryTake(out var item))
                     {
-                        await sem.WaitAsync(cancellationTokenSource.Token);
+                        using (var delayCancellationTokenSource = new CancellationTokenSource(RepoIndexingTimeout))
+                        using (var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(parentCancellationTokenSource.Token, delayCancellationTokenSource.Token))
+                        {
+                            await sem.WaitAsync(cancellationTokenSource.Token);
+                        }
+
+                        var thread = new Thread(() =>
+                        {
+                            work(item);
+                            try
+                            {
+                                sem.Release();
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                // The semaphore may be disposed if the Task cancelled early.
+                            }
+                        })
+                        {
+                            IsBackground = true // This is important as it allows the process to exit while this thread is running
+                        };
+
+                        thread.Start();
                     }
-
-                    var thread = new Thread(() =>
-                    {
-                        work(item);
-                        sem.Release();
-                    })
-                    {
-                        IsBackground = true // This is important as it allows the process to exit while this thread is running
-                    };
-
-                    thread.Start();
                 }
-
-                // Wait for all Threads to complete
-                for (int i = 0; i < _maxDegreeOfParallelism; ++i)
-                {
-                    await sem.WaitAsync();
-                }
+            }
+            catch
+            {
+                // If any task fails, we want to cancel out of all tasks and crash the process.
+                parentCancellationTokenSource.Cancel();
+                throw;
             }
         }
     }
