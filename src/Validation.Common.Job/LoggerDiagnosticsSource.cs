@@ -81,6 +81,8 @@ namespace NuGet.Jobs.Validation
                     return TraceEventType.Error;
                 case LogLevel.Warning:
                     return TraceEventType.Warning;
+                case LogLevel.Debug:
+                    return TraceEventType.Verbose;
                 default:
                     return TraceEventType.Information;
             }

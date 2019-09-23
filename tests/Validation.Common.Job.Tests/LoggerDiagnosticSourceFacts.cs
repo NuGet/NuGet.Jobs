@@ -160,7 +160,7 @@ namespace Validation.Common.Job.Tests
             [InlineData(LogLevel.Error, TraceEventType.Error)]
             [InlineData(LogLevel.Warning, TraceEventType.Warning)]
             [InlineData(LogLevel.Trace, TraceEventType.Information)]
-            [InlineData(LogLevel.Debug, TraceEventType.Information)]
+            [InlineData(LogLevel.Debug, TraceEventType.Verbose)]
             [InlineData(LogLevel.Information, TraceEventType.Information)]
             [InlineData(LogLevel.None, TraceEventType.Information)]
             [InlineData((LogLevel)(-1), TraceEventType.Information)]
