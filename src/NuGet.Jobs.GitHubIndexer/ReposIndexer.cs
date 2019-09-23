@@ -208,32 +208,31 @@ namespace NuGet.Jobs.GitHubIndexer
             {
                 using (var sem = new SemaphoreSlim(0, 1))
                 {
-                    using (var delayCancellationTokenSource = new CancellationTokenSource())
-                    using (var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(parentCancellationTokenSource.Token, delayCancellationTokenSource.Token))
+                    while (items.TryTake(out var item))
                     {
-                        while (items.TryTake(out var item))
+                        var thread = new Thread(() =>
                         {
-                            var thread = new Thread(() =>
+                            work(item);
+                            try
                             {
-                                work(item);
-                                try
-                                {
-                                    sem.Release();
-                                }
-                                catch (ObjectDisposedException)
-                                {
-                                    // The semaphore may be disposed if the task cancelled early.
-                                }
-                            })
+                                sem.Release();
+                            }
+                            catch (ObjectDisposedException)
                             {
-                                IsBackground = true // This is important as it allows the process to exit while this thread is running
-                            };
+                                // The semaphore may be disposed if the task cancelled early.
+                            }
+                        })
+                        {
+                            IsBackground = true // This is important as it allows the process to exit while this thread is running
+                        };
 
-                            thread.Start();
+                        thread.Start();
 
-                            // Wait for the thread to complete processing the repository.
-                            // If it takes longer than the timeout to complete, cancel the task.
-                            delayCancellationTokenSource.CancelAfter(RepoIndexingTimeout);
+                        // Wait for the thread to complete processing the repository.
+                        // If it takes longer than the timeout to complete, cancel the task.
+                        using (var delayCancellationTokenSource = new CancellationTokenSource(RepoIndexingTimeout))
+                        using (var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(parentCancellationTokenSource.Token, delayCancellationTokenSource.Token))
+                        {
                             await sem.WaitAsync(cancellationTokenSource.Token);
                         }
                     }
