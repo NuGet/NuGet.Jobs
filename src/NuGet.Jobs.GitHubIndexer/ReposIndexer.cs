@@ -21,7 +21,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private const string BlobStorageContainerName = "content";
         private const string GitHubUsageFileName = "GitHubUsage.v1.json";
         public const int MaxBlobSizeBytes = 1 << 20; // 1 MB = 2^20
-        private static TimeSpan RepoIndexingTimeout = TimeSpan.FromMinutes(90);
+        private static TimeSpan RepoIndexingTimeout = TimeSpan.FromMinutes(150);
 
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
