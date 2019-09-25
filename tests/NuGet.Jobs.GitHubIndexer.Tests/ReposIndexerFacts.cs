@@ -184,7 +184,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     repo,
                     repoFiles,
                     telemetry,
-                    // This should not be called because the task will be cancelled before it writes.
+                    // This should not be called because the process will be cancelled before it writes.
                     onDisposeHandler: (string serializedValue) => Assert.True(false),
                     shouldTimeOut: true);
 
