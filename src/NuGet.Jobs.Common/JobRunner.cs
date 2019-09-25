@@ -212,6 +212,9 @@ namespace NuGet.Jobs
 
             int exitCode = 0;
 
+            // This tells Application Insights that, even though a heartbeat is reported, 
+            // the state of the application is unhealthy when the exitcode is different from zero.
+            // The heartbeat metadata is enriched with the job loop exit code.
             ApplicationInsights.HeartbeatManager?.AddHeartbeatProperty(
                 HeartbeatProperty_JobLoopExitCode,
                 exitCode.ToString(),
