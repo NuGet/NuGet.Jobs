@@ -26,6 +26,11 @@ namespace NuGet.Jobs.GitHubIndexer
         public int MaxDegreeOfParallelism { get; set; } = 32;
 
         /// <summary>
+        /// If a repo takes longer to index than this timeout, we will crash the process and attempt again later.
+        /// </summary>
+        public int RepoIndexingTimeoutMinutes { get; set; } = 150;
+
+        /// <summary>
         /// The connection string to be used for a <see cref="NuGetGallery.CloudBlobClientWrapper"/> instance.
         /// </summary>
         public string StorageConnectionString { get; set; }

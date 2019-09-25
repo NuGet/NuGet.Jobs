@@ -21,7 +21,6 @@ namespace NuGet.Jobs.GitHubIndexer
         private const string BlobStorageContainerName = "content";
         private const string GitHubUsageFileName = "GitHubUsage.v1.json";
         public const int MaxBlobSizeBytes = 1 << 20; // 1 MB = 2^20
-        private static TimeSpan RepoIndexingTimeout = TimeSpan.FromMinutes(150);
 
         public static readonly string RepositoriesDirectory = Path.Combine(WorkingDirectory, "repos");
         public static readonly string CacheDirectory = Path.Combine(WorkingDirectory, "cache");
@@ -30,6 +29,7 @@ namespace NuGet.Jobs.GitHubIndexer
         private readonly IGitRepoSearcher _searcher;
         private readonly ILogger<ReposIndexer> _logger;
         private readonly int _maxDegreeOfParallelism;
+        private readonly TimeSpan _repoIndexingTimeout;
         private readonly IRepositoriesCache _repoCache;
         private readonly IRepoFetcher _repoFetcher;
         private readonly IConfigFileParser _configFileParser;
@@ -58,6 +58,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             _maxDegreeOfParallelism = configuration.Value.MaxDegreeOfParallelism;
+            _repoIndexingTimeout = TimeSpan.FromMinutes(configuration.Value.RepoIndexingTimeoutMinutes);
             _cloudClient = cloudClient ?? throw new ArgumentNullException(nameof(cloudClient));
             _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         }
@@ -230,7 +231,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
                         // Wait for the thread to complete processing the repository.
                         // If it takes longer than the timeout to complete, cancel the task.
-                        using (var delayCancellationTokenSource = new CancellationTokenSource(RepoIndexingTimeout))
+                        using (var delayCancellationTokenSource = new CancellationTokenSource(_repoIndexingTimeout))
                         using (var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(parentCancellationTokenSource.Token, delayCancellationTokenSource.Token))
                         {
                             await sem.WaitAsync(cancellationTokenSource.Token);
