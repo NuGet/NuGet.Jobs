@@ -25,12 +25,19 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             IReadOnlyList<GitFileInfo> repoFiles,
             Mock<ITelemetryService> mockTelemetry,
             Action<string> onDisposeHandler,
-            Func<ICheckedOutFile, IReadOnlyList<string>> configFileParser = null)
+            Func<ICheckedOutFile, IReadOnlyList<string>> configFileParser = null,
+            bool shouldTimeOut = false)
         {
             var mockConfig = new Mock<IOptionsSnapshot<GitHubIndexerConfiguration>>();
+            var config = new GitHubIndexerConfiguration();
+            if (shouldTimeOut)
+            {
+                config.RepoIndexingTimeoutMinutes = 0;
+            }
+
             mockConfig
                 .SetupGet(x => x.Value)
-                .Returns(new GitHubIndexerConfiguration());
+                .Returns(config);
 
             var mockSearcher = new Mock<IGitRepoSearcher>();
             mockSearcher
@@ -155,6 +162,33 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 uploadMetric.Verify(m => m.Dispose(), Times.Never);
 
                 telemetry.Verify(t => t.TrackEmptyGitHubUsageBlob(), Times.Once);
+            }
+
+            [Fact]
+            public async Task TestTimeoutCancelsProcessing()
+            {
+                var repo = new WritableRepositoryInformation("owner/test", url: "", stars: 100, description: "", mainBranch: "master");
+                var configFileNames = new string[] { "packages.config", "someProjFile.csproj", "someProjFile.props", "someProjFile.targets" };
+                var repoFiles = new List<GitFileInfo>()
+                {
+                    new GitFileInfo("file1.txt", 1),
+                    new GitFileInfo("file2.txt", 1),
+                    new GitFileInfo(configFileNames[0], 1),
+                    new GitFileInfo(configFileNames[1], 1),
+                    new GitFileInfo(configFileNames[2], 1),
+                    new GitFileInfo(configFileNames[3], 1)
+                };
+
+                var telemetry = new Mock<ITelemetryService>();
+                var indexer = CreateIndexer(
+                    repo,
+                    repoFiles,
+                    telemetry,
+                    // This should not be called since there is no dependencies
+                    onDisposeHandler: (string serializedValue) => Assert.True(false),
+                    shouldTimeOut: true);
+
+                await Assert.ThrowsAsync<OperationCanceledException>(() => indexer.RunAsync());
             }
 
             [Fact]
