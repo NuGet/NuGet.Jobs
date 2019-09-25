@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -48,6 +49,8 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             RepositoryInformation mockVal;
             mockRepoCache
                 .Setup(x => x.TryGetCachedVersion(It.IsAny<WritableRepositoryInformation>(), out mockVal))
+                // Wait at least one millisecond so that the timeout can take affect.
+                .Callback(() => Thread.Sleep(1))
                 .Returns(false); // Simulate no cache
             mockRepoCache
                 .Setup(x => x.Persist(It.IsAny<RepositoryInformation>()));
