@@ -3,6 +3,7 @@
 
 using Gallery.Maintenance.Models;
 using Microsoft.Extensions.Logging;
+using System.Data.SqlClient;
 
 namespace Gallery.Maintenance
 {
@@ -38,6 +39,18 @@ DELETE FROM [dbo].[Credentials] WHERE [Key] IN ({0})
                 expiredKey.CredentialKey, expiredKey.ScopeSubject, expiredKey.Expires);
 
             return expiredKey.CredentialKey;
+        }
+
+        protected override PackageVerificationKey ReadRow(SqlDataReader reader)
+        {
+            return new PackageVerificationKey
+            {
+                CredentialKey = reader.GetInt32(0),
+                UserKey = reader.GetInt32(1),
+                Username = reader.GetString(2),
+                Expires = reader.GetDateTime(3),
+                ScopeSubject = reader.GetString(4)
+            };
         }
     }
 }

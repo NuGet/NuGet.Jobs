@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 
 namespace Gallery.Maintenance
@@ -21,7 +22,7 @@ WHERE GETUTCDATE() > DATEADD(year, 1, d.[DeletedOn]) AND [WasUsernameReleased] =
 
         protected override string GetUpdateQuery() => @"
 UPDATE [dbo].[Users]
-SET [Username] = NEWID()
+SET [Username] = 'deleted-' + CAST(NEWID() AS CHAR(36))
 WHERE [Key] IN ({0})
 
 UPDATE [dbo].[AccountDeletes]
@@ -42,5 +43,15 @@ WHERE [DeletedAccountKey] IN ({0})
         /// Both the User row and the AccountDelete row are updated for each deleted account.
         /// </summary>
         protected override int GetUpdatedRowsPerKey() => 2;
+
+        protected override ExpiredDeletedAccount ReadRow(SqlDataReader reader)
+        {
+            return new ExpiredDeletedAccount
+            {
+                Key = reader.GetInt32(0),
+                Username = reader.GetString(1),
+                DeletedOn = reader.GetDateTime(2)
+            };
+        }
     }
 }
