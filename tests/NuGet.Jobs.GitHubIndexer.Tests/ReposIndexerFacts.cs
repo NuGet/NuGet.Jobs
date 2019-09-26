@@ -49,8 +49,14 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             RepositoryInformation mockVal;
             mockRepoCache
                 .Setup(x => x.TryGetCachedVersion(It.IsAny<WritableRepositoryInformation>(), out mockVal))
-                // Wait at least one millisecond so that the timeout can take affect.
-                .Callback(() => Thread.Sleep(1))
+                .Callback(() => {
+                    if (shouldTimeOut)
+                    {
+                        // A minute should be long enough to cancel the task.
+                        // If the task isn't canceled, the test runtime will only be minorly affected.
+                        Thread.Sleep(60 * 1000);
+                    }
+                })
                 .Returns(false); // Simulate no cache
             mockRepoCache
                 .Setup(x => x.Persist(It.IsAny<RepositoryInformation>()));
