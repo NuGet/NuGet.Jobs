@@ -58,7 +58,7 @@ namespace NuGet.Jobs.GitHubIndexer
             }
 
             _maxDegreeOfParallelism = configuration.Value.MaxDegreeOfParallelism;
-            _repoIndexingTimeout = TimeSpan.FromMinutes(configuration.Value.RepoIndexingTimeoutMinutes);
+            _repoIndexingTimeout = configuration.Value.RepoIndexingTimeout;
             _cloudClient = cloudClient ?? throw new ArgumentNullException(nameof(cloudClient));
             _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
         }

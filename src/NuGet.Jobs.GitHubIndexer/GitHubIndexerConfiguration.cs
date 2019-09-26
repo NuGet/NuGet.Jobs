@@ -1,6 +1,8 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+
 namespace NuGet.Jobs.GitHubIndexer
 {
     public class GitHubIndexerConfiguration
@@ -28,7 +30,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <summary>
         /// If a repo takes longer to index than this timeout, we will crash the process and attempt again later.
         /// </summary>
-        public int RepoIndexingTimeoutMinutes { get; set; } = 150;
+        public TimeSpan RepoIndexingTimeout { get; set; } = TimeSpan.FromMinutes(150);
 
         /// <summary>
         /// The connection string to be used for a <see cref="NuGetGallery.CloudBlobClientWrapper"/> instance.

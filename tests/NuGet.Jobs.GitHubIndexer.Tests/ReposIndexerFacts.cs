@@ -33,7 +33,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             var config = new GitHubIndexerConfiguration();
             if (shouldTimeOut)
             {
-                config.RepoIndexingTimeoutMinutes = 0;
+                config.RepoIndexingTimeout = TimeSpan.Zero;
             }
 
             mockConfig
