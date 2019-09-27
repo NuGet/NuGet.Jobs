@@ -25,11 +25,19 @@ Function Run-Tests {
     $xUnitExe = (Join-Path $PSScriptRoot "packages\xunit.runner.console\tools\xunit.console.exe")
     
     $TestAssemblies = `
+        "tests\CatalogMetadataTests\bin\$Configuration\CatalogMetadataTests.dll", `
+        "tests\CatalogTests\bin\$Configuration\CatalogTests.dll", `
         "tests\Monitoring.PackageLag.Tests\bin\$Configuration\Monitoring.PackageLag.Tests.dll", `
         "tests\Monitoring.RebootSearchInstance.Tests\bin\$Configuration\NuGet.Monitoring.RebootSearchInstance.Tests.dll", `
+        "tests\NgTests\bin\$Configuration\NgTests.dll", `
+        "tests\NuGet.IndexingTests\bin\$Configuration\NuGet.IndexingTests.dll", `
         "tests\NuGet.Jobs.Common.Tests\bin\$Configuration\NuGet.Jobs.Common.Tests.dll", `
         "tests\NuGet.Jobs.GitHubIndexer.Tests\bin\$Configuration\NuGet.Jobs.GitHubIndexer.Tests.dll", `
+        "tests\NuGet.Protocol.Catalog.Tests\bin\$Configuration\NuGet.Protocol.Catalog.Tests.dll", `
+        "tests\NuGet.Services.AzureSearch.Tests\bin\$Configuration\NuGet.Services.AzureSearch.Tests.dll", `
+        "tests\NuGet.Services.BasicSearchTests\bin\$Configuration\NuGet.Services.BasicSearchTests.dll", `
         "tests\NuGet.Services.Revalidate.Tests\bin\$Configuration\NuGet.Services.Revalidate.Tests.dll", `
+        "tests\NuGet.Services.SearchService.Tests\bin\$Configuration\NuGet.Services.SearchService.Tests.dll", `
         "tests\NuGet.Services.Validation.Orchestrator.Tests\bin\$Configuration\NuGet.Services.Validation.Orchestrator.Tests.dll", `
         "tests\StatusAggregator\bin\$Configuration\StatusAggregator.dll", `
         "tests\Tests.CredentialExpiration\bin\$Configuration\Tests.CredentialExpiration.dll", `
@@ -48,15 +56,7 @@ Function Run-Tests {
         "tests\Validation.PackageSigning.ScanAndSign.Tests\bin\$Configuration\Validation.PackageSigning.ScanAndSign.Tests.dll", `
         "tests\Validation.PackageSigning.ValidateCertificate.Tests\bin\$Configuration\Validation.PackageSigning.ValidateCertificate.Tests.dll", `
         "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Core.Tests.dll", `
-        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Tests.dll", `
-        "tests\NgTests\bin\$Configuration\NgTests.dll", `
-        "tests\NuGet.IndexingTests\bin\$Configuration\NuGet.IndexingTests.dll", `
-        "tests\NuGet.Services.BasicSearchTests\bin\$Configuration\NuGet.Services.BasicSearchTests.dll", `
-        "tests\CatalogTests\bin\$Configuration\CatalogTests.dll", `
-        "tests\CatalogMetadataTests\bin\$Configuration\CatalogMetadataTests.dll", `
-        "tests\NuGet.Protocol.Catalog.Tests\bin\$Configuration\NuGet.Protocol.Catalog.Tests.dll", `
-        "tests\NuGet.Services.AzureSearch.Tests\bin\$Configuration\NuGet.Services.AzureSearch.Tests.dll", `
-        "tests\NuGet.Services.SearchService.Tests\bin\$Configuration\NuGet.Services.SearchService.Tests.dll"
+        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Tests.dll"
 
     $TestCount = 0
     

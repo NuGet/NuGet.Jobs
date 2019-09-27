@@ -87,34 +87,34 @@ Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     
 Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
         $versionMetadata =
-            "$PSScriptRoot\src\CopyAzureContainer\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\NuGetCDNRedirect\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\NuGet.Services.Validation.Orchestrator\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\NuGet.Services.Revalidate\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Stats.CollectAzureChinaCDNLogs\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.PackageSigning.ProcessSignature\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.PackageSigning.ValidateCertificate\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.PackageSigning.RevalidateCertificate\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.Common.Job\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.ScanAndSign.Core\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\StatusAggregator\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs",
-            "$PSScriptRoot\src\NuGet.Jobs.GitHubIndexer\Properties\AssemblyInfo.g.cs"
-            "$PSScriptRoot\src\NuGet.Indexing\Properties\AssemblyInfo.g.cs", `
             "$PSScriptRoot\src\Catalog\Properties\AssemblyInfo.g.cs", `
-            "$PSScriptRoot\src\NuGet.ApplicationInsights.Owin\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\CopyAzureContainer\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs", `
             "$PSScriptRoot\src\Ng\Properties\AssemblyInfo.g.cs", `
-            "$PSScriptRoot\src\NuGet.Services.Metadata.Catalog.Monitoring\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.ApplicationInsights.Owin\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Indexing\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Auxiliary2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Catalog2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Db2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.GitHubIndexer\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Owners2AzureSearch\Properties\AssemblyInfo.g.cs", `
             "$PSScriptRoot\src\NuGet.Protocol.Catalog\Properties\AssemblyInfo.g.cs", `
             "$PSScriptRoot\src\NuGet.Services.AzureSearch\Properties\AssemblyInfo.g.cs", `
-            "$PSScriptRoot\src\NuGet.Jobs.Db2AzureSearch\Properties\AssemblyInfo.g.cs", `
-            "$PSScriptRoot\src\NuGet.Jobs.Catalog2AzureSearch\Properties\AssemblyInfo.g.cs", `
-            "$PSScriptRoot\src\NuGet.Jobs.Owners2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Services.Metadata.Catalog.Monitoring\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Services.Revalidate\Properties\AssemblyInfo.g.cs", `
             "$PSScriptRoot\src\NuGet.Services.SearchService\Properties\AssemblyInfo.g.cs", `
-            "$PSScriptRoot\src\NuGet.Jobs.Auxiliary2AzureSearch\Properties\AssemblyInfo.g.cs"
+            "$PSScriptRoot\src\NuGet.Services.Validation.Orchestrator\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGetCDNRedirect\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\PackageLagMonitor\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Stats.CollectAzureChinaCDNLogs\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\StatusAggregator\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Validation.Common.Job\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Validation.PackageSigning.ProcessSignature\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Validation.PackageSigning.RevalidateCertificate\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Validation.PackageSigning.ValidateCertificate\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Validation.ScanAndSign.Core\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
@@ -147,47 +147,27 @@ Invoke-BuildStep 'Creating artifacts' {
         # We need symbols published for those, too. All other packages are deployment ones and
         # don't need to be shared, hence no need for symbols for them
         $CsprojProjects =
-            "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
-            "src/Validation.Common.Job/Validation.Common.Job.csproj",
-            "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj",
-            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj",
-            "src/NuGet.Indexing/NuGet.Indexing.csproj",
-            "src/Catalog/NuGet.Services.Metadata.Catalog.csproj",
-            "src/NuGet.ApplicationInsights.Owin/NuGet.ApplicationInsights.Owin.csproj",
-            "src/NuGet.Services.Metadata.Catalog.Monitoring/NuGet.Services.Metadata.Catalog.Monitoring.csproj",
-            "src/NuGet.Protocol.Catalog/NuGet.Protocol.Catalog.csproj",
-            "src/NuGet.Services.AzureSearch/NuGet.Services.AzureSearch.csproj"
+            "src/Catalog/NuGet.Services.Metadata.Catalog.csproj", `
+            "src/NuGet.ApplicationInsights.Owin/NuGet.ApplicationInsights.Owin.csproj", `
+            "src/NuGet.Indexing/NuGet.Indexing.csproj", `
+            "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj", `
+            "src/NuGet.Protocol.Catalog/NuGet.Protocol.Catalog.csproj", `
+            "src/NuGet.Services.AzureSearch/NuGet.Services.AzureSearch.csproj", `
+            "src/NuGet.Services.Metadata.Catalog.Monitoring/NuGet.Services.Metadata.Catalog.Monitoring.csproj", `
+            "src/Validation.Common.Job/Validation.Common.Job.csproj", `
+            "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj", `
+            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj"
 
         $CsprojProjects | ForEach-Object {
             New-ProjectPackage (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -Symbols
         }
 
         $NuspecProjects = `
-            "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
-            "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj", `
-            "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj", `
-            "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj", `
+            "src/ArchivePackages/ArchivePackages.csproj", `
+            "src/CopyAzureContainer/CopyAzureContainer.csproj", `
             "src/Gallery.CredentialExpiration/Gallery.CredentialExpiration.csproj", `
             "src/Gallery.Maintenance/Gallery.Maintenance.nuspec", `
-            "src/ArchivePackages/ArchivePackages.csproj", `
-            "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj", `
-            "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj", `
-            "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj", `
-            "src/CopyAzureContainer/CopyAzureContainer.csproj", `
-            "src/NuGet.Services.Validation.Orchestrator/Validation.Orchestrator.nuspec", `
-            "src/NuGet.Services.Validation.Orchestrator/Validation.SymbolsOrchestrator.nuspec", `
-            "src/NuGet.Services.Revalidate/NuGet.Services.Revalidate.csproj", `
-            "src/Stats.CollectAzureChinaCDNLogs/Stats.CollectAzureChinaCDNLogs.csproj", `
-            "src/Validation.PackageSigning.ProcessSignature/Validation.PackageSigning.ProcessSignature.csproj", `
-            "src/Validation.PackageSigning.ValidateCertificate/Validation.PackageSigning.ValidateCertificate.csproj", `
-            "src/Validation.PackageSigning.RevalidateCertificate/Validation.PackageSigning.RevalidateCertificate.csproj", `
-            "src/PackageLagMonitor/Monitoring.PackageLag.csproj", `
             "src/Monitoring.RebootSearchInstance/Monitoring.RebootSearchInstance.csproj", `
-            "src/StatusAggregator/StatusAggregator.csproj", `
-            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj", `
-            "src/Validation.Symbols/Validation.Symbols.Job.csproj", `
-            "src/Stats.CDNLogsSanitizer/Stats.CDNLogsSanitizer.csproj", `
-            "src/NuGet.Jobs.GitHubIndexer/NuGet.Jobs.GitHubIndexer.nuspec", `
             "src/Ng/Catalog2Dnx.nuspec", `
             "src/Ng/Catalog2icon.nuspec", `
             "src/Ng/Catalog2Lucene.nuspec", `
@@ -198,10 +178,30 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Ng/Monitoring2Monitoring.nuspec", `
             "src/Ng/MonitoringProcessor.nuspec", `
             "src/Ng/Ng.Operations.nuspec", `
-            "src/NuGet.Jobs.Db2AzureSearch/NuGet.Jobs.Db2AzureSearch.nuspec", `
+            "src/NuGet.Jobs.Auxiliary2AzureSearch/NuGet.Jobs.Auxiliary2AzureSearch.nuspec", `
             "src/NuGet.Jobs.Catalog2AzureSearch/NuGet.Jobs.Catalog2AzureSearch.nuspec", `
+            "src/NuGet.Jobs.Db2AzureSearch/NuGet.Jobs.Db2AzureSearch.nuspec", `
+            "src/NuGet.Jobs.GitHubIndexer/NuGet.Jobs.GitHubIndexer.nuspec", `
             "src/NuGet.Jobs.Owners2AzureSearch/NuGet.Jobs.Owners2AzureSearch.nuspec", `
-            "src/NuGet.Jobs.Auxiliary2AzureSearch/NuGet.Jobs.Auxiliary2AzureSearch.nuspec"
+            "src/NuGet.Services.Revalidate/NuGet.Services.Revalidate.csproj", `
+            "src/NuGet.Services.Validation.Orchestrator/Validation.Orchestrator.nuspec", `
+            "src/NuGet.Services.Validation.Orchestrator/Validation.SymbolsOrchestrator.nuspec", `
+            "src/NuGet.SupportRequests.Notifications/NuGet.SupportRequests.Notifications.csproj", `
+            "src/PackageLagMonitor/Monitoring.PackageLag.csproj", `
+            "src/Search.GenerateAuxiliaryData/Search.GenerateAuxiliaryData.csproj", `
+            "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj", `
+            "src/Stats.CDNLogsSanitizer/Stats.CDNLogsSanitizer.csproj", `
+            "src/Stats.CollectAzureCdnLogs/Stats.CollectAzureCdnLogs.csproj", `
+            "src/Stats.CollectAzureChinaCDNLogs/Stats.CollectAzureChinaCDNLogs.csproj", `
+            "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj", `
+            "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj", `
+            "src/Stats.RollUpDownloadFacts/Stats.RollUpDownloadFacts.csproj", `
+            "src/StatusAggregator/StatusAggregator.csproj", `
+            "src/Validation.PackageSigning.ProcessSignature/Validation.PackageSigning.ProcessSignature.csproj", `
+            "src/Validation.PackageSigning.RevalidateCertificate/Validation.PackageSigning.RevalidateCertificate.csproj", `
+            "src/Validation.PackageSigning.ValidateCertificate/Validation.PackageSigning.ValidateCertificate.csproj", `
+            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj", `
+            "src/Validation.Symbols/Validation.Symbols.Job.csproj"
 
         Foreach ($Project in $NuspecProjects) {
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "$msBuildVersion"
