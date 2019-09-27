@@ -48,7 +48,15 @@ Function Run-Tests {
         "tests\Validation.PackageSigning.ScanAndSign.Tests\bin\$Configuration\Validation.PackageSigning.ScanAndSign.Tests.dll", `
         "tests\Validation.PackageSigning.ValidateCertificate.Tests\bin\$Configuration\Validation.PackageSigning.ValidateCertificate.Tests.dll", `
         "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Core.Tests.dll", `
-        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Tests.dll"
+        "tests\Validation.Symbols.Tests\bin\$Configuration\Validation.Symbols.Tests.dll", `
+        "tests\NgTests\bin\$Configuration\NgTests.dll", `
+        "tests\NuGet.IndexingTests\bin\$Configuration\NuGet.IndexingTests.dll", `
+        "tests\NuGet.Services.BasicSearchTests\bin\$Configuration\NuGet.Services.BasicSearchTests.dll", `
+        "tests\CatalogTests\bin\$Configuration\CatalogTests.dll", `
+        "tests\CatalogMetadataTests\bin\$Configuration\CatalogMetadataTests.dll", `
+        "tests\NuGet.Protocol.Catalog.Tests\bin\$Configuration\NuGet.Protocol.Catalog.Tests.dll", `
+        "tests\NuGet.Services.AzureSearch.Tests\bin\$Configuration\NuGet.Services.AzureSearch.Tests.dll", `
+        "tests\NuGet.Services.SearchService.Tests\bin\$Configuration\NuGet.Services.SearchService.Tests.dll"
 
     $TestCount = 0
     

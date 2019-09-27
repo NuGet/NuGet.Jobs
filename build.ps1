@@ -103,6 +103,18 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "$PSScriptRoot\src\Monitoring.RebootSearchInstance\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs",
             "$PSScriptRoot\src\NuGet.Jobs.GitHubIndexer\Properties\AssemblyInfo.g.cs"
+            "$PSScriptRoot\src\NuGet.Indexing\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Catalog\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.ApplicationInsights.Owin\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\Ng\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Services.Metadata.Catalog.Monitoring\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Protocol.Catalog\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Services.AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Db2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Catalog2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Owners2AzureSearch\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Services.SearchService\Properties\AssemblyInfo.g.cs", `
+            "$PSScriptRoot\src\NuGet.Jobs.Auxiliary2AzureSearch\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path $_ -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
@@ -138,7 +150,13 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/NuGet.Jobs.Common/NuGet.Jobs.Common.csproj",
             "src/Validation.Common.Job/Validation.Common.Job.csproj",
             "src/Validation.ScanAndSign.Core/Validation.ScanAndSign.Core.csproj",
-            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj"
+            "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj",
+            "src/NuGet.Indexing/NuGet.Indexing.csproj",
+            "src/Catalog/NuGet.Services.Metadata.Catalog.csproj",
+            "src/NuGet.ApplicationInsights.Owin/NuGet.ApplicationInsights.Owin.csproj",
+            "src/NuGet.Services.Metadata.Catalog.Monitoring/NuGet.Services.Metadata.Catalog.Monitoring.csproj",
+            "src/NuGet.Protocol.Catalog/NuGet.Protocol.Catalog.csproj",
+            "src/NuGet.Services.AzureSearch/NuGet.Services.AzureSearch.csproj"
 
         $CsprojProjects | ForEach-Object {
             New-ProjectPackage (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -Symbols
@@ -169,7 +187,21 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Validation.Symbols.Core/Validation.Symbols.Core.csproj", `
             "src/Validation.Symbols/Validation.Symbols.Job.csproj", `
             "src/Stats.CDNLogsSanitizer/Stats.CDNLogsSanitizer.csproj", `
-            "src/NuGet.Jobs.GitHubIndexer/NuGet.Jobs.GitHubIndexer.nuspec"
+            "src/NuGet.Jobs.GitHubIndexer/NuGet.Jobs.GitHubIndexer.nuspec", `
+            "src/Ng/Catalog2Dnx.nuspec", `
+            "src/Ng/Catalog2icon.nuspec", `
+            "src/Ng/Catalog2Lucene.nuspec", `
+            "src/Ng/Catalog2Monitoring.nuspec", `
+            "src/Ng/Catalog2Registration.nuspec", `
+            "src/Ng/Db2Catalog.nuspec", `
+            "src/Ng/Db2Monitoring.nuspec", `
+            "src/Ng/Monitoring2Monitoring.nuspec", `
+            "src/Ng/MonitoringProcessor.nuspec", `
+            "src/Ng/Ng.Operations.nuspec", `
+            "src/NuGet.Jobs.Db2AzureSearch/NuGet.Jobs.Db2AzureSearch.nuspec", `
+            "src/NuGet.Jobs.Catalog2AzureSearch/NuGet.Jobs.Catalog2AzureSearch.nuspec", `
+            "src/NuGet.Jobs.Owners2AzureSearch/NuGet.Jobs.Owners2AzureSearch.nuspec", `
+            "src/NuGet.Jobs.Auxiliary2AzureSearch/NuGet.Jobs.Auxiliary2AzureSearch.nuspec"
 
         Foreach ($Project in $NuspecProjects) {
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -MSBuildVersion "$msBuildVersion"
