@@ -17,7 +17,7 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public class ReposIndexer
     {
-        private const string WorkingDirectory = "work";
+        private static string WorkingDirectory = Path.Combine(Path.GetTempPath(), "NuGet.Jobs.GitHubIndexer");
         private const string BlobStorageContainerName = "content";
         private const string GitHubUsageFileName = "GitHubUsage.v1.json";
         public const int MaxBlobSizeBytes = 1 << 20; // 1 MB = 2^20
