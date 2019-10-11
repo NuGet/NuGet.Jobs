@@ -75,8 +75,9 @@ namespace NuGet.Jobs.Validation
                     }
 
                     using (var networkStream = await response.Content.ReadAsStreamAsync())
-                    using (cancellationToken.Register(() => networkStream.Close()))
                     {
+                        // One minute timeout for reading the stream
+                        networkStream.ReadTimeout = 60000;
                         packageStream = FileStreamUtility.GetTemporaryFile();
 
                         await networkStream.CopyToAsync(packageStream, _configuration.BufferSize, cancellationToken);
