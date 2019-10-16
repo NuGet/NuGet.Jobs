@@ -149,7 +149,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtil", "tests\TestUtil\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Jobs.GitHubIndexer.Tests", "tests\NuGet.Jobs.GitHubIndexer.Tests\NuGet.Jobs.GitHubIndexer.Tests.csproj", "{4A64FEB4-198C-445B-835F-A5B68EFBFDA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitHubVulnerability2DB", "src\GitHubVulnerability2DB\GitHubVulnerability2DB.csproj", "{DDA65E01-704D-4144-B351-C15FA4FB9BD5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitHubVulnerability2Db", "src\GitHubVulnerability2DB\GitHubVulnerability2Db.csproj", "{DDA65E01-704D-4144-B351-C15FA4FB9BD5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
