@@ -38,22 +38,33 @@ namespace NuGet.Jobs.Validation.ScanAndSign
             _configuration = configurationAccessor.Value;
         }
 
-        public Task EnqueueScanAsync(Guid validationId, string nupkgUrl, DateTimeOffset? scheduledEnqueueTimeOverride = null)
+        public Task EnqueueScanAsync(Guid validationId, string nupkgUrl, TimeSpan? messageDeliveryDelayOverride = null)
         {
             if (nupkgUrl == null)
             {
                 throw new ArgumentNullException(nameof(nupkgUrl));
             }
 
+            if (messageDeliveryDelayOverride.HasValue && messageDeliveryDelayOverride < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(messageDeliveryDelayOverride), $"{nameof(messageDeliveryDelayOverride)} cannot be negative");
+            }
+
+            _logger.LogInformation(
+                "Requested scan only for validation {ValidationId} {BlobUrl}, delay override: {DelayOverride}",
+                validationId,
+                nupkgUrl,
+                messageDeliveryDelayOverride);
+
             return SendScanAndSignMessageAsync(
                 new ScanAndSignMessage(
                     OperationRequestType.Scan,
                     validationId,
                     new Uri(nupkgUrl)),
-                scheduledEnqueueTimeOverride);
+                messageDeliveryDelayOverride);
         }
 
-        public Task EnqueueScanAndSignAsync(Guid validationId, string nupkgUrl, string v3ServiceIndexUrl, IReadOnlyList<string> owners, DateTimeOffset? scheduledEnqueueTimeOverride = null)
+        public Task EnqueueScanAndSignAsync(Guid validationId, string nupkgUrl, string v3ServiceIndexUrl, IReadOnlyList<string> owners, TimeSpan? messageDeliveryDelayOverride = null)
         {
             if (nupkgUrl == null)
             {
@@ -67,12 +78,18 @@ namespace NuGet.Jobs.Validation.ScanAndSign
                 throw new ArgumentException("The service index URL parameter is required", nameof(v3ServiceIndexUrl));
             }
 
+            if (messageDeliveryDelayOverride.HasValue && messageDeliveryDelayOverride < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(messageDeliveryDelayOverride), $"{nameof(messageDeliveryDelayOverride)} cannot be negative");
+            }
+
             _logger.LogInformation(
-                "Requested scan and sign for validation {ValidationId} {BlobUrl} using service index {ServiceIndex} and owners {Owners}",
+                "Requested scan and sign for validation {ValidationId} {BlobUrl} using service index {ServiceIndex} and owners {Owners}, delay override: {DelayOverride}",
                 validationId,
                 nupkgUrl,
                 v3ServiceIndexUrl,
-                owners);
+                owners,
+                messageDeliveryDelayOverride);
 
             return SendScanAndSignMessageAsync(
                 new ScanAndSignMessage(
@@ -81,14 +98,16 @@ namespace NuGet.Jobs.Validation.ScanAndSign
                     new Uri(nupkgUrl),
                     v3ServiceIndexUrl,
                     owners),
-                scheduledEnqueueTimeOverride);
+                messageDeliveryDelayOverride);
         }
 
-        private Task SendScanAndSignMessageAsync(ScanAndSignMessage message, DateTimeOffset? scheduledEnqueueTimeOverride)
+        private Task SendScanAndSignMessageAsync(ScanAndSignMessage message, TimeSpan? messageDeliveryDelayOverride)
         {
             var brokeredMessage = _serializer.Serialize(message);
 
-            var visibleAt = scheduledEnqueueTimeOverride ?? DateTimeOffset.UtcNow + (_configuration.MessageDelay ?? TimeSpan.Zero);
+            var delay = messageDeliveryDelayOverride ?? _configuration.MessageDelay ?? TimeSpan.Zero;
+
+            var visibleAt = DateTimeOffset.UtcNow + delay;
             brokeredMessage.ScheduledEnqueueTimeUtc = visibleAt;
 
             return _topicClient.SendAsync(brokeredMessage);

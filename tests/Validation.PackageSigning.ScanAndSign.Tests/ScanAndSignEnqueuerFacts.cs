@@ -106,15 +106,18 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             Assert.Null(_capturedMessage.Owners);
         }
 
-        [Fact]
-        public async Task SetsEnqueueTime()
+        [Theory]
+        [InlineData(23, null, 23)]
+        [InlineData(23, 25, 25)]
+        [InlineData(42, 25, 25)]
+        public async Task SetsEnqueueTime(int cfgDelayDays, int? argDelayDays, int expectedDelayDays)
         {
-            const int messageDelayDays = 137;
-            _configuration.MessageDelay = TimeSpan.FromDays(messageDelayDays);
+            _configuration.MessageDelay = TimeSpan.FromDays(cfgDelayDays);
 
-            await _target.EnqueueScanAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl);
+            var messageDeliveryDelayOverride = argDelayDays.HasValue ? TimeSpan.FromDays(argDelayDays.Value) : (TimeSpan?)null;
+            await _target.EnqueueScanAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, messageDeliveryDelayOverride);
 
-            Assert.Equal(messageDelayDays, (_serializedMessage.ScheduledEnqueueTimeUtc - DateTimeOffset.UtcNow).TotalDays, 0);
+            Assert.Equal(expectedDelayDays, (_serializedMessage.ScheduledEnqueueTimeUtc - DateTimeOffset.UtcNow).TotalDays, 0);
         }
 
         [Fact]
@@ -161,15 +164,18 @@ namespace Validation.PackageSigning.ScanAndSign.Tests
             Assert.Equal(_owners, _capturedMessage.Owners);
         }
 
-        [Fact]
-        public async Task SetsEnqueueTime()
+        [Theory]
+        [InlineData(23, null, 23)]
+        [InlineData(23, 25, 25)]
+        [InlineData(42, 25, 25)]
+        public async Task SetsEnqueueTime(int cfgDelayDays, int? argDelayDays, int expectedDelayDays)
         {
-            const int messageDelayDays = 137;
-            _configuration.MessageDelay = TimeSpan.FromDays(messageDelayDays);
+            _configuration.MessageDelay = TimeSpan.FromDays(cfgDelayDays);
 
-            await _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, V3ServiceIndexUrl, _owners);
+            var messageDeliveryDelayOverride = argDelayDays.HasValue ? TimeSpan.FromDays(argDelayDays.Value) : (TimeSpan?)null;
+            await _target.EnqueueScanAndSignAsync(_validationRequest.ValidationId, _validationRequest.NupkgUrl, V3ServiceIndexUrl, _owners, messageDeliveryDelayOverride);
 
-            Assert.Equal(messageDelayDays, (_serializedMessage.ScheduledEnqueueTimeUtc - DateTimeOffset.UtcNow).TotalDays, 0);
+            Assert.Equal(expectedDelayDays, (_serializedMessage.ScheduledEnqueueTimeUtc - DateTimeOffset.UtcNow).TotalDays, 0);
         }
 
         [Fact]
