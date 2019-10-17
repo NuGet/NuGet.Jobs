@@ -7,28 +7,112 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using NuGet.Jobs.Validation;
 using NuGet.Services.Entities;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace NuGet.Services.Validation.Orchestrator.Tests
 {
     public class ValidationMessageHandlerStrictFacts : ValidationMessageHandlerFactsBase
     {
-        public ValidationMessageHandlerStrictFacts()
-            : base(MockBehavior.Strict)
+        public ValidationMessageHandlerStrictFacts(ITestOutputHelper output)
+            : base(output, MockBehavior.Strict)
         {
         }
 
         [Fact]
-        public async Task WaitsForPackageAvailabilityInGalleryDB()
+        public async Task WaitsForValidationSetAvailabilityInValidationDBWithCheckValidator()
         {
-            var messageData = new PackageValidationMessageData("packageId", "1.2.3", Guid.NewGuid());
+            var messageData = PackageValidationMessageData.NewCheckValidator(Guid.NewGuid());
+            var validationConfiguration = new ValidationConfiguration();
+
+            ValidationSetProviderMock
+                .Setup(ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId))
+                .ReturnsAsync((PackageValidationSet)null)
+                .Verifiable();
+
+            var handler = CreateHandler();
+
+            var result = await handler.HandleAsync(messageData);
+
+            ValidationSetProviderMock.Verify(
+                ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId),
+                Times.Once);
+
+            Assert.False(result, "The handler should not have succeeded.");
+        }
+
+        [Fact]
+        public async Task RejectsNonPackageValidationSetWithCheckValidator()
+        {
+            var messageData = PackageValidationMessageData.NewCheckValidator(Guid.NewGuid());
+            var validationConfiguration = new ValidationConfiguration();
+            var validationSet = new PackageValidationSet { PackageKey = 42, ValidatingType = ValidatingType.SymbolPackage };
+
+            ValidationSetProviderMock
+                .Setup(ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId))
+                .ReturnsAsync(validationSet)
+                .Verifiable();
+
+            var handler = CreateHandler();
+
+            var result = await handler.HandleAsync(messageData);
+
+            ValidationSetProviderMock.Verify(
+                ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId),
+                Times.Once);
+
+            Assert.False(result, "The handler should not have succeeded.");
+        }
+
+        [Fact]
+        public async Task WaitsForPackageAvailabilityInGalleryDBWithCheckValidator()
+        {
+            var messageData = PackageValidationMessageData.NewCheckValidator(Guid.NewGuid());
+            var validationConfiguration = new ValidationConfiguration();
+            var validationSet = new PackageValidationSet { PackageKey = 42, ValidatingType = ValidatingType.Package };
+
+            ValidationSetProviderMock
+                .Setup(ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId))
+                .ReturnsAsync(validationSet)
+                .Verifiable();
+            CorePackageServiceMock
+                .Setup(ps => ps.FindPackageByKey(validationSet.PackageKey))
+                .Returns<SymbolPackage>(null)
+                .Verifiable();
+
+            var handler = CreateHandler();
+
+            var result = await handler.HandleAsync(messageData);
+
+            ValidationSetProviderMock.Verify(
+                ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId),
+                Times.Once);
+            CorePackageServiceMock.Verify(
+                ps => ps.FindPackageByKey(validationSet.PackageKey),
+                Times.Once);
+
+            Assert.False(result, "The handler should not have succeeded.");
+        }
+
+        [Fact]
+        public async Task WaitsForPackageAvailabilityInGalleryDBWithProcessValidationSet()
+        {
+            var messageData = PackageValidationMessageData.NewProcessValidationSet(
+                "packageId",
+                "1.2.3",
+                Guid.NewGuid(),
+                ValidatingType.Package,
+                entityKey: null);
             var validationConfiguration = new ValidationConfiguration();
 
             CorePackageServiceMock
-                .Setup(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion))
+                .Setup(ps => ps.FindPackageByIdAndVersionStrict(
+                    messageData.ProcessValidationSet.PackageId,
+                    messageData.ProcessValidationSet.PackageVersion))
                 .Returns<Package>(null)
                 .Verifiable();
 
@@ -36,14 +120,23 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             await handler.HandleAsync(messageData);
 
-            CorePackageServiceMock.Verify(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion), Times.Once());
+            CorePackageServiceMock.Verify(
+                ps => ps.FindPackageByIdAndVersionStrict(
+                    messageData.ProcessValidationSet.PackageId,
+                    messageData.ProcessValidationSet.PackageVersion),
+                Times.Once);
         }
 
         [Fact]
         public async Task DropsMessageAfterMissingPackageRetryCountIsReached()
         {
             var validationTrackingId = Guid.NewGuid();
-            var messageData = new PackageValidationMessageData("packageId", "1.2.3", validationTrackingId);
+            var messageData = PackageValidationMessageData.NewProcessValidationSet(
+                "packageId",
+                "1.2.3",
+                validationTrackingId,
+                ValidatingType.Package,
+                entityKey: null);
 
             CorePackageServiceMock
                 .Setup(ps => ps.FindPackageByIdAndVersionStrict("packageId", "1.2.3"))
@@ -80,18 +173,27 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         [Fact]
         public async Task DropsMessageOnDuplicateValidationRequest()
         {
-            var messageData = new PackageValidationMessageData("packageId", "1.2.3", Guid.NewGuid());
+            var messageData = PackageValidationMessageData.NewProcessValidationSet(
+                "packageId",
+                "1.2.3",
+                Guid.NewGuid(),
+                ValidatingType.Package,
+                entityKey: null);
             var validationConfiguration = new ValidationConfiguration();
             var package = new Package();
             var packageValidatingEntity = new PackageValidatingEntity(package);
 
             CorePackageServiceMock
-                .Setup(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion))
+                .Setup(ps => ps.FindPackageByIdAndVersionStrict(
+                    messageData.ProcessValidationSet.PackageId,
+                    messageData.ProcessValidationSet.PackageVersion))
                 .Returns(packageValidatingEntity)
                 .Verifiable();
 
             ValidationSetProviderMock
-                .Setup(vsp => vsp.TryGetOrCreateValidationSetAsync(messageData, packageValidatingEntity))
+                .Setup(vsp => vsp.TryGetOrCreateValidationSetAsync(
+                    messageData.ProcessValidationSet,
+                    packageValidatingEntity))
                 .ReturnsAsync((PackageValidationSet)null)
                 .Verifiable();
 
@@ -100,22 +202,35 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             var result = await handler.HandleAsync(messageData);
 
             Assert.True(result);
-            CorePackageServiceMock
-                .Verify(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion), Times.Once());
-            ValidationSetProviderMock
-                .Verify(vsp => vsp.TryGetOrCreateValidationSetAsync(messageData, packageValidatingEntity), Times.Once());
+            CorePackageServiceMock.Verify(
+                ps => ps.FindPackageByIdAndVersionStrict(
+                    messageData.ProcessValidationSet.PackageId,
+                    messageData.ProcessValidationSet.PackageVersion),
+                Times.Once);
+            ValidationSetProviderMock.Verify(
+                vsp => vsp.TryGetOrCreateValidationSetAsync(
+                    messageData.ProcessValidationSet,
+                    packageValidatingEntity),
+                Times.Once);
         }
 
         [Fact]
-        public async Task DropsMessageIfPackageIsSoftDeleted()
+        public async Task DropsMessageIfPackageIsSoftDeletedForProcessValidationSet()
         {
-            var messageData = new PackageValidationMessageData("packageId", "1.2.3", Guid.NewGuid());
+            var messageData = PackageValidationMessageData.NewProcessValidationSet(
+                "packageId",
+                "1.2.3",
+                Guid.NewGuid(),
+                ValidatingType.Package,
+                entityKey: null);
             var validationConfiguration = new ValidationConfiguration();
             var package = new Package { PackageStatusKey = PackageStatus.Deleted };
             var packageValidatingEntity = new PackageValidatingEntity(package);
 
             CorePackageServiceMock
-                .Setup(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion))
+                .Setup(ps => ps.FindPackageByIdAndVersionStrict(
+                    messageData.ProcessValidationSet.PackageId,
+                    messageData.ProcessValidationSet.PackageVersion))
                 .Returns(packageValidatingEntity);
 
             var handler = CreateHandler();
@@ -123,8 +238,41 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             var result = await handler.HandleAsync(messageData);
 
             Assert.True(result);
+            CorePackageServiceMock.Verify(
+                ps => ps.FindPackageByIdAndVersionStrict(
+                    messageData.ProcessValidationSet.PackageId,
+                    messageData.ProcessValidationSet.PackageVersion),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task DropsMessageIfPackageIsSoftDeletedForCheckValidator()
+        {
+            var messageData = PackageValidationMessageData.NewCheckValidator(Guid.NewGuid());
+            var validationConfiguration = new ValidationConfiguration();
+            var package = new Package { Key = 42, PackageStatusKey = PackageStatus.Deleted };
+            var packageValidatingEntity = new PackageValidatingEntity(package);
+            var validationSet = new PackageValidationSet { PackageKey = package.Key, ValidatingType = ValidatingType.Package };
+
+            ValidationSetProviderMock
+                .Setup(ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId))
+                .ReturnsAsync(validationSet)
+                .Verifiable();
             CorePackageServiceMock
-                .Verify(ps => ps.FindPackageByIdAndVersionStrict(messageData.PackageId, messageData.PackageVersion), Times.Once);
+                .Setup(ps => ps.FindPackageByKey(package.Key))
+                .Returns(packageValidatingEntity);
+
+            var handler = CreateHandler();
+
+            var result = await handler.HandleAsync(messageData);
+
+            Assert.True(result);
+            ValidationSetProviderMock.Verify(
+                vsp => vsp.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId),
+                Times.Once);
+            CorePackageServiceMock.Verify(
+                ps => ps.FindPackageByKey(package.Key),
+                Times.Once);
         }
 
         private class MessageWithCustomDeliveryCount : IBrokeredMessage
@@ -159,24 +307,41 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
     public class ValidationMessageHandlerLooseFacts : ValidationMessageHandlerFactsBase
     {
         protected Package Package { get; }
-        protected PackageValidationMessageData MessageData { get; }
+        protected PackageValidationMessageData ProcessValidationSetData { get; }
+        protected PackageValidationMessageData CheckValidatorData { get; }
         protected PackageValidationSet ValidationSet { get; }
         protected PackageValidatingEntity PackageValidatingEntity { get; }
 
-        public ValidationMessageHandlerLooseFacts()
-            : base(MockBehavior.Loose)
+        public ValidationMessageHandlerLooseFacts(ITestOutputHelper output)
+            : base(output, MockBehavior.Loose)
         {
-            Package = new Package();
-            MessageData = new PackageValidationMessageData("packageId", "1.2.3", Guid.NewGuid());
-            ValidationSet = new PackageValidationSet();
+            Package = new Package { Key = 42 };
+            ProcessValidationSetData = PackageValidationMessageData.NewProcessValidationSet(
+                "packageId",
+                "1.2.3",
+                Guid.NewGuid(),
+                ValidatingType.Package,
+                entityKey: null);
+            CheckValidatorData = PackageValidationMessageData.NewCheckValidator(Guid.NewGuid());
+            ValidationSet = new PackageValidationSet { PackageKey = Package.Key, ValidatingType = ValidatingType.Package };
             PackageValidatingEntity = new PackageValidatingEntity(Package);
 
             CorePackageServiceMock
-                .Setup(ps => ps.FindPackageByIdAndVersionStrict(MessageData.PackageId, MessageData.PackageVersion))
+                .Setup(ps => ps.FindPackageByIdAndVersionStrict(
+                    ProcessValidationSetData.ProcessValidationSet.PackageId,
+                    ProcessValidationSetData.ProcessValidationSet.PackageVersion))
+                .Returns(PackageValidatingEntity);
+            CorePackageServiceMock
+                .Setup(ps => ps.FindPackageByKey(Package.Key))
                 .Returns(PackageValidatingEntity);
 
             ValidationSetProviderMock
-                .Setup(vsp => vsp.TryGetOrCreateValidationSetAsync(MessageData, PackageValidatingEntity))
+                .Setup(vsp => vsp.TryGetOrCreateValidationSetAsync(
+                    ProcessValidationSetData.ProcessValidationSet,
+                    PackageValidatingEntity))
+                .ReturnsAsync(ValidationSet);
+            ValidationSetProviderMock
+                .Setup(vsp => vsp.TryGetParentValidationSetAsync(CheckValidatorData.CheckValidator.ValidationId))
                 .ReturnsAsync(ValidationSet);
         }
 
@@ -184,10 +349,35 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public async Task MakesSureValidationSetExists()
         {
             var handler = CreateHandler();
-            await handler.HandleAsync(MessageData);
+            await handler.HandleAsync(ProcessValidationSetData);
 
-            ValidationSetProviderMock
-                .Verify(vsp => vsp.TryGetOrCreateValidationSetAsync(MessageData, PackageValidatingEntity));
+            ValidationSetProviderMock.Verify(vsp => vsp.TryGetOrCreateValidationSetAsync(
+                ProcessValidationSetData.ProcessValidationSet,
+                PackageValidatingEntity));
+        }
+
+        [Fact]
+        public async Task CallsProcessValidationsForProcessValidationSet()
+        {
+            var handler = CreateHandler();
+            await handler.HandleAsync(ProcessValidationSetData);
+
+            ValidationSetProcessorMock
+                .Verify(vsp => vsp.ProcessValidationsAsync(ValidationSet), Times.Once());
+        }
+
+        [Fact]
+        public async Task CallsProcessValidationOutcomeForProcessValidationSet()
+        {
+            var handler = CreateHandler();
+            await handler.HandleAsync(ProcessValidationSetData);
+
+            ValidationOutcomeProcessorMock.Verify(
+                vop => vop.ProcessValidationOutcomeAsync(
+                    ValidationSet,
+                    PackageValidatingEntity,
+                    It.IsAny<ValidationSetProcessorResult>(),
+                    true));
         }
 
         [Fact]
@@ -196,7 +386,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidationSet.ValidationSetStatus = ValidationSetStatus.Completed;
 
             var handler = CreateHandler();
-            var output = await handler.HandleAsync(MessageData);
+            var output = await handler.HandleAsync(ProcessValidationSetData);
 
             Assert.True(output, "The message should have been successfully processed.");
 
@@ -207,28 +397,45 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 vop => vop.ProcessValidationOutcomeAsync(
                     It.IsAny<PackageValidationSet>(),
                     It.IsAny<IValidatingEntity<Package>>(),
-                    It.IsAny<ValidationSetProcessorResult>()),
+                    It.IsAny<ValidationSetProcessorResult>(),
+                    It.IsAny<bool>()),
                 Times.Never);
         }
 
         [Fact]
-        public async Task CallsProcessValidations()
+        public async Task CallsProcessValidationsForCheckValidator()
         {
             var handler = CreateHandler();
-            await handler.HandleAsync(MessageData);
+            await handler.HandleAsync(CheckValidatorData);
 
             ValidationSetProcessorMock
                 .Verify(vsp => vsp.ProcessValidationsAsync(ValidationSet), Times.Once());
         }
 
         [Fact]
-        public async Task CallsProcessValidationOutcome()
+        public async Task IgnoresCheckValidatorWhenFeatureFlagIsOff()
+        {
+            FeatureFlagService.Setup(x => x.IsQueueBackEnabled()).Returns(false);
+
+            var handler = CreateHandler();
+            await handler.HandleAsync(CheckValidatorData);
+
+            ValidationSetProcessorMock
+                .Verify(vsp => vsp.ProcessValidationsAsync(ValidationSet), Times.Never());
+        }
+
+        [Fact]
+        public async Task CallsProcessValidationOutcomeForCheckValidator()
         {
             var handler = CreateHandler();
-            await handler.HandleAsync(MessageData);
+            await handler.HandleAsync(CheckValidatorData);
 
-            ValidationOutcomeProcessorMock
-                .Verify(vop => vop.ProcessValidationOutcomeAsync(ValidationSet, PackageValidatingEntity, It.IsAny<ValidationSetProcessorResult>()));
+            ValidationOutcomeProcessorMock.Verify(
+                vop => vop.ProcessValidationOutcomeAsync(
+                    ValidationSet,
+                    PackageValidatingEntity,
+                    It.IsAny<ValidationSetProcessorResult>(),
+                    false));
         }
     }
 
@@ -244,18 +451,26 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         protected Mock<IValidationSetProvider<Package>> ValidationSetProviderMock { get; }
         protected Mock<IValidationSetProcessor> ValidationSetProcessorMock { get; }
         protected Mock<IValidationOutcomeProcessor<Package>> ValidationOutcomeProcessorMock { get; }
+        protected Mock<IFeatureFlagService> FeatureFlagService { get; }
         protected Mock<ITelemetryService> TelemetryServiceMock { get; }
-        protected Mock<ILogger<PackageValidationMessageHandler>> LoggerMock { get; }
+        protected ILogger<PackageValidationMessageHandler> Logger { get; }
 
-        public ValidationMessageHandlerFactsBase(MockBehavior mockBehavior)
+        public ValidationMessageHandlerFactsBase(
+            ITestOutputHelper output,
+            MockBehavior mockBehavior)
         {
             ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>();
             CorePackageServiceMock = new Mock<IEntityService<Package>>(mockBehavior);
             ValidationSetProviderMock = new Mock<IValidationSetProvider<Package>>(mockBehavior);
             ValidationSetProcessorMock = new Mock<IValidationSetProcessor>(mockBehavior);
             ValidationOutcomeProcessorMock = new Mock<IValidationOutcomeProcessor<Package>>(mockBehavior);
+            FeatureFlagService = new Mock<IFeatureFlagService>(mockBehavior);
             TelemetryServiceMock = new Mock<ITelemetryService>(mockBehavior);
-            LoggerMock = new Mock<ILogger<PackageValidationMessageHandler>>(); // we generally don't care about how logger is called, so it's loose all the time
+
+            FeatureFlagService.Setup(x => x.IsQueueBackEnabled()).Returns(true);
+
+            // we generally don't care about how logger is called, so don't make a strict mock.
+            Logger = new LoggerFactory().AddXunit(output).CreateLogger<PackageValidationMessageHandler>();
 
             ConfigurationAccessorMock
                 .SetupGet(ca => ca.Value)
@@ -270,8 +485,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSetProviderMock.Object,
                 ValidationSetProcessorMock.Object,
                 ValidationOutcomeProcessorMock.Object,
+                FeatureFlagService.Object,
                 TelemetryServiceMock.Object,
-                LoggerMock.Object);
+                Logger);
         }
     }
 }

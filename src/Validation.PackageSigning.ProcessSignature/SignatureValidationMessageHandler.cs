@@ -26,6 +26,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
         private readonly IFileDownloader _packageDownloader;
         private readonly IValidatorStateService _validatorStateService;
         private readonly ISignatureValidator _signatureValidator;
+        private readonly IPackageValidationEnqueuer _validationEnqueuer;
+        private readonly IFeatureFlagService _featureFlagService;
         private readonly ILogger<SignatureValidationMessageHandler> _logger;
 
         /// <summary>
@@ -39,11 +41,15 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             IFileDownloader packageDownloader,
             IValidatorStateService validatorStateService,
             ISignatureValidator signatureValidator,
+            IPackageValidationEnqueuer validationEnqueuer,
+            IFeatureFlagService featureFlagService,
             ILogger<SignatureValidationMessageHandler> logger)
         {
             _packageDownloader = packageDownloader ?? throw new ArgumentNullException(nameof(packageDownloader));
             _validatorStateService = validatorStateService ?? throw new ArgumentNullException(nameof(validatorStateService));
             _signatureValidator = signatureValidator ?? throw new ArgumentNullException(nameof(signatureValidator));
+            _validationEnqueuer = validationEnqueuer ?? throw new ArgumentNullException(nameof(validationEnqueuer));
+            _featureFlagService = featureFlagService ?? throw new ArgumentNullException(nameof(featureFlagService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -156,7 +162,15 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 }
 
                 // Save the resulting validation status.
-                return await SaveStatusAsync(validation, message);
+                var completed = await SaveStatusAsync(validation, message);
+                if (completed && _featureFlagService.IsQueueBackEnabled())
+                {
+                    _logger.LogInformation("Sending queue-back message for validation {ValidationId}.", message.ValidationId);
+                    var messageData = PackageValidationMessageData.NewCheckValidator(message.ValidationId);
+                    await _validationEnqueuer.SendMessageAsync(messageData);
+                }
+
+                return completed;
             }
         }
 

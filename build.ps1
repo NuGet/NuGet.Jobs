@@ -9,7 +9,7 @@ param (
     [string]$SemanticVersion = '1.0.0-zlocal',
     [string]$Branch = 'zlocal',
     [string]$CommitSHA,
-    [string]$BuildBranch = '2d8feecabe3aeaed7f5b4d50b9be78c94faf39ec'
+    [string]$BuildBranch = 'd298565f387e93995a179ef8ae6838f1be37904f'
 )
 
 $msBuildVersion = 15;
@@ -120,6 +120,11 @@ Invoke-BuildStep 'Building solution' {
     Build-Solution $Configuration $BuildNumber -MSBuildVersion "$msBuildVersion" $SolutionPath -SkipRestore:$SkipRestore `
     } `
     -args $Configuration, $BuildNumber, (Join-Path $PSScriptRoot "NuGet.Jobs.sln"), $SkipRestore `
+    -ev +BuildErrors 
+
+Invoke-BuildStep 'Signing the binaries' {
+        Sign-Binaries -Configuration $Configuration -BuildNumber $BuildNumber -MSBuildVersion "15" `
+    } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Prepare NuGetCDNRedirect Package' { Prepare-NuGetCDNRedirect } `
@@ -144,7 +149,6 @@ Invoke-BuildStep 'Creating artifacts' {
             "src/Stats.AggregateCdnDownloadsInGallery/Stats.AggregateCdnDownloadsInGallery.csproj", `
             "src/Stats.ImportAzureCdnStatistics/Stats.ImportAzureCdnStatistics.csproj", `
             "src/Stats.CreateAzureCdnWarehouseReports/Stats.CreateAzureCdnWarehouseReports.csproj", `
-            "src/UpdateLicenseReports/UpdateLicenseReports.csproj", `
             "src/Gallery.CredentialExpiration/Gallery.CredentialExpiration.csproj", `
             "src/Gallery.Maintenance/Gallery.Maintenance.nuspec", `
             "src/ArchivePackages/ArchivePackages.csproj", `
