@@ -107,7 +107,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 var result = await _target.StartAsync(_request);
 
                 _scanAndSignEnqueuer
-                    .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>(), null), Times.Never);
+                    .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+                _scanAndSignEnqueuer
+                    .Verify(e => e.EnqueueScanAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never);
                 _validatorStateServiceMock
                     .Verify(vss => vss.AddStatusAsync(It.IsAny<ValidatorStatus>()), Times.Never);
                 _validatorStateServiceMock
