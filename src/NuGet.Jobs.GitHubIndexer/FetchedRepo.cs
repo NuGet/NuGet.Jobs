@@ -19,6 +19,8 @@ namespace NuGet.Jobs.GitHubIndexer
             return fetchedRepo;
         }
 
+        public bool SkipProcessing { get; set; }
+
         private readonly WritableRepositoryInformation _repoInfo;
         private readonly string _repoFolder;
         private readonly RepoUtils _repoUtils;
@@ -31,6 +33,7 @@ namespace NuGet.Jobs.GitHubIndexer
             _repoUtils = repoUtils ?? throw new ArgumentNullException(nameof(repoUtils));
             _repoFolder = Path.Combine(ReposIndexer.RepositoriesDirectory, repoInfo.Id);
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            SkipProcessing = false;
         }
 
         private void Init()
@@ -45,10 +48,21 @@ namespace NuGet.Jobs.GitHubIndexer
             var remote = _repo.Network.Remotes["origin"];
             // Get the HEAD ref to only fetch the main branch
             var headRef = new string[] { "refs/heads/" + _repoInfo.MainBranch };
+            IEnumerable<Reference> references = _repo.Network.ListReferences(remote);
 
-            _logger.LogInformation("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
-            // Fetch
-            Commands.Fetch(_repo, remote.Name, headRef, options: null, logMessage: "");
+            // We only want to skip processing if the SHA AND the schema version haven't changed from the last time we saw this guy.
+            // Also need to handle the case where the schemaVersion is empty since this is what it will be the first time we add this property
+            SkipProcessing = references.First((Reference r) => r.CanonicalName == headRef[0]).TargetIdentifier == _repoInfo.LastKnownSha1
+                && (string.IsNullOrEmpty(_repoInfo.SchemaVersion) ? false : _repoInfo.SchemaVersion.Equals(StampedRepositoryInformation.CurrentSchemaVersion));
+
+            if (!SkipProcessing)
+            {
+                _repoInfo.LastKnownSha1 = references.First((Reference r) => r.CanonicalName == headRef[0]).TargetIdentifier;
+                _repoInfo.SchemaVersion = StampedRepositoryInformation.CurrentSchemaVersion;
+
+                _logger.LogInformation("[{RepoName}] Fetching branch {BranchName}.", _repoInfo.Id, _repoInfo.MainBranch);
+                Commands.Fetch(_repo, remote.Name, headRef, options:null, logMessage: "");
+            }
         }
 
         /// <summary>

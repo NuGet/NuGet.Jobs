@@ -23,7 +23,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// Creates a cache file for the specified repo that contains the repo's dependencies.
         /// </summary>
         /// <param name="repo">Repo to persist on disk</param>
-        public void Persist(RepositoryInformation repo)
+        public void Persist(StampedRepositoryInformation repo)
         {
             var repoCacheFile = GetCachePath(repo.Id);
             _logger.LogInformation("Saving cache for repo {RepoId} to file {FileName}", repo.Id, repoCacheFile);
@@ -36,7 +36,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="repo">Repo to read the cache file for</param>
         /// <param name="cached">The read cached version or null if none has been created.</param>
         /// <returns>true if a cache file has been found and loaded.</returns>
-        public bool TryGetCachedVersion(WritableRepositoryInformation repo, out RepositoryInformation cached)
+        public bool TryGetCachedVersion(WritableRepositoryInformation repo, out StampedRepositoryInformation cached)
         {
             var repoCacheFile = GetCachePath(repo.Id);
             _logger.LogInformation("Cache lookup for repo {RepoId}", repo.Id);

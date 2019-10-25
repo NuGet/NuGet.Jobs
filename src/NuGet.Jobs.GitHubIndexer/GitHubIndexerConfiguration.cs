@@ -10,7 +10,7 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <summary>
         /// Minimum number of stars that a GitHub Repo needs to have to be included in the indexing
         /// </summary>
-        public int MinStars { get; set; } = 100;
+        public int MinStars { get; set; } = 20000;
 
         /// <summary>
         /// The number of results that would be shown per page. This is currently limited to 100 (limit verified on 6/24/2019)

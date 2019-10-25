@@ -13,12 +13,12 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <param name="repo">Repo to read the cache entry for</param>
         /// <param name="cached">The cached entry or null if none has been created.</param>
         /// <returns>true if a cache entry has been found.</returns>
-        bool TryGetCachedVersion(WritableRepositoryInformation repo, out RepositoryInformation cached);
+        bool TryGetCachedVersion(WritableRepositoryInformation repo, out StampedRepositoryInformation cached);
 
         /// <summary>
         /// Persists the specified repository in an internal cache.
         /// </summary>
         /// <param name="repo">Repo to persist.</param>
-        void Persist(RepositoryInformation repo);
+        void Persist(StampedRepositoryInformation repo);
     }
 }

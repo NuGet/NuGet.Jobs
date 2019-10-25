@@ -11,7 +11,7 @@ namespace NuGet.Jobs.GitHubIndexer
     /// <summary>
     /// Builder class to construct a RepositoryInformation
     /// </summary>
-    public class WritableRepositoryInformation
+    public class WritableRepositoryInformation : IStampedRepositoryInformation
     {
         private readonly HashSet<string> _writableDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // Using a HashSet to avoid duplicates
 
@@ -29,6 +29,8 @@ namespace NuGet.Jobs.GitHubIndexer
         public string Url { get; }
         public int Stars { get; }
         public string MainBranch { get; }
+        public string LastKnownSha1 { get; set; }
+        public string SchemaVersion { get; set; }
 
         /// <summary>
         /// Adds the specified dependency if it's not already present
@@ -51,9 +53,9 @@ namespace NuGet.Jobs.GitHubIndexer
             }
         }
 
-        public RepositoryInformation ToRepositoryInformation()
+        public StampedRepositoryInformation ToRepositoryInformation()
         {
-            return new RepositoryInformation(Id, Url, Stars, Description, _writableDependencies.ToList());
+            return new StampedRepositoryInformation(Id, Url, Stars, Description, _writableDependencies.ToList(), LastKnownSha1, SchemaVersion);
         }
     }
 }

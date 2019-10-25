@@ -74,8 +74,20 @@ namespace NuGet.Jobs.GitHubIndexer
             try
             {
                 var repos = await _searcher.GetPopularRepositories();
+                var oldData = await ReadOldBlobAsync();
+                foreach (var repo in repos)
+                {
+                    StampedRepositoryInformation oldRepoInfo;
+                    if (oldData.TryGetValue(repo.Url, out oldRepoInfo))
+                    {
+                        repo.LastKnownSha1 = oldRepoInfo.LastKnownSha1;
+                        repo.SchemaVersion = oldRepoInfo.SchemaVersion;
+                        repo.AddDependencies(oldRepoInfo.Dependencies);
+                    }
+                }
+
                 var inputBag = new ConcurrentBag<WritableRepositoryInformation>(repos);
-                var outputBag = new ConcurrentBag<RepositoryInformation>();
+                var outputBag = new ConcurrentBag<StampedRepositoryInformation>();
 
                 // Create the repos and cache directories
                 Directory.CreateDirectory(RepositoriesDirectory);
@@ -134,7 +146,7 @@ namespace NuGet.Jobs.GitHubIndexer
             await Task.Delay(_sleepAfterSuccess);
         }
 
-        private async Task WriteFinalBlobAsync(List<RepositoryInformation> finalList)
+        private async Task WriteFinalBlobAsync(List<StampedRepositoryInformation> finalList)
         {
             var blobReference = _cloudClient.GetContainerReference(BlobStorageContainerName).GetBlobReference(GitHubUsageFileName);
 
@@ -147,7 +159,28 @@ namespace NuGet.Jobs.GitHubIndexer
             }
         }
 
-        private RepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
+        private async Task<Dictionary<string, StampedRepositoryInformation>> ReadOldBlobAsync()
+        {
+            var blobReference = _cloudClient.GetContainerReference(BlobStorageContainerName).GetBlobReference(GitHubUsageFileName);
+            var output = new Dictionary<string, StampedRepositoryInformation>();
+            if (await blobReference.ExistsAsync())
+            {
+                using (var stream = await blobReference.OpenReadAsync(accessCondition: null))
+                using (var streamReader = new StreamReader(stream))
+                using (var jsonTextReader = new JsonTextReader(streamReader))
+                {
+                    var oldData = Serializer.Deserialize<IEnumerable<StampedRepositoryInformation>>(jsonTextReader);
+                    foreach (var data in oldData)
+                    {
+                        output.Add(data.Url, data);
+                    }
+                }
+            }
+
+            return output;
+        }
+
+        private StampedRepositoryInformation ProcessSingleRepo(WritableRepositoryInformation repo)
         {
             if (_repoCache.TryGetCachedVersion(repo, out var cachedVersion))
             {
@@ -158,34 +191,41 @@ namespace NuGet.Jobs.GitHubIndexer
             using (_logger.BeginScope("Starting indexing for repo {Name}", repo.Id))
             using (var fetchedRepo = _repoFetcher.FetchRepo(repo))
             {
-                IReadOnlyList<GitFileInfo> files;
-                using (_telemetry.TrackListFilesDuration(repo.Id))
+                if (!fetchedRepo.SkipProcessing)
                 {
-                    _logger.LogInformation("Finding files in repo {Name}...", repo.Id);
+                    IReadOnlyList<GitFileInfo> files;
+                    using (_telemetry.TrackListFilesDuration(repo.Id))
+                    {
+                        _logger.LogInformation("Finding files in repo {Name}...", repo.Id);
 
-                    files = fetchedRepo.GetFileInfos();
+                        files = fetchedRepo.GetFileInfos();
+                    }
+
+                    var filePaths = files.Where(ShouldCheckOutFile).Select(x => x.Path).ToList();
+
+                    IReadOnlyList<ICheckedOutFile> checkedOutFiles;
+                    using (_telemetry.TrackCheckOutFilesDuration(repo.Id))
+                    {
+                        _logger.LogInformation(
+                            "Checking out {FileCount} files from repo {Name}",
+                            filePaths.Count,
+                            repo.Id);
+
+                        checkedOutFiles = fetchedRepo.CheckoutFiles(filePaths);
+                    }
+
+                    foreach (var cfgFile in checkedOutFiles)
+                    {
+                        var dependencies = _configFileParser.Parse(cfgFile);
+                        repo.AddDependencies(dependencies);
+                    }
+
+                    _logger.LogInformation("Finished indexing repo {Name}", repo.Id);
                 }
-
-                var filePaths = files.Where(ShouldCheckOutFile).Select(x => x.Path).ToList();
-
-                IReadOnlyList<ICheckedOutFile> checkedOutFiles;
-                using (_telemetry.TrackCheckOutFilesDuration(repo.Id))
+                else
                 {
-                    _logger.LogInformation(
-                        "Checking out {FileCount} files from repo {Name}",
-                        filePaths.Count,
-                        repo.Id);
-
-                    checkedOutFiles = fetchedRepo.CheckoutFiles(filePaths);
+                    _logger.LogInformation("Skipping repo {Name} since hash and schema version matched", repo.Id);
                 }
-
-                foreach (var cfgFile in checkedOutFiles)
-                {
-                    var dependencies = _configFileParser.Parse(cfgFile);
-                    repo.AddDependencies(dependencies);
-                }
-
-                _logger.LogInformation("Finished indexing repo {Name}", repo.Id);
             }
 
             var result = repo.ToRepositoryInformation();

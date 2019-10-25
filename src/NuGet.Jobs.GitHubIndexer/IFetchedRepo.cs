@@ -8,6 +8,8 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public interface IFetchedRepo : IDisposable
     {
+        bool SkipProcessing { get; }
+
         /// <summary>
         /// Returns a list of all files in the repository.
         /// </summary>
