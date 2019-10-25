@@ -46,7 +46,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 .Returns(Task.FromResult(new List<WritableRepositoryInformation>() { searchResult } as IReadOnlyList<WritableRepositoryInformation> ?? new List<WritableRepositoryInformation>()));
 
             var mockRepoCache = new Mock<IRepositoriesCache>();
-            RepositoryInformation mockVal;
+            StampedRepositoryInformation mockVal;
             mockRepoCache
                 .Setup(x => x.TryGetCachedVersion(It.IsAny<WritableRepositoryInformation>(), out mockVal))
                 .Callback(() => {
@@ -59,7 +59,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 })
                 .Returns(false); // Simulate no cache
             mockRepoCache
-                .Setup(x => x.Persist(It.IsAny<RepositoryInformation>()));
+                .Setup(x => x.Persist(It.IsAny<StampedRepositoryInformation>()));
 
             var mockConfigFileParser = new Mock<IConfigFileParser>();
             mockConfigFileParser
