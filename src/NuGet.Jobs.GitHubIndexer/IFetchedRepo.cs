@@ -8,6 +8,9 @@ namespace NuGet.Jobs.GitHubIndexer
 {
     public interface IFetchedRepo : IDisposable
     {
+        /// <summary>
+        /// Indicates if this FetchedRepo instance already has all the information filled in and should be skipped for processing.
+        /// </summary>
         bool SkipProcessing { get; }
 
         /// <summary>

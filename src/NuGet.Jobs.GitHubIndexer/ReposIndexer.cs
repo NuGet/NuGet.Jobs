@@ -77,8 +77,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 var oldData = await ReadOldBlobAsync();
                 foreach (var repo in repos)
                 {
-                    StampedRepositoryInformation oldRepoInfo;
-                    if (oldData.TryGetValue(repo.Url, out oldRepoInfo))
+                    if (oldData.TryGetValue(repo.Url, out var oldRepoInfo))
                     {
                         repo.LastKnownSha1 = oldRepoInfo.LastKnownSha1;
                         repo.SchemaVersion = oldRepoInfo.SchemaVersion;
