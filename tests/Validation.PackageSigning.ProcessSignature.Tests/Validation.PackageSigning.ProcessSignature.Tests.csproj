@@ -37,6 +37,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SignatureFormatValidatorFacts.cs" />
     <Compile Include="Support\CertificateIntegrationTestCollection.cs" />
     <Compile Include="Support\CertificateIntegrationTestFixture.cs" />
     <Compile Include="HashFacts.cs" />

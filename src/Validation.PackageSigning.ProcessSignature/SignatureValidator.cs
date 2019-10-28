@@ -26,9 +26,12 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 {
     public class SignatureValidator : ISignatureValidator
     {
-        private const string FormatVerificationName = "format verification";
+        private const string AuthorSignatureTimestampVerificationName = "author signature's timestamp verification";
         private const string AuthorSignatureVerificationName = "author signature integrity and trust verification";
+        private const string FormatVerificationName = "format verification";
         private const string FullSignatureVerificationName = "full signature integrity and trust verification";
+        private const string RepositoryCountersignatureTimestampVerificationName = "repository countersignature's timestamp verification";
+        private const string RepositorySignatureTimestampVerificationName = "repository signature's timestamp verification";
 
         private readonly IPackageSigningStateService _packageSigningStateService;
         private readonly ISignatureFormatValidator _formatValidator;
@@ -576,6 +579,38 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 return failureResult;
             }
 
+            Timestamp timestamp = context.Signature.Timestamps.Single();
+            SigningCertificateUsage signingCertificateUsage = _formatValidator.ValidateSigningCertificateUsage(timestamp);
+            string verificationName = context.HasAuthorSignature ?
+                AuthorSignatureTimestampVerificationName : RepositorySignatureTimestampVerificationName;
+            SignatureValidatorResult timestampVerificationResult = await GetVerifyResult(
+                context,
+                verificationName,
+                signingCertificateUsage);
+
+            if (timestampVerificationResult != null)
+            {
+                return timestampVerificationResult;
+            }
+
+            if (context.HasAuthorSignature && context.HasRepositorySignature)
+            {
+                RepositoryCountersignature repositoryCounterSignature =
+                    RepositoryCountersignature.GetRepositoryCountersignature(context.Signature);
+
+                timestamp = repositoryCounterSignature.Timestamps.Single();
+                signingCertificateUsage = _formatValidator.ValidateSigningCertificateUsage(timestamp);
+                timestampVerificationResult = await GetVerifyResult(
+                    context,
+                    RepositoryCountersignatureTimestampVerificationName,
+                    signingCertificateUsage);
+
+                if (timestampVerificationResult != null)
+                {
+                    return timestampVerificationResult;
+                }
+            }
+
             _logger.LogInformation(
                 "{SignatureTyped} signed package {PackageId} {PackageVersion} for validation {ValidationId} is valid" +
                 " with certificate fingerprint: {SigningFingerprint}",
@@ -718,6 +753,36 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 
                 return null;
             }
+        }
+
+        private async Task<SignatureValidatorResult> GetVerifyResult(
+            Context context,
+            string verificationName,
+            SigningCertificateUsage signingCertificateUsage)
+        {
+            if (signingCertificateUsage == SigningCertificateUsage.V2)
+            {
+                _logger.LogInformation(
+                   "Timestamp verification for signed package {PackageId} {PackageVersion} passed {VerificationName} for " +
+                   "validation {ValidationId}.",
+                   context.Message.PackageId,
+                   context.Message.PackageVersion,
+                   verificationName,
+                   context.Message.ValidationId);
+
+                return null;
+            }
+
+            _logger.LogInformation(
+                "Timestamp verification for signed package {PackageId} {PackageVersion} is blocked during {VerificationName} " +
+                "for validation {ValidationId}. The timestamp has signing certificate attribute(s):  {SigningCertificateUsage}",
+                context.Message.PackageId,
+                context.Message.PackageVersion,
+                verificationName,
+                context.Message.ValidationId,
+                signingCertificateUsage);
+
+            return await RejectAsync(context);
         }
 
         private async Task<SignatureValidatorResult> RejectAsync(

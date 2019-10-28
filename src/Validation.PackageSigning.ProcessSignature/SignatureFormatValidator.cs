@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Pkcs;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -70,7 +72,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                     VerificationTarget.Repository,
                     SignaturePlacement.PrimarySignature | SignaturePlacement.Countersignature,
                     hash,
-                    HashAlgorithmName.SHA256))
+                    Common.HashAlgorithmName.SHA256))
                 .ToList();
 
             repoAllowListEntries = repoAllowListEntries ?? new List<CertificateHashAllowListEntry>();
@@ -147,6 +149,31 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 package,
                 settings,
                 token);
+        }
+
+        public SigningCertificateUsage ValidateSigningCertificateUsage(Timestamp timestamp)
+        {
+            if (timestamp == null)
+            {
+                throw new ArgumentNullException(nameof(timestamp));
+            }
+
+            SignerInfo signer = timestamp.SignedCms.SignerInfos[0];
+            SigningCertificateUsage signingCertificateUsage = SigningCertificateUsage.None;
+
+            foreach (CryptographicAttributeObject attribute in signer.SignedAttributes)
+            {
+                if (attribute.Oid.Value == Oids.SigningCertificate)
+                {
+                    signingCertificateUsage |= SigningCertificateUsage.V1;
+                }
+                else if (attribute.Oid.Value == Oids.SigningCertificateV2)
+                {
+                    signingCertificateUsage |= SigningCertificateUsage.V2;
+                }
+            }
+
+            return signingCertificateUsage;
         }
     }
 }

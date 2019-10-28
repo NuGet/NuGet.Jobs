@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Packaging.Signing;
@@ -50,5 +51,14 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             ISignedPackageReader package,
             bool hasRepositorySignature, // TODO: Remove parameter once this is fixed: https://github.com/NuGet/Home/issues/7042
             CancellationToken token);
+
+        /// <summary>
+        /// Verify signing certificate V1/V2 attribute usage for the specified timestamp.
+        /// </summary>
+        /// <param name="timestamp">A timestamp.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="timestamp" />
+        /// is <c>null</c>.</exception>
+        /// <returns>A value indicating signing certificate V1/V2 attribute usage.</returns>
+        SigningCertificateUsage ValidateSigningCertificateUsage(Timestamp timestamp);
     }
 }
