@@ -31,16 +31,18 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
         private static readonly TimeSpan KeyVaultSecretCachingTimeout = TimeSpan.FromDays(1);
 
         private IServiceProvider _serviceProvider;
-        private GitHubVulnerabilitiesLagMonitorConfiguration _configuration;
+        private ReadCursor<DateTimeOffset> _cursor;
         private IGitHubVulnerabilitiesLagTelemetryService _telemetryService;
+        private IGitHubQueryService _queryService;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
 
             _serviceProvider = GetServiceProvider(GetConfigurationRoot(configurationFilename));
-            _configuration = _serviceProvider.GetService<GitHubVulnerabilitiesLagMonitorConfiguration>();
-            _telemetryService = _serviceProvider.GetService<IGitHubVulnerabilitiesLagTelemetryService>();
+            _cursor = _serviceProvider.GetRequiredService<ReadCursor<DateTimeOffset>>();
+            _telemetryService = _serviceProvider.GetRequiredService<IGitHubVulnerabilitiesLagTelemetryService>();
+            _queryService = _serviceProvider.GetRequiredService<IGitHubQueryService>();
         }
 
         public async override Task Run()
@@ -53,16 +55,13 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
 
                 // Query for the current cursor of GitHubVulnerabilities2Db job.
                 // We'll use this cursor to check for newer results in GitHub's API.
-                var cursor = _serviceProvider.GetRequiredService<ReadCursor<DateTimeOffset>>();
-                await cursor.Load(token);
+                await _cursor.Load(token);
 
                 // Query GitHub for the latest security advisory UpdatedAt value beyond the current job's cursor position.
-                var queryService = _serviceProvider.GetRequiredService<IGitHubQueryService>();
-                var latestAdvisoryUpdatedAt = await queryService.GetLatestAdvisoryUpdatedAtValueAfterCursor(cursor.Value, token);
+                var latestAdvisoryUpdatedAt = await _queryService.GetLatestAdvisoryUpdatedAtValueAfterCursor(_cursor.Value, token);
 
                 // Track metric
-                var telemetryService = _serviceProvider.GetRequiredService<IGitHubVulnerabilitiesLagTelemetryService>();
-                telemetryService.TrackGitHubVulnerabilities2DbLag(currentTimeUtc, cursor.Value, latestAdvisoryUpdatedAt);
+                _telemetryService.TrackGitHubVulnerabilities2DbLag(currentTimeUtc, _cursor.Value, latestAdvisoryUpdatedAt);
 
             }
             catch (Exception e)
@@ -117,7 +116,7 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
             return new AutofacServiceProvider(containerBuilder.Build());
         }
 
-        private void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
+        private static void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<GitHubVulnerabilitiesLagMonitorConfiguration>(configurationRoot.GetSection(MonitorConfigurationSectionName));
             services.AddSingleton(p => new HttpClient());
@@ -146,7 +145,7 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
                 p.GetRequiredService<IStorageFactory>()));
         }
 
-        private DurableCursor CreateCursor(
+        private static DurableCursor CreateCursor(
             GitHubVulnerabilitiesLagMonitorConfiguration configuration,
             IStorageFactory storageFactory)
         {
