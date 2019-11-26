@@ -149,7 +149,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtil", "tests\TestUtil\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Jobs.GitHubIndexer.Tests", "tests\NuGet.Jobs.GitHubIndexer.Tests\NuGet.Jobs.GitHubIndexer.Tests.csproj", "{4A64FEB4-198C-445B-835F-A5B68EFBFDA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitoring.GitHubVulnerabilitiesLag", "src\Monitoring.GitHubVulnerabililitiesLag\Monitoring.GitHubVulnerabilitiesLag.csproj", "{882854F8-0058-4AF1-884F-85DA3791F263}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitoring.GitHubVulnerabilitiesLag", "src\Monitoring.GitHubVulnerabilitiesLag\Monitoring.GitHubVulnerabilitiesLag.csproj", "{882854F8-0058-4AF1-884F-85DA3791F263}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
