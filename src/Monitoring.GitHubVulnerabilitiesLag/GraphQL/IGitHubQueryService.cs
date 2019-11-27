@@ -15,6 +15,6 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
         /// </summary>
         /// <param name="cursorValue">The cursor value of the last processed GitHub security advisory.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/></param>
-        Task<DateTimeOffset?> GetLatestAdvisoryUpdatedAtValueAfterCursor(DateTimeOffset cursorValue, CancellationToken cancellationToken);
+        Task<DateTimeOffset?> GetLatestAdvisoryUpdateAsync(DateTimeOffset cursorValue, CancellationToken cancellationToken);
     }
 }

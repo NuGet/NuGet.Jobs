@@ -5,7 +5,7 @@ using System;
 
 namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
 {
-    public class GitHubVulnerabilitiesLagMonitorConfiguration
+    public class MonitoringConfiguration
     {
         /// <summary>
         /// GitHub's v4 GraphQL API endpoint.

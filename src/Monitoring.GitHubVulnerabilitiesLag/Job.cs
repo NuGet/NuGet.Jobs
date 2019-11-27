@@ -47,7 +47,7 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
 
         public async override Task Run()
         {
-            var token = new CancellationToken();
+            var token = CancellationToken.None;
 
             try
             {
@@ -58,15 +58,14 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
                 await _cursor.Load(token);
 
                 // Query GitHub for the latest security advisory UpdatedAt value beyond the current job's cursor position.
-                var latestAdvisoryUpdatedAt = await _queryService.GetLatestAdvisoryUpdatedAtValueAfterCursor(_cursor.Value, token);
+                var latestAdvisoryUpdatedAt = await _queryService.GetLatestAdvisoryUpdateAsync(_cursor.Value, token);
 
                 // Track metric
                 _telemetryService.TrackGitHubVulnerabilities2DbLag(currentTimeUtc, _cursor.Value, latestAdvisoryUpdatedAt);
-
             }
             catch (Exception e)
             {
-                Logger.LogError("Exception Occured. {Exception}", e);
+                Logger.LogError("Could not track GitHub vulnerabilities lag due to exception. {Exception}", e);
             }
         }
 
@@ -118,35 +117,35 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
 
         private static void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
-            services.Configure<GitHubVulnerabilitiesLagMonitorConfiguration>(configurationRoot.GetSection(MonitorConfigurationSectionName));
+            services.Configure<MonitoringConfiguration>(configurationRoot.GetSection(MonitorConfigurationSectionName));
             services.AddSingleton(p => new HttpClient());
             services.AddTransient<IGitHubVulnerabilitiesLagTelemetryService, GitHubVulnerabilitiesLagTelemetryService>();
             services.AddSingleton(new TelemetryClient());
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
-            services.AddTransient<GitHubVulnerabilitiesLagMonitorConfiguration>(
-                p => p.GetRequiredService<IOptionsSnapshot<GitHubVulnerabilitiesLagMonitorConfiguration>>().Value);
+            services.AddTransient<MonitoringConfiguration>(
+                p => p.GetRequiredService<IOptionsSnapshot<MonitoringConfiguration>>().Value);
             services.AddTransient<IGitHubQueryService, GitHubQueryService>();
 
             services.AddTransient<CloudStorageAccount>(p =>
             {
-                var configuration = p.GetRequiredService<GitHubVulnerabilitiesLagMonitorConfiguration>();
+                var configuration = p.GetRequiredService<MonitoringConfiguration>();
                 return CloudStorageAccount.Parse(configuration.StorageConnectionString);
             });
             services.AddTransient<IStorageFactory>(p =>
             {
                 return new AzureStorageFactory(
                     p.GetRequiredService<CloudStorageAccount>(),
-                    p.GetRequiredService<GitHubVulnerabilitiesLagMonitorConfiguration>().CursorContainerName,
+                    p.GetRequiredService<MonitoringConfiguration>().CursorContainerName,
                     p.GetRequiredService<ILogger<AzureStorage>>());
             });
 
             services.AddTransient<ReadCursor<DateTimeOffset>>(p => CreateCursor(
-                p.GetRequiredService<GitHubVulnerabilitiesLagMonitorConfiguration>(),
+                p.GetRequiredService<MonitoringConfiguration>(),
                 p.GetRequiredService<IStorageFactory>()));
         }
 
         private static DurableCursor CreateCursor(
-            GitHubVulnerabilitiesLagMonitorConfiguration configuration,
+            MonitoringConfiguration configuration,
             IStorageFactory storageFactory)
         {
             var storage = storageFactory.Create();

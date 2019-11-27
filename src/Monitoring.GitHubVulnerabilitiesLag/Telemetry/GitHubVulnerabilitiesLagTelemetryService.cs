@@ -19,7 +19,7 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
 
         public GitHubVulnerabilitiesLagTelemetryService(
             ITelemetryClient telemetryClient,
-            GitHubVulnerabilitiesLagMonitorConfiguration configuration)
+            MonitoringConfiguration configuration)
         {
             _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
         }

@@ -21,14 +21,14 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
         /// </remarks>
         public const string UserAgent = "NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag";
 
-        private readonly GitHubVulnerabilitiesLagMonitorConfiguration _configuration;
+        private readonly MonitoringConfiguration _configuration;
         private readonly IGitHubVulnerabilitiesLagTelemetryService _telemetryService;
         private readonly ILogger<GitHubQueryService> _logger;
         private readonly HttpClient _httpClient;
 
         public GitHubQueryService(
             HttpClient httpClient,
-            GitHubVulnerabilitiesLagMonitorConfiguration configuration,
+            MonitoringConfiguration configuration,
             IGitHubVulnerabilitiesLagTelemetryService telemetryService,
             ILogger<GitHubQueryService> logger)
         {
@@ -38,7 +38,7 @@ namespace NuGet.Jobs.Monitoring.GitHubVulnerabilitiesLag
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<DateTimeOffset?> GetLatestAdvisoryUpdatedAtValueAfterCursor(
+        public async Task<DateTimeOffset?> GetLatestAdvisoryUpdateAsync(
             DateTimeOffset cursorValue,
             CancellationToken cancellationToken)
         {
