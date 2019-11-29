@@ -44,7 +44,7 @@ namespace Validation.PackageSigning.ValidateCertificate
             services.AddTransient<ICertificateValidationService, CertificateValidationService>();
             services.AddTransient<ITelemetryService, TelemetryService>();
             services.AddTransient<ISubscriptionProcessorTelemetryService, TelemetryService>();
-            services.AddSingleton(new TelemetryClient());
+            services.AddSingleton(new TelemetryClient(ApplicationInsightsConfiguration.TelemetryConfiguration));
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
