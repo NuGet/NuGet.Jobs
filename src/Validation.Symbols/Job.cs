@@ -48,7 +48,6 @@ namespace Validation.Symbols
 
                 return new SymbolsFileService(packageStorageService, packageValidationStorageService, c.GetRequiredService<IFileDownloader>());
             });
-            services.AddSingleton(new TelemetryClient(ApplicationInsightsConfiguration.TelemetryConfiguration));
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)
