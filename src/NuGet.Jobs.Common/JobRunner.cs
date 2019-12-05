@@ -155,6 +155,7 @@ namespace NuGet.Jobs
 
             Trace.Close();
             _applicationInsightsConfiguration.TelemetryConfiguration.TelemetryChannel.Flush();
+            _applicationInsightsConfiguration.Dispose();
 
             return exitCode;
         }
