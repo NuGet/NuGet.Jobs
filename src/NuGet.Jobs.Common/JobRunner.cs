@@ -87,7 +87,7 @@ namespace NuGet.Jobs
                 _applicationInsightsConfiguration = ConfigureApplicationInsights(job, jobArgsDictionary);
 
                 // Configure our logging again with Application Insights initialized.
-                loggerFactory = ConfigureLogging(job);
+                loggerFactory = ConfigureLogging(job, _applicationInsightsConfiguration.TelemetryConfiguration);
 
                 var hasOnceArgument = JobConfigurationManager.TryGetBoolArgument(jobArgsDictionary, JobArgumentNames.Once);
 
@@ -194,9 +194,12 @@ namespace NuGet.Jobs
             return applicationInsightsConfiguration;
         }
 
-        private static ILoggerFactory ConfigureLogging(JobBase job)
+        private static ILoggerFactory ConfigureLogging(JobBase job, TelemetryConfiguration telemetryConfiguration = null)
         {
-            var loggerFactory = LoggingSetup.CreateLoggerFactory(LoggingSetup.CreateDefaultLoggerConfiguration(true));
+            var loggerFactory = LoggingSetup.CreateLoggerFactory(
+                LoggingSetup.CreateDefaultLoggerConfiguration(true),
+                telemetryConfiguration: telemetryConfiguration);
+
             var logger = loggerFactory.CreateLogger(job.GetType());
 
             job.SetLogger(loggerFactory, logger);
