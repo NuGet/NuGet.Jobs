@@ -70,7 +70,7 @@ namespace NuGet.Jobs
 
             // Configure logging before Application Insights is enabled.
             // This is done so, in case Application Insights fails to initialize, we still see output.
-            var loggerFactory = ConfigureLogging(job);
+            var loggerFactory = ConfigureLogging(job, telemetryConfiguration: null);
 
             int exitCode;
             try
@@ -194,7 +194,7 @@ namespace NuGet.Jobs
             return applicationInsightsConfiguration;
         }
 
-        private static ILoggerFactory ConfigureLogging(JobBase job, TelemetryConfiguration telemetryConfiguration = null)
+        private static ILoggerFactory ConfigureLogging(JobBase job, TelemetryConfiguration telemetryConfiguration)
         {
             var loggerFactory = LoggingSetup.CreateLoggerFactory(
                 LoggingSetup.CreateDefaultLoggerConfiguration(true),
