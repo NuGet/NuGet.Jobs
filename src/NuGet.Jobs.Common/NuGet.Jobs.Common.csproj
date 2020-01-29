@@ -104,7 +104,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration">
-      <Version>2.66.0</Version>
+      <Version>2.68.0-kv-managed-identities-3426238</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Messaging.Email">
       <Version>2.66.0</Version>
