@@ -95,7 +95,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
                 foreach (var blobItem in resultsInternal.Results)
                 {
-                    if (result.Count > maxResults)
+                    if (result.Count >= maxResults)
                     {
                         break;
                     }
