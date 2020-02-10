@@ -81,7 +81,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             {
                 _logger.LogInformation("Finding next blobs segment...");
 
-                var resultsInternal = await _container.ListBlobsSegmentedAsync(
+                var segment = await _container.ListBlobsSegmentedAsync(
                     prefix: prefix,
                     useFlatBlobListing: true,
                     blobListingDetails: BlobListingDetails.Metadata,
@@ -91,9 +91,11 @@ namespace Stats.AzureCdnLogs.Common.Collect
                     operationContext: null,
                     cancellationToken: token);
 
+                continuationToken = segment.ContinuationToken;
+
                 _logger.LogInformation("Found next blobs segment, finding blobs with unlocked lease status...");
 
-                foreach (var blobItem in resultsInternal.Results)
+                foreach (var blobItem in segment.Results)
                 {
                     if (result.Count >= maxResults)
                     {
@@ -105,12 +107,11 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         blobItem.Uri);
 
                     var cloudBlob = (CloudBlob)blobItem;
-                    await cloudBlob.FetchAttributesAsync(token);
 
                     if (cloudBlob.Properties.LeaseStatus != LeaseStatus.Unlocked)
                     {
                         _logger.LogInformation(
-                            "Skipping blob {BlobUrl} with lease status {LeaseStatus}",
+                            "Skipping blob {BlobUrl} as its lease status is not unlocked: {LeaseStatus}",
                             cloudBlob.Uri,
                             cloudBlob.Properties.LeaseStatus);
                         continue;
