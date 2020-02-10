@@ -106,18 +106,17 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         "Found blob {BlobUrl}, determining lease status...",
                         blobItem.Uri);
 
-                    var cloudBlob = (CloudBlob)blobItem;
-
-                    if (cloudBlob.Properties.LeaseStatus != LeaseStatus.Unlocked)
+                    var blob = (CloudBlob)blobItem;
+                    if (blob.Properties.LeaseStatus != LeaseStatus.Unlocked)
                     {
                         _logger.LogInformation(
                             "Skipping blob {BlobUrl} as its lease status is not unlocked: {LeaseStatus}",
-                            cloudBlob.Uri,
-                            cloudBlob.Properties.LeaseStatus);
+                            blob.Uri,
+                            blob.Properties.LeaseStatus);
                         continue;
                     }
 
-                    result.Add(cloudBlob.Uri);
+                    result.Add(blob.Uri);
                 }
             }
             while (continuationToken != null);
