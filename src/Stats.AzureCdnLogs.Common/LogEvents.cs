@@ -15,7 +15,6 @@ namespace Stats.AzureCdnLogs.Common
         public static EventId FailedBlobListing = new EventId(505, "Failed to list blobs");
         public static EventId FailedBlobLease = new EventId(506, "Failed to lease blob");
         public static EventId FailedDimensionRetrieval = new EventId(507, "Failed to retrieve dimension");
-        public static EventId FailedToParseLogFileEntry = new EventId(508, "Failed to parse log file entry");
         public static EventId FailedToProcessLogStream = new EventId(509, "Error processing log stream");
         public static EventId UnknownAzureCdnPlatform = new EventId(510, "Unknown Azure CDN platform");
         public static EventId InvalidRawLogFileName = new EventId(511, "Invalid raw log filename");

@@ -96,7 +96,7 @@ namespace Stats.CDNLogsSanitizer
         /// </summary>
         /// <param name="sourceStream"></param>
         /// <param name="targetStream"></param>
-        public void ProcessStream(Stream sourceStream, Stream targetStream)
+        public void ProcessStream(string fileName, Stream sourceStream, Stream targetStream)
         {
             try
             {

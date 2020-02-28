@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using Microsoft.Extensions.Logging.Abstractions;
 using Stats.AzureCdnLogs.Common;
 using Xunit;
 
@@ -11,6 +12,7 @@ namespace Tests.Stats.ImportAzureCdnStatistics
     {
         public class TheParseLogEntryFromLineMethod
         {
+            private const string FileName = "fake.log.gz";
             private const int LineNumber = 42;
             private const string StatusLineFormat = "1507030253 0 - - 0.1.2.3 443 {0} 577 GET http://example/path - 0 653  \"UserAgent\" 56086 \"NuGet-Operation: - NuGet-DependentPackage: - NuGet-ProjectGuids: -\"  ";
             
@@ -34,9 +36,11 @@ namespace Tests.Stats.ImportAzureCdnStatistics
 
                 // Act
                 var logEntry = CdnLogEntryParser.ParseLogEntryFromLine(
+                    FileName,
                     LineNumber,
                     line,
-                    FailOnError);
+                    NullLogger.Instance,
+                    shouldThrow: true);
 
                 // Assert
                 Assert.Null(logEntry);
@@ -55,9 +59,11 @@ namespace Tests.Stats.ImportAzureCdnStatistics
 
                 // Act
                 var logEntry = CdnLogEntryParser.ParseLogEntryFromLine(
+                    FileName,
                     LineNumber,
                     line,
-                    (e, lineNumber) => Assert.False(true, "The error action should not be called."));
+                    NullLogger.Instance,
+                    shouldThrow: true);
 
                 // Assert
                 Assert.NotNull(logEntry);

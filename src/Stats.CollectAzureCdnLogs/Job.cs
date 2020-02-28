@@ -227,7 +227,7 @@ namespace Stats.CollectAzureCdnLogs
                                             {
                                                 resultGzipStream.IsStreamOwner = false;
 
-                                                ProcessLogStream(rawGzipStream, resultGzipStream, fileName);
+                                                ProcessLogStream(rawGzipStream, resultGzipStream, fileName, Logger);
 
                                                 resultGzipStream.Flush();
                                             }
@@ -283,7 +283,7 @@ namespace Stats.CollectAzureCdnLogs
             }
         }
 
-        private void ProcessLogStream(Stream sourceStream, Stream targetStream, string fileName)
+        public static void ProcessLogStream(Stream sourceStream, Stream targetStream, string fileName, ILogger logger)
         {
             // note: not using async/await pattern as underlying streams do not support async
             using (var sourceStreamReader = new StreamReader(sourceStream))
@@ -300,7 +300,7 @@ namespace Stats.CollectAzureCdnLogs
                             var rawLogLine = sourceStreamReader.ReadLine();
                             lineNumber++;
 
-                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine, fileName);
+                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine, fileName, logger);
                             if (!string.IsNullOrEmpty(logLine))
                             {
                                 targetStreamWriter.Write(logLine);
@@ -311,7 +311,7 @@ namespace Stats.CollectAzureCdnLogs
                     catch (SharpZipBaseException e)
                     {
                         // this raw log file may be corrupt...
-                        Logger.LogError(LogEvents.FailedToProcessLogStream, e, LogMessages.ProcessingLogStreamFailed);
+                        logger.LogError(LogEvents.FailedToProcessLogStream, e, LogMessages.ProcessingLogStreamFailed);
 
                         throw;
                     }
@@ -319,17 +319,14 @@ namespace Stats.CollectAzureCdnLogs
             }
         }
 
-        private string GetParsedModifiedLogEntry(int lineNumber, string rawLogEntry, string fileName)
+        private static string GetParsedModifiedLogEntry(int lineNumber, string rawLogEntry, string fileName, ILogger logger)
         {
             var parsedEntry = CdnLogEntryParser.ParseLogEntryFromLine(
+                fileName,
                 lineNumber,
                 rawLogEntry,
-                (e, line) => Logger.LogError(
-                    LogEvents.FailedToParseLogFileEntry,
-                    e,
-                    LogMessages.ParseLogEntryLineFailed,
-                    fileName,
-                    line));
+                logger,
+                shouldThrow: false);
 
             if (parsedEntry == null)
             {

@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace Stats.AzureCdnLogs.Common
 {
@@ -9,7 +10,7 @@ namespace Stats.AzureCdnLogs.Common
     {
         private static readonly DateTime _unixTimestamp = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
-        public static CdnLogEntry ParseLogEntryFromLine(int lineNumber, string line, Action<Exception, int> onErrorAction)
+        public static CdnLogEntry ParseLogEntryFromLine(string fileName, int lineNumber, string line, ILogger logger, bool shouldThrow)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
@@ -85,17 +86,16 @@ namespace Stats.AzureCdnLogs.Common
                 // x-ec_custom-1
                 TrySetStringProperty(value => entry.CustomField = value, columns[16]);
             }
-            catch (FormatException e)
+            catch (Exception e) when (e is FormatException || e is IndexOutOfRangeException || e is OverflowException)
             {
-                // skip this line but log the error
-                if (onErrorAction == null)
+                logger.LogError(e, "Line {LineNumber} of {FileName} failed to be parsed:" + Environment.NewLine + "{Line}", lineNumber, fileName, line);
+
+                if (shouldThrow)
                 {
                     throw;
                 }
                 else
                 {
-                    onErrorAction.Invoke(e, lineNumber);
-
                     return null;
                 }
             }

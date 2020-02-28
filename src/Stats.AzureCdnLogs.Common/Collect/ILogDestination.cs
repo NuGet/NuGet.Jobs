@@ -21,6 +21,6 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <param name="destinationContentType">The destination <see cref="ContentType"/>.</param>
         /// <param name="token">A cancellation token for the async operation.</param>
         /// <returns>The <see cref="AsyncOperationResult"/>. If an Exception is thrown the exception will be stored under <see cref="AsyncOperationResult.OperationException"/>.</returns>
-        Task<AsyncOperationResult> TryWriteAsync(Stream inputStream, Action<Stream, Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token);
+        Task<AsyncOperationResult> TryWriteAsync(Stream inputStream, Action<string, Stream, Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token);
     }
 }

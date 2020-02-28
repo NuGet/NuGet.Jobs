@@ -48,7 +48,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// If an Exception is thrown the exception will be stored under <see cref="AsyncOperationResult.OperationException"/>.
         /// </returns>
 
-        public async Task<AsyncOperationResult> TryWriteAsync(Stream inputStream, Action<Stream, Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
+        public async Task<AsyncOperationResult> TryWriteAsync(Stream inputStream, Action<string, Stream, Stream> writeAction, string destinationFileName, ContentType destinationContentType, CancellationToken token)
         {
             _logger.LogInformation("WriteAsync: Start to write to {DestinationFileName}. ContentType is {ContentType}.", 
                 $"{_cloudBlobContainer.StorageUri}{_cloudBlobContainer.Name}{destinationFileName}",
@@ -75,13 +75,13 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         using (var resultGzipStream = new GZipOutputStream(resultStream))
                         {
                             resultGzipStream.IsStreamOwner = false;
-                            writeAction(inputStream, resultGzipStream);
+                            writeAction(destinationFileName, inputStream, resultGzipStream);
                             await resultGzipStream.FlushAsync();
                         }
                     }
                     else
                     {
-                        writeAction(inputStream, resultStream);
+                        writeAction(destinationFileName, inputStream, resultStream);
                     }
                     if (!(await blob.ExistsAsync()))
                     {

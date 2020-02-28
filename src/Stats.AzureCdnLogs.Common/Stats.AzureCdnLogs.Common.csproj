@@ -62,11 +62,6 @@
     <Compile Include="ITrackEdgeServerIpAddress.cs" />
     <Compile Include="ITrackUserAgent.cs" />
     <Compile Include="LogEvents.cs" />
-    <Compile Include="LogMessages.Designer.cs">
-      <DependentUpon>LogMessages.resx</DependentUpon>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Compile>
     <Compile Include="AzureCdnPlatform.cs" />
     <Compile Include="AzureCdnPlatformExtensions.cs" />
     <Compile Include="CdnLogEntry.cs" />
@@ -82,12 +77,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="LogMessages.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>LogMessages.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MicroBuild.Core">

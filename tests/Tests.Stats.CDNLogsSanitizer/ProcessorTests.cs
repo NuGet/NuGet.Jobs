@@ -144,7 +144,7 @@ namespace Tests.Stats.CDNLogsSanitizer
                 int maxElementsToProcess = 2;
                 var _logDestination = new Mock<ILogDestination>();
                 var writeResult = writeAsyncThrows ? new AsyncOperationResult(null, new Exception("Boo")) : new AsyncOperationResult(true, null);
-                _logDestination.Setup(lD => lD.TryWriteAsync(It.IsAny<Stream>(), It.IsAny<Action<Stream, Stream>>(), It.IsAny<string>(), ContentType.GZip, It.IsAny<CancellationToken>()))
+                _logDestination.Setup(lD => lD.TryWriteAsync(It.IsAny<Stream>(), It.IsAny<Action<string, Stream, Stream>>(), It.IsAny<string>(), ContentType.GZip, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(writeResult);
                 var sanitizerList = new List<ISanitizer>();
                 var logger = new Mock<ILogger<Processor>>();
@@ -222,7 +222,7 @@ namespace Tests.Stats.CDNLogsSanitizer
                             var processor = new Processor(_logSource.Object, _logDestination.Object, maxElementsToProcess, sanitizerList, logger.Object);
 
                             // Act 
-                            processor.ProcessStream(inputStream, outStream);
+                            processor.ProcessStream("fake.csv.gz", inputStream, outStream);
                         }
                     }
                     outStream.Position = 0;

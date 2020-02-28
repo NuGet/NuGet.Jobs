@@ -180,14 +180,11 @@ namespace Stats.ImportAzureCdnStatistics
                             lineNumber++;
 
                             var logEntry = CdnLogEntryParser.ParseLogEntryFromLine(
+                                fileName,
                                 lineNumber,
                                 rawLogLine,
-                                (e, line) => _logger.LogError(
-                                    LogEvents.FailedToParseLogFileEntry,
-                                    e,
-                                    LogMessages.ParseLogEntryLineFailed,
-                                    fileName,
-                                    line));
+                                _logger,
+                                shouldThrow: false);
 
                             if (logEntry != null)
                             {

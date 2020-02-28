@@ -134,7 +134,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
         /// <returns>True if the validation passed.</returns>
         public abstract Task<bool> VerifyStreamAsync(Stream stream);
       
-        protected void ProcessLogStream(Stream sourceStream, Stream targetStream)
+        protected void ProcessLogStream(string fileName, Stream sourceStream, Stream targetStream)
         {
             try
             {
@@ -149,7 +149,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         if (rawLogLine != null)
                         {
                             lineNumber++;
-                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine.ToString());
+                            var logLine = GetParsedModifiedLogEntry(fileName, lineNumber, rawLogLine.ToString());
                             if (!string.IsNullOrEmpty(logLine))
                             {
                                 targetStreamWriter.Write(logLine);
@@ -167,12 +167,14 @@ namespace Stats.AzureCdnLogs.Common.Collect
             }
         }
 
-        private string GetParsedModifiedLogEntry(int lineNumber, string rawLogEntry)
+        private string GetParsedModifiedLogEntry(string fileName, int lineNumber, string rawLogEntry)
         {
             var parsedEntry = CdnLogEntryParser.ParseLogEntryFromLine(
+                fileName: fileName,
                 lineNumber: lineNumber,
                 line: rawLogEntry,
-                onErrorAction: null);
+                logger: _logger,
+                shouldThrow: true);
 
             if (parsedEntry == null)
             {

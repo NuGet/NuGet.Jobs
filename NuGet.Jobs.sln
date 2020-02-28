@@ -147,6 +147,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Jobs.GitHubIndexer.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SplitLargeFiles", "src\SplitLargeFiles\SplitLargeFiles.csproj", "{AFB33A62-C437-4C32-A965-D6CC5EE50540}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestCdnLogFile", "src\TestCdnLogFile\TestCdnLogFile.csproj", "{79ABB5BB-FAF3-49F3-8A81-7410FC834CC7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -391,6 +393,10 @@ Global
 		{AFB33A62-C437-4C32-A965-D6CC5EE50540}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFB33A62-C437-4C32-A965-D6CC5EE50540}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFB33A62-C437-4C32-A965-D6CC5EE50540}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79ABB5BB-FAF3-49F3-8A81-7410FC834CC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79ABB5BB-FAF3-49F3-8A81-7410FC834CC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79ABB5BB-FAF3-49F3-8A81-7410FC834CC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79ABB5BB-FAF3-49F3-8A81-7410FC834CC7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -455,6 +461,7 @@ Global
 		{C3F84BAD-ACFA-4AE3-8286-D12F5A5BBC62} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{4A64FEB4-198C-445B-835F-A5B68EFBFDA7} = {6A776396-02B1-475D-A104-26940ADB04AB}
 		{AFB33A62-C437-4C32-A965-D6CC5EE50540} = {FA5644B5-4F08-43F6-86B3-039374312A47}
+		{79ABB5BB-FAF3-49F3-8A81-7410FC834CC7} = {FA5644B5-4F08-43F6-86B3-039374312A47}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {284A7AC3-FB43-4F1F-9C9C-2AF0E1F46C2B}
