@@ -45,14 +45,18 @@ namespace NuGet.Jobs.Validation.Symbols.Core
             return entries;
         }
 
-        public List<string> ExtractFilesFromZipStream(Stream stream, string targetDirectory, IEnumerable<string> filterFileExtension = null, IEnumerable<string> filterFileNames = null)
+        public List<string> ExtractFilesFromZipStream(
+            Stream stream,
+            string targetDirectory,
+            IEnumerable<string> filterFileExtension = null,
+            IEnumerable<string> filterFileNames = null)
         {
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
             List<string> entries;
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read, true))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
             {
                 entries = Extract(archive.Entries, targetDirectory, filterFileExtension, filterFileNames).ToList();
             }
@@ -61,10 +65,11 @@ namespace NuGet.Jobs.Validation.Symbols.Core
             return entries;
         }
 
-        public IEnumerable<string> Extract(IReadOnlyCollection<ZipArchiveEntry> entries,
-          string targetDirectory,
-          IEnumerable<string> filterFileExtensions = null,
-          IEnumerable<string> symbolFilter = null)
+        public IEnumerable<string> Extract(
+            IReadOnlyCollection<ZipArchiveEntry> entries,
+            string targetDirectory,
+            IEnumerable<string> filterFileExtensions = null,
+            IEnumerable<string> symbolFilter = null)
         {
             if (entries == null)
             {
@@ -77,25 +82,32 @@ namespace NuGet.Jobs.Validation.Symbols.Core
 
             var symbolFilterWithoutExtensions = RemoveExtension(symbolFilter);
 
-            return entries.
-                   Where(e => !string.IsNullOrEmpty(e.Name)).
-                   Where((e) =>
-                   {
-                       if(filterFileExtensions != null && !filterFileExtensions.Contains(Path.GetExtension(e.FullName)))
-                       {
-                           return false;
-                       }
-                       if (symbolFilterWithoutExtensions == null)
-                       {
-                           return true;
-                       }
-                       return symbolFilterWithoutExtensions.Contains(RemoveExtension(e.FullName), StringComparer.OrdinalIgnoreCase);
-                   }).
-                   Select((e) =>
-                   {
-                       OnExtract(e, targetDirectory);
-                       return e.FullName;
-                   });
+            return entries
+                .Where(e => !string.IsNullOrEmpty(e.Name))
+                .Where(e =>
+                {
+                    if(filterFileExtensions != null && !filterFileExtensions.Contains(Path.GetExtension(e.FullName)))
+                    {
+                        return false;
+                    }
+                    if (symbolFilterWithoutExtensions == null)
+                    {
+                        return true;
+                    }
+                    return symbolFilterWithoutExtensions.Contains(RemoveExtension(e.FullName), StringComparer.OrdinalIgnoreCase);
+                })
+                .GroupBy(e => e.FullName)
+                .Select(g =>
+                {
+                    if (g.Count() > 1)
+                    {
+                        _logger.LogInformation("Skipping duplicate entries with name {EntryFullName}", g.Key);
+                    }
+
+                    var entry = g.First();
+                    OnExtract(entry, targetDirectory);
+                    return entry.FullName;
+                });
         }
 
         /// <summary>
@@ -111,6 +123,7 @@ namespace NuGet.Jobs.Validation.Symbols.Core
             {
                 Directory.CreateDirectory(destinationDirectory);
             }
+
             entry.ExtractToFile(destinationPath);
         }
 

@@ -130,6 +130,25 @@ namespace Validation.Symbols.Tests
                     Assert.Contains(s, result);
                 }
             }
+
+            [Fact]
+            public void SkipsDuplicates()
+            {
+                // Arrange
+                var input = CreateTestZipEntries(new string[] { "foo.pdb", "foo.pdb" });
+                var expected = new string[] { "foo.pdb" };
+                var service = new TestZipArchiveService();
+
+                // Act
+                var result = service.Extract(input, "Dir1");
+
+                // Assert
+                Assert.Equal(expected.Length, result.Count());
+                foreach (string s in expected)
+                {
+                    Assert.Contains(s, result);
+                }
+            }
         }
 
         public static IReadOnlyCollection<ZipArchiveEntry> CreateTestZipEntries(string[] files)
