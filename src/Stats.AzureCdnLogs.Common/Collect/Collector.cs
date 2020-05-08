@@ -103,7 +103,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         private void AddException(ConcurrentBag<Exception> exceptions, Exception e, string fileUri = "")
         {
-            if(e == null)
+            if (e == null)
             {
                 return;
             }
@@ -137,6 +137,8 @@ namespace Stats.AzureCdnLogs.Common.Collect
         protected void ProcessLogStream(Stream sourceStream, Stream targetStream)
         {
             var rawLineNumber = 0;
+            var targetLineNumber = 0;
+
             string rawLine = string.Empty;
 
             try
@@ -146,7 +148,6 @@ namespace Stats.AzureCdnLogs.Common.Collect
                 {
                     targetStreamWriter.WriteLine(OutputLogLine.Header);
 
-                    var targetLineNumber = 0;
                     while (!sourceStreamReader.EndOfStream)
                     {
                         rawLine = sourceStreamReader.ReadLine();
@@ -156,10 +157,10 @@ namespace Stats.AzureCdnLogs.Common.Collect
                         if (transformedLine != null)
                         {
                             targetLineNumber++;
-                            var logLine = GetParsedModifiedLogEntry(targetLineNumber, transformedLine.ToString());
-                            if (!string.IsNullOrEmpty(logLine))
+                            var targetLine = GetParsedModifiedLogEntry(targetLineNumber, transformedLine.ToString());
+                            if (!string.IsNullOrEmpty(targetLine))
                             {
-                                targetStreamWriter.Write(logLine);
+                                targetStreamWriter.Write(targetLine);
                             }
                         }
                     };
