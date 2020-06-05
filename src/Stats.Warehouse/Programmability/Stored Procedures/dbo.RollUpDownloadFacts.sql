@@ -111,7 +111,6 @@ BEGIN
 					[Dimension_Platform_Id],
 					[Fact_UserAgent_Id],
 					[Fact_LogFileName_Id],
-					[Fact_EdgeServer_IpAddress_Id],
 					[DownloadCount],
 					[Timestamp]
 				)
@@ -120,7 +119,6 @@ BEGIN
 					@Dimension_Package_Id,
 					-1,
 					0,
-					1,
 					1,
 					1,
 					1,
