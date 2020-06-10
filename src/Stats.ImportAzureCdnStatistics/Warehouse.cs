@@ -167,7 +167,7 @@ namespace Stats.ImportAzureCdnStatistics
                     }
 
                     var packageId = package.Id;
-
+                    var dimensionIdsOfPackageIdAndVersion = new List<DimensionIds>();
                     foreach (var element in groupedByPackageIdAndVersion)
                     {
                         // required dimensions
@@ -176,7 +176,6 @@ namespace Stats.ImportAzureCdnStatistics
 
                         // dimensions that could be "(unknown)"
                         int operationId = DimensionId.Unknown;
-
                         if (knownOperationsAvailable && operations.ContainsKey(element.Operation))
                         {
                             operationId = operations[element.Operation];
@@ -204,10 +203,33 @@ namespace Stats.ImportAzureCdnStatistics
                             }
                         }
 
+                        dimensionIdsOfPackageIdAndVersion.Add(new DimensionIds(dateId, timeId, operationId, platformId, clientId, userAgentId));
+                    }
+
+                    foreach (var groupedByDimensionIds in dimensionIdsOfPackageIdAndVersion.GroupBy(di =>
+                        new { di.DateId, di.TimeId, di.OperationId, di.PlatformId, di.ClientId, di.UserAgentId }))
+                    {
+                        var downloadCount = groupedByDimensionIds.Count();
+
                         // create fact
                         var dataRow = factsDataTable.NewRow();
-                        FillDataRow(dataRow, dateId, timeId, packageId, operationId, platformId, clientId, userAgentId, logFileNameId);
+                        FillDataRow(dataRow,
+                            groupedByDimensionIds.Key.DateId,
+                            groupedByDimensionIds.Key.TimeId,
+                            packageId,
+                            groupedByDimensionIds.Key.OperationId,
+                            groupedByDimensionIds.Key.PlatformId,
+                            groupedByDimensionIds.Key.ClientId,
+                            groupedByDimensionIds.Key.UserAgentId,
+                            logFileNameId,
+                            downloadCount);
                         factsDataTable.Rows.Add(dataRow);
+
+                        _logger.LogInformation("Inserted 1 row into factsDataTable, which counts for {downloadCount} downloads, with the dimension Ids (" +
+                            "dateId: {dateId}, timeId: {timeId}, packageId: {packageId}, operationId: {operationId}, platformId: {platformId}, clientId: {clientId}, " +
+                            "userAgentId: {userAgentId}, logFileNameId: {logFileNameId}).",
+                            downloadCount, groupedByDimensionIds.Key.DateId, groupedByDimensionIds.Key.TimeId, packageId, groupedByDimensionIds.Key.OperationId,
+                            groupedByDimensionIds.Key.PlatformId, groupedByDimensionIds.Key.ClientId, groupedByDimensionIds.Key.UserAgentId, logFileNameId);
                     }
                 }
             }
@@ -603,7 +625,7 @@ namespace Stats.ImportAzureCdnStatistics
             return Enumerable.Empty<T>().ToList();
         }
 
-        private static void FillDataRow(DataRow dataRow, int dateId, int timeId, int packageId, int operationId, int platformId, int clientId, int userAgentId, int logFileNameId)
+        private static void FillDataRow(DataRow dataRow, int dateId, int timeId, int packageId, int operationId, int platformId, int clientId, int userAgentId, int logFileNameId, int downloadCount)
         {
             dataRow["Dimension_Package_Id"] = packageId;
             dataRow["Dimension_Date_Id"] = dateId;
@@ -613,7 +635,7 @@ namespace Stats.ImportAzureCdnStatistics
             dataRow["Dimension_Platform_Id"] = platformId;
             dataRow["Fact_UserAgent_Id"] = userAgentId;
             dataRow["Fact_LogFileName_Id"] = logFileNameId;
-            dataRow["DownloadCount"] = 1;
+            dataRow["DownloadCount"] = downloadCount;
         }
 
         private static void FillToolDataRow(DataRow dataRow, int dateId, int timeId, int toolId, int platformId, int clientId, int userAgentId, int logFileNameId)
@@ -1165,6 +1187,26 @@ namespace Stats.ImportAzureCdnStatistics
             }
 
             return table;
+        }
+
+        private class DimensionIds
+        {
+            public DimensionIds(int dateId, int timeId, int operationId, int platformId, int clientId, int userAgentId)
+            {
+                DateId = dateId;
+                TimeId = timeId;
+                OperationId = operationId;
+                PlatformId = platformId;
+                ClientId = clientId;
+                UserAgentId = userAgentId;
+            }
+
+            public int DateId { get; }
+            public int TimeId { get; }
+            public int OperationId { get; }
+            public int PlatformId { get; }
+            public int ClientId { get; }
+            public int UserAgentId { get; }
         }
     }
 }
