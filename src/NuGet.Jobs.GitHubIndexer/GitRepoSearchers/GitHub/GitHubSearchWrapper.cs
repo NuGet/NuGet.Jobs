@@ -40,7 +40,7 @@ namespace NuGet.Jobs.GitHubIndexer
                 throw new InvalidDataException("Date is missing, has a wrong format or is not in GMT timezone");
             }
 
-            if (!apiResponse.HttpResponse.Headers.TryGetValue("X-Ratelimit-Reset", out var ghStrResetLimit)
+            if (!caseInsensitiveHeaders.TryGetValue("X-Ratelimit-Reset", out var ghStrResetLimit)
                 || !long.TryParse(ghStrResetLimit, out var ghResetTime))
             {
                 throw new InvalidDataException("X-Ratelimit-Reset is required to compute the throttling time.");
