@@ -45,7 +45,6 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 
         public class GetResponseMethod
         {
-
             [Fact]
             public async Task CaseInsensitiveHeader()
             {
