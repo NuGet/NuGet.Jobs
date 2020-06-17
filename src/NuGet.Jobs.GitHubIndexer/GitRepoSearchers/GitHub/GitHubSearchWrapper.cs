@@ -34,9 +34,8 @@ namespace NuGet.Jobs.GitHubIndexer
             // According to RFC 2616, Http headers are case-insensitive. We should treat them as such.
             var caseInsensitiveHeaders = apiResponse.HttpResponse.Headers
                 .AsEnumerable()
-                .GroupBy(x => x.Key.ToLower())
-                .Select(x => x.First())
-                .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+                .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(x => x.Key, x => x.First().Value, StringComparer.OrdinalIgnoreCase);
 
             if (!caseInsensitiveHeaders.TryGetValue("Date", out var ghStrDate)
                 || !DateTimeOffset.TryParseExact(ghStrDate.Replace("GMT", "+0"), "ddd',' dd MMM yyyy HH:mm:ss z", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ghTime))
