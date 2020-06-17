@@ -1,13 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Moq;
-using Octokit;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
+using Moq;
+using Octokit;
 using Xunit;
 
 namespace NuGet.Jobs.GitHubIndexer.Tests
@@ -22,9 +22,9 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             var mockResponse = new Mock<IResponse>();
 
             mockApiResponse.Setup(x => x.HttpResponse)
-                    .Returns(mockResponse.Object);
+                .Returns(mockResponse.Object);
             mockApiResponse.Setup(x => x.Body)
-                    .Returns(new SearchRepositoryResult(totalCount: 0, incompleteResults: false, items: new List<Repository>()));
+                .Returns(new SearchRepositoryResult(totalCount: 0, incompleteResults: false, items: new List<Repository>()));
             mockResponse
                 .Setup(x => x.Headers)
                 .Returns(headers);
@@ -40,13 +40,12 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     return mockApiResponse.Object;
                 });
             return new GitHubSearchWrapper(mockClient.Object);
-
         }
 
         public class GetResponseMethod
         {
             [Fact]
-            public async Task CaseInsensitiveHeader()
+            public async Task DoesNotThrowIfCaseInsensitiveHeader()
             {
                 var headers = new ReadOnlyDictionary<string, string>(
                     new Dictionary<string, string>()
@@ -57,8 +56,6 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 var searcher = GetTestSearcher(headers);
 
                 await searcher.GetResponse(new SearchRepositoriesRequest { });
-
-                Assert.True(true);
             }
 
             [Fact]
@@ -72,9 +69,9 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 var searcher = GetTestSearcher(headers);
 
                 await Assert.ThrowsAsync<InvalidDataException>(async () =>
-                 {
-                     await searcher.GetResponse(new SearchRepositoriesRequest { });
-                 });
+                {
+                    await searcher.GetResponse(new SearchRepositoriesRequest { });
+                });
             }
 
             [Fact]
