@@ -51,7 +51,27 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     new Dictionary<string, string>()
                     {
                         { "dAtE", "Fri, 12 Oct 2012 23:33:14 GMT" },
-                        { "x-RaTeLiMiT-rEsEt", "1350085394"}
+                        { "x-RaTeLiMiT-rEsEt", "1350085394"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
+                    });
+                var searcher = GetTestSearcher(headers);
+
+                await searcher.GetResponse(new SearchRepositoriesRequest { });
+            }
+
+            [Fact]
+            public async Task DoesNotThrowIfDuplicateCaseInsensitiveHeaders()
+            {
+                var headers = new ReadOnlyDictionary<string, string>(
+                    new Dictionary<string, string>()
+                    {
+                        { "dAtE", "Fri, 12 Oct 2012 23:33:14 GMT" },
+                        { "DAtE", "Fri, 12 Oct 2012 23:33:14 GMT" },
+                        { "x-RaTeLiMiT-rEsEt", "1350085394"},
+                        { "x-RATELIMIT-RESET", "1350085394"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
                     });
                 var searcher = GetTestSearcher(headers);
 
@@ -64,7 +84,9 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 var headers = new ReadOnlyDictionary<string, string>(
                     new Dictionary<string, string>()
                     {
-                        { "x-RaTeLiMiT-rEsEt", "1350085394"}
+                        { "x-RaTeLiMiT-rEsEt", "1350085394"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
                     });
                 var searcher = GetTestSearcher(headers);
 
@@ -80,7 +102,9 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 var headers = new ReadOnlyDictionary<string, string>(
                     new Dictionary<string, string>()
                     {
-                        { "dAtE", "Fri, 12 Oct 2012 23:33:14 GMT" }
+                        { "dAtE", "Fri, 12 Oct 2012 23:33:14 GMT" },
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
                     });
                 var searcher = GetTestSearcher(headers);
 
@@ -89,6 +113,82 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     await searcher.GetResponse(new SearchRepositoriesRequest { });
                 });
             }
+
+            [Fact]
+            public async Task TestInvalidDateFormat()
+            {
+                var headers = new ReadOnlyDictionary<string, string>(
+                    new Dictionary<string, string>()
+                    {
+                        { "dAtE", "Friday, 12 Oct 2012 23:33:14 GMT" },
+                        { "x-RaTeLiMiT-rEsEt", "1350085394"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
+                    });
+                var searcher = GetTestSearcher(headers);
+
+                await Assert.ThrowsAsync<InvalidDataException>(async () =>
+                {
+                    await searcher.GetResponse(new SearchRepositoriesRequest { });
+                });
+            }
+
+            [Fact]
+            public async Task TestInvalidDateTimezone()
+            {
+                var headers = new ReadOnlyDictionary<string, string>(
+                    new Dictionary<string, string>()
+                    {
+                        { "dAtE", "Fri, 12 Oct 2012 23:33:14 UTC" },
+                        { "x-RaTeLiMiT-rEsEt", "1350085394"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
+                    });
+                var searcher = GetTestSearcher(headers);
+
+                await Assert.ThrowsAsync<InvalidDataException>(async () =>
+                {
+                    await searcher.GetResponse(new SearchRepositoriesRequest { });
+                });
+            }
+
+            [Fact]
+            public async Task TestInvalidRateLimitValueType()
+            {
+                var headers = new ReadOnlyDictionary<string, string>(
+                    new Dictionary<string, string>()
+                    {
+                        { "dAtE", "Friday, 12 Oct 2012 23:33:14 GMT" },
+                        { "x-RaTeLiMiT-rEsEt", "ThisShouldBeANumber"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
+                    });
+                var searcher = GetTestSearcher(headers);
+
+                await Assert.ThrowsAsync<InvalidDataException>(async () =>
+                {
+                    await searcher.GetResponse(new SearchRepositoriesRequest { });
+                });
+            }
+        }
+
+        [Fact]
+        public async Task TestRateLimitOverflow()
+        {
+            var headers = new ReadOnlyDictionary<string, string>(
+                new Dictionary<string, string>()
+                {
+                        { "dAtE", "Friday, 12 Oct 2012 23:33:14 GMT" },
+                        { "x-RaTeLiMiT-rEsEt", "13500853940000000000000000000000000000000000000000000000000000000000000000000000000"},
+                        { "RandomHeaderThatShouldntBeHere", "SomeRandomValue"},
+                        { "@aghfkghfk", "SomeRandomValue"},
+                });
+            var searcher = GetTestSearcher(headers);
+
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                await searcher.GetResponse(new SearchRepositoriesRequest { });
+            });
         }
     }
 }

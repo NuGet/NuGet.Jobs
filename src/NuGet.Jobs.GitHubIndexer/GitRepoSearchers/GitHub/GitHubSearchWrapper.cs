@@ -32,7 +32,11 @@ namespace NuGet.Jobs.GitHubIndexer
             var apiResponse = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
 
             // According to RFC 2616, Http headers are case-insensitive. We should treat them as such.
-            var caseInsensitiveHeaders = apiResponse.HttpResponse.Headers.AsEnumerable().ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
+            var caseInsensitiveHeaders = apiResponse.HttpResponse.Headers
+                .AsEnumerable()
+                .GroupBy(x => x.Key.ToLower())
+                .Select(x => x.First())
+                .ToDictionary(x => x.Key, x => x.Value, StringComparer.OrdinalIgnoreCase);
 
             if (!caseInsensitiveHeaders.TryGetValue("Date", out var ghStrDate)
                 || !DateTimeOffset.TryParseExact(ghStrDate.Replace("GMT", "+0"), "ddd',' dd MMM yyyy HH:mm:ss z", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ghTime))
