@@ -9,7 +9,7 @@ BEGIN
 	-- Find all clients that have had download facts added in the last 42 days, today inclusive
 	SELECT	Client.[Major],
 			Client.[Minor],
-			SUM(ISNULL(Facts.DownloadCount, 0)) 'Downloads'
+			SUM(CAST(ISNULL(Facts.DownloadCount, 0) AS BIGINT)) 'Downloads'
 	FROM	[dbo].[Fact_Download] AS Facts (NOLOCK)
 
 	INNER JOIN	[dbo].[Dimension_Date] AS D (NOLOCK)
