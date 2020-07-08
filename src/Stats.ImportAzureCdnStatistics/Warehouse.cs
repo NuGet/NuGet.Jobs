@@ -167,7 +167,7 @@ namespace Stats.ImportAzureCdnStatistics
                     }
 
                     var packageId = package.Id;
-                    var dimensionIdsOfPackageIdAndVersion = new List<DimensionIds>();
+                    var dimensionIdsDictionary = new Dictionary<Tuple<int, int, int, int, int, int>, int>();
                     foreach (var element in groupedByPackageIdAndVersion)
                     {
                         // required dimensions
@@ -203,33 +203,33 @@ namespace Stats.ImportAzureCdnStatistics
                             }
                         }
 
-                        dimensionIdsOfPackageIdAndVersion.Add(new DimensionIds(dateId, timeId, operationId, platformId, clientId, userAgentId));
+                        var dimensionIds = Tuple.Create(dateId, timeId, operationId, platformId, clientId, userAgentId);
+                        if (dimensionIdsDictionary.ContainsKey(dimensionIds))
+                        {
+                            dimensionIdsDictionary[dimensionIds] += 1;
+                        }
+                        else
+                        {
+                            dimensionIdsDictionary[dimensionIds] = 1;
+                        }
                     }
 
-                    foreach (var groupedByDimensionIds in dimensionIdsOfPackageIdAndVersion.GroupBy(di =>
-                        new { di.DateId, di.TimeId, di.OperationId, di.PlatformId, di.ClientId, di.UserAgentId }))
+                    foreach (var dimensionIds in dimensionIdsDictionary.Keys)
                     {
-                        var downloadCount = groupedByDimensionIds.Count();
-
-                        // create fact
                         var dataRow = factsDataTable.NewRow();
-                        FillDataRow(dataRow,
-                            groupedByDimensionIds.Key.DateId,
-                            groupedByDimensionIds.Key.TimeId,
-                            packageId,
-                            groupedByDimensionIds.Key.OperationId,
-                            groupedByDimensionIds.Key.PlatformId,
-                            groupedByDimensionIds.Key.ClientId,
-                            groupedByDimensionIds.Key.UserAgentId,
-                            logFileNameId,
-                            downloadCount);
+                        var dateId = dimensionIds.Item1;
+                        var timeId = dimensionIds.Item2;
+                        var operationId = dimensionIds.Item3;
+                        var platformId = dimensionIds.Item4;
+                        var clientId = dimensionIds.Item5;
+                        var userAgentId = dimensionIds.Item6;
+                        var downloadCount = dimensionIdsDictionary[dimensionIds];
+                        FillDataRow(dataRow, dateId, timeId, packageId, operationId, platformId, clientId, userAgentId, logFileNameId, downloadCount);
                         factsDataTable.Rows.Add(dataRow);
 
-                        _logger.LogInformation("Inserted 1 row into factsDataTable, which counts for {downloadCount} downloads, with the dimension Ids (" +
-                            "dateId: {dateId}, timeId: {timeId}, packageId: {packageId}, operationId: {operationId}, platformId: {platformId}, clientId: {clientId}, " +
-                            "userAgentId: {userAgentId}, logFileNameId: {logFileNameId}).",
-                            downloadCount, groupedByDimensionIds.Key.DateId, groupedByDimensionIds.Key.TimeId, packageId, groupedByDimensionIds.Key.OperationId,
-                            groupedByDimensionIds.Key.PlatformId, groupedByDimensionIds.Key.ClientId, groupedByDimensionIds.Key.UserAgentId, logFileNameId);
+                        _logger.LogDebug($"Inserted 1 row into factsDataTable, which counts for {downloadCount} downloads, with the dimension Ids (" +
+                            $"dateId: {dateId}, timeId: {timeId}, packageId: {packageId}, operationId: {operationId}, platformId: {platformId}, clientId: {clientId}, " +
+                            $"userAgentId: {userAgentId}, logFileNameId: {logFileNameId}).");
                     }
                 }
             }
