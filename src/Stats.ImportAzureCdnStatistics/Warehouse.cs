@@ -1188,25 +1188,5 @@ namespace Stats.ImportAzureCdnStatistics
 
             return table;
         }
-
-        private class DimensionIds
-        {
-            public DimensionIds(int dateId, int timeId, int operationId, int platformId, int clientId, int userAgentId)
-            {
-                DateId = dateId;
-                TimeId = timeId;
-                OperationId = operationId;
-                PlatformId = platformId;
-                ClientId = clientId;
-                UserAgentId = userAgentId;
-            }
-
-            public int DateId { get; }
-            public int TimeId { get; }
-            public int OperationId { get; }
-            public int PlatformId { get; }
-            public int ClientId { get; }
-            public int UserAgentId { get; }
-        }
     }
 }
