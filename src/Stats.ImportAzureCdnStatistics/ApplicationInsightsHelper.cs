@@ -92,13 +92,21 @@ namespace Stats.ImportAzureCdnStatistics
             _telemetryClient.Flush();
         }
 
-        public void TrackMetric(string metricName, double value, string logFileName = null)
+        public void TrackMetric(string metricName, double value, string logFileName = null, string packageId = null, string packageVersion = null)
         {
             var telemetry = new MetricTelemetry(metricName, value);
 
             if (!string.IsNullOrWhiteSpace(logFileName))
             {
                 telemetry.Properties.Add("LogFile", logFileName);
+            }
+            if (!string.IsNullOrWhiteSpace(packageId))
+            {
+                telemetry.Properties.Add("PackageId", packageId);
+            }
+            if (!string.IsNullOrWhiteSpace(packageVersion))
+            {
+                telemetry.Properties.Add("PackageVersion", packageVersion);
             }
 
             _telemetryClient.TrackMetric(telemetry);
