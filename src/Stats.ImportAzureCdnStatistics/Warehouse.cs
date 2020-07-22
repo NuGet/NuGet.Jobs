@@ -217,7 +217,8 @@ namespace Stats.ImportAzureCdnStatistics
                         }
                     }
                     stopwatchCreatingDictionary.Stop();
-                    _applicationInsightsHelper.TrackMetric("Dictionary creation time for aggregation (ms)", stopwatchCreatingDictionary.ElapsedMilliseconds, logFileName, package.PackageId, package.PackageVersion);
+                    _logger.LogInformation("Finished creating dictionary with {DictionaryCount} keys for package Id {PackageId} ({CreatedDictionaryDuration} ms).",
+                        dimensionIdsDictionary.Count, packageId, stopwatchCreatingDictionary.ElapsedMilliseconds);
 
                     foreach (var dimensionIds in dimensionIdsDictionary)
                     {
@@ -240,7 +241,7 @@ namespace Stats.ImportAzureCdnStatistics
             stopwatchCreatingFacts.Stop();
             stopwatch.Stop();
             _logger.LogDebug("  DONE (" + factsDataTable.Rows.Count + " facts, " + stopwatch.ElapsedMilliseconds + "ms)");
-            _applicationInsightsHelper.TrackMetric("Facts creation time (ms)", stopwatchCreatingFacts.ElapsedMilliseconds, logFileName);
+            _logger.LogInformation("Finished creating facts for log file {LogFileName} ({CreatedFactsDuration} ms).", logFileName, stopwatchCreatingFacts.ElapsedMilliseconds);
             _applicationInsightsHelper.TrackMetric("Blob record count", factsDataTable.Rows.Count, logFileName);
             return factsDataTable;
         }
