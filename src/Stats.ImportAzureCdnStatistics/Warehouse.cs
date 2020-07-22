@@ -168,6 +168,7 @@ namespace Stats.ImportAzureCdnStatistics
                     }
 
                     var packageId = package.Id;
+                    var stopwatchCreatingDictionary = Stopwatch.StartNew();
                     var dimensionIdsDictionary = new Dictionary<(int, int, int, int, int, int), int>();
                     foreach (var element in groupedByPackageIdAndVersion)
                     {
@@ -215,6 +216,9 @@ namespace Stats.ImportAzureCdnStatistics
                             dimensionIdsDictionary[dimensionIds] = 1;
                         }
                     }
+                    stopwatchCreatingDictionary.Stop();
+                    _logger.LogInformation("Finished creating dictionary with {DictionaryCount} keys for package Id {PackageId} ({CreatedDictionaryDuration} ms).",
+                        dimensionIdsDictionary.Count, packageId, stopwatchCreatingDictionary.ElapsedMilliseconds);
 
                     foreach (var dimensionIds in dimensionIdsDictionary)
                     {
@@ -227,9 +231,9 @@ namespace Stats.ImportAzureCdnStatistics
                         FillDataRow(dataRow, key.dateId, key.timeId, packageId, key.operationId, key.platformId, key.clientId, key.userAgentId, logFileNameId, downloadCount);
                         factsDataTable.Rows.Add(dataRow);
 
-                        _logger.LogDebug("Inserted 1 row into factsDataTable, which counts for {downloadCount} downloads, with the dimension Ids (" +
-                            "dateId: {dateId}, timeId: {timeId}, packageId: {packageId}, operationId: {operationId}, platformId: {platformId}, clientId: {clientId}, " +
-                            "userAgentId: {userAgentId}, logFileNameId: {logFileNameId}).", downloadCount, key.dateId, key.timeId, packageId, key.operationId,
+                        _logger.LogDebug("Inserted 1 row into factsDataTable, which counts for {DownloadCount} downloads, with the dimension Ids (" +
+                            "dateId: {DateId}, timeId: {TimeId}, packageId: {PackageId}, operationId: {OperationId}, platformId: {PlatformId}, clientId: {ClientId}, " +
+                            "userAgentId: {UserAgentId}, logFileNameId: {LogFileNameId}).", downloadCount, key.dateId, key.timeId, packageId, key.operationId,
                             key.platformId, key.clientId, key.userAgentId, logFileNameId);
                     }
                 }
@@ -237,7 +241,7 @@ namespace Stats.ImportAzureCdnStatistics
             stopwatchCreatingFacts.Stop();
             stopwatch.Stop();
             _logger.LogDebug("  DONE (" + factsDataTable.Rows.Count + " facts, " + stopwatch.ElapsedMilliseconds + "ms)");
-            _applicationInsightsHelper.TrackMetric("Facts creation time (ms)", stopwatchCreatingFacts.ElapsedMilliseconds, logFileName);
+            _logger.LogInformation("Finished creating facts for log file {LogFileName} ({CreatedFactsDuration} ms).", logFileName, stopwatchCreatingFacts.ElapsedMilliseconds);
             _applicationInsightsHelper.TrackMetric("Blob record count", factsDataTable.Rows.Count, logFileName);
             return factsDataTable;
         }
