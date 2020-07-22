@@ -239,6 +239,7 @@ namespace Stats.ImportAzureCdnStatistics
             _logger.LogDebug("  DONE (" + factsDataTable.Rows.Count + " facts, " + stopwatch.ElapsedMilliseconds + "ms)");
             _applicationInsightsHelper.TrackMetric("Facts creation time (ms)", stopwatchCreatingFacts.ElapsedMilliseconds, logFileName);
             _applicationInsightsHelper.TrackMetric("Blob record count", factsDataTable.Rows.Count, logFileName);
+
             return factsDataTable;
         }
 
