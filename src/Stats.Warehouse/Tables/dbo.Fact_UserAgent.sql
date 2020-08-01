@@ -5,3 +5,6 @@
     CONSTRAINT [UserAgent] PRIMARY KEY CLUSTERED ([Id] ASC) WITH (STATISTICS_NORECOMPUTE = OFF)
 )
 GO
+
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Fact_UserAgent_UniqueIndex] ON [dbo].[Fact_UserAgent] ([UserAgent] ASC) INCLUDE ([Id])
+GO
