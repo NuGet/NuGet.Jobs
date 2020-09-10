@@ -209,6 +209,18 @@ namespace Validation.PackageSigning.Core.Tests.Support
             return new UntrustedSigningCertificate(untrustedRootCertificate, certificate, disposable);
         }
 
+        public async Task<CustomTimestampService> CreateCustomTimestampServiceAsync(TimestampServiceOptions options)
+        {
+            var testServer = await _testServer.Value;
+            var ca = await _certificateAuthority.Value;
+            var timestampService = TimestampService.Create(ca, options);
+            var responders = testServer.RegisterDefaultResponders(timestampService);
+
+            return new CustomTimestampService(
+                timestampService.Url,
+                responders);
+        }
+
         public async Task<UntrustedTimestampService> CreateUntrustedTimestampServiceAsync()
         {
             var testServer = await _testServer.Value;
@@ -404,6 +416,21 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
             public IDisposable RespondToRevocations() => _respondToRevocations();
             public Task WaitForResponseExpirationAsync() => _waitForResponseExpiration();
+            public void Dispose() => _disposable?.Dispose();
+        }
+
+        public class CustomTimestampService : IDisposable
+        {
+            private readonly IDisposable _disposable;
+
+            public CustomTimestampService(Uri timestampServiceUrl, IDisposable disposable)
+            {
+                _disposable = disposable ?? throw new ArgumentNullException(nameof(disposable));
+                Url = timestampServiceUrl ?? throw new ArgumentNullException(nameof(timestampServiceUrl));
+            }
+
+            public Uri Url { get; }
+
             public void Dispose() => _disposable?.Dispose();
         }
 
