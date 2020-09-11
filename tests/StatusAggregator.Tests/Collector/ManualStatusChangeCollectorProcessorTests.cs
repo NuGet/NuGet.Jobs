@@ -90,7 +90,7 @@ namespace StatusAggregator.Tests.Collector
 
         public class TheFetchSinceMethodAtMinValue : TheFetchSinceMethod
         {
-            public override DateTime Cursor => DateTime.MinValue.ToUniversalTime();
+            public override DateTime Cursor => DateTime.MinValue;
 
             [Fact]
             public async Task DoesNotFilterByCursor()
