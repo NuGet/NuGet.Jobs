@@ -51,12 +51,12 @@ namespace StatusAggregator.Tests.Collector
             {
                 var firstChange = new ManualStatusChangeEntity()
                 {
-                    Timestamp = Cursor + TimeSpan.FromMinutes(1)
+                    Timestamp = Cursor.ToUniversalTime() + TimeSpan.FromMinutes(1)
                 };
 
                 var secondChange = new ManualStatusChangeEntity()
                 {
-                    Timestamp = Cursor + TimeSpan.FromMinutes(2)
+                    Timestamp = Cursor.ToUniversalTime() + TimeSpan.FromMinutes(2)
                 };
                 
                 Table.SetupQuery(secondChange, firstChange);
