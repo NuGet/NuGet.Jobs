@@ -327,10 +327,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 foreach (var owner in _options.Value.TestOwners)
                 {
-                    builder.AppendScopedTerm(
-                        IndexFields.Search.Owners,
-                        owner,
-                        prefix: TermPrefix.Not);
+                    builder.AppendScopedTerm(IndexFields.Search.Owners, owner, prefix: TermPrefix.Not);
                 }
             }
         }
@@ -346,14 +343,11 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             var builder = new AzureSearchTextBuilder();
 
-            // We can't use '*' to match all documents here since it doesn't work in conjunction with anyy other terms.
+            // We can't use '*' to match all documents here since it doesn't work in conjunction with any other terms.
             // Instead, we match all documents by finding every doument that has a package ID (which is all documents).
             builder.AppendVerbatim($"{IndexFields.PackageId}:/.*/");
 
-            foreach (var owner in _options.Value.TestOwners)
-            {
-                builder.AppendScopedTerm(IndexFields.Search.Owners, owner, prefix: TermPrefix.Not);
-            }
+            ExcludeTestData(builder);
 
             return new SearchText(builder.ToString(), isDefaultSearch: true);
         }
