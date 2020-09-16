@@ -185,7 +185,7 @@ The `packageType` parameter is a free form input. It defaults to an empty string
 
 Test data may be always returned (i.e. the `testData` parameter is ignored) for certain optimized queries. For example,
 performing a `packageid:BaseTestPackage` query with `testData=false` will still return a result because internally this
-query is implemented as a document lookup rather than a full Lucene search. Test data cannot be filtred out when
+query is implemented as a document lookup rather than a full Lucene search. Also, test data cannot be filtered out when
 `ignoreFilter=true` because the owners field is not populated in the hijack index.
 
 #### Response
