@@ -149,6 +149,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexName"": ""hijack-index"",
@@ -491,6 +492,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexName"": ""search-index"",
@@ -787,6 +789,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexName"": ""search-index"",
@@ -967,6 +970,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexName"": ""search-index"",
@@ -1131,6 +1135,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexName"": ""search-index"",
@@ -1251,6 +1256,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexOperationType"": ""Empty""
@@ -1291,6 +1297,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexOperationType"": ""Empty""
@@ -1331,6 +1338,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     ""Take"": 0,
     ""IncludePrerelease"": true,
     ""IncludeSemVer2"": true,
+    ""IncludeTestData"": true,
     ""ShowDebug"": true
   },
   ""IndexOperationType"": ""Empty""
@@ -1420,16 +1428,19 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     IncludePrerelease = true,
                     IncludeSemVer2 = true,
+                    IncludeTestData = true,
                 };
                 _v3Request = new V3SearchRequest
                 {
                     IncludePrerelease = true,
-                    IncludeSemVer2 = true
+                    IncludeSemVer2 = true,
+                    IncludeTestData = true,
                 };
                 _autocompleteRequest = new AutocompleteRequest
                 {
                     IncludePrerelease = true,
                     IncludeSemVer2 = true,
+                    IncludeTestData = true,
                 };
                 _searchParameters = new SearchParameters();
                 _text = "azure storage sdk";
