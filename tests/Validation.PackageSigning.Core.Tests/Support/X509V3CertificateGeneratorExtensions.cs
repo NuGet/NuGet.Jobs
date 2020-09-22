@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.X509;
@@ -12,12 +13,31 @@ namespace Org.BouncyCastle.X509
     {
         public static void MakeExpired(this X509V3CertificateGenerator generator)
         {
-            SigningTestUtility.CertificateModificationGeneratorExpiredCert(generator);
+            // This was copied from Test.Utility's SigningTestUtility.CertificateModificationGeneratorExpiredCert.
+            // This functionality was removed by:
+            // https://github.com/NuGet/NuGet.Client/pull/2685/files#diff-6c1acc7ed04355ba9e02b589e7e32a41L69
+            var usages = new[] { KeyPurposeID.IdKPCodeSigning };
+
+            generator.AddExtension(
+                X509Extensions.ExtendedKeyUsage.Id,
+                critical: true,
+                extensionValue: new ExtendedKeyUsage(usages));
+
+            generator.SetNotBefore(DateTime.UtcNow.AddHours(-1));
+            generator.SetNotAfter(DateTime.UtcNow.AddHours(-1));
         }
 
         public static void AddSigningEku(this X509V3CertificateGenerator generator)
         {
-            SigningTestUtility.CertificateModificationGeneratorForCodeSigningEkuCert(generator);
+            // This was copied from Test.Utility's SigningTestUtility.CertificateModificationGeneratorForCodeSigningEkuCert.
+            // This functionalality was removed by: 
+            // https://github.com/NuGet/NuGet.Client/pull/2685/files#diff-6c1acc7ed04355ba9e02b589e7e32a41L55
+            var usages = new[] { KeyPurposeID.IdKPCodeSigning };
+
+            generator.AddExtension(
+                X509Extensions.ExtendedKeyUsage.Id,
+                critical: true,
+                extensionValue: new ExtendedKeyUsage(usages));
         }
 
         public static void AddAuthorityInfoAccess(
