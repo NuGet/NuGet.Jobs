@@ -431,7 +431,7 @@ namespace Validation.PackageSigning.Core.Tests.Support
 
             public Uri Url { get; }
 
-            public void Dispose() => _disposable?.Dispose();
+            public void Dispose() => _disposable.Dispose();
         }
 
         public class UntrustedTimestampService : IDisposable
