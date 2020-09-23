@@ -13,6 +13,9 @@ namespace Org.BouncyCastle.X509
     {
         public static void MakeExpired(this X509V3CertificateGenerator generator)
         {
+            // TODO: Migrate to "TestCertificateGenerator".
+            // See: https://github.com/NuGet/NuGetGallery/issues/8216
+
             // This was copied from Test.Utility's SigningTestUtility.CertificateModificationGeneratorExpiredCert,
             // which was changed to accept a "TestCertificateGenerator" instead.
             // See: https://github.com/NuGet/NuGet.Client/pull/2685/files#diff-6c1acc7ed04355ba9e02b589e7e32a41L69
@@ -29,6 +32,9 @@ namespace Org.BouncyCastle.X509
 
         public static void AddSigningEku(this X509V3CertificateGenerator generator)
         {
+            // TODO: Migrate to "TestCertificateGenerator".
+            // See: https://github.com/NuGet/NuGetGallery/issues/8216
+
             // This was copied from Test.Utility's SigningTestUtility.CertificateModificationGeneratorForCodeSigningEkuCert.
             // which was changed to accept a "TestCertificateGenerator" instead.
             // See: https://github.com/NuGet/NuGet.Client/pull/2685/files#diff-6c1acc7ed04355ba9e02b589e7e32a41L69
