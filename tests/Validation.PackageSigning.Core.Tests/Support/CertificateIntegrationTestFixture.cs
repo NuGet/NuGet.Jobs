@@ -212,8 +212,8 @@ namespace Validation.PackageSigning.Core.Tests.Support
         public async Task<CustomTimestampService> CreateCustomTimestampServiceAsync(TimestampServiceOptions options)
         {
             var testServer = await _testServer.Value;
-            var ca = await _certificateAuthority.Value;
-            var timestampService = TimestampService.Create(ca, options);
+            var rootCa = await _rootCertificateAuthority.Value;
+            var timestampService = TimestampService.Create(rootCa, options);
             var responders = testServer.RegisterDefaultResponders(timestampService);
 
             return new CustomTimestampService(
