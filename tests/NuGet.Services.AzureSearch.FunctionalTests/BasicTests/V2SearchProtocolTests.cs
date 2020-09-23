@@ -679,6 +679,8 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         {
             get
             {
+                // TODO: Test title sorting. It was removed due to inconsistencies between Azure Search and .NET sorting.
+                // See: https://github.com/NuGet/NuGetGallery/issues/8218
                 yield return new object[] { "lastEdited", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.LastEdited; }) };
                 yield return new object[] { "published", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.Published; }) };
                 yield return new object[] { "created-asc", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.Created; }), true };
