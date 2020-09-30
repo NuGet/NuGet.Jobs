@@ -7,3 +7,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("GitHubIndexer.Tests")]
 [assembly: ComVisible(false)]
 [assembly: Guid("4a64feb4-198c-445b-835f-a5b68efbfda7")]
+[assembly: AssemblyVersion("1.0.0.0")]

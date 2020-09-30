@@ -7,3 +7,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("NuGet.Jobs.Common.Tests")]
 [assembly: ComVisible(false)]
 [assembly: Guid("ce96428b-8138-4914-9999-2b391797fff8")]
+[assembly: AssemblyVersion("1.0.0.0")]
