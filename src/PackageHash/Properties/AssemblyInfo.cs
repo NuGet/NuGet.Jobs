@@ -8,3 +8,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Verify that a package matches the hash in the database.")]
 [assembly: ComVisible(false)]
 [assembly: Guid("40843020-6f0a-48f0-ac28-42ffe3a5c21e")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

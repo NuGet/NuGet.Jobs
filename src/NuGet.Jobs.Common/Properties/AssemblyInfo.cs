@@ -1,4 +1,5 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+﻿using System.Resources;
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Reflection;
@@ -10,3 +11,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © .NET Foundation 2015")]
 [assembly: ComVisible(false)]
 [assembly: Guid("6dc01e18-81b0-49b4-9976-4a3548c6a959")]
+[assembly: NeutralResourcesLanguage("en-US")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

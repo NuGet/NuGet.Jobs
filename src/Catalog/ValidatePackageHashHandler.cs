@@ -48,7 +48,7 @@ namespace NuGet.Services.Metadata.Catalog
             // Download the blob and calculate its hash. We use HttpClient to download blobs as Azure Blob Sotrage SDK
             // occassionally hangs. See: https://github.com/Azure/azure-storage-net/issues/470
             string hash;
-            using (var hashAlgorithm = MD5.Create())
+            using (var hashAlgorithm = SHA256.Create())
             using (var packageStream = await _httpClient.GetStreamAsync(blob.Uri))
             {
                 var hashBytes = hashAlgorithm.ComputeHash(packageStream);
