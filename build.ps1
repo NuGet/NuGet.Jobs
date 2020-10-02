@@ -113,7 +113,9 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "src\NuGet.Jobs.Catalog2AzureSearch\Properties\AssemblyInfo.g.cs",
             "src\NuGet.Services.SearchService\Properties\AssemblyInfo.g.cs",
             "src\NuGet.Jobs.Auxiliary2AzureSearch\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.Catalog2Registration\Properties\AssemblyInfo.g.cs"
+            "src\NuGet.Jobs.Catalog2Registration\Properties\AssemblyInfo.g.cs",
+            "src\Stats.Warehouse\Properties\AssemblyInfo.g.cs",
+            "src\Validation.Symbols\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             Set-VersionInfo -Path (Join-Path $PSScriptRoot $_) -Version $SimpleVersion -Branch $Branch -Commit $CommitSHA
