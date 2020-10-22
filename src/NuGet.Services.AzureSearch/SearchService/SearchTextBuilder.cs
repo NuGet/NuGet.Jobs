@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using NuGet.Packaging;
 using NuGet.Services.Metadata.Catalog;
@@ -18,10 +17,6 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
         private static readonly char[] TokenizationSeparators = new[] { '.', '-', '_', ',' };
-        private static readonly Regex TokenizePackageIdRegex = new Regex(
-            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_,])",
-            RegexOptions.None,
-            matchTimeout: TimeSpan.FromSeconds(10));
 
         private static readonly IReadOnlyDictionary<QueryField, string> FieldNames = new Dictionary<QueryField, string>
         {
@@ -304,21 +299,10 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return new List<string> { term };
             }
 
-            return TokenizePackageIdRegex
-                .Split(term)
+            return term
+                .Split(TokenizationSeparators)
                 .Where(t => !string.IsNullOrEmpty(t))
-                .Where(t => !IsTokenizationSeparator(t))
                 .ToList();
-        }
-
-        private static bool IsTokenizationSeparator(string input)
-        {
-            if (input.Length != 1)
-            {
-                return false;
-            }
-
-            return TokenizationSeparators.Any(separator => input[0] == separator);
         }
 
         private void ExcludeTestData(AzureSearchTextBuilder builder)

@@ -326,8 +326,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { "foo.bar baz.qux", "foo.bar baz.qux (+foo.bar +baz.qux)^2 (+foo +bar +baz +qux)^2 packageId:baz.qux*^20" },
                     { "id packageId VERSION Title description tag author summary owner owners",
                         "id packageId VERSION Title description tag author summary owner owners " +
-                        "(+id +packageId +VERSION +Title +description +tag +author +summary +owner +owners)^2 " +
-                        "(+id +package +Id +VERSION +Title +description +tag +author +summary +owner +owners)^2 tokenizedPackageId:owners*" },
+                        "(+id +packageId +VERSION +Title +description +tag +author +summary +owner +owners)^2 tokenizedPackageId:owners*" },
 
                     // If there is a single non-field-scoped term that is a valid package ID and has separator
                     // characters, boost results that match all tokens, boost results that prefix match the last token,
@@ -345,13 +344,13 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { "foo_bar buzz", "foo_bar buzz (+foo_bar +buzz)^2 (+foo +bar +buzz)^2 tokenizedPackageId:buzz*" },
                     { "foo-bar buzz", @"foo\-bar buzz (+foo\-bar +buzz)^2 (+foo +bar +buzz)^2 tokenizedPackageId:buzz*" },
                     { "foo,bar, buzz", @"foo,bar, buzz (+foo,bar, +buzz)^2 (+foo +bar +buzz)^2 tokenizedPackageId:buzz*" },
-                    { "fooBar buzz", "fooBar buzz (+fooBar +buzz)^2 (+foo +Bar +buzz)^2 tokenizedPackageId:buzz*" },
-                    { "foo5 buzz", "foo5 buzz (+foo5 +buzz)^2 (+foo +5 +buzz)^2 tokenizedPackageId:buzz*" },
-                    { "FOO5 buzz", "FOO5 buzz (+FOO5 +buzz)^2 (+FOO +5 +buzz)^2 tokenizedPackageId:buzz*" },
-                    { "5FOO buzz", "5FOO buzz (+5FOO +buzz)^2 (+5 +FOO +buzz)^2 tokenizedPackageId:buzz*" },
-                    { "foo5foo", "foo5foo (+foo +5)^2 tokenizedPackageId:foo5foo*" },
-                    { "FOO5FOO", "FOO5FOO (+FOO +5)^2 tokenizedPackageId:FOO5FOO*" },
-                    { "fooFoo", "fooFoo (+foo +Foo)^2 tokenizedPackageId:fooFoo*" },
+                    { "fooBar buzz", "fooBar buzz (+fooBar +buzz)^2 tokenizedPackageId:buzz*" },
+                    { "foo5 buzz", "foo5 buzz (+foo5 +buzz)^2 tokenizedPackageId:buzz*" },
+                    { "FOO5 buzz", "FOO5 buzz (+FOO5 +buzz)^2 tokenizedPackageId:buzz*" },
+                    { "5FOO buzz", "5FOO buzz (+5FOO +buzz)^2 tokenizedPackageId:buzz*" },
+                    { "foo5foo", "foo5foo tokenizedPackageId:foo5foo*" },
+                    { "FOO5FOO", "FOO5FOO tokenizedPackageId:FOO5FOO*" },
+                    { "fooFoo", "fooFoo tokenizedPackageId:fooFoo*" },
                     { "FOOFoo", "FOOFoo tokenizedPackageId:FOOFoo*" },
 
                     // Phrases are supported in queries
