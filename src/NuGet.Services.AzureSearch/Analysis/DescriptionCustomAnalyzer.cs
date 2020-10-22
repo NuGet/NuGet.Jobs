@@ -7,9 +7,8 @@ using Microsoft.Azure.Search.Models;
 namespace NuGet.Services.AzureSearch
 {
     /// <summary>
-    /// Support for NuGet style description analysis. This splits tokens
-    /// on non alpha-numeric characters, splits tokens on camel casing,
-    /// lower cases tokens, and then removes stopwords from tokens.
+    /// Support for NuGet style description analysis. This splits tokens on non alpha-numeric characters, lower cases
+    /// tokens, and then removes stopwords from tokens.
     /// </summary>
     public static class DescriptionAnalyzer
     {
@@ -20,9 +19,8 @@ namespace NuGet.Services.AzureSearch
             PackageIdCustomTokenizer.Name,
             new List<TokenFilterName>
             {
-                IdentifierCustomTokenFilter.Name,
-                TokenFilterName.Stopwords,
                 TokenFilterName.Lowercase,
+                TokenFilterName.Stopwords,
                 TruncateCustomTokenFilter.Name,
             });
     }
