@@ -20,6 +20,7 @@ namespace NuGet.Services.AzureSearch
             PackageIdCustomTokenizer.Name,
             new List<TokenFilterName>
             {
+                IdentifierCustomTokenFilter.Name,
                 TokenFilterName.Lowercase,
                 TruncateCustomTokenFilter.Name,
             });
