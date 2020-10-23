@@ -124,7 +124,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return new ParsedQuery(new Dictionary<QueryField, HashSet<string>>(), includeTestData);
             }
 
-            var grouping = _parser.ParseQuery(query.ToLowerInvariant().Trim(), skipWhiteSpace: true);
+            var grouping = _parser.ParseQuery(query.Trim(), skipWhiteSpace: true);
 
             return new ParsedQuery(grouping, includeTestData);
         }
@@ -192,6 +192,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms.ToList(), _options.Value.MatchAllTermsBoost);
                 }
+
+                // Give tokens that didn't need camel-split more priority.
+                builder.AppendTerms(
+                    unscopedTerms.Select(x => x.ToLowerInvariant()).ToList(),
+                    boost: _options.Value.NoCamelSplitBoost);
 
                 // Favor results that prefix match the last unscoped term for an "instant search" experience.
                 if (scopedTerms.Count == 0)

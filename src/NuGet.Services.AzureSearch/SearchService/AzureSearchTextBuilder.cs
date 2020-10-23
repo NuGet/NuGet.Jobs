@@ -73,7 +73,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             /// Append search terms to the query. These terms may match any field.
             /// </summary>
             /// <param name="terms">The terms to append to the search query.</param>
-            public void AppendTerms(IReadOnlyList<string> terms)
+            public void AppendTerms(IReadOnlyList<string> terms, float? boost = null)
             {
                 ValidateAdditionalClausesOrThrow(terms.Count);
                 ValidateTermsOrThrow(terms);
@@ -88,6 +88,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                     }
 
                     AppendEscapedString(terms[i], quoteWhiteSpace: true);
+
+                    if (boost.HasValue)
+                    {
+                        _result.Append('^');
+                        _result.Append(boost);
+                    }
                 }
             }
 
