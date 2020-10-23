@@ -8,7 +8,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public class SearchServiceConfiguration : AzureSearchConfiguration
     {
-        public float MatchAllTermsBoost { get; set; } = 10;
+        public float MatchAllTermsBoost { get; set; } = 3;
         public float PrefixMatchBoost { get; set; } = 20;
         public float NoCamelSplitBoost { get; set; } = 3;
         public float ExactMatchBoost { get; set; } = 1000;
