@@ -124,7 +124,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return new ParsedQuery(new Dictionary<QueryField, HashSet<string>>(), includeTestData);
             }
 
-            var grouping = _parser.ParseQuery(query.Trim(), skipWhiteSpace: true);
+            var grouping = _parser.ParseQuery(query.ToLowerInvariant().Trim(), skipWhiteSpace: true);
 
             return new ParsedQuery(grouping, includeTestData);
         }
