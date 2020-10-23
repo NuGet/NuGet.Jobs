@@ -183,6 +183,9 @@ namespace NuGet.Services.AzureSearch.SearchService
                 if (unscopedTerms.Count > 1)
                 {
                     builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
+
+                    // Perform basic shingling with all unscoped terms.
+                    builder.AppendTerms(new[] { string.Join(string.Empty, unscopedTerms) });
                 }
 
                 // Try to favor results that match all unscoped terms after tokenization.
@@ -208,16 +211,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                     }
                     else
                     {
-                        var boost = lastUnscopedTerm.Length < 4
-                            ? _options.Value.PrefixMatchBoost
-                            : 1;
-
                         builder.AppendScopedTerm(
                             fieldName: IndexFields.TokenizedPackageId,
                             term: lastUnscopedTerm,
                             prefix: TermPrefix.None,
                             prefixSearch: true,
-                            boost: boost);
+                            boost: _options.Value.PrefixMatchBoost);
                     }
                 }
             }
