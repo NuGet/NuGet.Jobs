@@ -180,14 +180,19 @@ namespace NuGet.Services.AzureSearch.SearchService
             // Add the terms that can match any fields.
             if (hasUnscopedTerms)
             {
-                var camelSplitTokens = new HashSet<string>(unscopedTerms.SelectMany(TokenizeWithCamelSplit));
-                foreach (var term in camelSplitTokens)
+                // All but the last unscoped tokens must match some part of tokenized package metadata. This ensures
+                // that a term that the user adds to their search text is effective. In general, if tokens are optional,
+                // any score boost on, say, download count can be highly popular but largely irrelevant packages at the
+                // top. For the last token, allow a prefix match to support instant search scenarios.
+                var camelSplitTokens = unscopedTerms.SelectMany(TokenizeWithCamelSplit).ToList();
+                var uniqueCamelSplitTokens = new HashSet<string>(camelSplitTokens);
+                foreach (var token in uniqueCamelSplitTokens)
                 {
                     builder.AppendTerm(
                         fieldName: null,
-                        term: term,
+                        term: token,
                         prefix: TermPrefix.And,
-                        prefixSearch: true);
+                        prefixSearch: token == camelSplitTokens.Last());
                 }
 
                 var separatorTokens = new HashSet<string>(unscopedTerms
