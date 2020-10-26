@@ -222,7 +222,6 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendTerm(
                         fieldName: null,
                         term: term,
-                        prefix: TermPrefix.None,
                         boost: 2);
                 }
             }
