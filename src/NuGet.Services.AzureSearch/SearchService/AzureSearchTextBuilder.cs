@@ -87,6 +87,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                         _result.Append(' ');
                     }
 
+                    _result.Append('+');
+
                     AppendEscapedString(terms[i], quoteWhiteSpace: true);
 
                     if (boost.HasValue)
@@ -156,7 +158,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             /// <param name="required">Whether search results MUST match this term.</param>
             /// <param name="prefixSearch">Whether prefix matches are allowed.</param>
             /// <param name="boost">The boost to results that match this term.</param>
-            public void AppendScopedTerm(
+            public void AppendTerm(
                 string fieldName,
                 string term,
                 TermPrefix prefix = TermPrefix.None,
@@ -179,8 +181,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                         break;
                 }
 
-                _result.Append(fieldName);
-                _result.Append(':');
+                if (fieldName != null)
+                {
+                    _result.Append(fieldName);
+                    _result.Append(':');
+                }
 
                 // Don't escape whitespace with quotes if this is prefix matching.
                 AppendEscapedString(term.Trim(), quoteWhiteSpace: !prefixSearch);
@@ -200,7 +205,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             /// <summary>
             /// Append search terms to the query that are scoped to a specified field.
             /// This generates queries like "field:(value1 value2)". Unlike
-            /// <see cref="AppendScopedTerm"/>, this doesn't support prefix matches.
+            /// <see cref="AppendTerm"/>, this doesn't support prefix matches.
             /// </summary>
             /// <param name="fieldName">The field that should match the terms.</param>
             /// <param name="terms">The terms to search</param>

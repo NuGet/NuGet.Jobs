@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using NuGet.Packaging;
 using NuGet.Services.Metadata.Catalog;
@@ -16,7 +17,10 @@ namespace NuGet.Services.AzureSearch.SearchService
         private readonly SearchText MatchAllDocumentsIncludingTestData = new SearchText("*", isDefaultSearch: true);
 
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
-        private static readonly char[] TokenizationSeparators = new[] { '.', '-', '_', ',' };
+        private static readonly Regex TokenizePackageIdRegex = new Regex(
+            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[^\w]|_)",
+            RegexOptions.None,
+            matchTimeout: TimeSpan.FromSeconds(10));
 
         private static readonly IReadOnlyDictionary<QueryField, string> FieldNames = new Dictionary<QueryField, string>
         {
@@ -76,7 +80,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var trimmedQuery = request.Query.Trim();
 
-                builder.AppendScopedTerm(
+                builder.AppendTerm(
                     fieldName: IndexFields.PackageId,
                     term: trimmedQuery,
                     prefixSearch: true);
@@ -89,7 +93,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                         continue;
                     }
 
-                    builder.AppendScopedTerm(
+                    builder.AppendTerm(
                         fieldName: IndexFields.TokenizedPackageId,
                         term: piece,
                         prefix: TermPrefix.And,
@@ -103,7 +107,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
-                builder.AppendScopedTerm(
+                builder.AppendTerm(
                     fieldName: IndexFields.PackageId,
                     term: request.Query,
                     prefixSearch: false);
@@ -169,67 +173,38 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
                 else
                 {
-                    builder.AppendScopedTerm(fieldName, values.First(), prefix: requireScopedTerms ? TermPrefix.And : TermPrefix.None);
+                    builder.AppendTerm(fieldName, values.First(), prefix: requireScopedTerms ? TermPrefix.And : TermPrefix.None);
                 }
             }
 
             // Add the terms that can match any fields.
             if (hasUnscopedTerms)
             {
-                builder.AppendTerms(unscopedTerms);
-
-                // Favor results that match all unscoped terms.
-                // We don't need to include scoped terms as these are required.
-                if (unscopedTerms.Count > 1)
+                var camelSplitTokens = new HashSet<string>(unscopedTerms.SelectMany(TokenizeWithCamelSplit));
+                foreach (var term in camelSplitTokens)
                 {
-                    builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
+                    builder.AppendTerm(
+                        fieldName: null,
+                        term: term,
+                        prefix: TermPrefix.And,
+                        prefixSearch: true);
                 }
 
-                // Try to favor results that match all unscoped terms after tokenization.
-                // Don't generate this clause if it is equal to or a subset of the "match all unscoped terms" clause.
-                var tokenizedUnscopedTerms = new HashSet<string>(unscopedTerms.SelectMany(Tokenize));
-                if (tokenizedUnscopedTerms.Count > unscopedTerms.Count || !tokenizedUnscopedTerms.All(unscopedTerms.Contains))
+                var separatorTokens = new HashSet<string>(unscopedTerms
+                    .SelectMany(TokenizeWithSeparators)
+                    .Where(x => x.Length > 3));
+                foreach (var term in separatorTokens)
                 {
-                    builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms.ToList(), _options.Value.MatchAllTermsBoost);
-                }
-
-                // Give tokens that didn't need camel-split more priority.
-                builder.AppendTerms(
-                    unscopedTerms.Select(x => x.ToLowerInvariant()).ToList(),
-                    boost: _options.Value.NoCamelSplitBoost);
-
-                // Favor results that prefix match the last unscoped term for an "instant search" experience.
-                if (scopedTerms.Count == 0)
-                {
-                    var lastUnscopedTerm = unscopedTerms.Last();
-                    if (IsIdWithSeparator(lastUnscopedTerm))
-                    {
-                        builder.AppendScopedTerm(
-                            fieldName: IndexFields.PackageId,
-                            term: lastUnscopedTerm,
-                            prefix: TermPrefix.None,
-                            prefixSearch: true,
-                            boost: _options.Value.PrefixMatchBoost);
-                    }
-                    else
-                    {
-                        var boost = lastUnscopedTerm.Length < 4
-                            ? _options.Value.PrefixMatchBoost
-                            : 1;
-
-                        builder.AppendScopedTerm(
-                            fieldName: IndexFields.TokenizedPackageId,
-                            term: lastUnscopedTerm,
-                            prefix: TermPrefix.None,
-                            prefixSearch: true,
-                            boost: boost);
-                    }
+                    builder.AppendTerm(
+                        fieldName: null,
+                        term: term,
+                        prefix: TermPrefix.None,
+                        boost: 2);
                 }
             }
 
             // Handle the exact match case. If the search query is a single unscoped term is also a valid package
-            // ID, mega boost the document that has this package ID. Only consider the query to be a package ID has
-            // symbols (a.k.a. separators) in it.
+            // ID, mega boost the document that has this package ID.
             if (scopedTerms.Count == 0
                 && unscopedTerms.Count == 1
                 && IsIdWithSeparator(unscopedTerms[0]))
@@ -296,7 +271,30 @@ namespace NuGet.Services.AzureSearch.SearchService
         /// </summary>
         /// <param name="term">The input to tokenize</param>
         /// <returns>The tokens extracted from the inputted term</returns>
-        private static IReadOnlyList<string> Tokenize(string term)
+        private static IReadOnlyList<string> TokenizeWithCamelSplit(string term)
+        {
+            // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
+            if (term.Any(char.IsWhiteSpace))
+            {
+                return new List<string> { term };
+            }
+
+            return TokenizePackageIdRegex
+                .Split(term)
+                .Where(t => !string.IsNullOrEmpty(t))
+                .Where(t => t.Length > 1 || char.IsLetterOrDigit(t[0]))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/> with the following differences:
+        /// 
+        /// 1. Does not split terms on whitespace
+        /// 2. Does not split terms on the following characters: ' ; : * # ! ~ + ( ) [ ] { }
+        /// </summary>
+        /// <param name="term">The input to tokenize</param>
+        /// <returns>The tokens extracted from the inputted term</returns>
+        private static IReadOnlyList<string> TokenizeWithSeparators(string term)
         {
             // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
             if (term.Any(char.IsWhiteSpace))
@@ -305,8 +303,9 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             return term
-                .Split(TokenizationSeparators)
+                .Split(PackageIdSeparators)
                 .Where(t => !string.IsNullOrEmpty(t))
+                .Select(t => t.ToLowerInvariant())
                 .ToList();
         }
 
@@ -316,7 +315,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 foreach (var owner in _options.Value.TestOwners)
                 {
-                    builder.AppendScopedTerm(IndexFields.Search.Owners, owner, prefix: TermPrefix.Not);
+                    builder.AppendTerm(IndexFields.Search.Owners, owner, prefix: TermPrefix.Not);
                 }
             }
         }
