@@ -188,15 +188,34 @@ namespace NuGet.Services.AzureSearch.SearchService
                 var uniqueCamelSplitTokens = new HashSet<string>(camelSplitTokens);
                 foreach (var token in uniqueCamelSplitTokens)
                 {
-                    builder.AppendTerm(
-                        fieldName: null,
-                        term: token,
-                        prefix: TermPrefix.And,
-                        prefixSearch: token == camelSplitTokens.Last());
+                    var isLastToken = token == camelSplitTokens.Last();
+                    if (isLastToken)
+                    {
+                        var boost = token.Length < 4 ? _options.Value.PrefixMatchBoost : 1;
+
+                        builder.AppendTerm(
+                            fieldName: null,
+                            term: token,
+                            prefix: TermPrefix.And,
+                            prefixSearch: true,
+                            boost: boost);
+                        builder.AppendTerm(
+                            fieldName: null,
+                            term: token);
+                    }
+                    else
+                    {
+                        builder.AppendTerm(
+                            fieldName: null,
+                            term: token,
+                            prefix: TermPrefix.And);
+                    }
                 }
 
+                // Favor tokens that match without camel-case split.
                 var separatorTokens = new HashSet<string>(unscopedTerms
                     .SelectMany(TokenizeWithSeparators)
+                    .Except(uniqueCamelSplitTokens, StringComparer.OrdinalIgnoreCase)
                     .Where(x => x.Length > 3));
                 foreach (var term in separatorTokens)
                 {
