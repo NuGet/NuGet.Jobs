@@ -196,7 +196,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 foreach (var token in uniqueSeparatorTokens)
                 {
                     var isLastToken = token == separatorTokens.Last();
-                    var uniqueCamelSplitTokens = TokenizeWithCamelSplit(token).ToHashSet();
+                    var uniqueCamelSplitTokens = TokenizeWithCamelSplit(token).ToHashSet(StringComparer.OrdinalIgnoreCase);
                     var lowerToken = token.ToLowerInvariant();
                     if (uniqueCamelSplitTokens.Count > 1)
                     {
@@ -224,6 +224,16 @@ namespace NuGet.Services.AzureSearch.SearchService
                             fieldName: null,
                             term: lowerToken,
                             boost: _options.Value.SeparatorSplitBoost);
+                    }
+                }
+
+                // If our in-memory tokenization yielded no tokens, just add the original unscoped terms. This should
+                // only happen for search queries with only uncommon characters.
+                if (!separatorTokens.Any())
+                {
+                    foreach (var term in unscopedTerms)
+                    {
+                        builder.AppendTerm(fieldName: null, term: term);
                     }
                 }
 
@@ -310,7 +320,8 @@ namespace NuGet.Services.AzureSearch.SearchService
         private static IEnumerable<string> TokenizeWithCamelSplit(string term)
         {
             // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
-            if (term.Any(char.IsWhiteSpace))
+            // Also don't tokenize surrogate pairs. We leave these complex cases as-is.
+            if (term.Any(char.IsWhiteSpace) || term.Any(char.IsSurrogate))
             {
                 return new List<string> { term };
             }
@@ -331,7 +342,8 @@ namespace NuGet.Services.AzureSearch.SearchService
         private static IEnumerable<string> TokenizeWithSeparators(string term)
         {
             // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
-            if (term.Any(char.IsWhiteSpace))
+            // Also don't tokenize surrogate pairs. We leave these complex cases as-is.
+            if (term.Any(char.IsWhiteSpace) || term.Any(char.IsSurrogate))
             {
                 return new List<string> { term };
             }
