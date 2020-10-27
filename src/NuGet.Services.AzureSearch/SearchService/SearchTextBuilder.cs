@@ -220,7 +220,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                         builder.AppendTerm(
                             fieldName: null,
                             term: lowerToken,
-                            boost: 2);
+                            boost: _options.Value.SeparatorSplitBoost);
                     }
                 }
 
@@ -234,7 +234,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                         fieldName: IndexFields.PackageId,
                         term: unscopedTerms[0],
                         prefixSearch: true,
-                        boost: 100);
+                        boost: _options.Value.NamespaceBoost);
                 }
             }
 

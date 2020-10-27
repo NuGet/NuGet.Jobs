@@ -245,7 +245,6 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             public FactsBase()
             {
-                _config = new SearchServiceConfiguration { MatchAllTermsBoost = 2.0f };
                 var options = new Mock<IOptionsSnapshot<SearchServiceConfiguration>>();
                 options.Setup(o => o.Value).Returns(_config);
 
