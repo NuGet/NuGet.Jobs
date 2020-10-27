@@ -224,6 +224,19 @@ namespace NuGet.Services.AzureSearch.SearchService
                         term: term,
                         boost: 2);
                 }
+
+                // When there is a single unscoped term that could be a namespace, favor package IDs that start with
+                // the term.
+                if (unscopedTerms.Count == 1
+                    && unscopedTerms[0].IndexOfAny(PackageIdSeparators) > -1
+                    && IsId(unscopedTerms[0].TrimEnd(PackageIdSeparators)))
+                {
+                    builder.AppendTerm(
+                        fieldName: IndexFields.PackageId,
+                        term: unscopedTerms[0],
+                        prefixSearch: true,
+                        boost: 100);
+                }
             }
 
             // Handle the exact match case. If the search query is a single unscoped term is also a valid package
