@@ -14,7 +14,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         {
             None, // Default Lucene behavior, essentially "OR"
             Required, // "+" operator
-            Prohbit, // "-" operator
+            Prohibit, // "-" operator
         }
 
         /// <summary>
@@ -180,7 +180,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     case Operator.Required:
                         _result.Append('+');
                         break;
-                    case Operator.Prohbit:
+                    case Operator.Prohibit:
                         _result.Append('-');
                         break;
                 }

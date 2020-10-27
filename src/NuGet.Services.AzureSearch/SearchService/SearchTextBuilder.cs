@@ -360,7 +360,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 foreach (var owner in _options.Value.TestOwners)
                 {
-                    builder.AppendTerm(IndexFields.Search.Owners, owner, op: Operator.Prohbit);
+                    builder.AppendTerm(IndexFields.Search.Owners, owner, op: Operator.Prohibit);
                 }
             }
         }
