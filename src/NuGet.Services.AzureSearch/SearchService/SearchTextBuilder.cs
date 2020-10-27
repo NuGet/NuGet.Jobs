@@ -100,7 +100,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendTerm(
                         fieldName: IndexFields.TokenizedPackageId,
                         term: piece,
-                        prefix: TermPrefix.And,
+                        requirement: TermRequirement.Required,
                         prefixSearch: true);
                 }
 
@@ -177,7 +177,10 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
                 else
                 {
-                    builder.AppendTerm(fieldName, values.First(), prefix: requireScopedTerms ? TermPrefix.And : TermPrefix.None);
+                    builder.AppendTerm(
+                        fieldName,
+                        term: values.First(),
+                        requirement: requireScopedTerms ? TermRequirement.Required : TermRequirement.None);
                 }
             }
 
@@ -211,7 +214,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                             fieldName: null,
                             term: lowerToken,
                             prefixSearch: isLastToken,
-                            prefix: TermPrefix.And);
+                            requirement: TermRequirement.Required);
                     }
 
                     // Favor tokens that match without camel-case split.
@@ -239,7 +242,8 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             // Handle the exact match case. If the search query is a single unscoped term is also a valid package
-            // ID, mega boost the document that has this package ID.
+            // ID, mega boost the document that has this package ID. Only consider the query to be a package ID has
+            // symbols (a.k.a. separators) in it.
             if (scopedTerms.Count == 0
                 && unscopedTerms.Count == 1
                 && IsIdWithSeparator(unscopedTerms[0]))
@@ -299,10 +303,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         }
 
         /// <summary>
-        /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/> with the following differences:
-        /// 
-        /// 1. Does not split terms on whitespace
-        /// 2. Does not split terms on the following characters: ' ; : * # ! ~ + ( ) [ ] { }
+        /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/>.
         /// </summary>
         /// <param name="term">The input to tokenize</param>
         /// <returns>The tokens extracted from the inputted term</returns>
@@ -323,8 +324,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         /// <summary>
         /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/> with the following differences:
         /// 
-        /// 1. Does not split terms on whitespace
-        /// 2. Does not split terms on the following characters: ' ; : * # ! ~ + ( ) [ ] { }
+        /// 1. Does not split terms on camel-case transition.
         /// </summary>
         /// <param name="term">The input to tokenize</param>
         /// <returns>The tokens extracted from the inputted term</returns>
@@ -348,7 +348,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 foreach (var owner in _options.Value.TestOwners)
                 {
-                    builder.AppendTerm(IndexFields.Search.Owners, owner, prefix: TermPrefix.Not);
+                    builder.AppendTerm(IndexFields.Search.Owners, owner, requirement: TermRequirement.Rejected);
                 }
             }
         }
@@ -366,7 +366,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             // We can't use '*' to match all documents here since it doesn't work in conjunction with any other terms.
             // Instead, we match all documents by finding every doument that has a package ID (which is all documents).
-            builder.AppendVerbatim($"{IndexFields.PackageId}:/.*/");
+            builder.AppendMatchAll(IndexFields.PackageId);
 
             ExcludeTestData(builder);
 

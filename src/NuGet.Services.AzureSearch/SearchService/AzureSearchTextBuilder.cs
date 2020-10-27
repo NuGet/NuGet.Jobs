@@ -10,11 +10,11 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public partial class SearchTextBuilder
     {
-        private enum TermPrefix
+        private enum TermRequirement
         {
             None, // Default Lucene behavior, essentially "OR"
-            And, // "AND" / "&&" / "+"
-            Not, // "NOT" / "!" / "-"
+            Required, // "AND" / "&&" / "+"
+            Rejected, // "NOT" / "!" / "-"
         }
 
         /// <summary>
@@ -62,14 +62,23 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             /// <summary>
-            /// Appends the provided value as-is, without any escaping, prefixing or suffixing.
+            /// Append a phrase that matches all values for the provided field.
             /// </summary>
-            /// <param name="value">The value to append</param>
-            public void AppendVerbatim(string value)
+            /// <param name="fieldName">The name of the field to match on.</param>
+            public void AppendMatchAll(string fieldName)
             {
-                _result.Append(value);
+                _result.Append(fieldName);
+                _result.Append(":/.*/");
             }
 
+            /// <summary>
+            /// Append a phase requiring at least one of the provided term sets. There must be at least two items in
+            /// <paramref name="alternatives"/> and each alternative must have at least one option. If the alternatives
+            /// are: <code>[ ['ab'], ['a', 'b'] ]</code>, then matched documents must have 'ab' OR both 'a' and 'b'.
+            /// A document with just 'a' and not 'b' (or vice versa) would not match.
+            /// </summary>
+            /// <param name="alternatives">The array of alternatives where each collection includes one ore more options.</param>
+            /// <param name="prefixSearchSingleOptions">Whether or not perform a prefix search on alternatives with a single option.</param>
             public void AppendRequiredAlternatives(ICollection<string>[] alternatives, bool prefixSearchSingleOptions)
             {
                 if (alternatives.Any(x => !x.Any()))
@@ -125,66 +134,6 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             /// <summary>
-            /// Append search terms to the query. These terms may match any field.
-            /// </summary>
-            /// <param name="terms">The terms to append to the search query.</param>
-            public void AppendTerms(IReadOnlyList<string> terms, float? boost = null)
-            {
-                ValidateAdditionalClausesOrThrow(terms.Count);
-                ValidateTermsOrThrow(terms);
-
-                AppendSpaceIfNotEmpty();
-
-                for (var i = 0; i < terms.Count; i++)
-                {
-                    if (i > 0)
-                    {
-                        _result.Append(' ');
-                    }
-
-                    _result.Append('+');
-
-                    AppendEscapedString(terms[i], quoteWhiteSpace: true);
-
-                    if (boost.HasValue)
-                    {
-                        _result.Append('^');
-                        _result.Append(boost);
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Append a clause to boost results that match all terms.
-            /// </summary>
-            /// <param name="terms">All terms that must be matched.</param>
-            /// <param name="boost">The boost for results that match all terms.</param>
-            public void AppendBoostIfMatchAllTerms(IReadOnlyList<string> terms, float boost)
-            {
-                // We will generate a clause for each term and a clause to OR terms together.
-                ValidateAdditionalClausesOrThrow(terms.Count + 1);
-                ValidateTermsOrThrow(terms);
-
-                AppendSpaceIfNotEmpty();
-
-                _result.Append('(');
-
-                for (var i = 0; i < terms.Count; i++)
-                {
-                    if (i > 0)
-                    {
-                        _result.Append(' ');
-                    }
-
-                    _result.Append('+');
-                    AppendEscapedString(terms[i], quoteWhiteSpace: true);
-                }
-
-                _result.Append(")^");
-                _result.Append(boost);
-            }
-
-            /// <summary>
             /// Append a clause to boost an exact matched package ID.
             /// </summary>
             /// <param name="packageId">The package ID that must can be matched.</param>
@@ -216,7 +165,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             public void AppendTerm(
                 string fieldName,
                 string term,
-                TermPrefix prefix = TermPrefix.None,
+                TermRequirement requirement = TermRequirement.None,
                 bool prefixSearch = false,
                 double boost = 1.0)
             {
@@ -226,12 +175,12 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 AppendSpaceIfNotEmpty();
 
-                switch (prefix)
+                switch (requirement)
                 {
-                    case TermPrefix.And:
+                    case TermRequirement.Required:
                         _result.Append('+');
                         break;
-                    case TermPrefix.Not:
+                    case TermRequirement.Rejected:
                         _result.Append('-');
                         break;
                 }
