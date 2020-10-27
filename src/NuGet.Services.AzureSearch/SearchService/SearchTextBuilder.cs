@@ -100,7 +100,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendTerm(
                         fieldName: IndexFields.TokenizedPackageId,
                         term: piece,
-                        requirement: TermRequirement.Required,
+                        op: Operator.Required,
                         prefixSearch: true);
                 }
 
@@ -180,7 +180,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendTerm(
                         fieldName,
                         term: values.First(),
-                        requirement: requireScopedTerms ? TermRequirement.Required : TermRequirement.None);
+                        op: requireScopedTerms ? Operator.Required : Operator.None);
                 }
             }
 
@@ -214,7 +214,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                             fieldName: null,
                             term: lowerToken,
                             prefixSearch: isLastToken,
-                            requirement: TermRequirement.Required);
+                            op: Operator.Required);
                     }
 
                     // Favor tokens that match without camel-case split.
@@ -348,7 +348,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 foreach (var owner in _options.Value.TestOwners)
                 {
-                    builder.AppendTerm(IndexFields.Search.Owners, owner, requirement: TermRequirement.Rejected);
+                    builder.AppendTerm(IndexFields.Search.Owners, owner, op: Operator.Prohbit);
                 }
             }
         }

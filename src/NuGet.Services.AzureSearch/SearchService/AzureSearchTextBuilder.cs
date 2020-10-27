@@ -10,11 +10,11 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public partial class SearchTextBuilder
     {
-        private enum TermRequirement
+        private enum Operator
         {
             None, // Default Lucene behavior, essentially "OR"
-            Required, // "AND" / "&&" / "+"
-            Rejected, // "NOT" / "!" / "-"
+            Required, // "+" operator
+            Prohbit, // "-" operator
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             public void AppendTerm(
                 string fieldName,
                 string term,
-                TermRequirement requirement = TermRequirement.None,
+                Operator op = Operator.None,
                 bool prefixSearch = false,
                 double boost = 1.0)
             {
@@ -175,12 +175,12 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 AppendSpaceIfNotEmpty();
 
-                switch (requirement)
+                switch (op)
                 {
-                    case TermRequirement.Required:
+                    case Operator.Required:
                         _result.Append('+');
                         break;
-                    case TermRequirement.Rejected:
+                    case Operator.Prohbit:
                         _result.Append('-');
                         break;
                 }
