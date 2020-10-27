@@ -17,7 +17,11 @@ namespace NuGet.Services.AzureSearch.SearchService
         private readonly SearchText MatchAllDocumentsIncludingTestData = new SearchText("*", isDefaultSearch: true);
 
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
-        private static readonly Regex TokenizePackageIdRegex = new Regex(
+        private static readonly Regex SeparatorSplitRegex = new Regex(
+            @"([^\w]|_)",
+            RegexOptions.None,
+            matchTimeout: TimeSpan.FromSeconds(10));
+        private static readonly Regex CamelSplitRegex = new Regex(
             @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[^\w]|_)",
             RegexOptions.None,
             matchTimeout: TimeSpan.FromSeconds(10));
@@ -184,45 +188,36 @@ namespace NuGet.Services.AzureSearch.SearchService
                 // that a term that the user adds to their search text is effective. In general, if tokens are optional,
                 // any score boost on, say, download count can be highly popular but largely irrelevant packages at the
                 // top. For the last token, allow a prefix match to support instant search scenarios.
-                var camelSplitTokens = unscopedTerms.SelectMany(TokenizeWithCamelSplit).ToList();
-                var uniqueCamelSplitTokens = new HashSet<string>(camelSplitTokens);
-                foreach (var token in uniqueCamelSplitTokens)
+                var separatorTokens = unscopedTerms.SelectMany(TokenizeWithSeparators).Distinct().ToList();
+                foreach (var token in separatorTokens)
                 {
-                    var isLastToken = token == camelSplitTokens.Last();
-                    if (isLastToken)
+                    var prefixSearch = token == separatorTokens.Last();
+                    var camelSplitTokens = TokenizeWithCamelSplit(token).ToHashSet();
+                    var lowerToken = token.ToLowerInvariant();
+                    if (camelSplitTokens.Count > 1)
                     {
-                        var boost = token.Length < 4 ? _options.Value.PrefixMatchBoost : 1;
-
-                        builder.AppendTerm(
-                            fieldName: null,
-                            term: token,
-                            prefix: TermPrefix.And,
-                            prefixSearch: true,
-                            boost: boost);
-                        builder.AppendTerm(
-                            fieldName: null,
-                            term: token);
+                        builder.AppendRequiredAlternatives(
+                            prefixSearch,
+                            new[] { lowerToken },
+                            camelSplitTokens);
                     }
                     else
                     {
                         builder.AppendTerm(
                             fieldName: null,
                             term: token,
+                            prefixSearch: prefixSearch,
                             prefix: TermPrefix.And);
                     }
-                }
 
-                // Favor tokens that match without camel-case split.
-                var separatorTokens = new HashSet<string>(unscopedTerms
-                    .SelectMany(TokenizeWithSeparators)
-                    .Except(uniqueCamelSplitTokens, StringComparer.OrdinalIgnoreCase)
-                    .Where(x => x.Length > 3));
-                foreach (var term in separatorTokens)
-                {
-                    builder.AppendTerm(
-                        fieldName: null,
-                        term: term,
-                        boost: 2);
+                    // Favor tokens that match without camel-case split.
+                    if (lowerToken.Length > 3)
+                    {
+                        builder.AppendTerm(
+                            fieldName: null,
+                            term: lowerToken,
+                            boost: 2);
+                    }
                 }
 
                 // When there is a single unscoped term that could be a namespace, favor package IDs that start with
@@ -307,7 +302,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         /// </summary>
         /// <param name="term">The input to tokenize</param>
         /// <returns>The tokens extracted from the inputted term</returns>
-        private static IReadOnlyList<string> TokenizeWithCamelSplit(string term)
+        private static IEnumerable<string> TokenizeWithCamelSplit(string term)
         {
             // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
             if (term.Any(char.IsWhiteSpace))
@@ -315,11 +310,10 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return new List<string> { term };
             }
 
-            return TokenizePackageIdRegex
+            return CamelSplitRegex
                 .Split(term)
                 .Where(t => !string.IsNullOrEmpty(t))
-                .Where(t => t.Length > 1 || char.IsLetterOrDigit(t[0]))
-                .ToList();
+                .Where(t => t.Length > 1 || char.IsLetterOrDigit(t[0]));
         }
 
         /// <summary>
@@ -330,7 +324,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         /// </summary>
         /// <param name="term">The input to tokenize</param>
         /// <returns>The tokens extracted from the inputted term</returns>
-        private static IReadOnlyList<string> TokenizeWithSeparators(string term)
+        private static IEnumerable<string> TokenizeWithSeparators(string term)
         {
             // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
             if (term.Any(char.IsWhiteSpace))
@@ -338,11 +332,10 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return new List<string> { term };
             }
 
-            return term
-                .Split(PackageIdSeparators)
+            return SeparatorSplitRegex
+                .Split(term)
                 .Where(t => !string.IsNullOrEmpty(t))
-                .Select(t => t.ToLowerInvariant())
-                .ToList();
+                .Where(t => t.Length > 1 || char.IsLetterOrDigit(t[0]));
         }
 
         private void ExcludeTestData(AzureSearchTextBuilder builder)

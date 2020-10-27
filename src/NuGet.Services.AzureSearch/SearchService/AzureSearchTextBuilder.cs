@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -67,6 +68,60 @@ namespace NuGet.Services.AzureSearch.SearchService
             public void AppendVerbatim(string value)
             {
                 _result.Append(value);
+            }
+
+            public void AppendRequiredAlternatives(bool prefixSearchSingleOptions, params ICollection<string>[] alternatives)
+            {
+                if (alternatives.Any(x => !x.Any()))
+                {
+                    throw new ArgumentException("Each alternative must have at least one option.");
+                }
+
+                if (alternatives.Length < 2)
+                {
+                    throw new ArgumentException("There must be at least two alternatives provided.");
+                }
+
+                AppendSpaceIfNotEmpty();
+
+                _result.Append("+(");
+                
+                for (int i = 0; i < alternatives.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        _result.Append(' ');
+                    }
+
+                    var alternative = alternatives[i];
+                    if (alternative.Count < 2)
+                    {
+                        AppendEscapedString(alternative.Single(), quoteWhiteSpace: false);
+                        if (prefixSearchSingleOptions)
+                        {
+                            _result.Append('*');
+                        }
+                    }
+                    else
+                    {
+                        _result.Append('(');
+                        var counter = 0;
+                        foreach (var option in alternative)
+                        {
+                            if (counter > 0)
+                            {
+                                _result.Append(' ');
+                            }
+
+                            _result.Append('+');
+                            AppendEscapedString(option, quoteWhiteSpace: false);
+                            counter++;
+                        }
+                        _result.Append(')');
+                    }
+                }
+
+                _result.Append(')');
             }
 
             /// <summary>
