@@ -70,7 +70,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _result.Append(value);
             }
 
-            public void AppendRequiredAlternatives(bool prefixSearchSingleOptions, params ICollection<string>[] alternatives)
+            public void AppendRequiredAlternatives(ICollection<string>[] alternatives, bool prefixSearchSingleOptions)
             {
                 if (alternatives.Any(x => !x.Any()))
                 {

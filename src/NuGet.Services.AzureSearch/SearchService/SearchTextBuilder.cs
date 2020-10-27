@@ -186,27 +186,31 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 // All but the last unscoped tokens must match some part of tokenized package metadata. This ensures
                 // that a term that the user adds to their search text is effective. In general, if tokens are optional,
-                // any score boost on, say, download count can be highly popular but largely irrelevant packages at the
-                // top. For the last token, allow a prefix match to support instant search scenarios.
-                var separatorTokens = unscopedTerms.SelectMany(TokenizeWithSeparators).Distinct().ToList();
-                foreach (var token in separatorTokens)
+                // any score boost on, say, download count can cause highly popular but largely irrelevant packages to
+                // appear at the top. For the last token, allow a prefix match to support instant search scenarios.
+                var separatorTokens = unscopedTerms.SelectMany(TokenizeWithSeparators).ToList();
+                var uniqueSeparatorTokens = separatorTokens.ToHashSet();
+                foreach (var token in uniqueSeparatorTokens)
                 {
-                    var prefixSearch = token == separatorTokens.Last();
-                    var camelSplitTokens = TokenizeWithCamelSplit(token).ToHashSet();
+                    var isLastToken = token == separatorTokens.Last();
+                    var uniqueCamelSplitTokens = TokenizeWithCamelSplit(token).ToHashSet();
                     var lowerToken = token.ToLowerInvariant();
-                    if (camelSplitTokens.Count > 1)
+                    if (uniqueCamelSplitTokens.Count > 1)
                     {
                         builder.AppendRequiredAlternatives(
-                            prefixSearch,
-                            new[] { lowerToken },
-                            camelSplitTokens);
+                            prefixSearchSingleOptions: isLastToken,
+                            alternatives: new ICollection<string>[]
+                            {
+                                new[] { lowerToken },
+                                uniqueCamelSplitTokens,
+                            });
                     }
                     else
                     {
                         builder.AppendTerm(
                             fieldName: null,
-                            term: token,
-                            prefixSearch: prefixSearch,
+                            term: lowerToken,
+                            prefixSearch: isLastToken,
                             prefix: TermPrefix.And);
                     }
 
