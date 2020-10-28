@@ -77,7 +77,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             /// are: <code>[ ['ab'], ['a', 'b'] ]</code>, then matched documents must have 'ab' OR both 'a' and 'b'.
             /// A document with just 'a' and not 'b' (or vice versa) would not match.
             /// </summary>
-            /// <param name="alternatives">The array of alternatives where each collection includes one ore more options.</param>
+            /// <param name="alternatives">The array of alternatives where each collection includes one or more options.</param>
             /// <param name="prefixSearchSingleOptions">Whether or not perform a prefix search on alternatives with a single option.</param>
             public void AppendRequiredAlternatives(ICollection<string>[] alternatives, bool prefixSearchSingleOptions)
             {
