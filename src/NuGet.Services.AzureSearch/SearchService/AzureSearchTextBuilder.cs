@@ -83,7 +83,9 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 if (alternatives.Any(x => !x.Any()))
                 {
-                    throw new ArgumentException("Each alternative must have at least one option.");
+                    throw new ArgumentException(
+                        "Each alternative must have at least one option.",
+                        nameof(alternatives));
                 }
 
                 if (alternatives.Length < 2)
