@@ -338,6 +338,9 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { @"""foo-bar""", @"+foo +bar* packageId:foo\-bar*^100 packageId:foo\-bar^1000" },
                     { @"""foo_bar""", @"+foo +bar* packageId:foo_bar*^100 packageId:foo_bar^1000" },
 
+                    // The last instance of a token should be prefixed
+                    { "a.b.a", "+b +a* packageId:a.b.a*^100 packageId:a.b.a^1000" },
+
                     // Boost results that match all tokens from unscoped terms in the query.
                     { "foo.bar buzz", "+foo +bar +buzz* buzz^2" },
                     { "foo_bar buzz", "+foo +bar +buzz* buzz^2" },

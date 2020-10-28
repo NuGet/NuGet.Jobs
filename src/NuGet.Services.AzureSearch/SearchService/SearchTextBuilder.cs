@@ -192,8 +192,18 @@ namespace NuGet.Services.AzureSearch.SearchService
                 // any score boost on, say, download count can cause highly popular but largely irrelevant packages to
                 // appear at the top. For the last token, allow a prefix match to support instant search scenarios.
                 var separatorTokens = unscopedTerms.SelectMany(TokenizeWithSeparators).ToList();
+
+                // The last instance of a token should use the prefix search. Also, attempt to keep the tokens in their
+                // original order for readability.
                 var uniqueSeparatorTokens = separatorTokens.ToHashSet();
-                foreach (var token in uniqueSeparatorTokens)
+                separatorTokens = separatorTokens
+                    .AsEnumerable()
+                    .Reverse()
+                    .Where(t => uniqueSeparatorTokens.Remove(t))
+                    .Reverse()
+                    .ToList();
+
+                foreach (var token in separatorTokens)
                 {
                     var isLastToken = token == separatorTokens.Last();
                     var uniqueCamelSplitTokens = TokenizeWithCamelSplit(token).ToHashSet(StringComparer.OrdinalIgnoreCase);
