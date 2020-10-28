@@ -90,7 +90,9 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 if (alternatives.Length < 2)
                 {
-                    throw new ArgumentException("There must be at least two alternatives provided.");
+                    throw new ArgumentException(
+                        "There must be at least two alternatives provided.",
+                        nameof(alternatives));
                 }
 
                 AppendSpaceIfNotEmpty();
