@@ -118,14 +118,9 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
             if (initializeContainer)
             {
-                if (_directory.Container.CreateIfNotExists())
+                if (_directory.Container.CreateIfNotExists(BlobContainerPublicAccessType.Blob, null, null) && Verbose)
                 {
-                    _directory.Container.SetPermissions(new BlobContainerPermissions { PublicAccess = BlobContainerPublicAccessType.Blob });
-
-                    if (Verbose)
-                    {
-                        Trace.WriteLine(string.Format("Created '{0}' public container", _directory.Container.Name));
-                    }
+                    Trace.WriteLine(string.Format("Created '{0}' public container", _directory.Container.Name));
                 }
             }
         }
