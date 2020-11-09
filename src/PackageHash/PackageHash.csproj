@@ -77,7 +77,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Services.Cursor">
-      <Version>2.75.0</Version>
+      <Version>2.79.0-jver-sdk-4212802</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
