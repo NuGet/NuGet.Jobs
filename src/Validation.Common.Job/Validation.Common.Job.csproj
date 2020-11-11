@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\SdkProjects.props" />
 
@@ -6,6 +6,7 @@
     <TargetFramework>net472</TargetFramework>
     <RootNamespace>NuGet.Jobs.Validation</RootNamespace>
     <AssemblyName>NuGet.Services.Validation.Common.Job</AssemblyName>
+    <Description>Common job infrastructure for validation jobs and basic dependency injection setup.</Description>
   </PropertyGroup>
 
   <ItemGroup>

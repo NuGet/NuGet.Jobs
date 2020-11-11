@@ -5,6 +5,7 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework> 
     <RootNamespace>NuGet.Jobs</RootNamespace>
+    <Description>Common infrastructure for running the NuGetGallery back-end jobs.</Description>
   </PropertyGroup>
 
   <ItemGroup>
