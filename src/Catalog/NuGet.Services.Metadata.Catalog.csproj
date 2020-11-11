@@ -252,7 +252,7 @@
       <Version>1.0.8.3533</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Entities">
-      <Version>4.4.5-jver-sdk-4219305</Version>
+      <Version>4.4.5-dev-4220086</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Sql">
       <Version>2.79.0</Version>

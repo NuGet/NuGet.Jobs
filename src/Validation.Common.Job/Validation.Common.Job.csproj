@@ -127,7 +127,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
-      <Version>4.4.5-jver-sdk-4219305</Version>
+      <Version>4.4.5-dev-4220086</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
