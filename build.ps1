@@ -40,22 +40,6 @@ Function Clean-Tests {
     Remove-Item (Join-Path $PSScriptRoot "Results.*.xml")
 }
 
-Function Prepare-NuGetCDNRedirect {
-    [CmdletBinding()]
-    param()
-    
-    Trace-Log 'Preparing NuGetCDNRedirect Package'
-    
-    $ZipPackagePath = "src\NuGetCDNRedirect\obj\NuGetCDNRedirect.zip"
-    
-    if (Test-Path $ZipPackagePath) {
-        Remove-Item $ZipPackagePath
-    }
-    
-    Build-Solution -Configuration $Configuration -BuildNumber $BuildNumber -SolutionPath "src\NuGetCDNRedirect\NuGetCDNRedirect.csproj" -Target "Package" -MSBuildProperties "/P:PackageLocation=obj\NuGetCDNRedirect.zip" -SkipRestore
-}
-
-
 Write-Host ("`r`n" * 3)
 Trace-Log ('=' * 60)
 
@@ -152,9 +136,6 @@ Invoke-BuildStep 'Building functional test solution' {
 Invoke-BuildStep 'Signing the binaries' {
         Sign-Binaries -Configuration $Configuration -BuildNumber $BuildNumber `
     } `
-    -ev +BuildErrors
-
-Invoke-BuildStep 'Prepare NuGetCDNRedirect Package' { Prepare-NuGetCDNRedirect } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Creating artifacts' {
