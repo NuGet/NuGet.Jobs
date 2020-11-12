@@ -61,32 +61,6 @@ namespace NuGet.Services.Metadata.Catalog
             return assembly.GetManifestResourceStream($"{name}.{resourceName}");
         }
 
-#if NETFRAMEWORK
-        public static IGraph CreateNuspecGraph(XDocument nuspec, string baseAddress, bool normalizeXml = false)
-        {
-            XsltArgumentList arguments = new XsltArgumentList();
-            arguments.AddParam("base", "", baseAddress);
-            arguments.AddParam("extension", "", ".json");
-
-            arguments.AddExtensionObject("urn:helper", new XsltHelper());
-
-            nuspec = SafeXmlTransform(nuspec.CreateReader(), XslTransformNormalizeNuSpecNamespaceCache.Value);
-            var rdfxml = SafeXmlTransform(nuspec.CreateReader(), XslTransformNuSpecCache.Value, arguments);
-
-            var doc = SafeCreateXmlDocument(rdfxml.CreateReader());
-            if (normalizeXml)
-            {
-                NormalizeXml(doc);
-            }
-
-            RdfXmlParser rdfXmlParser = new RdfXmlParser();
-            IGraph graph = new Graph();
-            rdfXmlParser.Load(graph, doc);
-
-            return graph;
-        }
-#endif
-
         private static void NormalizeXml(XmlNode xmlNode)
         {
             if (xmlNode.Attributes != null)
@@ -123,22 +97,6 @@ namespace NuGet.Services.Metadata.Catalog
             return xmlDoc;
         }
 
-        private static XDocument SafeXmlTransform(XmlReader reader, XslCompiledTransform transform, XsltArgumentList arguments = null)
-        {
-            XDocument result = new XDocument();
-            using (XmlWriter writer = result.CreateWriter())
-            {
-                if (arguments == null)
-                {
-                    arguments = new XsltArgumentList();
-                }
-
-                // CodeAnalysis / XslCompiledTransform.Transform: set resolver property to null or instance
-                transform.Transform(reader, arguments, writer, documentResolver: null);
-            }
-            return result;
-        }
-
         private static XslCompiledTransform SafeLoadXslTransform(string resourceName)
         {
             var transform = new XslCompiledTransform();
@@ -169,7 +127,154 @@ namespace NuGet.Services.Metadata.Catalog
             return null;
         }
 
+        public static Uri Expand(JToken context, string term)
+        {
+            if (term.StartsWith("http:", StringComparison.OrdinalIgnoreCase))
+            {
+                return new Uri(term);
+            }
+
+            int indexOf = term.IndexOf(':');
+            if (indexOf > 0)
+            {
+                string ns = term.Substring(0, indexOf);
+                return new Uri(context[ns].ToString() + term.Substring(indexOf + 1));
+            }
+
+            return new Uri(context["@vocab"] + term);
+        }
+
+        public static string GenerateHash(Stream stream)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+
+            using (var hashAlgorithm = HashAlgorithm.Create(Constants.Sha512))
+            {
+                return Convert.ToBase64String(hashAlgorithm.ComputeHash(stream));
+            }
+        }
+
+        public static IEnumerable<PackageEntry> GetEntries(ZipArchive package)
+        {
+            IList<PackageEntry> result = new List<PackageEntry>();
+
+            foreach (ZipArchiveEntry entry in package.Entries)
+            {
+                if (entry.FullName.EndsWith("/.rels", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (entry.FullName.EndsWith("[Content_Types].xml", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (entry.FullName.EndsWith(".psmdcp", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                result.Add(new PackageEntry(entry));
+            }
+
+            return result;
+        }
+
+        public static NupkgMetadata GetNupkgMetadata(Stream stream, string packageHash)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            var packageSize = stream.Length;
+
+            packageHash = packageHash ?? GenerateHash(stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            using (var package = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                var nuspec = GetNuspec(package);
+
+                if (nuspec == null)
+                {
+                    throw new InvalidDataException("Unable to find nuspec");
+                }
+
+                var entries = GetEntries(package);
+
+                return new NupkgMetadata(nuspec, entries, packageSize, packageHash);
+            }
+        }
+
+        public static void TraceException(Exception e)
+        {
+            if (e is AggregateException)
+            {
+                foreach (Exception ex in ((AggregateException)e).InnerExceptions)
+                {
+                    TraceException(ex);
+                }
+            }
+            else
+            {
+                Trace.TraceError("{0} {1}", e.GetType().Name, e.Message);
+                Trace.TraceError("{0}", e.StackTrace);
+
+                if (e.InnerException != null)
+                {
+                    TraceException(e.InnerException);
+                }
+            }
+        }
+
+        internal static T Deserialize<T>(JObject jObject, string propertyName)
+        {
+            if (jObject == null)
+            {
+                throw new ArgumentNullException(nameof(jObject));
+            }
+
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                throw new ArgumentException(Strings.ArgumentMustNotBeNullOrEmpty, nameof(propertyName));
+            }
+
+            if (!jObject.TryGetValue(propertyName, out var value) || value == null)
+            {
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.PropertyRequired, propertyName));
+            }
+
+            return value.ToObject<T>();
+        }
+
 #if NETFRAMEWORK
+        public static IGraph CreateNuspecGraph(XDocument nuspec, string baseAddress, bool normalizeXml = false)
+        {
+            XsltArgumentList arguments = new XsltArgumentList();
+            arguments.AddParam("base", "", baseAddress);
+            arguments.AddParam("extension", "", ".json");
+
+            arguments.AddExtensionObject("urn:helper", new XsltHelper());
+
+            nuspec = SafeXmlTransform(nuspec.CreateReader(), XslTransformNormalizeNuSpecNamespaceCache.Value);
+            var rdfxml = SafeXmlTransform(nuspec.CreateReader(), XslTransformNuSpecCache.Value, arguments);
+
+            var doc = SafeCreateXmlDocument(rdfxml.CreateReader());
+            if (normalizeXml)
+            {
+                NormalizeXml(doc);
+            }
+
+            RdfXmlParser rdfXmlParser = new RdfXmlParser();
+            IGraph graph = new Graph();
+            rdfXmlParser.Load(graph, doc);
+
+            return graph;
+        }
+
         public static JToken CreateJson(IGraph graph, JToken frame = null)
         {
             System.IO.StringWriter writer = new System.IO.StringWriter();
@@ -272,26 +377,7 @@ namespace NuGet.Services.Metadata.Catalog
                 }
             }
         }
-#endif
 
-        public static Uri Expand(JToken context, string term)
-        {
-            if (term.StartsWith("http:", StringComparison.OrdinalIgnoreCase))
-            {
-                return new Uri(term);
-            }
-
-            int indexOf = term.IndexOf(':');
-            if (indexOf > 0)
-            {
-                string ns = term.Substring(0, indexOf);
-                return new Uri(context[ns].ToString() + term.Substring(indexOf + 1));
-            }
-
-            return new Uri(context["@vocab"] + term);
-        }
-
-#if NETFRAMEWORK
         //  where the property exists on the graph being merged in remove it from the existing graph
         public static void RemoveExistingProperties(IGraph existingGraph, IGraph graphToMerge, Uri[] properties)
         {
@@ -310,74 +396,7 @@ namespace NuGet.Services.Metadata.Catalog
                 }
             }
         }
-#endif
 
-        public static string GenerateHash(Stream stream)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
-
-            using (var hashAlgorithm = HashAlgorithm.Create(Constants.Sha512))
-            {
-                return Convert.ToBase64String(hashAlgorithm.ComputeHash(stream));
-            }
-        }
-
-        public static IEnumerable<PackageEntry> GetEntries(ZipArchive package)
-        {
-            IList<PackageEntry> result = new List<PackageEntry>();
-
-            foreach (ZipArchiveEntry entry in package.Entries)
-            {
-                if (entry.FullName.EndsWith("/.rels", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (entry.FullName.EndsWith("[Content_Types].xml", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (entry.FullName.EndsWith(".psmdcp", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                result.Add(new PackageEntry(entry));
-            }
-
-            return result;
-        }
-
-        public static NupkgMetadata GetNupkgMetadata(Stream stream, string packageHash)
-        {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
-            var packageSize = stream.Length;
-
-            packageHash = packageHash ?? GenerateHash(stream);
-
-            stream.Seek(0, SeekOrigin.Begin);
-
-            using (var package = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
-            {
-                var nuspec = GetNuspec(package);
-
-                if (nuspec == null)
-                {
-                    throw new InvalidDataException("Unable to find nuspec");
-                }
-
-                var entries = GetEntries(package);
-
-                return new NupkgMetadata(nuspec, entries, packageSize, packageHash);
-            }
-        }
-
-#if NETFRAMEWORK
         public static PackageCatalogItem CreateCatalogItem(
             string origin,
             Stream stream,
@@ -411,47 +430,22 @@ namespace NuGet.Services.Metadata.Catalog
                 throw new Exception(string.Format("Exception processsing {0}", origin), e);
             }
         }
+
+        private static XDocument SafeXmlTransform(XmlReader reader, XslCompiledTransform transform, XsltArgumentList arguments = null)
+        {
+            XDocument result = new XDocument();
+            using (XmlWriter writer = result.CreateWriter())
+            {
+                if (arguments == null)
+                {
+                    arguments = new XsltArgumentList();
+                }
+
+                // CodeAnalysis / XslCompiledTransform.Transform: set resolver property to null or instance
+                transform.Transform(reader, arguments, writer, documentResolver: null);
+            }
+            return result;
+        }
 #endif
-
-        public static void TraceException(Exception e)
-        {
-            if (e is AggregateException)
-            {
-                foreach (Exception ex in ((AggregateException)e).InnerExceptions)
-                {
-                    TraceException(ex);
-                }
-            }
-            else
-            {
-                Trace.TraceError("{0} {1}", e.GetType().Name, e.Message);
-                Trace.TraceError("{0}", e.StackTrace);
-
-                if (e.InnerException != null)
-                {
-                    TraceException(e.InnerException);
-                }
-            }
-        }
-
-        internal static T Deserialize<T>(JObject jObject, string propertyName)
-        {
-            if (jObject == null)
-            {
-                throw new ArgumentNullException(nameof(jObject));
-            }
-
-            if (string.IsNullOrEmpty(propertyName))
-            {
-                throw new ArgumentException(Strings.ArgumentMustNotBeNullOrEmpty, nameof(propertyName));
-            }
-
-            if (!jObject.TryGetValue(propertyName, out var value) || value == null)
-            {
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Strings.PropertyRequired, propertyName));
-            }
-
-            return value.ToObject<T>();
-        }
     }
 }
