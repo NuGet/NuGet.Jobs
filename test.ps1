@@ -68,6 +68,20 @@ Function Run-Tests {
         }
         $TestCount++
     }
+    
+    $DotnetTestAssemblies = `
+        "tests\NuGet.Services.SearchService.Core.Tests\NuGet.Services.SearchService.Core.Tests.csproj"
+    
+    foreach ($Test in $DotnetTestAssemblies) {
+        $TestResultFile = "$PSScriptRoot\Results.$TestCount.xml"
+        dotnet test (Join-Path $PSScriptRoot $Test) --configuration $Configuration "-l:trx;LogFileName=$TestResultFile"
+        if (-not (Test-Path $TestResultFile))
+        {
+            Write-Error "The test run failed to produce a result file";
+            exit 1;
+        }
+        $TestCount++
+    }
 }
 
 Write-Host ("`r`n" * 3)
