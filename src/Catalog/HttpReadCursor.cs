@@ -37,7 +37,11 @@ namespace NuGet.Services.Metadata.Catalog
             await Retry.IncrementalAsync(
                 async () =>
                 {
+#if NETFRAMEWORK
                     HttpMessageHandler handler = (_handlerFunc != null) ? _handlerFunc() : new WebRequestHandler { AllowPipelining = true };
+#else
+                    HttpMessageHandler handler = (_handlerFunc != null) ? _handlerFunc() : new HttpClientHandler();
+#endif
 
                     using (HttpClient client = new HttpClient(handler))
                     using (HttpResponseMessage response = await client.GetAsync(_address, cancellationToken))

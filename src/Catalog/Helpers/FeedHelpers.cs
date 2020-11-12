@@ -16,7 +16,11 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         /// </summary>
         public static HttpClient CreateHttpClient(Func<HttpMessageHandler> handlerFunc)
         {
+#if NETFRAMEWORK
             var handler = (handlerFunc != null) ? handlerFunc() : new WebRequestHandler { AllowPipelining = true };
+#else
+            var handler = (handlerFunc != null) ? handlerFunc() : new HttpClientHandler();
+#endif
             return new HttpClient(handler);
         }
     }

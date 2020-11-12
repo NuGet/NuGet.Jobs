@@ -8,7 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+#if NETFRAMEWORK
 using VDS.RDF;
+#endif
 
 namespace NuGet.Services.Metadata.Catalog
 {
@@ -17,6 +19,7 @@ namespace NuGet.Services.Metadata.Catalog
         private int _requestCount;
         private readonly IHttpRetryStrategy _retryStrategy;
 
+#if NETFRAMEWORK
         public CollectorHttpClient()
             : this(new WebRequestHandler { AllowPipelining = true })
         {
@@ -28,6 +31,19 @@ namespace NuGet.Services.Metadata.Catalog
             _requestCount = 0;
             _retryStrategy = retryStrategy ?? new RetryWithExponentialBackoff();
         }
+#else
+        public CollectorHttpClient()
+            : this(new HttpClientHandler())
+        {
+        }
+
+        public CollectorHttpClient(HttpMessageHandler handler, IHttpRetryStrategy retryStrategy = null)
+            : base(handler ?? new HttpClientHandler())
+        {
+            _requestCount = 0;
+            _retryStrategy = retryStrategy ?? new RetryWithExponentialBackoff();
+        }
+#endif
 
         public int RequestCount
         {
@@ -70,6 +86,7 @@ namespace NuGet.Services.Metadata.Catalog
             }
         }
 
+#if NETFRAMEWORK
         public virtual Task<IGraph> GetGraphAsync(Uri address)
         {
             return GetGraphAsync(address, readOnly: false, token: CancellationToken.None);
@@ -91,6 +108,7 @@ namespace NuGet.Services.Metadata.Catalog
                 }
             }, token);
         }
+#endif
 
         public virtual async Task<string> GetStringAsync(Uri address, CancellationToken token)
         {
