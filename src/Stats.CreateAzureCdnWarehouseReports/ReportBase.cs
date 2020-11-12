@@ -46,7 +46,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
             // get the target blob container (to store the generated reports)
             var targetBlobContainer = cloudBlobClient.GetContainerReference(target.ContainerName);
-            await targetBlobContainer.CreateIfNotExistsAsync(BlobContainerPublicAccessType.Blob, null, null);
+            await targetBlobContainer.CreateIfNotExistsAsync(BlobContainerPublicAccessType.Blob, options: null, operationContext: null);
             return targetBlobContainer;
         }
     }
