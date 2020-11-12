@@ -234,7 +234,6 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             public IBrokeredMessage Clone() => throw new NotImplementedException();
             public Task CompleteAsync() => throw new NotImplementedException();
             public void Dispose() => throw new NotImplementedException();
-            public Stream GetBody<Stream>() => throw new NotImplementedException();
         }
     }
 
