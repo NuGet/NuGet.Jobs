@@ -19,21 +19,8 @@ namespace NuGet.Services.Metadata.Catalog
         private int _requestCount;
         private readonly IHttpRetryStrategy _retryStrategy;
 
-#if NETFRAMEWORK
         public CollectorHttpClient()
-            : this(new WebRequestHandler { AllowPipelining = true })
-        {
-        }
-
-        public CollectorHttpClient(HttpMessageHandler handler, IHttpRetryStrategy retryStrategy = null)
-            : base(handler ?? new WebRequestHandler { AllowPipelining = true })
-        {
-            _requestCount = 0;
-            _retryStrategy = retryStrategy ?? new RetryWithExponentialBackoff();
-        }
-#else
-        public CollectorHttpClient()
-            : this(new HttpClientHandler())
+            : this(handler: null)
         {
         }
 
@@ -43,7 +30,6 @@ namespace NuGet.Services.Metadata.Catalog
             _requestCount = 0;
             _retryStrategy = retryStrategy ?? new RetryWithExponentialBackoff();
         }
-#endif
 
         public int RequestCount
         {
