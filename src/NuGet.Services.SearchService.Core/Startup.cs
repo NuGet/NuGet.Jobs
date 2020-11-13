@@ -80,8 +80,8 @@ namespace NuGet.Services.SearchService
             services.AddSingleton<TelemetryClient>();
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
 
-            services.AddSingleton<IHostedService, AuxiliaryFileReloaderBackgroundService>();
-            services.AddSingleton<IHostedService, SecretRefresherBackgroundService>();
+            services.AddHostedService<AuxiliaryFileReloaderBackgroundService>();
+            services.AddHostedService<SecretRefresherBackgroundService>();
 
             services.AddAzureSearch(new Dictionary<string, string>());
         }
@@ -142,7 +142,7 @@ namespace NuGet.Services.SearchService
                 }
             }
 
-            // Reload the configuration with secret injection enabled. This is was is used by the application.
+            // Reload the configuration with secret injection enabled. This is used by the application.
             var injectedBuilder = new ConfigurationBuilder()
                 .AddInjectedJsonFile("appsettings.json", secretInjector)
                 .AddInjectedJsonFile("appsettings.Development.json", secretInjector)
