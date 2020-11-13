@@ -18,9 +18,9 @@ namespace NuGet.Services.SearchService
             _refresher = refresher ?? throw new ArgumentNullException(nameof(refresher));
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return _refresher.RefreshContinuouslyAsync(stoppingToken);
+            await _refresher.RefreshContinuouslyAsync(stoppingToken);
         }
     }
 }

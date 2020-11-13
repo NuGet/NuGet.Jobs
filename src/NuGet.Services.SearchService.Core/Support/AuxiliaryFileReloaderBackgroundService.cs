@@ -18,9 +18,9 @@ namespace NuGet.Services.SearchService
             _reloader = reloader ?? throw new ArgumentNullException(nameof(reloader));
         }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return _reloader.ReloadContinuouslyAsync(stoppingToken);
+            await _reloader.ReloadContinuouslyAsync(stoppingToken);
         }
     }
 }
