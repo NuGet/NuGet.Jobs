@@ -67,7 +67,7 @@ namespace NuGet.Services.SearchService
             services.Configure<AzureSearchConfiguration>(Configuration.GetSection(ConfigurationSectionName));
             services.Configure<SearchServiceConfiguration>(Configuration.GetSection(ConfigurationSectionName));
 
-            services.AddApplicationInsightsTelemetry();
+            services.AddApplicationInsightsTelemetry(Configuration.GetValue<string>("ApplicationInsights_InstrumentationKey"));
             services.AddSingleton<ITelemetryInitializer>(new KnownOperationNameEnricher(new[]
             {
                 GetOperationName<SearchController>(HttpMethod.Get, nameof(SearchController.AutocompleteAsync)),
