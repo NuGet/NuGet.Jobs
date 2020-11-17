@@ -79,14 +79,10 @@
     <Compile Include="Dimensions\TimeDimension.cs" />
     <Compile Include="StatisticsParser.cs" />
     <Compile Include="ToolStatisticsParser.cs" />
-    <Compile Include="UserAgentParser.cs" />
     <Compile Include="Warehouse.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <EmbeddedResource Include="knownclients.yaml">
-      <LogicalName>knownclients.yaml</LogicalName>
-    </EmbeddedResource>
     <None Include="Scripts\*" />
     <None Include="Stats.ImportAzureCdnStatistics.nuspec" />
   </ItemGroup>
@@ -110,9 +106,6 @@
     </PackageReference>
     <PackageReference Include="NuGet.Versioning">
       <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="UAParser">
-      <Version>1.2.0</Version>
     </PackageReference>
     <PackageReference Include="MicroBuild.Core">
       <Version>0.3.0</Version>
