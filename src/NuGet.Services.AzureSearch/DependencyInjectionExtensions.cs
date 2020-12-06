@@ -241,6 +241,14 @@ namespace NuGet.Services.AzureSearch
                 p.GetRequiredService<ILogger<DocumentsOperationsWrapper>>()));
 
             services
+                .AddSingleton<HttpClientHandler>(s => new HttpClientHandler
+                {
+                    // The maximum SNAT ports on Azure App Service is 128:
+                    // https://docs.microsoft.com/en-us/azure/app-service/troubleshoot-intermittent-outbound-connection-errors#cause
+                    MaxConnectionsPerServer = 128,
+                });
+
+            services
                 .AddTransient<ISearchServiceClient>(p =>
                 {
                     var options = p.GetRequiredService<IOptionsSnapshot<AzureSearchConfiguration>>();
@@ -248,7 +256,7 @@ namespace NuGet.Services.AzureSearch
                     var client = new SearchServiceClient(
                         options.Value.SearchServiceName,
                         new SearchCredentials(options.Value.SearchServiceApiKey),
-                        new HttpClientHandler(),
+                        p.GetRequiredService<HttpClientHandler>(),
                         GetSearchDelegatingHandlers(p.GetRequiredService<ILoggerFactory>()));
 
                     client.SetRetryPolicy(GetSearchRetryPolicy());

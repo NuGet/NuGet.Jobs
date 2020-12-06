@@ -28,6 +28,7 @@ using NuGet.Services.SearchService.Controllers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Timers;
 
@@ -48,6 +49,10 @@ namespace NuGet.Services.SearchService
 
         public void ConfigureServices(IServiceCollection services)
         {
+            // The maximum SNAT ports on Azure App Service is 128:
+            // https://docs.microsoft.com/en-us/azure/app-service/troubleshoot-intermittent-outbound-connection-errors#cause
+            ServicePointManager.DefaultConnectionLimit = 128;
+
             var refreshableConfig = GetSecretInjectedConfiguration(Configuration);
             Configuration = refreshableConfig.Root;
             services.AddSingleton(refreshableConfig.SecretReaderFactory);
