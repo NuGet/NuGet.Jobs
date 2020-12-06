@@ -49,10 +49,6 @@ namespace NuGet.Services.SearchService
 
         public void ConfigureServices(IServiceCollection services)
         {
-            // The maximum SNAT ports on Azure App Service is 128:
-            // https://docs.microsoft.com/en-us/azure/app-service/troubleshoot-intermittent-outbound-connection-errors#cause
-            ServicePointManager.DefaultConnectionLimit = 128;
-
             var refreshableConfig = GetSecretInjectedConfiguration(Configuration);
             Configuration = refreshableConfig.Root;
             services.AddSingleton(refreshableConfig.SecretReaderFactory);
@@ -90,6 +86,15 @@ namespace NuGet.Services.SearchService
             services.AddHostedService<SecretRefresherBackgroundService>();
 
             services.AddAzureSearch(new Dictionary<string, string>());
+
+            // The maximum SNAT ports on Azure App Service is 128:
+            // https://docs.microsoft.com/en-us/azure/app-service/troubleshoot-intermittent-outbound-connection-errors#cause
+            ServicePointManager.DefaultConnectionLimit = 128;
+            services
+                .AddSingleton<HttpClientHandler>(s => new HttpClientHandler
+                {
+                    MaxConnectionsPerServer = 128,
+                });
         }
 
         public void ConfigureContainer(ContainerBuilder builder)
