@@ -378,7 +378,7 @@ namespace Stats.CollectAzureCdnLogs
             // customer-id
             stringBuilder.Append((parsedEntry.CustomerId ?? dashCharacter) + spaceCharacter);
             // x-ec_custom-1
-            stringBuilder.AppendLine((parsedEntry.CustomField ?? dashCharacter) + spaceCharacter);
+            stringBuilder.AppendLine((parsedEntry.CustomField ?? dashCharacter));
 
             return stringBuilder.ToString();
         }
