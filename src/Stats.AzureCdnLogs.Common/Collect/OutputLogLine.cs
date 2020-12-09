@@ -89,7 +89,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
 
         private static string Quote(string input)
         {
-            if ( input.StartsWith("\"") && input.EndsWith("\"") )
+            if (input.StartsWith("\"") && input.EndsWith("\""))
             {
                 // already quoted
                 return input;
