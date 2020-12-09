@@ -54,7 +54,8 @@ namespace Tests.Stats.CollectAzureChinaCDNLogs
                 return;
             }
             string output = tranformedInput.ToString();
-            var logEntry = CdnLogEntryParser.ParseLogEntryFromLine(1, output, onErrorAction: null);
+            const int lineNumber = 1;
+            var logEntry = CdnLogEntryParser.ParseLogEntryFromLine(lineNumber, output, onErrorAction: null);
             Assert.Contains(tranformedInput.XEc_Custom_1, logEntry.CustomField);
             Assert.Contains(tranformedInput.CUserAgent, logEntry.UserAgent);
         }
