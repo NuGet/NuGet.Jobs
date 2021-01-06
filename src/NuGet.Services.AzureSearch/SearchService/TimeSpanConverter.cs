@@ -5,7 +5,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NuGet.Services.SearchService
+namespace NuGet.Services.AzureSearch.SearchService
 {
     /// <summary>
     /// See: https://github.com/dotnet/runtime/issues/29932
