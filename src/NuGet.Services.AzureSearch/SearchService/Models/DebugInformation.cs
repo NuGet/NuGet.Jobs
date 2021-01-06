@@ -8,7 +8,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public class DebugInformation
     {
-        public SearchRequest SearchRequest { get; set; }
+        public object SearchRequest { get; set; }
         public string IndexName { get; set; }
         public IndexOperationType IndexOperationType { get; set; }
         public string DocumentKey { get; set; }
