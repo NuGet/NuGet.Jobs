@@ -154,8 +154,8 @@ namespace NuGet.Services.AzureSearch.SearchService
   ""IndexOperationType"": ""Search"",
   ""SearchParameters"": {
     ""IncludeTotalResultCount"": false,
-    ""QueryType"": """ + (useNewtonsoftJson ? "s" : "S") + @"imple"",
-    ""SearchMode"": """ + (useNewtonsoftJson ? "a" : "A") + @"ny""
+    ""QueryType"": """ + JsonCasing(useNewtonsoftJson, "S") + @"imple"",
+    ""SearchMode"": """ + JsonCasing(useNewtonsoftJson, "A") + @"ny""
   },
   ""SearchText"": ""azure storage sdk"",
   ""DocumentSearchResult"": {
@@ -501,8 +501,8 @@ namespace NuGet.Services.AzureSearch.SearchService
   ""IndexOperationType"": ""Search"",
   ""SearchParameters"": {
     ""IncludeTotalResultCount"": false,
-    ""QueryType"": """ + (useNewtonsoftJson ? "s" : "S") + @"imple"",
-    ""SearchMode"": """ + (useNewtonsoftJson ? "a" : "A") + @"ny""
+    ""QueryType"": """ + JsonCasing(useNewtonsoftJson, "S") + @"imple"",
+    ""SearchMode"": """ + JsonCasing(useNewtonsoftJson, "A") + @"ny""
   },
   ""SearchText"": ""azure storage sdk"",
   ""DocumentSearchResult"": {
@@ -802,8 +802,8 @@ namespace NuGet.Services.AzureSearch.SearchService
   ""IndexOperationType"": ""Search"",
   ""SearchParameters"": {
     ""IncludeTotalResultCount"": false,
-    ""QueryType"": """ + (useNewtonsoftJson ? "s" : "S") + @"imple"",
-    ""SearchMode"": """ + (useNewtonsoftJson ? "a" : "A") + @"ny""
+    ""QueryType"": """ + JsonCasing(useNewtonsoftJson, "S") + @"imple"",
+    ""SearchMode"": """ + JsonCasing(useNewtonsoftJson, "A") + @"ny""
   },
   ""SearchText"": ""azure storage sdk"",
   ""DocumentSearchResult"": {
@@ -1156,8 +1156,8 @@ namespace NuGet.Services.AzureSearch.SearchService
   ""IndexOperationType"": ""Search"",
   ""SearchParameters"": {
     ""IncludeTotalResultCount"": false,
-    ""QueryType"": """ + (useNewtonsoftJson ? "s" : "S") + @"imple"",
-    ""SearchMode"": """ + (useNewtonsoftJson ? "a" : "A") + @"ny""
+    ""QueryType"": """ + JsonCasing(useNewtonsoftJson, "S") + @"imple"",
+    ""SearchMode"": """ + JsonCasing(useNewtonsoftJson, "A") + @"ny""
   },
   ""SearchText"": ""azure storage sdk"",
   ""DocumentSearchResult"": {
@@ -1541,6 +1541,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 };
             }
 
+            protected string JsonCasing(bool useNewtonsoftJson, string letter) => (useNewtonsoftJson ? letter.ToLowerInvariant() : letter.ToUpperInvariant());
             protected string JsonQuote(bool useNewtonsoftJson) => useNewtonsoftJson ? "\\\"" : "\\u0022";
             protected string JsonPlus(bool useNewtonsoftJson) => useNewtonsoftJson ? "+" : "\\u002B";
             protected string JsonCopyright(bool useNewtonsoftJson) => useNewtonsoftJson ? "©" : "\\u00A9";
