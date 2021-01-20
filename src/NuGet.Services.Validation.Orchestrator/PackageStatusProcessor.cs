@@ -13,6 +13,7 @@ namespace NuGet.Services.Validation.Orchestrator
     public class PackageStatusProcessor : EntityStatusProcessor<Package>
     {
         private readonly ICoreLicenseFileService _coreLicenseFileService;
+        private readonly ICoreReadmeFileService _coreReadmeFileService;
 
         public PackageStatusProcessor(
             IEntityService<Package> galleryPackageService,
@@ -20,10 +21,12 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidatorProvider validatorProvider,
             ITelemetryService telemetryService,
             ILogger<EntityStatusProcessor<Package>> logger,
-            ICoreLicenseFileService coreLicenseFileService) 
+            ICoreLicenseFileService coreLicenseFileService,
+            ICoreReadmeFileService coreReadmeFileService) 
             : base(galleryPackageService, packageFileService, validatorProvider, telemetryService, logger)
         {
             _coreLicenseFileService = coreLicenseFileService ?? throw new ArgumentNullException(nameof(coreLicenseFileService));
+            _coreReadmeFileService = coreReadmeFileService ?? throw new ArgumentNullException(nameof(coreReadmeFileService));
         }
 
         protected override async Task OnBeforeUpdateDatabaseToMakePackageAvailable(
@@ -43,19 +46,43 @@ namespace NuGet.Services.Validation.Orchestrator
                     _logger.LogInformation("Successfully extracted the license file.");
                 }
             }
+
+            if (validatingEntity.EntityRecord.HasEmbeddedReadme)
+            {
+                using (_telemetryService.TrackDurationToExtractReadmeFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
+                using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
+                {
+                    _logger.LogInformation("Extracting the readme file of type {EmbeddedReadmeType} for the package {PackageId} {PackageVersion}",
+                        validatingEntity.EntityRecord.EmbeddedReadmeType,
+                        validationSet.PackageId,
+                        validationSet.PackageNormalizedVersion);
+                    await _coreReadmeFileService.ExtractAndSaveReadmeFileAsync(validatingEntity.EntityRecord, packageStream);
+                    _logger.LogInformation("Successfully extracted the readme file.");
+                }
+            }
         }
 
         protected override async Task OnCleanupAfterDatabaseUpdateFailure(
             IValidatingEntity<Package> validatingEntity,
             PackageValidationSet validationSet)
         {
-            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
+            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent || validatingEntity.EntityRecord.HasEmbeddedReadme)
             {
                 using (_telemetryService.TrackDurationToDeleteLicenseFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
                 {
                     _logger.LogInformation("Cleaning up the license file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
                     await _coreLicenseFileService.DeleteLicenseFileAsync(validationSet.PackageId, validationSet.PackageNormalizedVersion);
                     _logger.LogInformation("Deleted the license file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
+                }
+            }
+
+            if (validatingEntity.EntityRecord.HasEmbeddedReadme)
+            {
+                using (_telemetryService.TrackDurationToDeleteReadmeFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
+                {
+                    _logger.LogInformation("Cleaning up the readme file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
+                    await _coreReadmeFileService.DeleteReadmeFileAsync(validationSet.PackageId, validationSet.PackageNormalizedVersion);
+                    _logger.LogInformation("Deleted the readme file for the package {PackageId} {PackageVersion}", validationSet.PackageId, validationSet.PackageNormalizedVersion);
                 }
             }
         }

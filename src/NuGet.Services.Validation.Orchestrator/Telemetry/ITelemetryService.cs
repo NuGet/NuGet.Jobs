@@ -174,5 +174,22 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         /// <param name="normalizedVersion">Normalized version of the package for which license file is deleted.</param>
         /// <param name="validationTrackingId">Validation tracking ID for which delete operation is done.</param>
         IDisposable TrackDurationToDeleteLicenseFile(string packageId, string normalizedVersion, string validationTrackingId);
+
+        /// <summary>
+        /// A metric to track duration of the readme file extraction.
+        /// </summary>
+        /// <param name="packageId">Package ID from which readme file is extracted.</param>
+        /// <param name="normalizedVersion">Normalized version of the package from which readme file is extracted.</param>
+        /// <param name="validationTrackingId">Validation tracking ID for which extraction is done.</param>
+        /// <returns></returns>
+        IDisposable TrackDurationToExtractReadmeFile(string packageId, string normalizedVersion, string validationTrackingId);
+
+        /// <summary>
+        /// A metric to track duration of the read file deletion from flat container.
+        /// </summary>
+        /// <param name="packageId">Package ID for which readme file is deleted.</param>
+        /// <param name="normalizedVersion">Normalized version of the package for which readme file is deleted.</param>
+        /// <param name="validationTrackingId">Validation tracking ID for which delete operation is done.</param>
+        IDisposable TrackDurationToDeleteReadmeFile(string packageId, string normalizedVersion, string validationTrackingId);
     }
 }

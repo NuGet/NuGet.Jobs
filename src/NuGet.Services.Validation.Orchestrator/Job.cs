@@ -70,6 +70,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string SymbolsScanBindingKey = "SymbolsScan";
         private const string OrchestratorBindingKey = "Orchestrator";
         private const string CoreLicenseFileServiceBindingKey = "CoreLicenseFileService";
+        private const string CoreReadmeFileServiceBindingKey = "CoreReadmeFileService";
 
         private const string SymbolsValidatorSectionName = "SymbolsValidator";
         private const string SymbolsValidationBindingKey = SymbolsValidatorSectionName;
@@ -474,6 +475,11 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<CoreLicenseFileService>()
                 .WithKeyedParameter(typeof(ICoreFileStorageService), CoreLicenseFileServiceBindingKey)
                 .As<ICoreLicenseFileService>();
+
+            builder
+                .RegisterType<CoreReadmeFileService>()
+                .WithKeyedParameter(typeof(ICoreFileStorageService), CoreReadmeFileServiceBindingKey)
+                .As<ICoreReadmeFileService>();
         }
 
         private static void ConfigureOrchestratorMessageHandler(IServiceCollection services, IConfigurationRoot configurationRoot)
