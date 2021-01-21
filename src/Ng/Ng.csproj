@@ -62,7 +62,6 @@
   <ItemGroup>
     <Compile Include="Arguments.cs" />
     <Compile Include="Jobs\Catalog2IconJob.cs" />
-    <Compile Include="Jobs\Catalog2PackageFixupJob.cs" />
     <Compile Include="Jobs\Db2MonitoringJob.cs" />
     <Compile Include="Jobs\Catalog2DnxJob.cs" />
     <Compile Include="Jobs\Catalog2MonitoringJob.cs" />
@@ -156,16 +155,16 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration">
-      <Version>2.75.0</Version>
+      <Version>$(ServerCommonPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Logging">
-      <Version>2.75.0</Version>
+      <Version>$(ServerCommonPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Sql">
-      <Version>2.75.0</Version>
+      <Version>$(ServerCommonPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Storage">
-      <Version>2.75.0</Version>
+      <Version>$(ServerCommonPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Serilog.Sinks.File">
       <Version>4.0.0</Version>
