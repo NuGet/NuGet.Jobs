@@ -153,6 +153,8 @@ namespace CatalogTests.Helpers
         [InlineData("TestPackage.IconAndIconUrl.0.4.2.nupkg.testdata", true, true)]
         [InlineData("TestPackage.IconOnlyEmptyType.0.4.2.nupkg.testdata", false, false)]
         [InlineData("TestPackage.IconOnlyFileType.0.4.2.nupkg.testdata", true, false)]
+        [InlineData("TestPackage.IconOnlyInvalidType.0.4.2.nupkg.testdata", false, false)]
+        [InlineData("TestPackage.IconOnlyNoType.0.4.2.nupkg.testdata", true, false)]
         public void GetNupkgMetadataWithIcon_ProcessesCorrectly(string packageFilename, bool expectedIconMetadata, bool expectedIconUrlMetadata)
         {
             // Arrange
