@@ -151,6 +151,17 @@ namespace NuGet.Jobs.Catalog2Registration
                 catalogEntry.LicenseUrl = packageDetails.LicenseUrl ?? string.Empty;
             }
 
+            if (!string.IsNullOrWhiteSpace(packageDetails.ReadmeFile))
+            { 
+                catalogEntry.ReadmeUrl = GetGalleryReadmeUrl(
+                    catalogEntry.PackageId,
+                    parsedVersion.ToNormalizedString());
+            }
+            else
+            {
+                catalogEntry.ReadmeUrl = string.Empty;
+            }
+
             catalogEntry.Listed = packageDetails.IsListed();
             catalogEntry.MinClientVersion = packageDetails.MinClientVersion ?? string.Empty;
             catalogEntry.PackageContent = GetPackageContentUrl(id, packageDetails);
@@ -323,6 +334,19 @@ namespace NuGet.Jobs.Catalog2Registration
         private string GetPackageContentUrl(string id, PackageDetailsCatalogLeaf packageDetails)
         {
             return new Uri(_flatContainerPathProvider.GetPackagePath(id, packageDetails.PackageVersion)).AbsoluteUri;
+        }
+
+        private string GetGalleryReadmeUrl(string packageId, string packageVersion)
+        {
+            if (string.IsNullOrWhiteSpace(packageId) || string.IsNullOrWhiteSpace(packageVersion))
+            {
+                return null;
+            }
+
+            String path = string.Join("/", new string[] { "packages", packageId, packageVersion });
+            Uri uri = new Uri(_options.Value.GalleryBaseUrl + path + "#show-readme-container");
+
+            return uri.AbsoluteUri;
         }
     }
 }
