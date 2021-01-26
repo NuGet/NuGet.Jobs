@@ -33,31 +33,30 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidatingEntity<Package> validatingEntity,
             PackageValidationSet validationSet)
         {
-            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
+            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent || validatingEntity.EntityRecord.HasEmbeddedReadme)
             {
-                using (_telemetryService.TrackDurationToExtractLicenseFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
+                using (_telemetryService.TrackDurationToExtractLicenseAndReadmeFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
                 using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
                 {
-                    _logger.LogInformation("Extracting the license file of type {EmbeddedLicenseFileType} for the package {PackageId} {PackageVersion}",
-                        validatingEntity.EntityRecord.EmbeddedLicenseType,
-                        validationSet.PackageId,
-                        validationSet.PackageNormalizedVersion);
-                    await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
-                    _logger.LogInformation("Successfully extracted the license file.");
-                }
-            }
+                    if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
+                    {
+                        _logger.LogInformation("Extracting the license file of type {EmbeddedLicenseFileType} for the package {PackageId} {PackageVersion}",
+                            validatingEntity.EntityRecord.EmbeddedLicenseType,
+                            validationSet.PackageId,
+                            validationSet.PackageNormalizedVersion);
+                        await _coreLicenseFileService.ExtractAndSaveLicenseFileAsync(validatingEntity.EntityRecord, packageStream);
+                        _logger.LogInformation("Successfully extracted the license file.");
+                    }
 
-            if (validatingEntity.EntityRecord.HasEmbeddedReadme)
-            {
-                using (_telemetryService.TrackDurationToExtractReadmeFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
-                using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
-                {
-                    _logger.LogInformation("Extracting the readme file of type {EmbeddedReadmeType} for the package {PackageId} {PackageVersion}",
-                        validatingEntity.EntityRecord.EmbeddedReadmeType,
-                        validationSet.PackageId,
-                        validationSet.PackageNormalizedVersion);
-                    await _coreReadmeFileService.ExtractAndSaveReadmeFileAsync(validatingEntity.EntityRecord, packageStream);
-                    _logger.LogInformation("Successfully extracted the readme file.");
+                    if (validatingEntity.EntityRecord.HasEmbeddedReadme)
+                    {
+                        _logger.LogInformation("Extracting the readme file of type {EmbeddedReadmeType} for the package {PackageId} {PackageVersion}",
+                            validatingEntity.EntityRecord.EmbeddedReadmeType,
+                            validationSet.PackageId,
+                            validationSet.PackageNormalizedVersion);
+                        await _coreReadmeFileService.ExtractAndSaveReadmeFileAsync(validatingEntity.EntityRecord, packageStream);
+                        _logger.LogInformation("Successfully extracted the readme file.");
+                    }
                 }
             }
         }
@@ -66,7 +65,7 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidatingEntity<Package> validatingEntity,
             PackageValidationSet validationSet)
         {
-            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent || validatingEntity.EntityRecord.HasEmbeddedReadme)
+            if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
             {
                 using (_telemetryService.TrackDurationToDeleteLicenseFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
                 {

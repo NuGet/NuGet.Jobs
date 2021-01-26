@@ -35,9 +35,8 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string MessageHandlerDurationSeconds = OrchestratorPrefix + "MessageHandlerDurationSeconds";
         private const string MessageLockLost = OrchestratorPrefix + "MessageLockLost";
         private const string SymbolsMessageEnqueued = OrchestratorPrefix + "SymbolsMessageEnqueued";
-        private const string ExtractLicenseFileDuration = OrchestratorPrefix + "ExtractLicenseFileDuration";
+        private const string ExtractLicenseAndReadmeFileDuration = OrchestratorPrefix + "ExtractLicenseAndReadmeFileDuration";
         private const string LicenseFileDeleted = OrchestratorPrefix + "LicenseFileDeleted";
-        private const string ExtractReadmeFileDuration = OrchestratorPrefix + "ExtractReadmeFileDuration";
         private const string ReadmeFileDeleted = OrchestratorPrefix + "ReadmeFileDeleted";
 
         private const string DurationToStartPackageSigningValidatorSeconds = PackageSigningPrefix + "DurationToStartSeconds";
@@ -348,8 +347,8 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                     { ValidationId, validationId.ToString()}
                 });
 
-        public IDisposable TrackDurationToExtractLicenseFile(string packageId, string normalizedVersion, string validationTrackingId)
-            => _telemetryClient.TrackDuration(ExtractLicenseFileDuration,
+        public IDisposable TrackDurationToExtractLicenseAndReadmeFile(string packageId, string normalizedVersion, string validationTrackingId)
+            => _telemetryClient.TrackDuration(ExtractLicenseAndReadmeFileDuration,
                 new Dictionary<string, string> {
                     { PackageId, packageId },
                     { NormalizedVersion, normalizedVersion },
@@ -358,14 +357,6 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
 
         public IDisposable TrackDurationToDeleteLicenseFile(string packageId, string normalizedVersion, string validationTrackingId)
             => _telemetryClient.TrackDuration(LicenseFileDeleted,
-                new Dictionary<string, string> {
-                    { PackageId, packageId },
-                    { NormalizedVersion, normalizedVersion },
-                    { ValidationTrackingId, validationTrackingId },
-                });
-
-        public IDisposable TrackDurationToExtractReadmeFile(string packageId, string normalizedVersion, string validationTrackingId)
-            => _telemetryClient.TrackDuration(ExtractReadmeFileDuration,
                 new Dictionary<string, string> {
                     { PackageId, packageId },
                     { NormalizedVersion, normalizedVersion },
