@@ -6,46 +6,46 @@ using System.Collections.Generic;
 
 namespace NuGet.Services.Validation
 {
-    public class ValidationResult : IValidationResult
+    public class NuGetValidationResponse : INuGetValidationResponse
     {
         /// <summary>
-        /// Represents a validation result that has not been started.
+        /// Represents a validation step that has not been started.
         /// </summary>
-        public static IValidationResult NotStarted { get; } = new ValidationResult(ValidationStatus.NotStarted);
+        public static INuGetValidationResponse NotStarted { get; } = new NuGetValidationResponse(ValidationStatus.NotStarted);
 
         /// <summary>
-        /// Represents a validation result that has started but not succeeded or failed yet.
+        /// Represents a validation step that has started but not succeeded or failed yet.
         /// </summary>
-        public static IValidationResult Incomplete { get; } = new ValidationResult(ValidationStatus.Incomplete);
+        public static INuGetValidationResponse Incomplete { get; } = new NuGetValidationResponse(ValidationStatus.Incomplete);
 
         /// <summary>
-        /// A successful validation result with no issues.
+        /// A successful validation step with no issues.
         /// </summary>
-        public static IValidationResult Succeeded { get; } = new ValidationResult(ValidationStatus.Succeeded);
+        public static INuGetValidationResponse Succeeded { get; } = new NuGetValidationResponse(ValidationStatus.Succeeded);
 
         /// <summary>
-        /// A failed validation result with no issues.
+        /// A failed validation step with no issues.
         /// </summary>
-        public static IValidationResult Failed { get; } = new ValidationResult(ValidationStatus.Failed);
+        public static INuGetValidationResponse Failed { get; } = new NuGetValidationResponse(ValidationStatus.Failed);
 
         /// <summary>
-        /// Create a new validation result with the given status.
+        /// Create a new validation step response with the given status.
         /// </summary>
-        /// <param name="status">The result's status.</param>
-        public ValidationResult(ValidationStatus status)
+        /// <param name="status">The step's status.</param>
+        public NuGetValidationResponse(ValidationStatus status)
             : this(status, issues: null, nupkgUrl: null)
         {
         }
 
         /// <summary>
-        /// Create a new validation result with the given status.
+        /// Create a new validation step response with the given status.
         /// </summary>
-        /// <param name="status">The result's status.</param>
+        /// <param name="status">The step's status.</param>
         /// <param name="nupkgUrl">
         /// A URL to modified package content (.nupkg). Must be null if status is not 
         /// <see cref="ValidationStatus.Succeeded"/>.
         /// </param>
-        public ValidationResult(
+        public NuGetValidationResponse(
             ValidationStatus status,
             string nupkgUrl)
             : this(status, issues: null, nupkgUrl: nupkgUrl)
@@ -53,14 +53,14 @@ namespace NuGet.Services.Validation
         }
 
         /// <summary>
-        /// Create a new validation result with the given status.
+        /// Create a new validation step repsonse with the given status.
         /// </summary>
-        /// <param name="status">The result's status.</param>
+        /// <param name="status">The step's status.</param>
         /// <param name="issues">
         /// The issues that were encountered during the validation. Must be empty if status is not
         /// <see cref="ValidationStatus.Failed"/> or <see cref="Validation.ValidationStatus.Succeeded"/>.
         /// </param>
-        public ValidationResult(
+        public NuGetValidationResponse(
             ValidationStatus status,
             IReadOnlyList<IValidationIssue> issues)
             : this(status, issues, nupkgUrl: null)
@@ -68,18 +68,18 @@ namespace NuGet.Services.Validation
         }
 
         /// <summary>
-        /// Create a new failed validation result with the given errors.
+        /// Create a new failed validation step response with the given errors.
         /// </summary>
-        /// <param name="status">The status of the validation.</param>
+        /// <param name="status">The status of the validation step.</param>
         /// <param name="issues">
-        /// The issues that were encountered during the validation. Must be empty if status is not
+        /// The issues that were encountered during the validation step. Must be empty if status is not
         /// <see cref="ValidationStatus.Failed"/> or <see cref="Validation.ValidationStatus.Succeeded"/>.
         /// </param>
         /// <param name="nupkgUrl">
         /// A URL to modified package content (.nupkg). Must be null if status is not 
         /// <see cref="ValidationStatus.Succeeded"/>.
         /// </param>
-        public ValidationResult(
+        public NuGetValidationResponse(
             ValidationStatus status,
             IReadOnlyList<IValidationIssue> issues,
             string nupkgUrl)
@@ -101,12 +101,12 @@ namespace NuGet.Services.Validation
         }
 
         /// <summary>
-        /// The status of the validation.
+        /// The status of the validation step.
         /// </summary>
         public ValidationStatus Status { get; }
 
         /// <summary>
-        /// The issues that were encountered during the validation.
+        /// The issues that were encountered during the validation step.
         /// </summary>
         public IReadOnlyList<IValidationIssue> Issues { get; }
 
@@ -120,11 +120,11 @@ namespace NuGet.Services.Validation
         /// <summary>
         /// Create a new failed <see cref="ValidationResult"/>.
         /// </summary>
-        /// <param name="issues">The issues for the failed validation result.</param>
-        /// <returns>The failed validation result.</returns>
-        public static ValidationResult FailedWithIssues(params IValidationIssue[] issues)
+        /// <param name="issues">The issues for the failed validation step response.</param>
+        /// <returns>The failed validation step response.</returns>
+        public static NuGetValidationResponse FailedWithIssues(params IValidationIssue[] issues)
         {
-            return new ValidationResult(ValidationStatus.Failed, (IValidationIssue[])issues.Clone());
+            return new NuGetValidationResponse(ValidationStatus.Failed, (IValidationIssue[])issues.Clone());
         }
     }
 }
