@@ -85,13 +85,34 @@ namespace NuGet.Services.Validation.Orchestrator
 
             switch (message.Type)
             {
-                case PackageValidationMessageType.CheckValidator:
-                    return await CheckValidatorAsync(message.CheckValidator);
+                case PackageValidationMessageType.StartValidation:
+                    return await StartValidationAsync(message.StartValidation);
+
                 case PackageValidationMessageType.ProcessValidationSet:
                     return await ProcessValidationSetAsync(message.ProcessValidationSet, message.DeliveryCount);
+
+                case PackageValidationMessageType.CheckValidationSet:
+                    return await CheckValidationSetAsync(message.CheckValidationSet);
+
+                case PackageValidationMessageType.CheckValidator:
+                    return await CheckValidatorAsync(message.CheckValidator);
                 default:
                     throw new NotSupportedException($"The package validation message type '{message.Type}' is not supported.");
             }
+        }
+
+        private Task<bool> StartValidationAsync(StartValidationData message)
+        {
+            // TODO: Start a new validation set.
+            // See: https://github.com/NuGet/Engineering/issues/3582
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> CheckValidationSetAsync(CheckValidationSetData message)
+        {
+            // TODO: Continue processing a validation set.
+            // See: https://github.com/NuGet/Engineering/issues/3582
+            throw new NotImplementedException();
         }
 
         private async Task<bool> CheckValidatorAsync(CheckValidatorData message)
