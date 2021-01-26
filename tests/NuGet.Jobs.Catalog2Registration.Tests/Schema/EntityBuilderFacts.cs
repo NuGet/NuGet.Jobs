@@ -108,6 +108,17 @@ namespace NuGet.Jobs.Catalog2Registration
             }
 
             [Fact]
+            public void ReturnNullGalleryForReadmeUrlWhenThereisNoReadmeFile()
+            {
+                var leaf = V3Data.Leaf;
+                leaf.ReadmeFile = null;
+
+                Target.UpdateLeafItem(LeafItem, Hive, Id, leaf);
+
+                Assert.Null(LeafItem.CatalogEntry.ReadmeUrl);
+            }
+
+            [Fact]
             public void UsesGalleryForReadmeUrlWhenPackageHasReadmeFile()
             {
                 var leaf = V3Data.Leaf;

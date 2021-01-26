@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using Microsoft.Extensions.Options;
 using NuGet.Protocol.Catalog;
 using NuGet.Protocol.Registration;
@@ -155,11 +156,11 @@ namespace NuGet.Jobs.Catalog2Registration
             { 
                 catalogEntry.ReadmeUrl = GetGalleryReadmeUrl(
                     catalogEntry.PackageId,
-                    parsedVersion.ToNormalizedString());
+                    parsedVersion.ToNormalizedString(), _galleryBaseUrl);
             }
             else
             {
-                catalogEntry.ReadmeUrl = string.Empty;
+                catalogEntry.ReadmeUrl = null;
             }
 
             catalogEntry.Listed = packageDetails.IsListed();
@@ -336,17 +337,13 @@ namespace NuGet.Jobs.Catalog2Registration
             return new Uri(_flatContainerPathProvider.GetPackagePath(id, packageDetails.PackageVersion)).AbsoluteUri;
         }
 
-        private string GetGalleryReadmeUrl(string packageId, string packageVersion)
+        private string GetGalleryReadmeUrl(string packageId, string packageVersion, Uri galleryBaseAddress)
         {
-            if (string.IsNullOrWhiteSpace(packageId) || string.IsNullOrWhiteSpace(packageVersion))
-            {
-                return null;
-            }
+            var uriBuilder = new UriBuilder(galleryBaseAddress);
+            uriBuilder.Path = string.Join("/", new string[] { "packages", packageId, packageVersion});
+            uriBuilder.Fragment = "show-readme-container";
 
-            String path = string.Join("/", new string[] { "packages", packageId, packageVersion });
-            Uri uri = new Uri(_options.Value.GalleryBaseUrl + path + "#show-readme-container");
-
-            return uri.AbsoluteUri;
+            return uriBuilder.Uri.AbsoluteUri;
         }
     }
 }
