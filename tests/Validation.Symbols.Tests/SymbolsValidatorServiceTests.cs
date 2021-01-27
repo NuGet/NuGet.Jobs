@@ -365,10 +365,10 @@ namespace Validation.Symbols.Tests
             {
             }
 
-            public override IValidationResult ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion)
+            public override INuGetValidationResponse ValidateSymbolMatching(string targetDirectory, string packageId, string packageNormalizedVersion)
             {
                 ValidateSymbolMatchingInvoked = true;
-                return ValidationResult.Succeeded;
+                return NuGetValidationResponse.Succeeded;
             }
         }
     }
