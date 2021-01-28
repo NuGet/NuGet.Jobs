@@ -88,8 +88,8 @@ namespace CopyAzureContainer
 
             if (await TryCreateDestinationContainerAsync(destContainer, _destStorageAccountName, _destStorageKeyValue, _destStorageSasValue))
             {
-                var destCredential = (!string.IsNullOrEmpty(_destStorageSasValue))? $"/DestSAS:{_destStorageSasValue}": $"/DestKey:{_destStorageKeyValue}";
-                var sourceCredential = (!string.IsNullOrEmpty(sourceSasToken)) ? $"/SourceSAS:{sourceSasToken}" : $"/SourceKey:{sourceAccountKey}";
+                var destCredential = string.IsNullOrEmpty(_destStorageSasValue) ? $"/DestKey:{_destStorageKeyValue}" : $"/DestSAS:{_destStorageSasValue}";
+                var sourceCredential = string.IsNullOrEmpty(sourceSasToken) ? $"/SourceKey:{sourceAccountKey}" : $"/SourceSAS:{sourceSasToken}";
 
                 var arguments = $"/Source:https://{sourceAccountName}.blob.core.windows.net/{containerName}/ " +
                                    $"/Dest:https://{_destStorageAccountName}.blob.core.windows.net/{destContainer}/ " +
