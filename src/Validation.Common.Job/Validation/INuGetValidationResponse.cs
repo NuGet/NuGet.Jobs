@@ -6,12 +6,12 @@ using System.Collections.Generic;
 namespace NuGet.Services.Validation
 {
     /// <summary>
-    /// The result of an asynchronous validation.
+    /// The response from starting or checking a validation step for a NuGet package or symbol.
     /// </summary>
-    public interface IValidationResult
+    public interface INuGetValidationResponse
     {
         /// <summary>
-        /// The status of the validation.
+        /// The status of the validation step.
         /// </summary>
         ValidationStatus Status { get; }
 

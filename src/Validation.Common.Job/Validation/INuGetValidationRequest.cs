@@ -6,13 +6,12 @@ using System;
 namespace NuGet.Services.Validation
 {
     /// <summary>
-    /// The details requires for requesting the status of an asynchronous validation or requesting that an
-    /// asynchronous validation be started.
+    /// The request to start or check a validation step for a NuGet package or symbol.
     /// </summary>
-    public interface IValidationRequest
+    public interface INuGetValidationRequest
     {
         /// <summary>
-        /// The identifier for a single validation execution.
+        /// The identifier for a single validation step execution.
         /// </summary>
         Guid ValidationId { get; }
 

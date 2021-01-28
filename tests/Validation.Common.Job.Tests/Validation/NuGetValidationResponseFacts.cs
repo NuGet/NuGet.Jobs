@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace NuGet.Services.Validation.Tests
+namespace NuGet.Services.Validation
 {
-    public class ValidationResultTests
+    public class NuGetValidationResponseFacts
     {
         public class Constructor
         {
@@ -16,7 +16,7 @@ namespace NuGet.Services.Validation.Tests
             [Fact]
             public void DefaultsNullIssuesToEmptyList()
             {
-                var target = new ValidationResult(ValidationStatus.Succeeded, issues: null);
+                var target = new NuGetValidationResponse(ValidationStatus.Succeeded, issues: null);
 
                 Assert.NotNull(target.Issues);
                 Assert.Empty(target.Issues);
@@ -29,7 +29,7 @@ namespace NuGet.Services.Validation.Tests
             {
                 var issues = new List<IValidationIssue> { null };
 
-                var ex = Assert.Throws<ArgumentException>(() => new ValidationResult(status, issues));
+                var ex = Assert.Throws<ArgumentException>(() => new NuGetValidationResponse(status, issues));
                 Assert.Equal("status", ex.ParamName);
                 Assert.Contains("Cannot specify issues if the validation is not in a terminal status.", ex.Message);
             }
@@ -40,7 +40,7 @@ namespace NuGet.Services.Validation.Tests
             [InlineData(ValidationStatus.Failed)]
             public void RejectsNupkgUrlForNonSucessStatuses(ValidationStatus status)
             {
-                var ex = Assert.Throws<ArgumentException>(() => new ValidationResult(status, NupkgUrl));
+                var ex = Assert.Throws<ArgumentException>(() => new NuGetValidationResponse(status, NupkgUrl));
                 Assert.Equal("status", ex.ParamName);
                 Assert.Contains("The nupkgUrl can only be provided when the status is Succeeded.", ex.Message);
             }
@@ -48,7 +48,7 @@ namespace NuGet.Services.Validation.Tests
             [Fact]
             public void AllowsNupkgUrlForSuccessStatus()
             {
-                var target = new ValidationResult(ValidationStatus.Succeeded, NupkgUrl);
+                var target = new NuGetValidationResponse(ValidationStatus.Succeeded, NupkgUrl);
                 Assert.Same(target.NupkgUrl, NupkgUrl);
             }
         }
