@@ -117,7 +117,6 @@
     <Compile Include="Criteria\PackageCriteria.cs" />
     <Compile Include="PackageValidationMessageHandler.cs" />
     <Compile Include="ValidationOutcomeProcessor.cs" />
-    <Compile Include="ValidationRequest.cs" />
     <Compile Include="ValidationSetProcessor.cs" />
     <Compile Include="ValidationSetProvider.cs" />
     <Compile Include="ValidationStorageService.cs" />
