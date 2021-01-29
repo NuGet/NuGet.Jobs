@@ -25,7 +25,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
             [Fact]
             public async Task ThrowsWhenRequestIsNull()
             {
-                var ex = await Assert.ThrowsAsync<ArgumentNullException>(() => _target.GetResultAsync(null));
+                var ex = await Assert.ThrowsAsync<ArgumentNullException>(() => _target.GetResponseAsync(null));
                 Assert.Equal("request", ex.ParamName);
             }
 
@@ -44,7 +44,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     .Setup(vss => vss.GetStatusAsync(request))
                     .ReturnsAsync(status);
 
-                var result = await _target.GetResultAsync(request);
+                var result = await _target.GetResponseAsync(request);
 
                 _validatorStateServiceMock
                     .Verify(vss => vss.GetStatusAsync(request), Times.Once);
@@ -76,7 +76,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     .Setup(vss => vss.GetStatusAsync(request))
                     .ReturnsAsync(status);
 
-                var result = await _target.GetResultAsync(request);
+                var result = await _target.GetResponseAsync(request);
 
                 Assert.Equal(ValidationStatus.NotStarted, result.Status);
 

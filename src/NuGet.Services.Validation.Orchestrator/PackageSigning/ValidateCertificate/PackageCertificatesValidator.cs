@@ -57,11 +57,11 @@ namespace NuGet.Services.Validation.PackageSigning.ValidateCertificate
             }
         }
 
-        public async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
             var status = await GetStatusAsync(request);
 
-            return status.ToValidationResponse();
+            return status.ToNuGetValidationResponse();
         }
 
         private async Task<ValidatorStatus> GetStatusAsync(INuGetValidationRequest request)
@@ -128,7 +128,7 @@ namespace NuGet.Services.Validation.PackageSigning.ValidateCertificate
         {
             var validatorStatus = await StartInternalAsync(request);
 
-            return validatorStatus.ToValidationResponse();
+            return validatorStatus.ToNuGetValidationResponse();
         }
 
         private async Task<ValidatorStatus> StartInternalAsync(INuGetValidationRequest request)

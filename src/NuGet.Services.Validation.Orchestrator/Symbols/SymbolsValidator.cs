@@ -32,7 +32,7 @@ namespace NuGet.Services.Validation.Symbols
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
             if (request == null)
             {
@@ -40,7 +40,7 @@ namespace NuGet.Services.Validation.Symbols
             }
 
             var validatorStatus = await _validatorStateService.GetStatusAsync(request);
-            var response = validatorStatus.ToValidationResponse();
+            var response = validatorStatus.ToNuGetValidationResponse();
             if (validatorStatus.State == ValidationStatus.Failed)
             {
                 _logger.LogInformation(
@@ -79,7 +79,7 @@ namespace NuGet.Services.Validation.Symbols
                     request.PackageId,
                     request.PackageVersion);
 
-                return validatorStatus.ToValidationResponse();
+                return validatorStatus.ToNuGetValidationResponse();
             }
 
             // Due to race conditions or failure of method TryAddValidatorStatusAsync the same message can be enqueued multiple times
@@ -89,7 +89,7 @@ namespace NuGet.Services.Validation.Symbols
 
             var result = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
 
-            return result.ToValidationResponse();
+            return result.ToNuGetValidationResponse();
         }
     }
 }

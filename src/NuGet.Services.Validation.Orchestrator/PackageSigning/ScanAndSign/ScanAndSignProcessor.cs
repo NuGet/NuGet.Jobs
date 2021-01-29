@@ -99,7 +99,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
             await blob.DeleteIfExistsAsync();
         }
 
-        public async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
             if (request == null)
             {
@@ -108,7 +108,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
             var result = await GetProcessorStatusAsync(request);
 
-            return result.ToValidationResponse();
+            return result.ToNuGetValidationResponse();
         }
 
         public async Task<INuGetValidationResponse> StartAsync(INuGetValidationRequest request)
@@ -128,7 +128,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
                     request.PackageId,
                     request.PackageVersion);
 
-                return processorStatus.ToValidationResponse();
+                return processorStatus.ToNuGetValidationResponse();
             }
 
             var owners = FindPackageOwners(request);
@@ -156,7 +156,7 @@ namespace NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign
 
             var result = await _validatorStateService.TryAddValidatorStatusAsync(request, processorStatus, ValidationStatus.Incomplete);
 
-            return result.ToValidationResponse();
+            return result.ToNuGetValidationResponse();
         }
 
         private async Task<ValidatorStatus> GetProcessorStatusAsync(INuGetValidationRequest request)

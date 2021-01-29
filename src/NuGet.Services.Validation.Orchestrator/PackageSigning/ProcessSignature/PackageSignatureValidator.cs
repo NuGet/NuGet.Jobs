@@ -60,9 +60,9 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
         /// </summary>
         protected override bool RequiresRepositorySignature => true;
 
-        public override async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public override async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
-            var response = await base.GetResultAsync(request);
+            var response = await base.GetResponseAsync(request);
 
             return Validate(request, response);
         }

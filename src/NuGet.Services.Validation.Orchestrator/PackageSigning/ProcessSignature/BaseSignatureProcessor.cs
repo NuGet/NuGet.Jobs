@@ -31,18 +31,18 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public virtual async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public virtual async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
             var validatorStatus = await _validatorStateService.GetStatusAsync(request);
 
-            return validatorStatus.ToValidationResponse();
+            return validatorStatus.ToNuGetValidationResponse();
         }
 
         public virtual async Task<INuGetValidationResponse> StartAsync(INuGetValidationRequest request)
         {
             var validatorStatus = await StartInternalAsync(request);
 
-            return validatorStatus.ToValidationResponse();
+            return validatorStatus.ToNuGetValidationResponse();
         }
 
         public async Task CleanUpAsync(INuGetValidationRequest request)

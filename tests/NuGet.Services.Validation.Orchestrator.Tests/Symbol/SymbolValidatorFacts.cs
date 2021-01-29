@@ -26,7 +26,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
         private static readonly Guid ValidationId = new Guid("12345678-1234-1234-1234-123456789012");
         private const string NupkgUrl = "https://example/nuget.versioning/1.2.3/package.nupkg";
 
-        public class TheGetStatusMethod : FactsBase
+        public class TheGetResponseAsyncMethod : FactsBase
         {
             private static readonly ValidationStatus[] possibleValidationStatuses = new ValidationStatus[]
             {
@@ -35,7 +35,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                 ValidationStatus.Succeeded,
             };
 
-            public TheGetStatusMethod(ITestOutputHelper output) : base(output)
+            public TheGetResponseAsyncMethod(ITestOutputHelper output) : base(output)
             {
             }
 
@@ -56,7 +56,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     });
 
                 // Act & Assert
-                var actual = await _target.GetResultAsync(_validationRequest.Object);
+                var actual = await _target.GetResponseAsync(_validationRequest.Object);
 
                 Assert.Equal(status, actual.Status);
             }
@@ -84,7 +84,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests.Symbol
                     });
 
                 // Act
-                var actual = await _target.GetResultAsync(_validationRequest.Object);
+                var actual = await _target.GetResponseAsync(_validationRequest.Object);
 
                 // Assert
                 Assert.Equal(ValidationStatus.Failed, actual.Status);

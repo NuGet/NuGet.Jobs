@@ -13,7 +13,7 @@ namespace NuGet.Jobs.Validation.Storage
         /// Maps the provided validation status entity and its associated issues to a <see cref="INuGetValidationResponse"/>.
         /// This method does not attempt to deserialize the issue data.
         /// </summary>
-        public static INuGetValidationResponse ToValidationResponse(this ValidatorStatus validatorStatus)
+        public static INuGetValidationResponse ToNuGetValidationResponse(this ValidatorStatus validatorStatus)
         {
             if (validatorStatus == null)
             {

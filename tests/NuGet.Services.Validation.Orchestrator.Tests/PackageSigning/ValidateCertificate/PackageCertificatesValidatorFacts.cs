@@ -25,7 +25,7 @@ namespace NuGet.Services.Validation.PackageSigning
         private static readonly Guid OtherValidationId = new Guid("6593BD33-ABC0-4049-BDCF-915807F1D2B3");
         private const string NupkgUrl = "https://nuget.test/nuget.versioning/4.3.0/package.nupkg";
 
-        public class TheGetStatusMethod : FactsBase
+        public class TheGetResponseAsyncMethod : FactsBase
         {
             public static IEnumerable<object[]> ReturnsPersistedStatusIfNotIncompleteData()
             {
@@ -64,7 +64,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 });
 
                 // Act
-                var actual = await _target.GetResultAsync(_validationRequest.Object);
+                var actual = await _target.GetResponseAsync(_validationRequest.Object);
 
                 // Assert
                 Assert.Equal(ValidationStatus.Failed, actual.Status);
@@ -95,7 +95,7 @@ namespace NuGet.Services.Validation.PackageSigning
                 });
 
                 // Act & Assert
-                var actual = await _target.GetResultAsync(_validationRequest.Object);
+                var actual = await _target.GetResponseAsync(_validationRequest.Object);
 
                 Assert.Equal(status, actual.Status);
             }
@@ -199,7 +199,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     certificateValidations: certificateValidations);
 
                 // Act & Assert
-                var result = await _target.GetResultAsync(_validationRequest.Object);
+                var result = await _target.GetResponseAsync(_validationRequest.Object);
 
                 Assert.Equal(expectedStatus, result.Status);
             }
@@ -294,7 +294,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     certificateValidations: new[] { certificateValidation });
 
                 // Act & Assert
-                var result = await _target.GetResultAsync(_validationRequest.Object);
+                var result = await _target.GetResponseAsync(_validationRequest.Object);
 
                 Assert.Equal(expectedStatus, result.Status);
             }
@@ -465,7 +465,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     certificateValidations: new[] { certificateValidation });
 
                 // Act & Assert
-                var result = await _target.GetResultAsync(_validationRequest.Object);
+                var result = await _target.GetResponseAsync(_validationRequest.Object);
 
                 Assert.Equal(ValidationStatus.Succeeded, result.Status);
 
@@ -531,7 +531,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     endCertificates: new[] { signature.EndCertificate, timestampCertificate });
 
                 // Act & Assert
-                var ex = await Assert.ThrowsAsync<ArgumentException>(() => _target.GetResultAsync(_validationRequest.Object));
+                var ex = await Assert.ThrowsAsync<ArgumentException>(() => _target.GetResponseAsync(_validationRequest.Object));
 
                 Assert.Equal($"Package signature {signature.Key} is valid but has a timestamp whose end certificate is revoked\r\nParameter name: signature", ex.Message);
             }
@@ -595,7 +595,7 @@ namespace NuGet.Services.Validation.PackageSigning
                     endCertificates: new[] { signature.EndCertificate, timestampCertificate });
 
                 // Act & Assert
-                var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResultAsync(_validationRequest.Object));
+                var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.GetResponseAsync(_validationRequest.Object));
 
                 Assert.Equal($"Package with key {validatorStatus.PackageKey} does not have an author signature", ex.Message);
             }

@@ -165,7 +165,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 throw new NotImplementedException();
             }
 
-            public Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+            public Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
             {
                 throw new NotImplementedException();
             }
@@ -184,7 +184,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 throw new NotImplementedException();
             }
 
-            public Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+            public Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
             {
                 throw new NotImplementedException();
             }

@@ -31,7 +31,7 @@ namespace NuGet.Services.Validation.Symbols
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
             if (request == null)
             {

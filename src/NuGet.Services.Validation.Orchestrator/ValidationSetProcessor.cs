@@ -94,7 +94,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                     var validator = _validatorProvider.GetNuGetValidator(packageValidation.Type);
                     var validationRequest = await CreateNuGetValidationRequest(packageValidation.PackageValidationSet, packageValidation);
-                    var validationResponse = await validator.GetResultAsync(validationRequest);
+                    var validationResponse = await validator.GetResponseAsync(validationRequest);
 
                     if (validationResponse.Status != ValidationStatus.Incomplete)
                     {
@@ -185,7 +185,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                     var validator = _validatorProvider.GetNuGetValidator(packageValidation.Type);
                     var validationRequest = await CreateNuGetValidationRequest(packageValidation.PackageValidationSet, packageValidation);
-                    var validationResult = await validator.GetResultAsync(validationRequest);
+                    var validationResult = await validator.GetResponseAsync(validationRequest);
 
                     if (validationResult.Status == ValidationStatus.NotStarted)
                     {

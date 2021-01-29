@@ -65,7 +65,7 @@ namespace NuGet.Services.Validation.Symbols
             _configuration = configurationAccessor.Value;
         }
 
-        public async Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request)
+        public async Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request)
         {
             if (request == null)
             {
@@ -74,7 +74,7 @@ namespace NuGet.Services.Validation.Symbols
 
             var validatorStatus = await _validatorStateService.GetStatusAsync(request);
 
-            return validatorStatus.ToValidationResponse();
+            return validatorStatus.ToNuGetValidationResponse();
         }
 
         public async Task<INuGetValidationResponse> StartAsync(INuGetValidationRequest request)
@@ -94,7 +94,7 @@ namespace NuGet.Services.Validation.Symbols
                     request.PackageId,
                     request.PackageVersion);
 
-                return validatorStatus.ToValidationResponse();
+                return validatorStatus.ToNuGetValidationResponse();
             }
 
             if (ShouldSkipScan(request))
@@ -106,7 +106,7 @@ namespace NuGet.Services.Validation.Symbols
 
             var status = await _validatorStateService.TryAddValidatorStatusAsync(request, validatorStatus, ValidationStatus.Incomplete);
 
-            return status.ToValidationResponse();
+            return status.ToNuGetValidationResponse();
         }
 
         private bool ShouldSkipScan(INuGetValidationRequest request)

@@ -19,7 +19,7 @@ namespace NuGet.Services.Validation
     {
         /// <summary>
         /// A method that starts the validation step on the provided package. If the validation has already started, this
-        /// method should simply return the current status as if <see cref="GetResultAsync(INuGetValidationRequest)"/> was
+        /// method should simply return the current status as if <see cref="GetResponseAsync(INuGetValidationRequest)"/> was
         /// called. If the validation step has not been started yet, the implementation should start the validation step and
         /// return the resulting <see cref="INuGetValidationResponse"/>. A result with a status of <see cref="ValidationStatus.NotStarted"/>
         /// should not be returned from this method and, if it is, the caller is free to repeat the method invocation until some
@@ -40,7 +40,7 @@ namespace NuGet.Services.Validation
         /// </summary>
         /// <param name="request">The validation step request.</param>
         /// <returns>The validation step's latest status.</returns>
-        Task<INuGetValidationResponse> GetResultAsync(INuGetValidationRequest request);
+        Task<INuGetValidationResponse> GetResponseAsync(INuGetValidationRequest request);
 
         /// <summary>
         /// A method that can be used to clean up any state produced by <see cref="StartAsync(INuGetValidationRequest)"/>.
