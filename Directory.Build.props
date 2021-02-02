@@ -2,11 +2,7 @@
 
   <!-- NuGet dependencies shared across projects -->
   <PropertyGroup>
-<<<<<<< HEAD
-    <ServerCommonPackageVersion>2.81.0</ServerCommonPackageVersion>
-=======
     <ServerCommonPackageVersion>2.82.0</ServerCommonPackageVersion>
->>>>>>> 04922c30c376992f6faf72e161fd77ede4f32e43
   </PropertyGroup>
 
   <ItemGroup>
