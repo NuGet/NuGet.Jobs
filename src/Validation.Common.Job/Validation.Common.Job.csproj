@@ -34,7 +34,11 @@
       <Version>5.8.0</Version>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
+<<<<<<< HEAD
       <Version>4.4.6-gallery-2configuration-4385211</Version>
+=======
+      <Version>4.4.5-dev-4422931</Version>
+>>>>>>> 04922c30c376992f6faf72e161fd77ede4f32e43
     </PackageReference>
   </ItemGroup>
 
