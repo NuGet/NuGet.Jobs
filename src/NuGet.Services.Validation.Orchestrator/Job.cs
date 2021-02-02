@@ -69,8 +69,6 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string ScanAndSignBindingKey = ScanAndSignSectionName;
         private const string SymbolsScanBindingKey = "SymbolsScan";
         private const string OrchestratorBindingKey = "Orchestrator";
-        //private const string CoreLicenseFileServiceBindingKey = "CoreLicenseFileService";
-        //private const string CoreReadmeFileServiceBindingKey = "CoreReadmeFileService";
         private const string FlatContainerBindingKey = "FlatContainer";
 
         private const string SymbolsValidatorSectionName = "SymbolsValidator";
