@@ -21,11 +21,13 @@ namespace Validation.Common.Job.Tests.Storage
         private readonly ILogger<ProcessorPackageFileService> _logger;
         private readonly ProcessorPackageFileService _target;
         private readonly Mock<ICoreFileStorageService> _fileStorageService;
+        private readonly Mock<ISharedAccessSignatureService> _sasService;
         private readonly string _packageId;
         private readonly string _packageNormalizedVersion;
         private readonly Guid _validationId;
         private readonly string _folderName;
         private readonly string _fileName;
+        private readonly string _sasDefinition;
         private readonly Uri _packageUri;
         private readonly TimeSpan _accessDuration;
         private readonly MemoryStream _stream;
@@ -42,6 +44,7 @@ namespace Validation.Common.Job.Tests.Storage
             _stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello, world."));
 
             _fileStorageService = new Mock<ICoreFileStorageService>(MockBehavior.Strict);
+            _sasService = new Mock<ISharedAccessSignatureService>();
 
             var loggerFactory = new LoggerFactory().AddXunit(output);
             _logger = loggerFactory.CreateLogger<ProcessorPackageFileService>();
@@ -49,6 +52,7 @@ namespace Validation.Common.Job.Tests.Storage
             _target = new ProcessorPackageFileService(
                 _fileStorageService.Object,
                 typeof(TestProcessor),
+                _sasService.Object,
                 _logger);
         }
 
@@ -70,7 +74,8 @@ namespace Validation.Common.Job.Tests.Storage
             await _target.GetReadAndDeleteUriAsync(
                 _packageId,
                 _packageNormalizedVersion,
-                _validationId);
+                _validationId,
+                sasDefinition: _sasDefinition);
             var after = DateTimeOffset.UtcNow;
 
             _fileStorageService.Verify();
