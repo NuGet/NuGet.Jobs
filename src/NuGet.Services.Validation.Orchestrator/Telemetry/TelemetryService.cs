@@ -35,7 +35,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
         private const string MessageHandlerDurationSeconds = OrchestratorPrefix + "MessageHandlerDurationSeconds";
         private const string MessageLockLost = OrchestratorPrefix + "MessageLockLost";
         private const string SymbolsMessageEnqueued = OrchestratorPrefix + "SymbolsMessageEnqueued";
-        private const string ExtractLicenseAndReadmeFileDuration = OrchestratorPrefix + "ExtractLicenseAndReadmeFileDuration";
+        private const string ExtractLicenseAndReadmeFileDurationSeconds = OrchestratorPrefix + "ExtractLicenseAndReadmeFileDurationSeconds";
         private const string LicenseFileDeleted = OrchestratorPrefix + "LicenseFileDeleted";
         private const string ReadmeFileDeleted = OrchestratorPrefix + "ReadmeFileDeleted";
 
@@ -348,7 +348,7 @@ namespace NuGet.Services.Validation.Orchestrator.Telemetry
                 });
 
         public IDisposable TrackDurationToExtractLicenseAndReadmeFile(string packageId, string normalizedVersion, string validationTrackingId)
-            => _telemetryClient.TrackDuration(ExtractLicenseAndReadmeFileDuration,
+            => _telemetryClient.TrackDuration(ExtractLicenseAndReadmeFileDurationSeconds,
                 new Dictionary<string, string> {
                     { PackageId, packageId },
                     { NormalizedVersion, normalizedVersion },
