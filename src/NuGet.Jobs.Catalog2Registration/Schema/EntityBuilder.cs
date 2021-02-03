@@ -340,7 +340,7 @@ namespace NuGet.Jobs.Catalog2Registration
         private string GetGalleryReadmeUrl(string packageId, string packageVersion, Uri galleryBaseAddress)
         {
             var uriBuilder = new UriBuilder(galleryBaseAddress);
-            uriBuilder.Path = string.Join("/", new string[] { "packages", packageId, packageVersion});
+            uriBuilder.Path = string.Join("/", new[] { "packages", packageId, packageVersion});
             uriBuilder.Fragment = "show-readme-container";
 
             return uriBuilder.Uri.AbsoluteUri;
