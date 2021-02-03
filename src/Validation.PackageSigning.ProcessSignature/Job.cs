@@ -17,6 +17,7 @@ using NuGet.Services.ServiceBus;
 using NuGet.Services.Storage;
 using NuGet.Services.Validation.PackageSigning.ProcessSignature;
 using NuGetGallery;
+using ProcessSignatureConfiguration = NuGet.Jobs.Validation.PackageSigning.Configuration.ProcessSignatureConfiguration;
 
 namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 {
@@ -58,6 +59,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             services.AddTransient<IProcessorPackageFileService, ProcessorPackageFileService>(p => new ProcessorPackageFileService(
                 p.GetRequiredService<ICoreFileStorageService>(),
                 typeof(PackageSignatureProcessor),
+                p.GetRequiredService<ISharedAccessSignatureService>(),
                 p.GetRequiredService<ILogger<ProcessorPackageFileService>>()));
 
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
