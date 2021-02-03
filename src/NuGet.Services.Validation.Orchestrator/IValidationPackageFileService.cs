@@ -44,13 +44,13 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         /// <param name="package">The package metadata.</param>
         /// <returns>The package stream.</returns>
-        Task<Stream> DownloadPackageFileToDiskAsync(PackageValidationSet package);
+        Task<Stream> DownloadPackageFileToDiskAsync(PackageValidationSet package, string sasDefinition = null);
 
         /// <summary>
         /// Backs up the package file from the location specific for the validation set.
         /// </summary>
         /// <param name="validationSet">The validation set, containing validation set and package identifiers.</param>
-        Task BackupPackageFileFromValidationSetPackageAsync(PackageValidationSet validationSet);
+        Task BackupPackageFileFromValidationSetPackageAsync(PackageValidationSet validationSet, string sasDefinition = null);
 
         /// <summary>
         /// Copy a package from the validation container to a location specific for the validation set. This allows the
@@ -104,7 +104,7 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="validationSet">The validation set, containing validation set and package identifiers.</param>
         /// <param name="endOfAccess">The timestamp that limits the URI usage period.</param>
         /// <returns>Time limited (if implementation supports) URI for the package.</returns>
-        Task<Uri> GetPackageForValidationSetReadUriAsync(PackageValidationSet validationSet, DateTimeOffset endOfAccess);
+        Task<Uri> GetPackageForValidationSetReadUriAsync(PackageValidationSet validationSet, string sasDefinition, DateTimeOffset endOfAccess);
 
         /// <summary>
         /// Checks whether the validation set's package file exists.

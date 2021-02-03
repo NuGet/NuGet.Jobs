@@ -320,6 +320,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Verify(s =>
                     s.GetPackageForValidationSetReadUriAsync(
                         ValidationSet,
+                        null,
                         It.Is<DateTimeOffset>(actualEndOfAccess => actualEndOfAccess >= expectedEndOfAccessLower && actualEndOfAccess <= expectedEndOfAccessUpper)),
                     Times.Once);
             Assert.NotNull(validationRequest);
@@ -374,10 +375,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         protected Mock<IValidatorProvider> ValidatorProviderMock { get; }
         protected Mock<IValidationStorageService> ValidationStorageMock { get; }
         protected Mock<IOptionsSnapshot<ValidationConfiguration>> ConfigurationAccessorMock { get; }
+        protected Mock<IOptionsSnapshot<SasDefinitionConfiguration>> SasDefinitionConfigurationAccessorMock { get; }
         protected Mock<IValidationFileService> PackageFileServiceMock { get; }
         protected Mock<ILogger<ValidationSetProcessor>> LoggerMock { get; }
         public Mock<ITelemetryService> TelemetryServiceMock { get; }
         protected ValidationConfiguration Configuration { get; }
+        protected SasDefinitionConfiguration SasDefinitionConfiguration { get; }
         protected Package Package { get; }
         protected PackageValidationSet ValidationSet { get; }
         protected Dictionary<string, Mock<INuGetValidator>> Validators { get; }
@@ -386,6 +389,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             MockBehavior validatorProviderMockBehavior = MockBehavior.Default,
             MockBehavior validationStorageMockBehavior = MockBehavior.Default,
             MockBehavior configurationAccessorMockBehavior = MockBehavior.Default,
+            MockBehavior sasDefinitionConfigurationAccessorMockBehavior = MockBehavior.Default,
             MockBehavior packageFileServiceMockBehavior = MockBehavior.Default,
             MockBehavior telemetryServiceMockBehavior = MockBehavior.Default,
             MockBehavior loggerMockBehavior = MockBehavior.Default)
@@ -393,6 +397,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ValidatorProviderMock = new Mock<IValidatorProvider>(validatorProviderMockBehavior);
             ValidationStorageMock = new Mock<IValidationStorageService>(validationStorageMockBehavior);
             ConfigurationAccessorMock = new Mock<IOptionsSnapshot<ValidationConfiguration>>(configurationAccessorMockBehavior);
+            SasDefinitionConfigurationAccessorMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>(sasDefinitionConfigurationAccessorMockBehavior);
             PackageFileServiceMock = new Mock<IValidationFileService>(packageFileServiceMockBehavior);
             LoggerMock = new Mock<ILogger<ValidationSetProcessor>>(loggerMockBehavior);
             TelemetryServiceMock = new Mock<ITelemetryService>(telemetryServiceMockBehavior);
@@ -406,6 +411,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             ConfigurationAccessorMock
                 .SetupGet(ca => ca.Value)
                 .Returns(Configuration);
+
+            SasDefinitionConfiguration = new SasDefinitionConfiguration();
+            SasDefinitionConfigurationAccessorMock
+                .SetupGet(sca => sca.Value)
+                .Returns(SasDefinitionConfiguration);
 
             Package = new Package
             {
@@ -429,9 +439,9 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Validators = new Dictionary<string, Mock<INuGetValidator>>();
 
             PackageFileServiceMock
-                .Setup(pfs => pfs.GetPackageForValidationSetReadUriAsync(It.IsAny<PackageValidationSet>(), It.IsAny<DateTimeOffset>()))
-                .Returns<PackageValidationSet, DateTimeOffset>(
-                    (p, e) => Task.FromResult(new Uri($"https://example.com/{ValidationContainerName}/{p.ValidationTrackingId}/{p.PackageId}.{p.PackageNormalizedVersion}?e={e:yyyy-MM-dd-hh-mm-ss}")));
+                .Setup(pfs => pfs.GetPackageForValidationSetReadUriAsync(It.IsAny<PackageValidationSet>(), It.IsAny<string>(), It.IsAny<DateTimeOffset>()))
+                .Returns<PackageValidationSet, string, DateTimeOffset>(
+                    (p, s, e) => Task.FromResult(new Uri($"https://example.com/{ValidationContainerName}/{p.ValidationTrackingId}/{p.PackageId}.{p.PackageNormalizedVersion}?e={e:yyyy-MM-dd-hh-mm-ss}")));
         }
 
         protected ValidationSetProcessor CreateProcessor()
@@ -439,6 +449,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidatorProviderMock.Object,
                 ValidationStorageMock.Object,
                 ConfigurationAccessorMock.Object,
+                SasDefinitionConfigurationAccessorMock.Object,
                 PackageFileServiceMock.Object,
                 TelemetryServiceMock.Object,
                 LoggerMock.Object);

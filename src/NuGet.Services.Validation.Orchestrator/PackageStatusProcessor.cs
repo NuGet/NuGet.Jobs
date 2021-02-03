@@ -4,6 +4,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NuGet.Services.Entities;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGetGallery;
@@ -13,17 +14,24 @@ namespace NuGet.Services.Validation.Orchestrator
     public class PackageStatusProcessor : EntityStatusProcessor<Package>
     {
         private readonly ICoreLicenseFileService _coreLicenseFileService;
+        private readonly SasDefinitionConfiguration _sasDefinitionConfiguration;
 
         public PackageStatusProcessor(
             IEntityService<Package> galleryPackageService,
             IValidationFileService packageFileService,
             IValidatorProvider validatorProvider,
             ITelemetryService telemetryService,
+            IOptionsSnapshot<SasDefinitionConfiguration> sasDefinitionConfigurationAccessor,
             ILogger<EntityStatusProcessor<Package>> logger,
             ICoreLicenseFileService coreLicenseFileService) 
             : base(galleryPackageService, packageFileService, validatorProvider, telemetryService, logger)
         {
             _coreLicenseFileService = coreLicenseFileService ?? throw new ArgumentNullException(nameof(coreLicenseFileService));
+            if (sasDefinitionConfigurationAccessor == null)
+            {
+                throw new ArgumentNullException(nameof(sasDefinitionConfigurationAccessor));
+            }
+            _sasDefinitionConfiguration = sasDefinitionConfigurationAccessor.Value ?? throw new ArgumentException($"The Value property cannot be null", nameof(sasDefinitionConfigurationAccessor));
         }
 
         protected override async Task OnBeforeUpdateDatabaseToMakePackageAvailable(
@@ -33,7 +41,7 @@ namespace NuGet.Services.Validation.Orchestrator
             if (validatingEntity.EntityRecord.EmbeddedLicenseType != EmbeddedLicenseFileType.Absent)
             {
                 using (_telemetryService.TrackDurationToExtractLicenseFile(validationSet.PackageId, validationSet.PackageNormalizedVersion, validationSet.ValidationTrackingId.ToString()))
-                using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet))
+                using (var packageStream = await _packageFileService.DownloadPackageFileToDiskAsync(validationSet, _sasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                 {
                     _logger.LogInformation("Extracting the license file of type {EmbeddedLicenseFileType} for the package {PackageId} {PackageVersion}",
                         validatingEntity.EntityRecord.EmbeddedLicenseType,

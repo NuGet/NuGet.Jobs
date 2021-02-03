@@ -35,6 +35,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         private readonly MemoryStream _packageStream;
         private readonly DateTimeOffset _endOfAccess;
         private readonly Mock<ICoreFileStorageService> _fileStorageService;
+        private readonly Mock<ISharedAccessSignatureService> _sasService;
         private readonly Mock<IFileDownloader> _packageDownloader;
         private readonly Mock<ITelemetryService> _telemetryService;
         private readonly Mock<ILogger<ValidationFileService>> _logger;
@@ -72,6 +73,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             _endOfAccess = new DateTimeOffset(2018, 1, 3, 8, 30, 0, TimeSpan.Zero);
 
             _fileStorageService = new Mock<ICoreFileStorageService>(MockBehavior.Strict);
+            _sasService = new Mock<ISharedAccessSignatureService>();
 
             _packageDownloader = new Mock<IFileDownloader>(MockBehavior.Strict);
             _telemetryService = new Mock<ITelemetryService>(MockBehavior.Strict);
@@ -79,6 +81,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             _target = new ValidationFileService(
                 _fileStorageService.Object,
+                _sasService.Object,
                 _packageDownloader.Object,
                 _telemetryService.Object,
                 _logger.Object,
@@ -123,7 +126,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Returns(backupDurationMetric.Object);
 
             var before = DateTimeOffset.UtcNow;
-            await _target.BackupPackageFileFromValidationSetPackageAsync(_validationSet);
+            await _target.BackupPackageFileFromValidationSetPackageAsync(_validationSet, sasDefinition: null);
             var after = DateTimeOffset.UtcNow;
 
             _fileStorageService.Verify();
@@ -156,7 +159,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 PackageId = _package.PackageRegistration.Id
             };
 
-            var actual = await _target.DownloadPackageFileToDiskAsync(validationSet);
+            var actual = await _target.DownloadPackageFileToDiskAsync(validationSet, null);
 
             Assert.Same(_packageStream, actual);
             _fileStorageService.Verify();
@@ -296,7 +299,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(_testUri)
                 .Verifiable();
 
-            var actual = await _target.GetPackageForValidationSetReadUriAsync(_validationSet, _endOfAccess);
+            var actual = await _target.GetPackageForValidationSetReadUriAsync(_validationSet, sasDefinition: null, endOfAccess: _endOfAccess);
 
             Assert.Equal(_testUri, actual);
             _fileStorageService.Verify();
