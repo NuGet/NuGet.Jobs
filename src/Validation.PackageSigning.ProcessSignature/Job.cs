@@ -25,11 +25,13 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
     {
         private const string CertificateStoreConfigurationSectionName = "CertificateStore";
         private const string ProcessSignatureConfigurationSectionName = "ProcessSignature";
+        private const string SasDefinitionConfigurationSectionName = "SasDefinitions";
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<CertificateStoreConfiguration>(configurationRoot.GetSection(CertificateStoreConfigurationSectionName));
             services.Configure<ProcessSignatureConfiguration>(configurationRoot.GetSection(ProcessSignatureConfigurationSectionName));
+            services.Configure<SasDefinitionConfiguration>(configurationRoot.GetSection(SasDefinitionConfigurationSectionName));
             SetupDefaultSubscriptionProcessorConfiguration(services, configurationRoot);
 
             services.AddTransient<ISubscriptionProcessor<SignatureValidationMessage>, SubscriptionProcessor<SignatureValidationMessage>>();
