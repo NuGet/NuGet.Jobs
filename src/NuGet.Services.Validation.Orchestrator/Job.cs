@@ -225,6 +225,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 return client;
             });
+            services.AddTransient<ISharedAccessSignatureService, SharedAccessSignatureService>();
 
             /// See <see cref="SubscriptionProcessorJob{T}.ConfigureDefaultJobServices(IServiceCollection, IConfigurationRoot)"/>
             /// for reasoning on why this is registered here.
