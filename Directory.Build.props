@@ -2,7 +2,7 @@
 
   <!-- NuGet dependencies shared across projects -->
   <PropertyGroup>
-    <ServerCommonPackageVersion>2.83.0-loshar-ef-mock-4446773</ServerCommonPackageVersion>
+    <ServerCommonPackageVersion>2.83.0</ServerCommonPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
