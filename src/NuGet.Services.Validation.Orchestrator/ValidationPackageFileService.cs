@@ -42,6 +42,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _fileMetadataService = fileMetadataService ?? throw new ArgumentNullException(nameof(fileMetadataService));
+            _sharedAccessSignatureService = sharedAccessSignatureService ?? throw new ArgumentNullException(nameof(sharedAccessSignatureService));
         }
 
         #region Core methods to be to be invoked 
