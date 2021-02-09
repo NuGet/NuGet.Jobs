@@ -46,12 +46,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.False(result, "The handler should not have succeeded.");
         }
 
-        [Fact]
-        public async Task RejectsNonPackageValidationSetWithCheckValidator()
+        [Theory]
+        [InlineData(ValidatingType.SymbolPackage)]
+        [InlineData(ValidatingType.Generic)]
+        public async Task RejectsNonPackageValidationSetWithCheckValidator(ValidatingType validatingType)
         {
             var messageData = PackageValidationMessageData.NewCheckValidator(Guid.NewGuid());
             var validationConfiguration = new ValidationConfiguration();
-            var validationSet = new PackageValidationSet { PackageKey = 42, ValidatingType = ValidatingType.SymbolPackage };
+            var validationSet = new PackageValidationSet { PackageKey = 42, ValidatingType = validatingType };
 
             ValidationSetProviderMock
                 .Setup(ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId))
