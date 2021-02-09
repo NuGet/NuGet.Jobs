@@ -70,15 +70,8 @@ namespace NuGet.Services.Validation.Orchestrator
             return _fileStorageService.FileExistsAsync(_fileMetadataService.FileFolderName, fileName);
         }
 
-        public async Task StorePackageFileInBackupLocationAsync(PackageValidationSet validationSet, Stream packageFile)
+        private async Task StorePackageFileInBackupLocationAsync(PackageValidationSet validationSet, Stream packageFile)
         {
-            if (validationSet.ValidatingType == ValidatingType.Generic)
-            {
-                throw new ArgumentException(
-                    $"This method is not supported for validation set's of validating type {validationSet.ValidatingType}",
-                    nameof(validationSet));
-            }
-
             Package packageFromValidationSet = new Package()
             {
                 PackageRegistration = new PackageRegistration() { Id = validationSet.PackageId },
@@ -125,6 +118,13 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public async Task BackupPackageFileFromValidationSetPackageAsync(PackageValidationSet validationSet)
         {
+            if (validationSet.ValidatingType == ValidatingType.Generic)
+            {
+                throw new ArgumentException(
+                    $"This method is not supported for validation sets of validating type {validationSet.ValidatingType}",
+                    nameof(validationSet));
+            }
+
             using (_telemetryService.TrackDurationToBackupPackage(validationSet))
             {
                 _logger.LogInformation(

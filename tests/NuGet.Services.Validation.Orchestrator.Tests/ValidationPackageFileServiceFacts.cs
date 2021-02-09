@@ -135,6 +135,20 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         }
 
         [Fact]
+        public async Task CannotBackupGenericValidationSet()
+        {
+            _validationSet.ValidatingType = ValidatingType.Generic;
+
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => _target.BackupPackageFileFromValidationSetPackageAsync(_validationSet));
+
+            Assert.Equal("validationSet", exception.ParamName);
+            Assert.Contains(
+                "This method is not supported for validation sets of validating type Generic",
+                exception.Message);
+        }
+
+        [Fact]
         public async Task DownloadPackageFileToDiskAsync()
         {
             _fileStorageService
