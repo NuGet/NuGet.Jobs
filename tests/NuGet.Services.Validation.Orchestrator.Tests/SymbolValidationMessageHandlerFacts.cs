@@ -79,7 +79,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(validationSet)
                 .Verifiable();
             CoreSymbolPackageServiceMock
-                .Setup(ps => ps.FindPackageByKey(validationSet.PackageKey))
+                .Setup(ps => ps.FindPackageByKey(validationSet.PackageKey.Value))
                 .Returns<SymbolPackage>(null)
                 .Verifiable();
 
@@ -91,7 +91,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ps => ps.TryGetParentValidationSetAsync(messageData.CheckValidator.ValidationId),
                 Times.Once);
             CoreSymbolPackageServiceMock.Verify(
-                ps => ps.FindPackageByKey(validationSet.PackageKey),
+                ps => ps.FindPackageByKey(validationSet.PackageKey.Value),
                 Times.Once);
 
             Assert.False(result, "The handler should not have succeeded.");
