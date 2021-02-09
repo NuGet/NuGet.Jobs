@@ -55,6 +55,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             _validationSet = new PackageValidationSet
             {
                 ValidationTrackingId = new Guid("0b44d53f-0689-4f82-9530-f25f26b321aa"),
+                PackageKey = 9999,
                 PackageId = _package.PackageRegistration.Id,
                 PackageNormalizedVersion = _package.NormalizedVersion,
             };
