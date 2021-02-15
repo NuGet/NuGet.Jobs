@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="4.4.0" />
+    <PackageReference Include="NuGet.Services.Configuration" Version="2.83.0" />
+    <PackageReference Include="NuGet.Services.KeyVault" Version="2.83.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\NuGet.Services.AzureSearch\NuGet.Services.AzureSearch.csproj" />
+  </ItemGroup>
+
+</Project>
