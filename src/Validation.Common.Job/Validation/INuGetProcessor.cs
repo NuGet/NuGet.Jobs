@@ -4,7 +4,7 @@
 namespace NuGet.Services.Validation
 {
     /// <summary>
-    /// A marker interface to state that this validator mutates packages. The only purpose of this interface it to
+    /// A marker interface to state that this validator mutates packages. The only purpose of this interface is to
     /// allow the caller of the validators (e.g. orchestrator) to verify in advance that a validator (i.e. processor)
     /// that mutates packages does not run in parallel with any other validator.
     /// </summary>
