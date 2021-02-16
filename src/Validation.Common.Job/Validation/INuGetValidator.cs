@@ -11,8 +11,8 @@ namespace NuGet.Services.Validation
     /// the <see cref="INuGetValidationResponse.NupkgUrl"/> is non-null, then the validator has modified that contents
     /// (.nupkg) of the package, meaning the validator is read-write. If the <see cref="INuGetValidationResponse.NupkgUrl"/>
     /// is null, then the package content has not been modified and the validator is read-only. Note that is it
-    /// possible for a read-write validator to return a null <see cref="NupkgUrl"/>  indicating that it chose not to
-    /// modify the package content (e.g. no-op). If a validator is read-write, it should implement
+    /// possible for a read-write validator to return a null <see cref="INuGetValidationResponse.NupkgUrl"/> indicating that
+    /// it chose not to modify the package content (e.g. no-op). If a validator is read-write, it should implement
     /// <see cref="INuGetProcessor"/> and is referred to as a "processor".
     /// </summary>
     public interface INuGetValidator
