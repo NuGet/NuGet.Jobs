@@ -21,6 +21,54 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 {
     public class PackageStatusProcessorFacts
     {
+        public class Constructor : BaseFacts
+        {
+            [Fact]
+            public void NullCoreLicenseFileServiceThrowsArgumentNullException()
+            {
+                var ex = Assert.Throws<ArgumentNullException>(
+                    () => new PackageStatusProcessor(
+                        PackageServiceMock.Object,
+                        PackageFileServiceMock.Object,
+                        ValidatorProviderMock.Object,
+                        TelemetryServiceMock.Object,
+                        SasDefinitionConfigurationMock.Object,
+                        LoggerMock.Object,
+                        null));
+
+                Assert.Equal("coreLicenseFileService", ex.ParamName);
+            }
+
+            [Fact]
+            public void DoesNotThrowWhenSasDefinitionConfigurationAccesssorIsNull()
+            {
+                var processor = new PackageStatusProcessor(
+                    PackageServiceMock.Object,
+                    PackageFileServiceMock.Object,
+                    ValidatorProviderMock.Object,
+                    TelemetryServiceMock.Object,
+                    null,
+                    LoggerMock.Object,
+                    CoreLicenseFileServiceMock.Object);
+            }
+
+            [Fact]
+            public void DoesNotThrowWhenSasDefinitionConfigurationAccesssorValueIsNull()
+            {
+                var sasDefinitionConfigurationMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>();
+                sasDefinitionConfigurationMock.Setup(x => x.Value).Returns(() => (SasDefinitionConfiguration)null);
+
+                var processor = new PackageStatusProcessor(
+                    PackageServiceMock.Object,
+                    PackageFileServiceMock.Object,
+                    ValidatorProviderMock.Object,
+                    TelemetryServiceMock.Object,
+                    SasDefinitionConfigurationMock.Object,
+                    LoggerMock.Object,
+                    CoreLicenseFileServiceMock.Object);
+            }
+        }
+
         public class SetPackageStatusAsync : BaseFacts
         {
             [Theory]
@@ -107,7 +155,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var entityPackageService = new PackageEntityService(corePackageService.Object, mockPackageEntityRepository.Object);
 
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, null))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
 
                 var streamMetadata = new PackageStreamMetadata()
@@ -136,7 +184,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var stream = new MemoryStream(Encoding.ASCII.GetBytes(content));
                 PackageStreamMetadata actual = null;
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, null))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
                 var streamMetadata = new PackageStreamMetadata()
                 {
@@ -173,7 +221,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var stream = new MemoryStream(Encoding.ASCII.GetBytes(content));
                 Package.EmbeddedLicenseType = licenseFileType;
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, null))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
 
                 await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
@@ -633,7 +681,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     HashAlgorithm = CoreConstants.Sha512HashAlgorithmId
                 };
 
-                SasDefinitionConfiguration = new SasDefinitionConfiguration();
+                SasDefinitionConfiguration = new SasDefinitionConfiguration()
+                {
+                    PackageStatusProcessorSasDefinition = "PackageStatusProcessorSasDefinition"
+                };
                 SasDefinitionConfigurationMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>();
                 SasDefinitionConfigurationMock.Setup(x => x.Value).Returns(() => SasDefinitionConfiguration);
 

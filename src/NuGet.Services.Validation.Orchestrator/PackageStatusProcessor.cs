@@ -27,11 +27,7 @@ namespace NuGet.Services.Validation.Orchestrator
             : base(galleryPackageService, packageFileService, validatorProvider, telemetryService, logger)
         {
             _coreLicenseFileService = coreLicenseFileService ?? throw new ArgumentNullException(nameof(coreLicenseFileService));
-            if (sasDefinitionConfigurationAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(sasDefinitionConfigurationAccessor));
-            }
-            _sasDefinitionConfiguration = sasDefinitionConfigurationAccessor.Value ?? throw new ArgumentException($"The Value property cannot be null", nameof(sasDefinitionConfigurationAccessor));
+            _sasDefinitionConfiguration = (sasDefinitionConfigurationAccessor == null || sasDefinitionConfigurationAccessor.Value == null) ? new SasDefinitionConfiguration() : sasDefinitionConfigurationAccessor.Value;
         }
 
         protected override async Task OnBeforeUpdateDatabaseToMakePackageAvailable(
