@@ -70,7 +70,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             _validationSetPackageFileName = "validation-sets/0b44d53f-0689-4f82-9530-f25f26b321aa/nuget.versioning.4.5.0-alpha.nupkg";
             _backupFileName = "nuget.versioning/4.5.0-alpha/rQw3wx1psxXzqB8TyM3nAQlK2RcluhsNwxmcqXE2YbgoDW735o8TPmIR4uWpoxUERddvFwjgRSGw7gNPCwuvJg2..nupkg";
             _testUri = new Uri("http://example.com/nupkg.nupkg");
-            _testSasToken = "sasToken";
+            _testSasToken = "?sasToken";
             _testSasUri = new Uri(_testUri, _testSasToken);
             _sasDefinition = "sasDefinition";
             _etag = "\"some-etag\"";

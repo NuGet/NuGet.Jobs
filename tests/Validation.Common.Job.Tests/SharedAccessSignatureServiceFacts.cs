@@ -22,7 +22,7 @@ namespace Validation.Common.Job.Tests
         public async Task AlwaysReturnsSasToken()
         {
             var sasDefinition = "sasDefinition";
-            var sasToken = "sasToken";
+            var sasToken = "?sasToken";
             var secretInjectorMock = new Mock<ISecretInjector>();
             secretInjectorMock
                 .Setup(si => si.InjectAsync(It.Is<string>(sd => sd == $"$${sasDefinition}$$")))
@@ -31,7 +31,7 @@ namespace Validation.Common.Job.Tests
             var service = new SharedAccessSignatureService(secretInjectorMock.Object);
             var result = await service.GetFromManagedStorageAccountAsync(sasDefinition);
 
-            Assert.Equal(result, sasToken);
+            Assert.Equal(sasToken, result);
         }
     }
 }

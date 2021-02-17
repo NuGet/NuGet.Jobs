@@ -27,7 +27,6 @@ namespace Validation.Common.Job.Tests.Storage
         private readonly Guid _validationId;
         private readonly string _folderName;
         private readonly string _fileName;
-        private readonly string _sasDefinition;
         private readonly Uri _packageUri;
         private readonly TimeSpan _accessDuration;
         private readonly MemoryStream _stream;
@@ -75,11 +74,39 @@ namespace Validation.Common.Job.Tests.Storage
                 _packageId,
                 _packageNormalizedVersion,
                 _validationId,
-                sasDefinition: _sasDefinition);
+                sasDefinition: null);
             var after = DateTimeOffset.UtcNow;
 
             _fileStorageService.Verify();
             Assert.InRange(endOfAccess, before.Add(_accessDuration), after.Add(_accessDuration));
+        }
+
+        [Fact]
+        public async Task GetReadAndDeleteUriAsyncWithSasDefinition()
+        {
+            var sasDefinition = "sasDefinition";
+            var sasToken = "?sasToken";
+            var uriWithSas = new Uri(_packageUri, sasToken);
+            _fileStorageService
+                .Setup(x => x.GetFileUriAsync(
+                    _folderName,
+                    _fileName))
+                .ReturnsAsync(_packageUri)
+                .Verifiable();
+            _sasService
+                .Setup(x => x.GetFromManagedStorageAccountAsync(sasDefinition))
+                .ReturnsAsync(sasToken)
+                .Verifiable();
+
+            var result = await _target.GetReadAndDeleteUriAsync(
+                _packageId,
+                _packageNormalizedVersion,
+                _validationId,
+                sasDefinition);
+
+            _fileStorageService.Verify();
+            _sasService.Verify();
+            Assert.Equal(uriWithSas, result);
         }
 
         [Fact]
