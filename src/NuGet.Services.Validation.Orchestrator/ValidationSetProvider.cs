@@ -39,11 +39,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 throw new ArgumentNullException(nameof(validationConfigurationAccessor));
             }
             _validationConfiguration = validationConfigurationAccessor.Value ?? throw new ArgumentException($"The Value property cannot be null", nameof(validationConfigurationAccessor));
-            if (sasDefinitionConfigurationAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(sasDefinitionConfigurationAccessor));
-            }
-            _sasDefinitionConfiguration = sasDefinitionConfigurationAccessor.Value ?? throw new ArgumentException($"The Value property cannot be null", nameof(sasDefinitionConfigurationAccessor));
+            _sasDefinitionConfiguration = (sasDefinitionConfigurationAccessor == null || sasDefinitionConfigurationAccessor.Value == null) ? new SasDefinitionConfiguration() : sasDefinitionConfigurationAccessor.Value;
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }

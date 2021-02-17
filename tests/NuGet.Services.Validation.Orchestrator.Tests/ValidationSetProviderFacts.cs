@@ -54,7 +54,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 x => x.CopyValidationPackageForValidationSetAsync(It.IsAny<PackageValidationSet>()),
                 Times.Never);
             PackageFileServiceMock.Verify(
-                x => x.BackupPackageFileFromValidationSetPackageAsync(It.IsAny<PackageValidationSet>(), null),
+                x => x.BackupPackageFileFromValidationSetPackageAsync(It.IsAny<PackageValidationSet>(), SasDefinitionConfiguration.ValidationSetProviderSasDefinition),
                 Times.Never);
             TelemetryServiceMock.Verify(
                 x => x.TrackDurationToValidationSetCreation(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<TimeSpan>()),
@@ -95,7 +95,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .ReturnsAsync(ETag)
                 .Callback<PackageValidationSet>(_ => operations.Add(nameof(IValidationFileService.CopyPackageFileForValidationSetAsync)));
             PackageFileServiceMock
-                .Setup(x => x.BackupPackageFileFromValidationSetPackageAsync(It.IsAny<PackageValidationSet>(), null))
+                .Setup(x => x.BackupPackageFileFromValidationSetPackageAsync(It.IsAny<PackageValidationSet>(), SasDefinitionConfiguration.ValidationSetProviderSasDefinition))
                 .Returns(Task.CompletedTask)
                 .Callback(() => operations.Add(nameof(IValidationFileService.BackupPackageFileFromValidationSetPackageAsync)));
             ValidationStorageMock
@@ -169,7 +169,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             var actual = await provider.TryGetOrCreateValidationSetAsync(packageValidationMessageData, PackageValidatingEntity);
 
             PackageFileServiceMock.Verify(
-                x => x.BackupPackageFileFromValidationSetPackageAsync(It.IsAny<PackageValidationSet>(), null),
+                x => x.BackupPackageFileFromValidationSetPackageAsync(It.IsAny<PackageValidationSet>(), SasDefinitionConfiguration.ValidationSetProviderSasDefinition),
                 Times.Never);
         }
 
@@ -224,7 +224,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             PackageFileServiceMock.Verify(x => x.CopyPackageFileForValidationSetAsync(createdSet), Times.Once);
             PackageFileServiceMock.Verify(x => x.CopyPackageFileForValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Once);
             PackageFileServiceMock.Verify(x => x.CopyValidationPackageForValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Never);
-            PackageFileServiceMock.Verify(x => x.BackupPackageFileFromValidationSetPackageAsync(createdSet, null), Times.Once);
+            PackageFileServiceMock.Verify(x => x.BackupPackageFileFromValidationSetPackageAsync(createdSet, SasDefinitionConfiguration.ValidationSetProviderSasDefinition), Times.Once);
             Assert.Equal(ETag, actual.PackageETag);
         }
 
@@ -281,7 +281,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             PackageFileServiceMock.Verify(x => x.CopyPackageFileForValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Never);
             PackageFileServiceMock.Verify(x => x.CopyValidationPackageForValidationSetAsync(createdSet), Times.Once);
             PackageFileServiceMock.Verify(x => x.CopyValidationPackageForValidationSetAsync(It.IsAny<PackageValidationSet>()), Times.Once);
-            PackageFileServiceMock.Verify(x => x.BackupPackageFileFromValidationSetPackageAsync(createdSet, null), Times.Once);
+            PackageFileServiceMock.Verify(x => x.BackupPackageFileFromValidationSetPackageAsync(createdSet, SasDefinitionConfiguration.ValidationSetProviderSasDefinition), Times.Once);
             Assert.Null(actual.PackageETag);
         }
 
@@ -616,7 +616,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .SetupGet(ca => ca.Value)
                 .Returns(() => Configuration);
 
-            SasDefinitionConfiguration = new SasDefinitionConfiguration();
+            SasDefinitionConfiguration = new SasDefinitionConfiguration()
+            {
+                ValidationSetProviderSasDefinition = "ValidationSetProviderSasDefinition"
+            };
             SasDefinitionConfigurationAccessorMock
                 .SetupGet(sca => sca.Value)
                 .Returns(() => SasDefinitionConfiguration);
