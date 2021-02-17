@@ -96,7 +96,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageFileService = new Mock<IProcessorPackageFileService>();
                 _nupkgUri = new Uri("https://example-storage/TestProcessor/b777135f-1aac-4ec2-a3eb-1f64fe1880d5/nuget.versioning.4.3.0.nupkg");
                 _packageFileService
-                    .Setup(x => x.GetReadAndDeleteUriAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), null))
+                    .Setup(x => x.GetReadAndDeleteUriAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>()))
                     .ReturnsAsync(() => _nupkgUri);
 
                 _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();

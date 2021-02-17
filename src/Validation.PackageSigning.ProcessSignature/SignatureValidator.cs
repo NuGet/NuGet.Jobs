@@ -58,12 +58,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             _packageFileService = packageFileService ?? throw new ArgumentNullException(nameof(packageFileService));
             _corePackageService = corePackageService ?? throw new ArgumentNullException(nameof(corePackageService));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            if (sasDefinitionConfigurationAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(sasDefinitionConfigurationAccessor));
-            }
-            _sasDefinitionConfiguration = sasDefinitionConfigurationAccessor.Value ?? throw new ArgumentException($"The Value property cannot be null", nameof(sasDefinitionConfigurationAccessor));
-
+            _sasDefinitionConfiguration = (sasDefinitionConfigurationAccessor == null || sasDefinitionConfigurationAccessor.Value == null) ? new SasDefinitionConfiguration() : sasDefinitionConfigurationAccessor.Value;
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
