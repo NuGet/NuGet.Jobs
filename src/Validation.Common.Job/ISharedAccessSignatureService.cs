@@ -7,6 +7,11 @@ namespace NuGet.Jobs.Validation
 {
     public interface ISharedAccessSignatureService
     {
+        /// <summary>
+        /// Generates a new sas token from a sas definition.
+        /// </summary>
+        /// <param name="sasDefinition">The sas definition stored on key vault.</param>
+        /// <returns>A new sas token from a sas definition stored on key vault.</returns>
         Task<string> GetFromManagedStorageAccountAsync(string sasDefinition);
     }
 }
