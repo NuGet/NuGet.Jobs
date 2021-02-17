@@ -330,6 +330,45 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             Assert.Equal(Package.NormalizedVersion, validationRequest.PackageVersion);
         }
 
+        [Fact]
+        public async Task UsesProperNupkgUrlWithSasDefinition()
+        {
+            UseDefaultValidatorProvider();
+            SasDefinitionConfiguration.ValidationSetProcessorSasDefinition = "ValidationSetProcessorSasDefinition";
+            var validator = AddValidation("validation1", TimeSpan.FromDays(1));
+
+            INuGetValidationRequest validationRequest = null;
+            validator
+                .Setup(v => v.GetResponseAsync(It.IsAny<INuGetValidationRequest>()))
+                .ReturnsAsync(NuGetValidationResponse.NotStarted)
+                .Callback<INuGetValidationRequest>(vr => validationRequest = vr);
+            validator
+                .Setup(v => v.StartAsync(It.IsAny<INuGetValidationRequest>()))
+                .ReturnsAsync(NuGetValidationResponse.Incomplete);
+
+            var processor = CreateProcessor();
+            var expectedEndOfAccessLower = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
+
+            await processor.ProcessValidationsAsync(ValidationSet);
+
+            var expectedEndOfAccessUpper = DateTimeOffset.UtcNow.Add(Configuration.TimeoutValidationSetAfter);
+
+            validator
+                .Verify(v => v.GetResponseAsync(It.IsAny<INuGetValidationRequest>()), Times.AtLeastOnce());
+            PackageFileServiceMock
+                .Verify(s =>
+                    s.GetPackageForValidationSetReadUriAsync(
+                        ValidationSet,
+                        SasDefinitionConfiguration.ValidationSetProcessorSasDefinition,
+                        It.IsAny<DateTimeOffset>()),
+                    Times.Once);
+            Assert.NotNull(validationRequest);
+            Assert.Contains(ValidationSet.ValidationTrackingId.ToString(), validationRequest.NupkgUrl);
+            Assert.Contains(ValidationContainerName, validationRequest.NupkgUrl);
+            Assert.Equal(Package.PackageRegistration.Id, validationRequest.PackageId);
+            Assert.Equal(Package.NormalizedVersion, validationRequest.PackageVersion);
+        }
+
         private class TestException : Exception { };
 
         [Fact]
