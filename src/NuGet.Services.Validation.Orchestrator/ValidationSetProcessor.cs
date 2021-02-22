@@ -291,7 +291,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             var validationRequest = new NuGetValidationRequest(
                 validationId: packageValidation.Key,
-                packageKey: packageValidationSet.PackageKey,
+                packageKey: packageValidationSet.PackageKey.Value,
                 packageId: packageValidationSet.PackageId,
                 packageVersion: packageValidationSet.PackageNormalizedVersion,
                 nupkgUrl: nupkgUrl.AbsoluteUri);
