@@ -34,7 +34,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                         TelemetryServiceMock.Object,
                         SasDefinitionConfigurationMock.Object,
                         LoggerMock.Object,
-                        null));
+                        null,
+                        CoreReadmeFileServiceMock.Object));
 
                 Assert.Equal("coreLicenseFileService", ex.ParamName);
             }
@@ -49,7 +50,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     TelemetryServiceMock.Object,
                     null,
                     LoggerMock.Object,
-                    CoreLicenseFileServiceMock.Object);
+                    CoreLicenseFileServiceMock.Object,
+                    CoreReadmeFileServiceMock.Object);
             }
 
             [Fact]
@@ -65,7 +67,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     TelemetryServiceMock.Object,
                     SasDefinitionConfigurationMock.Object,
                     LoggerMock.Object,
-                    CoreLicenseFileServiceMock.Object);
+                    CoreLicenseFileServiceMock.Object,
+                    CoreReadmeFileServiceMock.Object);
             }
         }
 
@@ -250,7 +253,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Package.EmbeddedReadmeType = readmeFileType;
                 Package.HasReadMe = true;
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, null))
                     .ReturnsAsync(stream);
 
                 await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);

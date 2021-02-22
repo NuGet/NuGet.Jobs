@@ -198,7 +198,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             _validationSet.ValidatingType = ValidatingType.Generic;
 
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => _target.BackupPackageFileFromValidationSetPackageAsync(_validationSet));
+                () => _target.BackupPackageFileFromValidationSetPackageAsync(_validationSet, null));
 
             Assert.Equal("validationSet", exception.ParamName);
             Assert.Contains(
