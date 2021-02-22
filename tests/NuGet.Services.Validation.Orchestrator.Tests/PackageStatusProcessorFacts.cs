@@ -253,7 +253,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 Package.EmbeddedReadmeType = readmeFileType;
                 Package.HasReadMe = true;
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, null))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
 
                 await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
