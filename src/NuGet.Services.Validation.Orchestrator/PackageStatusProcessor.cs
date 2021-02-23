@@ -22,14 +22,14 @@ namespace NuGet.Services.Validation.Orchestrator
             IValidationFileService packageFileService,
             IValidatorProvider validatorProvider,
             ITelemetryService telemetryService,
-            IOptionsSnapshot<SasDefinitionConfiguration> sasDefinitionConfigurationAccessor,
+            IOptionsSnapshot<SasDefinitionConfiguration> options,
             ILogger<EntityStatusProcessor<Package>> logger,
             ICoreLicenseFileService coreLicenseFileService,
             ICoreReadmeFileService coreReadmeFileService) 
             : base(galleryPackageService, packageFileService, validatorProvider, telemetryService, logger)
         {
             _coreLicenseFileService = coreLicenseFileService ?? throw new ArgumentNullException(nameof(coreLicenseFileService));
-            _sasDefinitionConfiguration = (sasDefinitionConfigurationAccessor == null || sasDefinitionConfigurationAccessor.Value == null) ? new SasDefinitionConfiguration() : sasDefinitionConfigurationAccessor.Value;
+            _sasDefinitionConfiguration = (options == null || options.Value == null) ? new SasDefinitionConfiguration() : options.Value;
             _coreReadmeFileService = coreReadmeFileService ?? throw new ArgumentNullException(nameof(coreReadmeFileService));
         }
 
