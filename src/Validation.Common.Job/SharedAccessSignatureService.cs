@@ -9,16 +9,16 @@ namespace NuGet.Jobs.Validation
 {
     public class SharedAccessSignatureService : ISharedAccessSignatureService
     {
-        private readonly ISecretInjector _secretInjector;
+        private readonly ISecretReader _secretReader;
 
-        public SharedAccessSignatureService(ISecretInjector secretInjector)
+        public SharedAccessSignatureService(ISecretReader secretReader)
         {
-            _secretInjector = secretInjector ?? throw new ArgumentNullException(nameof(secretInjector));
+            _secretReader = secretReader ?? throw new ArgumentNullException(nameof(secretReader));
         }
 
         public async Task<string> GetFromManagedStorageAccountAsync(string sasDefinition)
         {
-            return await _secretInjector.InjectAsync($"$${sasDefinition}$$");
+            return await _secretReader.GetSecretAsync(sasDefinition);
         }
     }
 }

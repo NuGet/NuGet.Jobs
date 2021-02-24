@@ -23,12 +23,12 @@ namespace Validation.Common.Job.Tests
         {
             var sasDefinition = "sasDefinition";
             var sasToken = "?sasToken";
-            var secretInjectorMock = new Mock<ISecretInjector>();
-            secretInjectorMock
-                .Setup(si => si.InjectAsync(It.Is<string>(sd => sd == $"$${sasDefinition}$$")))
+            var secretReaderMock = new Mock<ISecretReader>();
+            secretReaderMock
+                .Setup(sr => sr.GetSecretAsync(It.Is<string>(sd => sd == sasDefinition)))
                 .ReturnsAsync(sasToken);
             
-            var service = new SharedAccessSignatureService(secretInjectorMock.Object);
+            var service = new SharedAccessSignatureService(secretReaderMock.Object);
             var result = await service.GetFromManagedStorageAccountAsync(sasDefinition);
 
             Assert.Equal(sasToken, result);
