@@ -102,6 +102,7 @@ namespace Validation.ContentScan.Tests
 
             Assert.Equal(_validationRequest.ValidationStepId, _capturedMessage.StartContentScan.ValidationSetId);
             Assert.Equal(_validationRequest.InputUrl, _capturedMessage.StartContentScan.BlobUri);
+            Assert.Equal(ContentScanOperationType.StartScan, _capturedMessage.Type);
         }
 
         [Fact]
