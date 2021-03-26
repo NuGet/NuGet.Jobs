@@ -26,7 +26,7 @@ namespace Validation.ContentScan.Core
           Guid validationTrackingId)
         {
             return new CheckContentScanData(
-                ContentScanOperationType.StartScan,
+                ContentScanOperationType.CheckStatus,
                 startContentScan: null,
                 checkContentScanStatus: new CheckContentScanStatusData(
                     validationTrackingId),
