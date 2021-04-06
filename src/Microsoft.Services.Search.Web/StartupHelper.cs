@@ -1,8 +1,14 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Linq;
+using System.Net.Http;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 
@@ -49,6 +55,46 @@ namespace Microsoft.Services.Search.Web
                 SecretReaderFactory = refreshingSecretReaderFactory,
                 Root = injectedConfiguration,
             };
+        }
+
+        public static void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+            app.UseRouting();
+
+            app.UseHsts();
+
+            app.Use(async (context, next) =>
+            {
+                context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                await next();
+            });
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
+
+        private static string GetControllerName<T>() where T : ControllerBase
+        {
+            const string ControllerSuffix = "Controller";
+            var typeName = typeof(T).Name;
+            if (typeName.EndsWith(ControllerSuffix, StringComparison.Ordinal))
+            {
+                return typeName.Substring(0, typeName.Length - ControllerSuffix.Length);
+            }
+
+            throw new ArgumentException($"The controller type name must end with '{ControllerSuffix}'.");
+        }
+
+        public static string GetOperationName<T>(HttpMethod verb, string actionName) where T : ControllerBase
+        {
+            return $"{verb} {GetControllerName<T>()}/{actionName}";
         }
     }
 
