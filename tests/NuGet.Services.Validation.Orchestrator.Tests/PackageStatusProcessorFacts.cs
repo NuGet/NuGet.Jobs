@@ -8,6 +8,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGet.Services.Entities;
@@ -20,6 +21,57 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 {
     public class PackageStatusProcessorFacts
     {
+        public class Constructor : BaseFacts
+        {
+            [Fact]
+            public void NullCoreLicenseFileServiceThrowsArgumentNullException()
+            {
+                var ex = Assert.Throws<ArgumentNullException>(
+                    () => new PackageStatusProcessor(
+                        PackageServiceMock.Object,
+                        PackageFileServiceMock.Object,
+                        ValidatorProviderMock.Object,
+                        TelemetryServiceMock.Object,
+                        SasDefinitionConfigurationMock.Object,
+                        LoggerMock.Object,
+                        null,
+                        CoreReadmeFileServiceMock.Object));
+
+                Assert.Equal("coreLicenseFileService", ex.ParamName);
+            }
+
+            [Fact]
+            public void DoesNotThrowWhenSasDefinitionConfigurationAccesssorIsNull()
+            {
+                var processor = new PackageStatusProcessor(
+                    PackageServiceMock.Object,
+                    PackageFileServiceMock.Object,
+                    ValidatorProviderMock.Object,
+                    TelemetryServiceMock.Object,
+                    null,
+                    LoggerMock.Object,
+                    CoreLicenseFileServiceMock.Object,
+                    CoreReadmeFileServiceMock.Object);
+            }
+
+            [Fact]
+            public void DoesNotThrowWhenSasDefinitionConfigurationAccesssorValueIsNull()
+            {
+                var sasDefinitionConfigurationMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>();
+                sasDefinitionConfigurationMock.Setup(x => x.Value).Returns(() => (SasDefinitionConfiguration)null);
+
+                var processor = new PackageStatusProcessor(
+                    PackageServiceMock.Object,
+                    PackageFileServiceMock.Object,
+                    ValidatorProviderMock.Object,
+                    TelemetryServiceMock.Object,
+                    SasDefinitionConfigurationMock.Object,
+                    LoggerMock.Object,
+                    CoreLicenseFileServiceMock.Object,
+                    CoreReadmeFileServiceMock.Object);
+            }
+        }
+
         public class SetPackageStatusAsync : BaseFacts
         {
             [Theory]
@@ -106,7 +158,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var entityPackageService = new PackageEntityService(corePackageService.Object, mockPackageEntityRepository.Object);
 
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
 
                 var streamMetadata = new PackageStreamMetadata()
@@ -135,7 +187,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var stream = new MemoryStream(Encoding.ASCII.GetBytes(content));
                 PackageStreamMetadata actual = null;
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
                 var streamMetadata = new PackageStreamMetadata()
                 {
@@ -172,7 +224,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 var stream = new MemoryStream(Encoding.ASCII.GetBytes(content));
                 Package.EmbeddedLicenseType = licenseFileType;
                 PackageFileServiceMock
-                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet))
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
                     .ReturnsAsync(stream);
 
                 await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
@@ -188,6 +240,35 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 {
                     CoreLicenseFileServiceMock
                         .Verify(clfs => clfs.ExtractAndSaveLicenseFileAsync(It.IsAny<Package>(), It.IsAny<Stream>()), Times.Never);
+                }
+            }
+
+            [Theory]
+            [InlineData(EmbeddedReadmeFileType.Absent, false)]
+            [InlineData(EmbeddedReadmeFileType.Markdown, true)]
+            public async Task SavesPackageReadmeFileWhenPresent(EmbeddedReadmeFileType readmeFileType, bool expectedSave)
+            {
+                var content = "Hello, world.";
+                var stream = new MemoryStream(Encoding.ASCII.GetBytes(content));
+                Package.EmbeddedReadmeType = readmeFileType;
+                Package.HasReadMe = true;
+                PackageFileServiceMock
+                    .Setup(x => x.DownloadPackageFileToDiskAsync(ValidationSet, SasDefinitionConfiguration.PackageStatusProcessorSasDefinition))
+                    .ReturnsAsync(stream);
+
+                await Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available);
+
+                if (expectedSave)
+                {
+                    CoreReadmeFileServiceMock
+                        .Verify(clfs => clfs.ExtractAndSaveReadmeFileAsync(PackageValidatingEntity.EntityRecord, stream), Times.Once);
+                    CoreReadmeFileServiceMock
+                        .Verify(clfs => clfs.ExtractAndSaveReadmeFileAsync(It.IsAny<Package>(), It.IsAny<Stream>()), Times.Once);
+                }
+                else
+                {
+                    CoreReadmeFileServiceMock
+                        .Verify(clfs => clfs.ExtractAndSaveReadmeFileAsync(It.IsAny<Package>(), It.IsAny<Stream>()), Times.Never);
                 }
             }
 
@@ -380,6 +461,41 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             }
 
+            [Theory]
+            [InlineData(EmbeddedReadmeFileType.Absent, PackageStatus.Validating, false)]
+            [InlineData(EmbeddedReadmeFileType.Absent, PackageStatus.Available, false)]
+            [InlineData(EmbeddedReadmeFileType.Markdown, PackageStatus.Validating, true)]
+            [InlineData(EmbeddedReadmeFileType.Markdown, PackageStatus.Available, false)]
+            public async Task DeletesReadmeFromPublicStorageOnDbUpdateFailure(EmbeddedReadmeFileType readmeFileType, PackageStatus originalStatus, bool expectedDelete)
+            {
+                Package.PackageStatusKey = originalStatus;
+                Package.EmbeddedReadmeType = readmeFileType;
+                Package.HasReadMe = true;
+
+                var expected = new Exception("Everything failed");
+                PackageServiceMock
+                    .Setup(ps => ps.UpdateStatusAsync(Package, PackageStatus.Available, true))
+                    .Throws(expected);
+
+                var actual = await Assert.ThrowsAsync<Exception>(
+                    () => Target.SetStatusAsync(PackageValidatingEntity, ValidationSet, PackageStatus.Available));
+
+                Assert.Same(expected, actual);
+
+                if (expectedDelete)
+                {
+                    CoreReadmeFileServiceMock
+                        .Verify(clfs => clfs.DeleteReadmeFileAsync(Package.Id, Package.NormalizedVersion), Times.Once);
+                    CoreReadmeFileServiceMock
+                        .Verify(clfs => clfs.DeleteReadmeFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+                }
+                else
+                {
+                    CoreReadmeFileServiceMock
+                        .Verify(clfs => clfs.DeleteReadmeFileAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+                }
+            }
+
             [Fact]
             public async Task DoesNotDeletePackageFromPublicStorageOnDbUpdateFailureIfCopiedAndOriginallyAvailable()
             {
@@ -479,7 +595,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 };
                 var expected = new StorageException("Validation set package not found!");
                 ValidatorProviderMock
-                    .Setup(x => x.IsProcessor(It.Is<string>(n => n.Contains("Processor"))))
+                    .Setup(x => x.IsNuGetProcessor(It.Is<string>(n => n.Contains("Processor"))))
                     .Returns(true);
                 PackageFileServiceMock
                     .Setup(x => x.CopyValidationSetPackageToPackageFileAsync(ValidationSet, It.IsAny<IAccessCondition>()))
@@ -502,16 +618,16 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     x => x.DoesValidationSetPackageExistAsync(It.IsAny<PackageValidationSet>()),
                     Times.Never);
                 ValidatorProviderMock.Verify(
-                    x => x.IsProcessor("SomeValidatorA"),
+                    x => x.IsNuGetProcessor("SomeValidatorA"),
                     Times.Once);
                 ValidatorProviderMock.Verify(
-                    x => x.IsProcessor("SomeValidatorB"),
+                    x => x.IsNuGetProcessor("SomeValidatorB"),
                     Times.Once);
                 ValidatorProviderMock.Verify(
-                    x => x.IsProcessor("SomeProcessorA"),
+                    x => x.IsNuGetProcessor("SomeProcessorA"),
                     Times.Once);
                 ValidatorProviderMock.Verify(
-                    x => x.IsProcessor("SomeProcessorB"),
+                    x => x.IsNuGetProcessor("SomeProcessorB"),
                     Times.Never); // Never checked, since SomeProcessorA was found.
             }
 
@@ -624,6 +740,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 TelemetryServiceMock = new Mock<ITelemetryService>();
                 LoggerMock = new Mock<ILogger<EntityStatusProcessor<Package>>>();
                 CoreLicenseFileServiceMock = new Mock<ICoreLicenseFileService>();
+                CoreReadmeFileServiceMock = new Mock<ICoreReadmeFileService>();
 
                 var streamMetadata = new PackageStreamMetadata()
                 {
@@ -632,13 +749,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     HashAlgorithm = CoreConstants.Sha512HashAlgorithmId
                 };
 
+                SasDefinitionConfiguration = new SasDefinitionConfiguration()
+                {
+                    PackageStatusProcessorSasDefinition = "PackageStatusProcessorSasDefinition"
+                };
+                SasDefinitionConfigurationMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>();
+                SasDefinitionConfigurationMock.Setup(x => x.Value).Returns(() => SasDefinitionConfiguration);
+
                 Target = new PackageStatusProcessor(
                     PackageServiceMock.Object,
                     PackageFileServiceMock.Object,
                     ValidatorProviderMock.Object,
                     TelemetryServiceMock.Object,
+                    SasDefinitionConfigurationMock.Object,
                     LoggerMock.Object,
-                    CoreLicenseFileServiceMock.Object);
+                    CoreLicenseFileServiceMock.Object,
+                    CoreReadmeFileServiceMock.Object);
 
                 PackageValidatingEntity = new PackageValidatingEntity(Package);
             }
@@ -651,8 +777,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             public Mock<ITelemetryService> TelemetryServiceMock { get; }
             public Mock<ILogger<EntityStatusProcessor<Package>>> LoggerMock { get; }
             public Mock<ICoreLicenseFileService> CoreLicenseFileServiceMock { get; }
+            public Mock<IOptionsSnapshot<SasDefinitionConfiguration>> SasDefinitionConfigurationMock;
+
+            public Mock<ICoreReadmeFileService> CoreReadmeFileServiceMock { get; }
             public EntityStatusProcessor<Package> Target { get; }
             public PackageValidatingEntity PackageValidatingEntity { get; }
+            public SasDefinitionConfiguration SasDefinitionConfiguration { get; }
         }
     }
 }

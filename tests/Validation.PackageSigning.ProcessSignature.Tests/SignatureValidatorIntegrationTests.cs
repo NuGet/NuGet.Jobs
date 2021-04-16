@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using NuGet.Jobs.Validation.PackageSigning;
+using NuGet.Jobs.Validation.PackageSigning.Configuration;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.ProcessSignature;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
@@ -90,6 +91,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         private readonly CancellationToken _token;
         private readonly SignatureValidator _target;
 
+        private readonly Mock<IOptionsSnapshot<SasDefinitionConfiguration>> _sasDefinitionConfigurationMock;
+        private SasDefinitionConfiguration _sasDefinitionConfiguration;
+
         private SignatureValidationMessage _message;
         private readonly SignatureValidationMessage _unsignedPackageMessage;
         private readonly SignatureValidationMessage _signedPackage1Message;
@@ -135,7 +139,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             _packageFileService = new Mock<IProcessorPackageFileService>();
             _nupkgUri = new Uri("https://example-storage/TestProcessor/b777135f-1aac-4ec2-a3eb-1f64fe1880d5/nuget.versioning.4.3.0.nupkg");
             _packageFileService
-                .Setup(x => x.GetReadAndDeleteUriAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>()))
+                .Setup(x => x.GetReadAndDeleteUriAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>()))
                 .ReturnsAsync(() => _nupkgUri);
             _packageFileService
                 .Setup(x => x.SaveAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<Stream>()))
@@ -156,6 +160,11 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             _telemetryService = new TelemetryService(_telemetryClient.Object);
 
             _logger = new RecordingLogger<SignatureValidator>(loggerFactory.CreateLogger<SignatureValidator>());
+
+            _sasDefinitionConfigurationMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>();
+            _sasDefinitionConfiguration = new SasDefinitionConfiguration();
+
+            _sasDefinitionConfigurationMock.Setup(a => a.Value).Returns(_sasDefinitionConfiguration);
 
             // Initialize data.
             _packageKey = 23;
@@ -180,6 +189,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageFileService.Object,
                 _corePackageService.Object,
                 _optionsSnapshot.Object,
+                _sasDefinitionConfigurationMock.Object,
                 _telemetryService,
                 _logger);
         }
@@ -210,6 +220,39 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             // Assert
             VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
             Assert.Empty(result.Issues);
+        }
+
+        [AdminOnlyFact]
+        public async Task AcceptsExpiredAuthorSigningCertificate()
+        {
+            // Arrange
+            using (var certificate = await _fixture.CreateExpiringSigningCertificateAsync())
+            {
+                _packageStream = await _fixture.AuthorSignPackageStreamAsync(
+                    TestResources.GetResourceStream(TestResources.UnsignedPackage),
+                    certificate,
+                    _output);
+
+                await SignatureTestUtility.WaitForCertificateExpirationAsync(certificate);
+
+                TestUtility.RequireSignedPackage(
+                    _corePackageService,
+                    TestResources.UnsignedPackageId,
+                    TestResources.UnsignedPackageVersion,
+                    certificate.ComputeSHA256Thumbprint());
+                _message = _unsignedPackageMessage;
+
+                // Act
+                var result = await _target.ValidateAsync(
+                   _packageKey,
+                   _packageStream,
+                   _message,
+                   _token);
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+            }
         }
 
         [Fact(Skip = "Flaky")]
@@ -708,6 +751,42 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         }
 
         [AdminOnlyFact]
+        public async Task AcceptsExpiredRepositorySigningCertificate()
+        {
+            // Arrange
+            using (var certificate = await _fixture.CreateExpiringSigningCertificateAsync())
+            {
+                _packageStream = await _fixture.RepositorySignPackageStreamAsync(
+                    TestResources.GetResourceStream(TestResources.UnsignedPackage),
+                    certificate,
+                    _output);
+
+                await SignatureTestUtility.WaitForCertificateExpirationAsync(certificate);
+
+                TestUtility.RequireUnsignedPackage(
+                    _corePackageService,
+                    TestResources.UnsignedPackageId,
+                    TestResources.UnsignedPackageVersion);
+                _message = _unsignedPackageMessage;
+
+                var target = CreateSignatureValidator(
+                    allowedRepositorySigningCertificates: new[] { certificate });
+
+                // Act
+                var result = await target.ValidateAsync(
+                   _packageKey,
+                   _packageStream,
+                   _message,
+                   _token);
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+                Assert.Null(result.NupkgUri);
+            }
+        }
+
+        [AdminOnlyFact]
         public async Task StripsRepositorySignatureWithUnallowedSigningCertificate()
         {
             // Arrange
@@ -1124,6 +1203,36 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
             Assert.Empty(result.Issues);
             Assert.Null(result.NupkgUri);
+        }
+
+        [AdminOnlyFact]
+        public async Task AcceptsRepositoryCounterSignatureWithExpiredSigningCertificate()
+        {
+            // Arrange
+            using (var certificate = await _fixture.CreateExpiringSigningCertificateAsync())
+            {
+                _packageStream = await _fixture.RepositorySignPackageStreamAsync(
+                    await GetAuthorSignedPackageStream1Async(),
+                    certificate,
+                    _output);
+
+                await SignatureTestUtility.WaitForCertificateExpirationAsync(certificate);
+
+                var target = CreateSignatureValidator(
+                    allowedRepositorySigningCertificates: new[] { certificate });
+
+                // Act
+                var result = await target.ValidateAsync(
+                   _packageKey,
+                   _packageStream,
+                   _message,
+                   _token);
+
+                // Assert
+                VerifyPackageSigningStatus(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
+                Assert.Empty(result.Issues);
+                Assert.Null(result.NupkgUri);
+            }
         }
 
         [AdminOnlyFact]
@@ -1916,6 +2025,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageFileService.Object,
                 _corePackageService.Object,
                 _optionsSnapshot.Object,
+                _sasDefinitionConfigurationMock.Object,
                 _telemetryService,
                 _logger);
         }

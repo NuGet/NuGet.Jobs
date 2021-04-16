@@ -45,15 +45,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseValidationMessageHandler.cs" />
-    <Compile Include="BaseValidator.cs" />
+    <Compile Include="BaseNuGetValidator.cs" />
     <Compile Include="Configuration\ConfigurationValidator.cs" />
     <Compile Include="Configuration\FlatContainerConfiguration.cs" />
+    <Compile Include="Configuration\SasDefinitionConfiguration.cs" />
     <Compile Include="Configuration\TopologicalSort.cs" />
     <Compile Include="ContainerBuilderExtensions.cs" />
     <Compile Include="Configuration\CoreMessageServiceConfiguration.cs" />
     <Compile Include="Configuration\EmailConfiguration.cs" />
     <Compile Include="EntityStatusProcessor.cs" />
     <Compile Include="Error.cs" />
+    <Compile Include="IValidatorProvider.cs" />
     <Compile Include="PackageStatusProcessor.cs" />
     <Compile Include="Services\MessageServiceConfiguration.cs" />
     <Compile Include="Services\OrchestratorContentFileMetadataService.cs" />
@@ -117,7 +119,6 @@
     <Compile Include="Criteria\PackageCriteria.cs" />
     <Compile Include="PackageValidationMessageHandler.cs" />
     <Compile Include="ValidationOutcomeProcessor.cs" />
-    <Compile Include="ValidationRequest.cs" />
     <Compile Include="ValidationSetProcessor.cs" />
     <Compile Include="ValidationSetProvider.cs" />
     <Compile Include="ValidationStorageService.cs" />

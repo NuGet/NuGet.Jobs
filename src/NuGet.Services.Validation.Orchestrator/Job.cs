@@ -61,6 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageDownloadTimeoutName = "PackageDownloadTimeout";
         private const string FlatContainerConfigurationSectionName = "FlatContainer";
         private const string LeaseConfigurationSectionName = "Leases";
+        private const string SasDefinitionConfigurationSectionName = "SasDefinitions";
 
         private const string EmailBindingKey = EmailConfigurationSectionName;
         private const string PackageVerificationTopicClientBindingKey = "PackageVerificationTopicClient";
@@ -69,7 +70,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string ScanAndSignBindingKey = ScanAndSignSectionName;
         private const string SymbolsScanBindingKey = "SymbolsScan";
         private const string OrchestratorBindingKey = "Orchestrator";
-        private const string CoreLicenseFileServiceBindingKey = "CoreLicenseFileService";
+        private const string FlatContainerBindingKey = "FlatContainer";
 
         private const string SymbolsValidatorSectionName = "SymbolsValidator";
         private const string SymbolsValidationBindingKey = SymbolsValidatorSectionName;
@@ -124,6 +125,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<ScanAndSignEnqueuerConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
             services.Configure<FlatContainerConfiguration>(configurationRoot.GetSection(FlatContainerConfigurationSectionName));
             services.Configure<LeaseConfiguration>(configurationRoot.GetSection(LeaseConfigurationSectionName));
+            services.Configure<SasDefinitionConfiguration>(configurationRoot.GetSection(SasDefinitionConfigurationSectionName));
 
             services.Configure<SymbolsValidationConfiguration>(configurationRoot.GetSection(SymbolsValidatorSectionName));
             services.Configure<SymbolsIngesterConfiguration>(configurationRoot.GetSection(SymbolsIngesterSectionName));
@@ -223,6 +225,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
                 return client;
             });
+            services.AddTransient<ISharedAccessSignatureService, SharedAccessSignatureService>();
 
             /// See <see cref="SubscriptionProcessorJob{T}.ConfigureDefaultJobServices(IServiceCollection, IConfigurationRoot)"/>
             /// for reasoning on why this is registered here.
@@ -459,12 +462,12 @@ namespace NuGet.Services.Validation.Orchestrator
                         configurationAccessor.Value.ConnectionString,
                         readAccessGeoRedundant: false);
                 })
-                .Keyed<ICloudBlobClient>(CoreLicenseFileServiceBindingKey);
+                .Keyed<ICloudBlobClient>(FlatContainerBindingKey);
 
             builder
                 .RegisterType<CloudBlobCoreFileStorageService>()
-                .WithKeyedParameter(typeof(ICloudBlobClient), CoreLicenseFileServiceBindingKey)
-                .Keyed<ICoreFileStorageService>(CoreLicenseFileServiceBindingKey);
+                .WithKeyedParameter(typeof(ICloudBlobClient), FlatContainerBindingKey)
+                .Keyed<ICoreFileStorageService>(FlatContainerBindingKey);
 
             builder
                 .RegisterType<OrchestratorContentFileMetadataService>()
@@ -472,8 +475,13 @@ namespace NuGet.Services.Validation.Orchestrator
 
             builder
                 .RegisterType<CoreLicenseFileService>()
-                .WithKeyedParameter(typeof(ICoreFileStorageService), CoreLicenseFileServiceBindingKey)
+                .WithKeyedParameter(typeof(ICoreFileStorageService), FlatContainerBindingKey)
                 .As<ICoreLicenseFileService>();
+
+            builder
+                .RegisterType<CoreReadmeFileService>()
+                .WithKeyedParameter(typeof(ICoreFileStorageService), FlatContainerBindingKey)
+                .As<ICoreReadmeFileService>();
         }
 
         private static void ConfigureOrchestratorMessageHandler(IServiceCollection services, IConfigurationRoot configurationRoot)

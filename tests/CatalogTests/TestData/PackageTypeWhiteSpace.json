@@ -13,10 +13,11 @@
   "isPrerelease": false,
   "lastEdited": "2017-01-02T08:15:00Z",
   "listed": true,
-  "packageHash": "33xLZngDUJD4Di8s8gUc65RtbOrLR9xcUqJpo4Un/u5clYVhPSQL846VwLQEeDW3lXVgjjN3KQdxMyaSVzQ+DQ==",
+  "packageHash": "hhseXZ+2gB/JCeTGS59mmwhW2HCvsYUcMHTLTgJ6P1x2AyrMwWE3Yu3vvRzkGQ7oLxXlt7z7316L7DM+2y3paw==",
   "packageHashAlgorithm": "SHA512",
-  "packageSize": 386,
+  "packageSize": 397,
   "published": "2017-01-03T08:15:00Z",
+  "readmeFile": "readme.md",
   "title": "PackageTypeWhiteSpace",
   "verbatimVersion": "0.1.0",
   "version": "0.1.0",
@@ -24,9 +25,9 @@
     {
       "@id": "http://example/data/2017.01.04.08.15.00/packagetypewhitespace.0.1.0.json#PackageTypeWhiteSpace.nuspec",
       "@type": "PackageEntry",
-      "compressedLength": 232,
+      "compressedLength": 243,
       "fullName": "PackageTypeWhiteSpace.nuspec",
-      "length": 462,
+      "length": 494,
       "name": "PackageTypeWhiteSpace.nuspec"
     }
   ],
