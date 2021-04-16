@@ -8,7 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
 using Microsoft.Extensions.Hosting;
 
-namespace Microsoft.Services.Search.Web
+namespace Microsoft.PackageManagement.Search.Web
 {
     public static class HostBuilderHelper
     {

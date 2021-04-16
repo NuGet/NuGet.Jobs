@@ -12,7 +12,7 @@ using Microsoft.Extensions.Hosting;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 
-namespace Microsoft.Services.Search.Web
+namespace Microsoft.PackageManagement.Search.Web
 {
     public class StartupHelper
     {

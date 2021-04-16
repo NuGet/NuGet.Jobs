@@ -3,7 +3,7 @@
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Services.Search.Web;
+using Microsoft.PackageManagement.Search.Web;
 
 namespace NuGet.Services.SearchService
 {

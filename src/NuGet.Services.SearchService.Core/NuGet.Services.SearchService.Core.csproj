@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Services.Search.Web\Microsoft.Services.Search.Web.csproj" />
+    <ProjectReference Include="..\Microsoft.Services.Search.Web\Microsoft.PackageManagement.Search.Web.csproj" />
   </ItemGroup>
   
   <Import Project="$(NuGetBuildExtensions)" Condition="'$(NuGetBuildExtensions)' != '' And Exists('$(NuGetBuildExtensions)')" />

@@ -6,13 +6,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Microsoft.Services.Search.Web
+namespace Microsoft.PackageManagement.Search.Web
 {
     public class Program
     {
         public static void Main(string[] args)
         { 
-            
         }
     }
 }

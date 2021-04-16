@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.Services.Search.Web.Support;
+using Microsoft.PackageManagement.Search.Web;
 using Moq;
 using NuGet.Services.AzureSearch;
 using NuGet.Services.AzureSearch.SearchService;

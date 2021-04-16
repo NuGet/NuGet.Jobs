@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using NuGet.Services.AzureSearch;
 using NuGet.Services.AzureSearch.SearchService;
 
-namespace Microsoft.Services.Search.Web.Support
+namespace Microsoft.PackageManagement.Search.Web
 {
     public class ApiExceptionFilterAttribute : ExceptionFilterAttribute
     {
