@@ -29,16 +29,5 @@ namespace Microsoft.PackageManagement.Search.Web
                     break;
             }
         }
-
-        private class ErrorResponse
-        {
-            public ErrorResponse(string message)
-            {
-                Message = message;
-            }
-
-            public bool Success { get; } = false;
-            public string Message { get; }
-        }
     }
 }
