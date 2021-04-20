@@ -11,11 +11,14 @@ namespace NuGet.Services.SearchService
     {
         public static void Main(string[] args)
         {
-            HostBuilderHelper.CreateHostBuilder(args)
-               .ConfigureWebHostDefaults(webBuilder =>
-               {
-                   webBuilder.UseStartup<Startup>();
-               }).Build().Run();
+            HostBuilderHelper
+                .CreateHostBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                })
+                .Build()
+                .Run();
         }
     }
 }
