@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using Autofac;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,7 @@ namespace Validation.Symbols
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
+            throw new Exception("test");
             services.Configure<SymbolsValidatorConfiguration>(configurationRoot.GetSection(SymbolsConfigurationSectionName));
             SetupDefaultSubscriptionProcessorConfiguration(services, configurationRoot);
             services.AddTransient<ITelemetryService, TelemetryService>();
