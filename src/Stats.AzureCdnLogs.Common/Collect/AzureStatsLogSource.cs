@@ -324,7 +324,7 @@ namespace Stats.AzureCdnLogs.Common.Collect
             var copySourceblobUri = sourceBlob.Uri;
             if (sourceBlob.ServiceClient.Credentials.IsSAS)
             {
-                copySourceblobUri = new Uri(sourceBlob.Uri + sourceBlob.ServiceClient.Credentials.SASToken);
+                copySourceblobUri = new Uri(sourceBlob.Uri.AbsoluteUri + sourceBlob.ServiceClient.Credentials.SASToken);
             }
 
             await destinationBlob.StartCopyAsync(copySourceblobUri,
