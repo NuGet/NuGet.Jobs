@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.Extensions.Options;
+using NuGet.Packaging;
 using NuGet.Versioning;
 
 namespace NuGet.Services.AzureSearch.SearchService
