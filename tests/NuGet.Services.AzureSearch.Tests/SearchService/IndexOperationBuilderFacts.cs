@@ -82,8 +82,10 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Theory]
+            [InlineData(false, 3_000, IndexOperationType.Search)]
             [InlineData(false, 3_001, IndexOperationType.Search)]
             [InlineData(false, 100_001, IndexOperationType.Empty)]
+            [InlineData(true, 3_000, IndexOperationType.Search)]
             [InlineData(true, 3_001, IndexOperationType.Empty)]
             [InlineData(true, 100_001, IndexOperationType.Empty)]
 
@@ -153,8 +155,10 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Theory]
+            [InlineData(false, 30_000, IndexOperationType.Search)]
             [InlineData(false, 30_001, IndexOperationType.Search)]
             [InlineData(false, 100_001, IndexOperationType.Empty)]
+            [InlineData(true, 30_000, IndexOperationType.Search)]
             [InlineData(true, 30_001, IndexOperationType.Empty)]
             [InlineData(true, 100_001, IndexOperationType.Empty)]
 
