@@ -88,7 +88,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
                     _logger.LogError(ex, "Error writing report to storage account {StorageAccount}, container {ReportContainer}. {Exception}",
                         storageContainerTarget.StorageAccount.Credentials.AccountName,
                         storageContainerTarget.ContainerName,
-                            ex);
+                        ex);
                 }
             }
         }
