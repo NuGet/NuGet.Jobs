@@ -1,7 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -11,10 +10,8 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.PackageManagement.Search.Web;
 using NuGet.Services.AzureSearch;
 using NuGet.Services.AzureSearch.SearchService;
@@ -97,13 +94,14 @@ namespace NuGet.Services.SearchService
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            StartupHelper.Configure(app, env);
-
-            app.UseCors(cors => cors
-                .AllowAnyOrigin()
-                .WithHeaders("Content-Type", "If-Match", "If-Modified-Since", "If-None-Match", "If-Unmodified-Since", "Accept-Encoding")
-                .WithMethods("GET", "HEAD", "OPTIONS")
-                .WithExposedHeaders("Content-Type", "Content-Length", "Last-Modified", "Transfer-Encoding", "ETag", "Date", "Vary", "Server", "X-Hit", "X-CorrelationId"));
+            StartupHelper.Configure(
+                app,
+                env,
+                cors => cors
+                    .AllowAnyOrigin()
+                    .WithHeaders("Content-Type", "If-Match", "If-Modified-Since", "If-None-Match", "If-Unmodified-Since", "Accept-Encoding")
+                    .WithMethods("GET", "HEAD", "OPTIONS")
+                    .WithExposedHeaders("Content-Type", "Content-Length", "Last-Modified", "Transfer-Encoding", "ETag", "Date", "Vary", "Server", "X-Hit", "X-CorrelationId"));
         }
     }
 }
