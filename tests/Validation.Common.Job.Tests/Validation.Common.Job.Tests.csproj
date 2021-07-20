@@ -58,6 +58,7 @@
     <Compile Include="TempFiles\DeleteOnCloseReadOnlyTempFileFacts.cs" />
     <Compile Include="TempFiles\TempFileFacts.cs" />
     <Compile Include="Validation\NuGetValidationResponseFacts.cs" />
+    <Compile Include="Validation\ValidationResponseFacts.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq">

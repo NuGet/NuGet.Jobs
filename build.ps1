@@ -9,7 +9,7 @@ param (
     [string]$SemanticVersion = '1.0.0-zlocal',
     [string]$Branch = 'zlocal',
     [string]$CommitSHA,
-    [string]$BuildBranch = '948e06b7e5dc320eccd1f44a15a5faeb60384ed6'
+    [string]$BuildBranchCommit = 'ade39b693d49b266ec5cac5d939edac7dda2fd92'
 )
 
 # For TeamCity - If any issue occurs, this script fails the build. - By default, TeamCity returns an exit code of 0 for all powershell scripts, even if they fail
@@ -28,8 +28,8 @@ if (-not (Test-Path "$PSScriptRoot/build")) {
 # Enable TLS 1.2 since GitHub requires it.
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
-wget -UseBasicParsing -Uri "https://raw.githubusercontent.com/NuGet/ServerCommon/$BuildBranch/build/init.ps1" -OutFile "$PSScriptRoot/build/init.ps1"
-. "$PSScriptRoot/build/init.ps1" -BuildBranch "$BuildBranch"
+wget -UseBasicParsing -Uri "https://raw.githubusercontent.com/NuGet/ServerCommon/$BuildBranchCommit/build/init.ps1" -OutFile "$PSScriptRoot/build/init.ps1"
+. "$PSScriptRoot/build/init.ps1" -BuildBranchCommit "$BuildBranchCommit"
 
 Function Clean-Tests {
     [CmdletBinding()]
@@ -96,6 +96,7 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "src\Stats.AzureCdnLogs.Common\Properties\AssemblyInfo.g.cs",
             "src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs",
             "src\Stats.CollectAzureChinaCDNLogs\Properties\AssemblyInfo.g.cs",
+            "src\Stats.LogInterpretation\Properties\AssemblyInfo.g.cs",
             "src\Stats.Warehouse\Properties\AssemblyInfo.g.cs",
             "src\StatusAggregator\Properties\AssemblyInfo.g.cs",
             "src\Validation.Common.Job\Properties\AssemblyInfo.g.cs",
@@ -105,7 +106,8 @@ Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
             "src\Validation.PackageSigning.ValidateCertificate\Properties\AssemblyInfo.g.cs",
             "src\Validation.ScanAndSign.Core\Properties\AssemblyInfo.g.cs",
             "src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs",
-            "src\Validation.Symbols\Properties\AssemblyInfo.g.cs"
+            "src\Validation.Symbols\Properties\AssemblyInfo.g.cs",
+            "src\Validation.ContentScan.Core\Properties\AssemblyInfo.g.cs"
             
         $versionMetadata | ForEach-Object {
             # Ensure the directory exists before generating the version info file.
@@ -152,9 +154,11 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\NuGet.Services.AzureSearch\NuGet.Services.AzureSearch.csproj",
             "src\NuGet.Services.Metadata.Catalog.Monitoring\NuGet.Services.Metadata.Catalog.Monitoring.csproj",
             "src\NuGet.Services.V3\NuGet.Services.V3.csproj",
+            "src\Stats.LogInterpretation\Stats.LogInterpretation.csproj",
             "src\Validation.Common.Job\Validation.Common.Job.csproj",
             "src\Validation.ScanAndSign.Core\Validation.ScanAndSign.Core.csproj",
-            "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj"
+            "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj",
+            "src\Validation.ContentScan.Core\Validation.ContentScan.Core.csproj"
 
         $CsprojProjects | ForEach-Object {
             New-ProjectPackage (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -Symbols
