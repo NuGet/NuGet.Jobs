@@ -185,10 +185,10 @@
       <Version>4.10.1</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Configuration">
-      <Version>$(ServerCommonPackageVersion)</Version>
+      <Version>2.90.0-sb-msi2-4983853</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Logging">
-      <Version>$(ServerCommonPackageVersion)</Version>
+      <Version>2.90.0-sb-msi2-4983853</Version>
     </PackageReference>
     <PackageReference Include="xunit">
       <Version>2.4.1</Version>

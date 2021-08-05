@@ -44,10 +44,10 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <PackageReference Include="NuGet.Services.ServiceBus">
-      <Version>$(ServerCommonPackageVersion)</Version>
+      <Version>2.90.0-sb-msi2-4983853</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Storage">
-      <Version>$(ServerCommonPackageVersion)</Version>
+      <Version>2.90.0-sb-msi2-4983853</Version>
     </PackageReference>
   </ItemGroup>
 
