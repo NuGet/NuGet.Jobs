@@ -136,7 +136,7 @@ namespace NuGet.Jobs.GitHubIndexer
 
                     // TODO: Block unwanted repos (https://github.com/NuGet/NuGetGallery/issues/7298)
                     var ignoreList = _configuration.Value.IgnoreList;
-                    var filteredRepoList = response.Where(x => !ignoreList.Contains(x.Id));
+                    var filteredRepoList = response.Where(x => !ignoreList.Contains(x.Id, StringComparer.OrdinalIgnoreCase));
                     resultList.AddRange(filteredRepoList);
                     page++;
 

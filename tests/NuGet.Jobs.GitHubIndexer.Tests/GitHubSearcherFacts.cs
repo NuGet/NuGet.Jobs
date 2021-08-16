@@ -165,7 +165,8 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     // Add all the even numbered repos to the ignore list
                     if (i % 2 == 0)
                     {
-                        ignoreList.Add(repoName);
+                        // Mixing the naming case to test for case-insensitivity
+                        ignoreList.Add(i % 4 == 0 ? repoName.ToUpper() : repoName);
                     }
                 }
 
@@ -206,7 +207,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                   };
 
                 var res = await GetMockClient(mockTelemetry, mockGitHubSearch, _configuration).GetPopularRepositories();
-                var expectedFilteredResults = items.Where(x => !ignoreList.Contains(x.Id)).ToList();
+                var expectedFilteredResults = items.Where(x => !ignoreList.Contains(x.Id, StringComparer.OrdinalIgnoreCase)).ToList();
                 Assert.Equal(expectedFilteredResults.Count, res.Count);
 
                 for (int resIdx = 0; resIdx < res.Count; resIdx++)
