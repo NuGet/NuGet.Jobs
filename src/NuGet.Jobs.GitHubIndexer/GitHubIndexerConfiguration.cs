@@ -51,6 +51,6 @@ namespace NuGet.Jobs.GitHubIndexer
         /// <summary>
         /// The list of repositories to be ignored by the indexing job. ("{repoOwner}/{repoName}")
         /// </summary>
-        public HashSet<string> IgnoreList {  get; set; }
+        public HashSet<string> IgnoreList { get; set; }
     }
 }
