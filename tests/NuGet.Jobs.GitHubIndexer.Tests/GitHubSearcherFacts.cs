@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -71,6 +72,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 _configuration.ResultsPerPage = resultsPerPage;
                 _configuration.MinStars = minStars;
                 _configuration.MaxGitHubResultsPerQuery = maxGithubResultPerQuery;
+                _configuration.IgnoreList = new HashSet<string>();
 
                 // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
                 var items = new List<WritableRepositoryInformation>();
@@ -126,6 +128,96 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                     Assert.Equal(items[resIdx].Stars, resItem.Stars);
                     Assert.Equal(items[resIdx].Description, resItem.Description);
                     Assert.Equal(items[resIdx].Url, resItem.Url);
+                }
+
+                mockTelemetry.Verify(t => t.TrackDiscoverRepositoriesDuration(), Times.Once);
+                durationMetric.Verify(m => m.Dispose(), Times.Once);
+            }
+
+            [Fact]
+            public async Task IgnoreListTest()
+            {
+                const int totalCount = 5000;
+                const int minStars = 10;
+                const int maxGithubResultPerQuery = 50;
+                const int resultsPerPage = 100;
+
+                var mockTelemetry = new Mock<ITelemetryService>();
+                var durationMetric = new Mock<IDisposable>();
+                mockTelemetry
+                    .Setup(t => t.TrackDiscoverRepositoriesDuration())
+                    .Returns(durationMetric.Object);
+
+                _configuration.ResultsPerPage = resultsPerPage;
+                _configuration.MinStars = minStars;
+                _configuration.MaxGitHubResultsPerQuery = maxGithubResultPerQuery;
+
+                // Generate ordered results by starCount (the min starCount has to be >= GitHubSearcher.MIN_STARS)
+                var items = new List<WritableRepositoryInformation>();
+                var ignoreList = new HashSet<string>();
+
+                int maxStars = (totalCount + _configuration.MinStars);
+                for (int i = 0; i < totalCount; i++)
+                {
+                    var repoName = "owner/Hello" + i;
+                    items.Add(new WritableRepositoryInformation(repoName, "dummyUrl", maxStars - i, "Some random repo description.", "master"));
+
+                    // Add all the even numbered repos to the ignore list
+                    if (i % 2 == 0)
+                    {
+                        ignoreList.Add(repoName);
+                    }
+                }
+
+                _configuration.IgnoreList = ignoreList;
+
+                // Create a mock GitHub Search API that serves those results
+                Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> mockGitHubSearch =
+                  req =>
+                  {
+                      //Stars are split as "min..max"
+                      var starsStr = req.Stars.ToString();
+                      var min = int.Parse(starsStr.Substring(0, starsStr.IndexOf('.')));
+                      var max = int.Parse(starsStr.Substring(starsStr.LastIndexOf('.') + 1));
+                      int idxMax = -1, idxMin = items.Count;
+
+                      for (int i = 0; i < items.Count; i++)
+                      {
+                          var repo = items[i];
+                          if (repo.Stars <= max && idxMax == -1)
+                          {
+                              idxMax = i;
+                          }
+
+                          if (repo.Stars <= min)
+                          {
+                              idxMin = i;
+                              break;
+                          }
+                      }
+
+                      var page = req.Page - 1;
+                      var startId = idxMax + req.PerPage * page > idxMin ? idxMin : idxMax + req.PerPage * page;
+
+                      var itemsCount = Math.Min(_configuration.ResultsPerPage, idxMin - startId); // To avoid overflowing
+                      IReadOnlyList<WritableRepositoryInformation> subItems = itemsCount == 0 ? new List<WritableRepositoryInformation>() : items.GetRange(startId, itemsCount);
+
+                      return Task.FromResult(subItems);
+                  };
+
+                var res = await GetMockClient(mockTelemetry, mockGitHubSearch, _configuration).GetPopularRepositories();
+                var expectedFilteredResults = items.Where(x => !ignoreList.Contains(x.Id)).ToList();
+                Assert.Equal(expectedFilteredResults.Count, res.Count);
+
+                for (int resIdx = 0; resIdx < res.Count; resIdx++)
+                {
+                    var resItem = res[resIdx];
+                    var expectedItem = expectedFilteredResults[resIdx];
+                    Assert.Equal(expectedItem.Id, resItem.Id);
+                    Assert.Equal(expectedItem.MainBranch, resItem.MainBranch);
+                    Assert.Equal(expectedItem.Stars, resItem.Stars);
+                    Assert.Equal(expectedItem.Description, resItem.Description);
+                    Assert.Equal(expectedItem.Url, resItem.Url);
                 }
 
                 mockTelemetry.Verify(t => t.TrackDiscoverRepositoriesDuration(), Times.Once);
