@@ -37,6 +37,44 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 optionsSnapshot.Object);
         }
 
+        private static Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> GetMockGitHubSearch(
+            List<WritableRepositoryInformation> items,
+            GitHubIndexerConfiguration configuration)
+        {
+            return 
+                 req =>
+                 {
+                      //Stars are split as "min..max"
+                      var starsStr = req.Stars.ToString();
+                     var min = int.Parse(starsStr.Substring(0, starsStr.IndexOf('.')));
+                     var max = int.Parse(starsStr.Substring(starsStr.LastIndexOf('.') + 1));
+                     int idxMax = -1, idxMin = items.Count;
+
+                     for (int i = 0; i < items.Count; i++)
+                     {
+                         var repo = items[i];
+                         if (repo.Stars <= max && idxMax == -1)
+                         {
+                             idxMax = i;
+                         }
+
+                         if (repo.Stars <= min)
+                         {
+                             idxMin = i;
+                             break;
+                         }
+                     }
+
+                     var page = req.Page - 1;
+                     var startId = idxMax + req.PerPage * page > idxMin ? idxMin : idxMax + req.PerPage * page;
+
+                     var itemsCount = Math.Min(configuration.ResultsPerPage, idxMin - startId); // To avoid overflowing
+                      IReadOnlyList<WritableRepositoryInformation> subItems = itemsCount == 0 ? new List<WritableRepositoryInformation>() : items.GetRange(startId, itemsCount);
+
+                     return Task.FromResult(subItems);
+                 };
+        }
+
         public class GetPopularRepositoriesMethod
         {
             private readonly GitHubIndexerConfiguration _configuration = new GitHubIndexerConfiguration();
@@ -84,38 +122,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 }
 
                 // Create a mock GitHub Search API that serves those results
-                Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> mockGitHubSearch =
-                  req =>
-                      {
-                          //Stars are split as "min..max"
-                          var starsStr = req.Stars.ToString();
-                          var min = int.Parse(starsStr.Substring(0, starsStr.IndexOf('.')));
-                          var max = int.Parse(starsStr.Substring(starsStr.LastIndexOf('.') + 1));
-                          int idxMax = -1, idxMin = items.Count;
-
-                          for (int i = 0; i < items.Count; i++)
-                          {
-                              var repo = items[i];
-                              if (repo.Stars <= max && idxMax == -1)
-                              {
-                                  idxMax = i;
-                              }
-
-                              if (repo.Stars <= min)
-                              {
-                                  idxMin = i;
-                                  break;
-                              }
-                          }
-
-                          var page = req.Page - 1;
-                          var startId = idxMax + req.PerPage * page > idxMin ? idxMin : idxMax + req.PerPage * page;
-
-                          var itemsCount = Math.Min(_configuration.ResultsPerPage, idxMin - startId); // To avoid overflowing
-                          IReadOnlyList<WritableRepositoryInformation> subItems = itemsCount == 0 ? new List<WritableRepositoryInformation>() : items.GetRange(startId, itemsCount);
-
-                          return Task.FromResult(subItems);
-                      };
+                var mockGitHubSearch = GetMockGitHubSearch(items, _configuration);
 
                 var res = await GetMockClient(mockTelemetry, mockGitHubSearch, _configuration).GetPopularRepositories();
                 Assert.Equal(items.Count, res.Count);
@@ -173,38 +180,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
                 _configuration.IgnoreList = ignoreList;
 
                 // Create a mock GitHub Search API that serves those results
-                Func<SearchRepositoriesRequest, Task<IReadOnlyList<WritableRepositoryInformation>>> mockGitHubSearch =
-                  req =>
-                  {
-                      //Stars are split as "min..max"
-                      var starsStr = req.Stars.ToString();
-                      var min = int.Parse(starsStr.Substring(0, starsStr.IndexOf('.')));
-                      var max = int.Parse(starsStr.Substring(starsStr.LastIndexOf('.') + 1));
-                      int idxMax = -1, idxMin = items.Count;
-
-                      for (int i = 0; i < items.Count; i++)
-                      {
-                          var repo = items[i];
-                          if (repo.Stars <= max && idxMax == -1)
-                          {
-                              idxMax = i;
-                          }
-
-                          if (repo.Stars <= min)
-                          {
-                              idxMin = i;
-                              break;
-                          }
-                      }
-
-                      var page = req.Page - 1;
-                      var startId = idxMax + req.PerPage * page > idxMin ? idxMin : idxMax + req.PerPage * page;
-
-                      var itemsCount = Math.Min(_configuration.ResultsPerPage, idxMin - startId); // To avoid overflowing
-                      IReadOnlyList<WritableRepositoryInformation> subItems = itemsCount == 0 ? new List<WritableRepositoryInformation>() : items.GetRange(startId, itemsCount);
-
-                      return Task.FromResult(subItems);
-                  };
+                var mockGitHubSearch = GetMockGitHubSearch(items, _configuration);
 
                 var res = await GetMockClient(mockTelemetry, mockGitHubSearch, _configuration).GetPopularRepositories();
                 var expectedFilteredResults = items.Where(x => !ignoreList.Contains(x.Id, StringComparer.OrdinalIgnoreCase)).ToList();
