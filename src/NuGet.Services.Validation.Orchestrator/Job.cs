@@ -20,6 +20,7 @@ using Microsoft.WindowsAzure.Storage;
 using NuGet.Jobs;
 using NuGet.Jobs.Configuration;
 using NuGet.Jobs.Validation;
+using NuGet.Jobs.Validation.ContentScan;
 using NuGet.Jobs.Validation.Leases;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.ScanAndSign;
@@ -32,6 +33,7 @@ using NuGet.Services.Messaging;
 using NuGet.Services.Messaging.Email;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Sql;
+using NuGet.Services.Validation.Orchestrator.ContentScan;
 using NuGet.Services.Validation.Orchestrator.PackageSigning.ScanAndSign;
 using NuGet.Services.Validation.Orchestrator.Telemetry;
 using NuGet.Services.Validation.PackageSigning.ProcessSignature;
@@ -55,6 +57,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageSigningSectionName = "PackageSigning";
         private const string PackageCertificatesSectionName = "PackageCertificates";
         private const string ScanAndSignSectionName = "ScanAndSign";
+        private const string ContentScanSectionName = "ContentScan";
         private const string SymbolScanOnlySectionName = "SymbolScanOnly";
         private const string RunnerConfigurationSectionName = "RunnerConfiguration";
         private const string EmailConfigurationSectionName = "Email";
@@ -68,6 +71,7 @@ namespace NuGet.Services.Validation.Orchestrator
         private const string PackageSignatureBindingKey = PackageSigningSectionName;
         private const string PackageCertificatesBindingKey = PackageCertificatesSectionName;
         private const string ScanAndSignBindingKey = ScanAndSignSectionName;
+        private const string NuGetContentScanBindingKey = "Nuget" + ContentScanSectionName;
         private const string SymbolsScanBindingKey = "SymbolsScan";
         private const string OrchestratorBindingKey = "Orchestrator";
         private const string FlatContainerBindingKey = "FlatContainer";
@@ -121,8 +125,10 @@ namespace NuGet.Services.Validation.Orchestrator
             services.Configure<OrchestrationRunnerConfiguration>(configurationRoot.GetSection(RunnerConfigurationSectionName));
             services.Configure<EmailConfiguration>(configurationRoot.GetSection(EmailConfigurationSectionName));
             services.Configure<ScanAndSignConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
+            services.Configure<ContentScanConfiguration>(configurationRoot.GetSection(ContentScanSectionName));
             services.Configure<SymbolScanOnlyConfiguration>(configurationRoot.GetSection(SymbolScanOnlySectionName));
             services.Configure<ScanAndSignEnqueuerConfiguration>(configurationRoot.GetSection(ScanAndSignSectionName));
+            services.Configure<ContentScanEnqueuerConfiguration>(configurationRoot.GetSection(ContentScanSectionName));
             services.Configure<FlatContainerConfiguration>(configurationRoot.GetSection(FlatContainerConfigurationSectionName));
             services.Configure<LeaseConfiguration>(configurationRoot.GetSection(LeaseConfigurationSectionName));
             services.Configure<SasDefinitionConfiguration>(configurationRoot.GetSection(SasDefinitionConfigurationSectionName));
@@ -194,6 +200,7 @@ namespace NuGet.Services.Validation.Orchestrator
             services.AddTransient<IBrokeredMessageSerializer<SignatureValidationMessage>, SignatureValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<CertificateValidationMessage>, CertificateValidationMessageSerializer>();
             services.AddTransient<IBrokeredMessageSerializer<ScanAndSignMessage>, ScanAndSignMessageSerializer>();
+            services.AddTransient<IBrokeredMessageSerializer<ContentScanData>, ContentScanMessageSerializer>();
             services.AddTransient<IValidatorStateService, ValidatorStateService>();
             services.AddTransient<ISimpleCloudBlobProvider, SimpleCloudBlobProvider>();
             services.AddTransient<PackageSignatureProcessor>();
@@ -294,6 +301,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     ConfigurePackageSigningValidators(containerBuilder);
                     ConfigurePackageCertificatesValidator(containerBuilder);
                     ConfigureScanAndSignProcessor(containerBuilder);
+                    ConfigureNuGetContentScanValidator(containerBuilder);
                     ConfigureFlatContainer(containerBuilder);
                     break;
                 case ValidatingType.SymbolPackage:
@@ -346,6 +354,11 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<PackageSignatureValidator>()
                 .WithKeyedParameter(typeof(IValidatorStateService), PackageSignatureBindingKey)
                 .As<PackageSignatureValidator>();
+
+            builder
+                .RegisterType<NuGetContentScanValidator>()
+                .WithKeyedParameter(typeof(IValidatorStateService), PackageSignatureBindingKey)
+                .As<NuGetContentScanValidator>();
         }
 
         private static void ConfigurePackageCertificatesValidator(ContainerBuilder builder)
@@ -422,6 +435,36 @@ namespace NuGet.Services.Validation.Orchestrator
                 .RegisterType<ScanAndSignProcessor>()
                 .WithKeyedParameter(typeof(IValidatorStateService), ScanAndSignBindingKey)
                 .AsSelf();
+        }
+
+        private static void ConfigureNuGetContentScanValidator(ContainerBuilder builder)
+        {
+            // Configure the validator state service for the NuGet content scan validator.
+            builder
+                .RegisterType<ValidatorStateService>()
+                .WithParameter(
+                    (pi, ctx) => pi.ParameterType == typeof(string),
+                    (pi, ctx) => ValidatorName.NuGetContentScanValidator)
+                .Keyed<IValidatorStateService>(NuGetContentScanBindingKey);
+
+            builder
+                .Register(c =>
+                {
+                    var configuration = c.Resolve<IOptionsSnapshot<ContentScanConfiguration>>().Value.ServiceBus;
+                    return new TopicClientWrapper(configuration.ConnectionString, configuration.TopicPath);
+                })
+                .Keyed<ITopicClient>(NuGetContentScanBindingKey);
+
+            builder
+                .RegisterType<ContentScanEnqueuer>()
+                .WithKeyedParameter(typeof(ITopicClient), NuGetContentScanBindingKey)
+                .As<IContentScanEnqueuer>();
+
+            // Configure the NuGet content scan validator.
+            builder
+                .RegisterType<NuGetContentScanValidator>()
+                .WithKeyedParameter(typeof(IValidatorStateService), NuGetContentScanBindingKey)
+                .As<NuGetContentScanValidator>();
         }
 
         private static void ConfigureSymbolScanValidator(ContainerBuilder builder)

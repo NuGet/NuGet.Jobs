@@ -9,6 +9,7 @@ namespace NuGet.Jobs.Validation
         public const string ScanAndSign = "ScanAndSign";
         public const string PackageSignatureProcessor = "PackageSigningValidator";
         public const string PackageSignatureValidator = "PackageSigningValidator2";
+        public const string NuGetContentScanValidator = "NuGetContentScanValidator";
 
         public const string SymbolScan = "SymbolScan";
 
