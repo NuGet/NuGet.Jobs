@@ -66,9 +66,6 @@ namespace Microsoft.PackageManagement.Search.Web
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            } else
-            {
-                app.UseHsts();
             }
 
             app.UseRouting();
@@ -76,7 +73,9 @@ namespace Microsoft.PackageManagement.Search.Web
             if (configureCors != null)
             {
                 app.UseCors(configureCors);
-            }            
+            }
+
+            app.UseHsts();
 
             app.Use(async (context, next) =>
             {
