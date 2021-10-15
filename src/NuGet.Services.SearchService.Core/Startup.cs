@@ -93,7 +93,7 @@ namespace NuGet.Services.SearchService
             services.AddHsts(o =>
             {
                 o.IncludeSubDomains = true;
-                o.MaxAge = TimeSpan.FromSeconds(31536000);
+                o.MaxAge = TimeSpan.FromDays(365);
             });
         }
 
