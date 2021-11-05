@@ -190,10 +190,11 @@ namespace Stats.CreateAzureCdnWarehouseReports
             {
                 stopwatch = Stopwatch.StartNew();
 
+                var targets = new List<StorageContainerTarget>();
+                targets.Add(new StorageContainerTarget(_cloudStorageAccount, _statisticsContainerName));
                 var galleryTotalsReport = new GalleryTotalsReport(
                     LoggerFactory.CreateLogger<GalleryTotalsReport>(),
-                    _cloudStorageAccount,
-                    _statisticsContainerName,
+                    targets,
                     OpenSqlConnectionAsync<StatisticsDbConfiguration>,
                     OpenSqlConnectionAsync<GalleryDbConfiguration>,
                     commandTimeoutSeconds: _sqlCommandTimeoutSeconds);
