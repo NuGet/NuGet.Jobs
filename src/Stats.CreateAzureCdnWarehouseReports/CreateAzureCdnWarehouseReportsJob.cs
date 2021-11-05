@@ -27,9 +27,11 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
         private CloudStorageAccount _cloudStorageAccount;
         private CloudStorageAccount _dataStorageAccount;
+        private CloudStorageAccount _additionalGalleryTotalsAccount;
         private string _statisticsContainerName;
         private string _reportNameConfig;
         private string[] _dataContainerNames;
+        private string _additionalGalleryTotalsContainerName;
         private int _sqlCommandTimeoutSeconds = DefaultSqlCommandTimeoutSeconds;
         private int _perPackageReportDegreeOfParallelism = DefaultPerPackageReportDegreeOfParallelism;
         private ApplicationInsightsHelper _applicationInsightsHelper;
@@ -84,6 +86,16 @@ namespace Stats.CreateAzureCdnWarehouseReports
             }
 
             _dataContainerNames = containerNames;
+
+            if (!string.IsNullOrWhiteSpace(configuration.AdditionalGalleryTotalsAccount))
+            {
+                _additionalGalleryTotalsAccount = ValidateAzureCloudStorageAccount(
+                    configuration.AdditionalGalleryTotalsAccount,
+                    nameof(configuration.AdditionalGalleryTotalsAccount));
+
+                _additionalGalleryTotalsContainerName = configuration.AdditionalGalleryTotalsContainerName;
+            }
+
             _applicationInsightsHelper = new ApplicationInsightsHelper(ApplicationInsightsConfiguration.TelemetryConfiguration);
         }
 
@@ -192,6 +204,10 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
                 var targets = new List<StorageContainerTarget>();
                 targets.Add(new StorageContainerTarget(_cloudStorageAccount, _statisticsContainerName));
+                if (_additionalGalleryTotalsAccount != null && !string.IsNullOrWhiteSpace(_additionalGalleryTotalsContainerName))
+                {
+                    targets.Add(new StorageContainerTarget(_additionalGalleryTotalsAccount, _additionalGalleryTotalsContainerName));
+                }
                 var galleryTotalsReport = new GalleryTotalsReport(
                     LoggerFactory.CreateLogger<GalleryTotalsReport>(),
                     targets,
