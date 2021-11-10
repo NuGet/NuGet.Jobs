@@ -208,6 +208,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 if (_additionalGalleryTotalsAccount != null && !string.IsNullOrWhiteSpace(_additionalGalleryTotalsContainerName))
                 {
                     targets.Add(new StorageContainerTarget(_additionalGalleryTotalsAccount, _additionalGalleryTotalsContainerName));
+                    Logger.LogInformation("Added additional target for stats totals report");
                 }
                 var galleryTotalsReport = new GalleryTotalsReport(
                     LoggerFactory.CreateLogger<GalleryTotalsReport>(),
