@@ -92,6 +92,7 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 _additionalGalleryTotalsAccount = ValidateAzureCloudStorageAccount(
                     configuration.AdditionalGalleryTotalsAccount,
                     nameof(configuration.AdditionalGalleryTotalsAccount));
+                Logger.LogInformation("Additional totals account found {BlobEndpoint}", _additionalGalleryTotalsAccount.BlobEndpoint);
 
                 _additionalGalleryTotalsContainerName = configuration.AdditionalGalleryTotalsContainerName;
             }
