@@ -72,8 +72,6 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
             var reportText = JsonConvert.SerializeObject(totalsData);
 
-            _logger.LogInformation("num report targets: {NumStatsTotalsTargets}", Targets.Count);
-
             foreach (var storageContainerTarget in Targets)
             {
                 try

@@ -87,14 +87,14 @@ namespace Stats.CreateAzureCdnWarehouseReports
 
             _dataContainerNames = containerNames;
 
-            if (!string.IsNullOrWhiteSpace(configuration.AdditionalGalleryTotalsAccount))
+            if (!string.IsNullOrWhiteSpace(configuration.AdditionalGalleryTotalsStorageAccount))
             {
                 _additionalGalleryTotalsAccount = ValidateAzureCloudStorageAccount(
-                    configuration.AdditionalGalleryTotalsAccount,
-                    nameof(configuration.AdditionalGalleryTotalsAccount));
+                    configuration.AdditionalGalleryTotalsStorageAccount,
+                    nameof(configuration.AdditionalGalleryTotalsStorageAccount));
                 Logger.LogInformation("Additional totals account found {BlobEndpoint}", _additionalGalleryTotalsAccount.BlobEndpoint);
 
-                _additionalGalleryTotalsContainerName = configuration.AdditionalGalleryTotalsContainerName;
+                _additionalGalleryTotalsContainerName = configuration.AdditionalGalleryTotalsStorageContainerName;
             }
 
             _applicationInsightsHelper = new ApplicationInsightsHelper(ApplicationInsightsConfiguration.TelemetryConfiguration);
@@ -208,7 +208,9 @@ namespace Stats.CreateAzureCdnWarehouseReports
                 if (_additionalGalleryTotalsAccount != null && !string.IsNullOrWhiteSpace(_additionalGalleryTotalsContainerName))
                 {
                     targets.Add(new StorageContainerTarget(_additionalGalleryTotalsAccount, _additionalGalleryTotalsContainerName));
-                    Logger.LogInformation("Added additional target for stats totals report");
+                    Logger.LogInformation("Added additional target for stats totals report {BlobEndpoint}/{Container}",
+                        _additionalGalleryTotalsAccount.BlobEndpoint,
+                        _additionalGalleryTotalsContainerName);
                 }
                 var galleryTotalsReport = new GalleryTotalsReport(
                     LoggerFactory.CreateLogger<GalleryTotalsReport>(),
