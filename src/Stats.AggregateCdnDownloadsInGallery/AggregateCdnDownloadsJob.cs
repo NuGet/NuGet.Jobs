@@ -8,6 +8,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Autofac;
 using Microsoft.Extensions.Configuration;
@@ -61,6 +62,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
 
         private AggregateCdnDownloadsConfiguration _configuration;
         private int _commandTimeoutSeconds;
+        private HttpClient _httpClient;
 
         public override void Init(IServiceContainer serviceContainer, IDictionary<string, string> jobArgsDictionary)
         {
@@ -68,9 +70,62 @@ namespace Stats.AggregateCdnDownloadsInGallery
 
             _configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<AggregateCdnDownloadsConfiguration>>().Value;
             _commandTimeoutSeconds = _configuration.CommandTimeoutSeconds ?? _defaultCommandTimeoutSeconds;
+            _httpClient = _serviceProvider.GetRequiredService<HttpClient>();
         }
 
         public override async Task Run()
+        {
+            var downloadData = await GetDownloadDataFromStatsDbAsync();
+
+            if (!downloadData.Any())
+            {
+                Logger.LogInformation("No download data to process.");
+                return;
+            }
+
+            using (var connection = await OpenSqlConnectionAsync<GalleryDbConfiguration>())
+            {
+                // Fetch package registrations so we can match package ID to package registration key.
+                var packageRegistrationLookup = await GetPackageRegistrations(connection);
+
+                // Group based on package ID and store in a stack for easy incremental processing.
+                var allGroups = downloadData.GroupBy(p => p.PackageId).ToList();
+                var filteredGroups = allGroups.Where(g => IsValidGroup(packageRegistrationLookup, g)).ToList();
+                var removedCount = allGroups.Count - filteredGroups.Count;
+                Logger.LogInformation("{TotalGroupCount} package ID groups were found in the statistics database.", allGroups.Count);
+                Logger.LogInformation("{RemovedGroupCount} package ID groups were filtered out because they aren't in the gallery database.", removedCount);
+                Logger.LogInformation("{RemainingGroupCount} package ID groups will be processed.", filteredGroups.Count);
+
+                var remainingGroups = new Stack<IPackageIdGroup>(filteredGroups);
+
+                var stopwatch = Stopwatch.StartNew();
+
+                while (remainingGroups.Any())
+                {
+                    // Create a batch of one or more package registrations to update.
+                    var batch = PopGroupBatch(remainingGroups, _configuration.BatchSize);
+
+                    await ProcessBatch(batch, connection, packageRegistrationLookup);
+
+                    Logger.LogInformation(
+                        "There are {GroupCount} package registration groups remaining.",
+                        remainingGroups.Count);
+
+                    if (remainingGroups.Any())
+                    {
+                        Logger.LogInformation("Sleeping for {BatchSleepSeconds} seconds before continuing.", _configuration.BatchSleepSeconds);
+                        await Task.Delay(TimeSpan.FromSeconds(_configuration.BatchSleepSeconds));
+                    }
+                }
+
+                stopwatch.Stop();
+                Logger.LogInformation(
+                    "It took {DurationSeconds} seconds to update all download counts.",
+                    stopwatch.Elapsed.TotalSeconds);
+            }
+        }
+
+        private async Task<IReadOnlyList<DownloadCountData>> GetDownloadDataFromStatsDbAsync()
         {
             // Gather download counts data from statistics warehouse
             IReadOnlyList<DownloadCountData> downloadData;
@@ -101,52 +156,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
                 downloadData.Count,
                 stopwatch.Elapsed.TotalSeconds);
 
-            if (!downloadData.Any())
-            {
-                Logger.LogInformation("No download data to process.");
-                return;
-            }
-
-            using (var connection = await OpenSqlConnectionAsync<GalleryDbConfiguration>())
-            {
-                // Fetch package registrations so we can match package ID to package registration key.
-                var packageRegistrationLookup = await GetPackageRegistrations(connection);
-
-                // Group based on package ID and store in a stack for easy incremental processing.
-                var allGroups = downloadData.GroupBy(p => p.PackageId).ToList();
-                var filteredGroups = allGroups.Where(g => IsValidGroup(packageRegistrationLookup, g)).ToList();
-                var removedCount = allGroups.Count - filteredGroups.Count;
-                Logger.LogInformation("{TotalGroupCount} package ID groups were found in the statistics database.", allGroups.Count);
-                Logger.LogInformation("{RemovedGroupCount} package ID groups were filtered out because they aren't in the gallery database.", removedCount);
-                Logger.LogInformation("{RemainingGroupCount} package ID groups will be processed.", filteredGroups.Count);
-
-                var remainingGroups = new Stack<IPackageIdGroup>(filteredGroups);
-
-                stopwatch.Restart();
-
-                while (remainingGroups.Any())
-                {
-                    // Create a batch of one or more package registrations to update.
-                    var batch = PopGroupBatch(remainingGroups, _configuration.BatchSize);
-
-                    await ProcessBatch(batch, connection, packageRegistrationLookup);
-
-                    Logger.LogInformation(
-                        "There are {GroupCount} package registration groups remaining.",
-                        remainingGroups.Count);
-
-                    if (remainingGroups.Any())
-                    {
-                        Logger.LogInformation("Sleeping for {BatchSleepSeconds} seconds before continuing.", _configuration.BatchSleepSeconds);
-                        await Task.Delay(TimeSpan.FromSeconds(_configuration.BatchSleepSeconds));
-                    }
-                }
-
-                stopwatch.Stop();
-                Logger.LogInformation(
-                    "It took {DurationSeconds} seconds to update all download counts.",
-                    stopwatch.Elapsed.TotalSeconds);
-            }
+            return downloadData;
         }
 
         private async Task ProcessBatch(List<IPackageIdGroup> batch, SqlConnection destinationDatabase, IDictionary<string, PackageRegistrationData> packageRegistrationLookup)
