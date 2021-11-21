@@ -44,7 +44,6 @@ namespace NuGet.Jobs.Validation
             base.ConfigureDefaultJobServices(services, configurationRoot);
 
             ConfigureFeatureFlagServices(services, configurationRoot);
-            services.AddTransient<IFeatureFlagService, FeatureFlagService>();
             ConfigureDatabaseServices(services);
 
             services.AddTransient<ICommonTelemetryService, CommonTelemetryService>();
@@ -113,6 +112,12 @@ namespace NuGet.Jobs.Validation
                     (pi, ctx) => pi.ParameterType == typeof(ITopicClient),
                     (pi, ctx) => ctx.ResolveKeyed<TopicClientWrapper>(PackageValidationServiceBusBindingKey)))
                 .As<IPackageValidationEnqueuer>();
+        }
+
+        public static new void ConfigureFeatureFlagServices(IServiceCollection services, IConfigurationRoot configurationRoot = null)
+        {
+            JsonConfigurationJob.ConfigureFeatureFlagServices(services, configurationRoot);
+            services.AddTransient<IFeatureFlagService, FeatureFlagService>();
         }
 
         private void ConfigureDatabaseServices(IServiceCollection services)

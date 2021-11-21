@@ -229,7 +229,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
             ConfigureFileServices(services, configurationRoot);
             ConfigureOrchestratorSymbolTypes(services);
-            JsonConfigurationJob.ConfigureFeatureFlagServices(services, configurationRoot);
+            ValidationJobBase.ConfigureFeatureFlagServices(services, configurationRoot);
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder, IConfigurationRoot configurationRoot)
