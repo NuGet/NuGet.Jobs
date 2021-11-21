@@ -13,10 +13,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using NuGet.Jobs.Configuration;
 using NuGet.Services.Configuration;
+using NuGet.Services.FeatureFlags;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Logging;
+using NuGetGallery;
+using NuGetGallery.Diagnostics;
+using NuGetGallery.Features;
 
 namespace NuGet.Jobs
 {
@@ -29,6 +35,9 @@ namespace NuGet.Jobs
         private const string ValidationDbConfigurationSectionName = "ValidationDb";
         private const string ServiceBusConfigurationSectionName = "ServiceBus";
         private const string ValidationStorageConfigurationSectionName = "ValidationStorage";
+        private const string FeatureFlagConfigurationSectionName = "FeatureFlags";
+
+        private const string FeatureFlagBindingKey = nameof(FeatureFlagBindingKey);
 
         private bool testDatabaseConnections = true;
 
@@ -69,6 +78,10 @@ namespace NuGet.Jobs
             var configurationFilename = JobConfigurationManager.GetArgument(jobArgsDictionary, ConfigurationArgument);
             var configurationRoot = GetConfigurationRoot(configurationFilename, out var secretInjector, out var secretReader);
 
+            if (_serviceProvider != null && _serviceProvider is IDisposable disposableProvider)
+            {
+                disposableProvider.Dispose();
+            }
             _serviceProvider = GetServiceProvider(configurationRoot, secretInjector, secretReader);
 
             if (!_validateOnly)
@@ -148,6 +161,8 @@ namespace NuGet.Jobs
 
             services.AddSingleton(new TelemetryClient(ApplicationInsightsConfiguration.TelemetryConfiguration));
             services.AddTransient<ITelemetryClient, TelemetryClientWrapper>();
+            services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
+            services.AddTransient<ICloudBlobContainerInformationProvider, GalleryCloudBlobContainerInformationProvider>();
 
             AddScopedSqlConnectionFactory<GalleryDbConfiguration>(services);
             AddScopedSqlConnectionFactory<StatisticsDbConfiguration>(services);
@@ -168,6 +183,66 @@ namespace NuGet.Jobs
                     CreateSqlConnectionAsync<TDbConfiguration>,
                     p.GetRequiredService<ILogger<DelegateSqlConnectionFactory<TDbConfiguration>>>());
             });
+        }
+
+        public static void ConfigureFeatureFlagAutofacServices(ContainerBuilder containerBuilder)
+        {
+            containerBuilder
+                .Register(c =>
+                {
+                    var options = c.Resolve<IOptionsSnapshot<FeatureFlagConfiguration>>();
+                    return new CloudBlobClientWrapper(
+                        options.Value.ConnectionString,
+                        GetFeatureFlagBlobRequestOptions());
+                })
+                .Keyed<ICloudBlobClient>(FeatureFlagBindingKey);
+
+            containerBuilder
+                .Register(c => new CloudBlobCoreFileStorageService(
+                    c.ResolveKeyed<ICloudBlobClient>(FeatureFlagBindingKey),
+                    c.Resolve<IDiagnosticsService>(),
+                    c.Resolve<ICloudBlobContainerInformationProvider>()))
+                .Keyed<ICoreFileStorageService>(FeatureFlagBindingKey);
+
+            containerBuilder
+                .Register(c => new FeatureFlagFileStorageService(
+                    c.ResolveKeyed<ICoreFileStorageService>(FeatureFlagBindingKey)))
+                .As<IFeatureFlagStorageService>();
+        }
+
+        public static void ConfigureFeatureFlagServices(IServiceCollection services, IConfigurationRoot configurationRoot = null)
+        {
+            if (configurationRoot != null)
+            {
+                services.Configure<FeatureFlagConfiguration>(configurationRoot.GetSection(FeatureFlagConfigurationSectionName));
+            }
+
+            services
+                .AddTransient(p =>
+                {
+                    var options = p.GetRequiredService<IOptionsSnapshot<FeatureFlagConfiguration>>();
+                    return new FeatureFlagOptions
+                    {
+                        RefreshInterval = options.Value.RefreshInternal,
+                    };
+                });
+
+            services.AddTransient<IFeatureFlagClient, FeatureFlagClient>();
+            services.AddTransient<IFeatureFlagTelemetryService, FeatureFlagTelemetryService>();
+
+            services.AddSingleton<IFeatureFlagCacheService, FeatureFlagCacheService>();
+            services.AddSingleton<IFeatureFlagRefresher, FeatureFlagRefresher>();
+        }
+
+        private static BlobRequestOptions GetFeatureFlagBlobRequestOptions()
+        {
+            return new BlobRequestOptions
+            {
+                ServerTimeout = TimeSpan.FromMinutes(2),
+                MaximumExecutionTime = TimeSpan.FromMinutes(10),
+                LocationMode = LocationMode.PrimaryThenSecondary,
+                RetryPolicy = new ExponentialRetry(),
+            };
         }
 
         private void ConfigureLibraries(IServiceCollection services)
