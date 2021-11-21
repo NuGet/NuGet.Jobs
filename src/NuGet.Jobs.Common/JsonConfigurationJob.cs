@@ -132,7 +132,6 @@ namespace NuGet.Jobs
                 services.AddSingleton(secretReader);
             }
 
-            services.AddSingleton(ApplicationInsightsConfiguration.TelemetryConfiguration);
             services.AddSingleton<IConfiguration>(configurationRoot);
 
             ConfigureLibraries(services);
@@ -143,6 +142,13 @@ namespace NuGet.Jobs
             var containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(services);
             containerBuilder.RegisterAssemblyModules(GetType().Assembly);
+
+            // TelemetryConfiguration implements IDisposable, so we'll tell Autofac
+            // not to dispose of it when container is disposed of. Otherwise, on second and
+            // subsequent job runs we'll end up without telemetry configuration.
+            containerBuilder
+                .RegisterInstance(ApplicationInsightsConfiguration.TelemetryConfiguration)
+                .ExternallyOwned();
 
             ConfigureDefaultAutofacServices(containerBuilder, configurationRoot);
             ConfigureAutofacServices(containerBuilder, configurationRoot);
