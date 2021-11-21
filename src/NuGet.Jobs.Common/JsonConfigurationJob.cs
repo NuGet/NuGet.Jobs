@@ -143,11 +143,14 @@ namespace NuGet.Jobs
             containerBuilder.Populate(services);
             containerBuilder.RegisterAssemblyModules(GetType().Assembly);
 
-            // TelemetryConfiguration implements IDisposable, so we'll tell Autofac
+            // Classes below implement IDisposable, so we'll tell Autofac
             // not to dispose of it when container is disposed of. Otherwise, on second and
-            // subsequent job runs we'll end up without telemetry configuration.
+            // subsequent job runs we'll end up with them disposed.
             containerBuilder
                 .RegisterInstance(ApplicationInsightsConfiguration.TelemetryConfiguration)
+                .ExternallyOwned();
+            containerBuilder
+                .RegisterInstance(LoggerFactory)
                 .ExternallyOwned();
 
             ConfigureDefaultAutofacServices(containerBuilder, configurationRoot);
@@ -255,7 +258,6 @@ namespace NuGet.Jobs
         {
             // Use the custom NonCachingOptionsSnapshot so that KeyVault secret injection works properly.
             services.Add(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(NonCachingOptionsSnapshot<>)));
-            services.AddSingleton(LoggerFactory);
             services.AddLogging();
         }
 
