@@ -104,7 +104,6 @@ namespace NuGet.Services.V3
             JsonConfigurationJob.ConfigureFeatureFlagServices(services);
 
             services.AddTransient<IFeatureFlagTelemetryService, V3TelemetryService>();
-            services.AddTransient<ICloudBlobContainerInformationProvider, GalleryCloudBlobContainerInformationProvider>();
 
             return services;
         }
