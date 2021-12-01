@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using NuGet.Services.Entities;
 
 namespace NuGet.Services.Validation.Orchestrator
@@ -30,5 +31,11 @@ namespace NuGet.Services.Validation.Orchestrator
         /// <param name="validationId">The validation ID.</param>
         /// <returns>The validation set, or null.</returns>
         Task<PackageValidationSet> TryGetParentValidationSetAsync(Guid validationId);
+
+
+        Task<PackageValidationSet> TryCreateGenericValidationSetAsync(Guid validationTrackingId, string contentType, JObject properties);
+
+        Task<PackageValidationSet> TryGetGenericValidationSetAsync(Guid validationTrackingId);
+
     }
 }

@@ -89,9 +89,85 @@ namespace NuGet.Services.Validation.Orchestrator
                     return await CheckValidatorAsync(message.CheckValidator);
                 case PackageValidationMessageType.ProcessValidationSet:
                     return await ProcessValidationSetAsync(message.ProcessValidationSet, message.DeliveryCount);
+
+                case PackageValidationMessageType.StartValidation:
+                    return await StartGenericValidationAsync(message.StartValidation);
+                case PackageValidationMessageType.CheckValidationSet:
+                    return await CheckGenericValidationSetAsync(message.CheckValidationSet);
+
                 default:
                     throw new NotSupportedException($"The package validation message type '{message.Type}' is not supported.");
             }
+        }
+
+        private async Task<bool> StartGenericValidationAsync(StartValidationData message)
+        {
+            using (_logger.BeginScope("Starting generic validation set {ValidationSetId} for {ContentType} {ContentUrl} with {ContentProperties}",
+                message.ValidationTrackingId,
+                message.ContentType,
+                message.ContentUrl,
+                message.Properties.ToString()))
+            {
+                var lease = await TryAcquireGenericLeaseAsync(message.ValidationTrackingId);
+                if (lease.State == LeaseContextState.Unavailable)
+                {
+                    _logger.LogInformation(
+                        "The lease {ResourceName} is unavailable. Retrying this message in {LeaseTime}.",
+                        lease.ResourceName,
+                        LeaseTime);
+                    var messageData = PackageValidationMessageData.NewStartValidation(
+                        message.ValidationTrackingId,
+                        message.ContentType,
+                        message.ContentUrl,
+                        message.Properties);
+                    var postponeUntil = DateTimeOffset.UtcNow + LeaseTime;
+                    await _validationEnqueuer.SendMessageAsync(messageData, postponeUntil);
+                    return true;
+                }
+
+                try
+                {
+                    var validationSet = await _validationSetProvider.TryCreateGenericValidationSetAsync(message.ValidationTrackingId, message.ContentType, message.Properties);
+                    await ProcessGenericValidationSetAsync(validationSet);
+                }
+                finally
+                {
+                    await TryReleaseLeaseAsync(lease);
+                }
+            }
+
+            return true;
+        }
+
+        private async Task<bool> CheckGenericValidationSetAsync(CheckValidationSetData message)
+        {
+            using (_logger.BeginScope("Processing generic validation set {ValidationSetId}, extend: {ExtendExpireation}", message.ValidationTrackingId, message.ExtendExpiration))
+            {
+                var lease = await TryAcquireGenericLeaseAsync(message.ValidationTrackingId);
+                if (lease.State == LeaseContextState.Unavailable)
+                {
+                    _logger.LogInformation(
+                        "The lease {ResourceName} is unavailable. Retrying this message in {LeaseTime}.",
+                        lease.ResourceName,
+                        LeaseTime);
+                    var messageData = PackageValidationMessageData.NewCheckValidationSet(message.ValidationTrackingId, message.ExtendExpiration);
+                    var postponeUntil = DateTimeOffset.UtcNow + LeaseTime;
+                    await _validationEnqueuer.SendMessageAsync(messageData, postponeUntil);
+                    return true;
+                }
+
+                try
+                {
+                    var validationSet = await _validationSetProvider.TryGetGenericValidationSetAsync(message.ValidationTrackingId);
+                    await ProcessGenericValidationSetAsync(validationSet);
+                }
+                finally
+                {
+                    await TryReleaseLeaseAsync(lease);
+                }
+            }
+
+            return true;
         }
 
         private async Task<bool> CheckValidatorAsync(CheckValidatorData message)
@@ -304,12 +380,22 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private async Task<LeaseContext> TryAcquireLeaseAsync(string id, string normalizedVersion)
         {
+            var resourceName = $"{ValidatingType}/{id.ToLowerInvariant()}/{normalizedVersion.ToLowerInvariant()}";
+            return await TryAcquireLeaseAsync(resourceName);
+        }
+
+        private async Task<LeaseContext> TryAcquireGenericLeaseAsync(Guid validationTrackingId)
+        {
+            var resourceName = $"{Validation.ValidatingType.Generic}/{validationTrackingId}";
+            return await TryAcquireLeaseAsync(resourceName);
+        }
+
+        private async Task<LeaseContext> TryAcquireLeaseAsync(string resourceName)
+        {
             if (!_featureFlagService.IsOrchestratorLeaseEnabled())
             {
                 return new LeaseContext(LeaseContextState.Skipped, resourceName: null, leaseId: null);
             }
-
-            var resourceName = $"{ValidatingType}/{id.ToLowerInvariant()}/{normalizedVersion.ToLowerInvariant()}";
 
             _logger.LogInformation(
                 "Attempting to acquire lease {ResourceName} for {LeaseTime}.",
@@ -366,6 +452,11 @@ namespace NuGet.Services.Validation.Orchestrator
                     lease.ResourceName,
                     lease.LeaseId);
             }
+        }
+
+        private async Task ProcessGenericValidationSetAsync(PackageValidationSet validationSet)
+        {
+
         }
 
         private async Task ProcessValidationSetAsync(
