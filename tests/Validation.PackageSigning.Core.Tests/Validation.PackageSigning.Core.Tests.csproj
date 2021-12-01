@@ -71,7 +71,7 @@
     <PackageReference Include="Newtonsoft.Json">
       <Version>12.0.2</Version>
     </PackageReference>
-	<!-- Explicit dependency added for component governance; Root dependency is Test.Utility -->
+    <!-- Explicit dependency added for component governance; Root dependency is Test.Utility -->
     <PackageReference Include="Portable.BouncyCastle">
       <Version>1.8.8</Version>
     </PackageReference>
