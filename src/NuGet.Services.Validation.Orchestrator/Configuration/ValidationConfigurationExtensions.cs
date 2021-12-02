@@ -12,7 +12,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
         public static List<ValidationConfigurationItem> GetClassicValidationConfiguration(this ValidationConfiguration validationConfiguration)
         {
-            if (validationConfiguration?.ValidationSteps?.TryGetValue(NuGetValidationStepContentType, out var nugetList) == true)
+            List<ValidationConfigurationItem> nugetList = null;
+            if (validationConfiguration?.ValidationSteps?.TryGetValue(NuGetValidationStepContentType, out nugetList) == true)
             {
                 return nugetList;
             }
