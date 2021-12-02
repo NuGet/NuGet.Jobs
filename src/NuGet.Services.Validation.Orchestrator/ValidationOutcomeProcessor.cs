@@ -49,7 +49,7 @@ namespace NuGet.Services.Validation.Orchestrator
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _validationConfigurationsByName = _validationConfiguration.Validations.ToDictionary(v => v.Name);
+            _validationConfigurationsByName = _validationConfiguration.GetClassicValidationConfiguration().ToDictionary(v => v.Name);
         }
 
         public async Task ProcessValidationOutcomeAsync(

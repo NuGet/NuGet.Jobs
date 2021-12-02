@@ -266,7 +266,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private ValidationConfigurationItem GetValidationConfiguration(string validationName)
         {
-            return _validationConfiguration.Validations
+            return _validationConfiguration.GetClassicValidationConfiguration()
                 .FirstOrDefault(v => v.Name == validationName);
         }
 
@@ -306,7 +306,7 @@ namespace NuGet.Services.Validation.Orchestrator
                 .Where(v => v.ValidationStatus == ValidationStatus.Succeeded)
                 .Select(v => v.Type));
             var requiredValidations = _validationConfiguration
-                .Validations
+                .GetClassicValidationConfiguration()
                 .Single(v => v.Name == packageValidation.Type).RequiredValidations;
 
             return completeValidations.IsSupersetOf(requiredValidations);

@@ -644,7 +644,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         {
             for (int cfgValidatorIndex = 0; cfgValidatorIndex < numConfiguredValidators; ++cfgValidatorIndex)
             {
-                Configuration.Validations.Add(new ValidationConfigurationItem
+                Configuration.ValidationSteps[ValidationStepsContentType.NuGet].Add(new ValidationConfigurationItem
                 {
                     Name = "validation" + cfgValidatorIndex,
                     TrackAfter = TimeSpan.FromDays(1),
@@ -718,7 +718,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             LoggerMock = new Mock<ILogger<ValidationOutcomeProcessor<Package>>>();
 
             Configuration = new ValidationConfiguration();
-            Configuration.Validations = new List<ValidationConfigurationItem>();
+            Configuration.ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>();
+            Configuration.ValidationSteps.Add(ValidationStepsContentType.NuGet, new List<ValidationConfigurationItem>());
             Package = new Package
             {
                 PackageRegistration = new PackageRegistration { Id = "package" },
@@ -791,7 +792,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationStatus = validationStatus,
                 PackageValidationIssues = new List<PackageValidationIssue> { },
             });
-            Configuration.Validations.Add(new ValidationConfigurationItem
+            Configuration.ValidationSteps[ValidationStepsContentType.NuGet].Add(new ValidationConfigurationItem
             {
                 Name = validationName,
                 TrackAfter = trackAfter ?? TimeSpan.FromDays(1),

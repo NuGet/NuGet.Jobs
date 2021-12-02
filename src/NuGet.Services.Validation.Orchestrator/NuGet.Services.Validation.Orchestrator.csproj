@@ -50,6 +50,7 @@
     <Compile Include="Configuration\FlatContainerConfiguration.cs" />
     <Compile Include="Configuration\SasDefinitionConfiguration.cs" />
     <Compile Include="Configuration\TopologicalSort.cs" />
+    <Compile Include="Configuration\ValidationConfigurationExtensions.cs" />
     <Compile Include="ContainerBuilderExtensions.cs" />
     <Compile Include="Configuration\CoreMessageServiceConfiguration.cs" />
     <Compile Include="Configuration\EmailConfiguration.cs" />

@@ -52,7 +52,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void CheckValidationsNumber()
         {
-            if (_configuration.Validations == null || !_configuration.Validations.Any())
+            var classicValidationConfiguration = _configuration.GetClassicValidationConfiguration();
+            if (classicValidationConfiguration == null || !classicValidationConfiguration.Any())
             {
                 throw new ConfigurationErrorsException("Must have at least one validation declared");
             }
@@ -60,7 +61,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void CheckPropertyValues()
         {
-            foreach (var validationConfigurationItem in _configuration.Validations)
+            foreach (var validationConfigurationItem in _configuration.GetClassicValidationConfiguration())
             {
                 if (string.IsNullOrWhiteSpace(validationConfigurationItem.Name))
                 {
@@ -76,7 +77,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void CheckDuplicateValidations()
         {
-            var duplicateValidations = _configuration.Validations
+            var duplicateValidations = _configuration.GetClassicValidationConfiguration()
                 .Select(v => v.Name)
                 .GroupBy(n => n)
                 .Where(g => g.Count() > 1)
@@ -89,8 +90,8 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void CheckUnknownPrerequisites()
         {
-            var declaredValidations = new HashSet<string>(_configuration.Validations.Select(v => v.Name));
-            var prerequisites = new HashSet<string>(_configuration.Validations.Select(v => v.RequiredValidations).SelectMany(p => p));
+            var declaredValidations = new HashSet<string>(_configuration.GetClassicValidationConfiguration().Select(v => v.Name));
+            var prerequisites = new HashSet<string>(_configuration.GetClassicValidationConfiguration().Select(v => v.RequiredValidations).SelectMany(p => p));
             prerequisites.ExceptWith(declaredValidations);
             if (prerequisites.Any())
             {
@@ -100,7 +101,7 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void CheckUnknownValidators()
         {
-            foreach (var validatorItem in _configuration.Validations)
+            foreach (var validatorItem in _configuration.GetClassicValidationConfiguration())
             {
                 if (!_validatorProvider.IsNuGetValidator(validatorItem.Name))
                 {
@@ -116,8 +117,8 @@ namespace NuGet.Services.Validation.Orchestrator
             // we'll just walk up the dependency chain of each runnable validation and look for 
             // not runnable validations
 
-            var validations = _configuration.Validations.ToDictionary(v => v.Name);
-            var runnableValidations = _configuration.Validations.Where(v => v.ShouldStart);
+            var validations = _configuration.GetClassicValidationConfiguration().ToDictionary(v => v.Name);
+            var runnableValidations = _configuration.GetClassicValidationConfiguration().Where(v => v.ShouldStart);
 
             foreach (var validation in runnableValidations)
             {
@@ -138,12 +139,12 @@ namespace NuGet.Services.Validation.Orchestrator
         private void CheckForCyclesAndParallelProcessors()
         {
             var processorNames = _configuration
-                .Validations
+                .GetClassicValidationConfiguration()
                 .Select(x => x.Name)
                 .Where(x => _validatorProvider.IsNuGetProcessor(x))
                 .ToList();
 
-            TopologicalSort.Validate(_configuration.Validations, processorNames);
+            TopologicalSort.Validate(_configuration.GetClassicValidationConfiguration(), processorNames);
         }
     }
 }

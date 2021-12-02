@@ -46,6 +46,7 @@
     <Compile Include="Configuration\ConfigurationValidatorFacts.cs" />
     <Compile Include="Configuration\CoreMessageServiceConfigurationFacts.cs" />
     <Compile Include="Configuration\TopologicalSortFacts.cs" />
+    <Compile Include="Configuration\ValidationStepsContentType.cs" />
     <Compile Include="Services\SymbolsMessageServiceFacts.cs" />
     <Compile Include="Services\MessageServiceFacts.cs" />
     <Compile Include="OrchestrationRunnerFacts.cs" />

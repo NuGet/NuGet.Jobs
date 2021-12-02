@@ -442,8 +442,14 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             TelemetryServiceMock = new Mock<ITelemetryService>(telemetryServiceMockBehavior);
             Configuration = new ValidationConfiguration
             {
-                Validations = new List<ValidationConfigurationItem>
+                ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
+                    {
+                        ValidationStepsContentType.NuGet,
+                        new List<ValidationConfigurationItem>
+                        {
+                        }
+                    }
                 },
                 TimeoutValidationSetAfter = TimeSpan.FromDays(5),
             };
@@ -523,7 +529,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ShouldStart = shouldStart,
                 FailureBehavior = failureBehavior
             };
-            Configuration.Validations.Add(validation);
+            Configuration.ValidationSteps[ValidationStepsContentType.NuGet].Add(validation);
             return validation;
         }
 

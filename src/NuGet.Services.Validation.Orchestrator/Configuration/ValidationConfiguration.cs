@@ -12,9 +12,11 @@ namespace NuGet.Services.Validation.Orchestrator
     public class ValidationConfiguration
     {
         /// <summary>
-        /// List of validations to run with their settings and dependencies
+        /// Dictionary of validation lists to run for each content type.
+        /// Key is content type, value is the list of validations to run with their respective settings.
+        /// "Classic" validation pipeline will use "NuGet" as key for its validations.
         /// </summary>
-        public List<ValidationConfigurationItem> Validations { get; set; }
+        public Dictionary<string, List<ValidationConfigurationItem>> ValidationSteps { get; set; }
 
         /// <summary>
         /// Connection string to storage account with packages to validate

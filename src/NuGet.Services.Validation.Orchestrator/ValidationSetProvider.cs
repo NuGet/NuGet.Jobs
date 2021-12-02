@@ -162,7 +162,7 @@ namespace NuGet.Services.Validation.Orchestrator
             };
 
             var validationsToStart = _validationConfiguration
-                .Validations
+                .GetClassicValidationConfiguration()
                 .Where(v => v.ShouldStart);
 
             foreach (var validation in validationsToStart)
