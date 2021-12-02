@@ -140,7 +140,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     ValidationStepsContentType.NuGet,
                     new List<ValidationConfigurationItem>
                     {
-                        new ValidationConfigurationItem(){ Name = validation1, TrackAfter = TimeSpan.FromDays(1), RequiredValidations = new List<string>{ } }
+                        new ValidationConfigurationItem()
+                        {
+                            Name = validation1,
+                            TrackAfter = TimeSpan.FromDays(1),
+                            RequiredValidations = new List<string>()
+                        }
                     }
                 }
             };
@@ -532,7 +537,12 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                     ValidationStepsContentType.NuGet,
                     new List<ValidationConfigurationItem>
                     {
-                        new ValidationConfigurationItem(){ Name = validation1, TrackAfter = TimeSpan.FromDays(1), RequiredValidations = new List<string>{ } }
+                        new ValidationConfigurationItem
+                        {
+                            Name = validation1,
+                            TrackAfter = TimeSpan.FromDays(1),
+                            RequiredValidations = new List<string>()
+                        }
                     }
                 }
             };
