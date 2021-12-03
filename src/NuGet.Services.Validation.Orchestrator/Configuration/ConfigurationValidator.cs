@@ -52,60 +52,79 @@ namespace NuGet.Services.Validation.Orchestrator
 
         private void CheckValidationsNumber()
         {
-            var classicValidationConfiguration = _configuration.GetClassicValidationConfiguration();
-            if (classicValidationConfiguration == null || !classicValidationConfiguration.Any())
+            if (_configuration.ValidationSteps == null || !_configuration.ValidationSteps.Any())
             {
-                throw new ConfigurationErrorsException("Must have at least one validation declared");
+                throw new ConfigurationErrorsException("Must have at least one validation declared.");
+            }
+
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
+            {
+                if (validationConfiguration.Value == null || !validationConfiguration.Value.Any())
+                {
+                    throw new ConfigurationErrorsException($"No validation steps defined for {validationConfiguration.Key} content type.");
+                }
             }
         }
 
         private void CheckPropertyValues()
         {
-            foreach (var validationConfigurationItem in _configuration.GetClassicValidationConfiguration())
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
             {
-                if (string.IsNullOrWhiteSpace(validationConfigurationItem.Name))
+                foreach (var validationConfigurationItem in validationConfiguration.Value)
                 {
-                    throw new ConfigurationErrorsException("Validation name cannot be empty");
-                }
+                    if (string.IsNullOrWhiteSpace(validationConfigurationItem.Name))
+                    {
+                        throw new ConfigurationErrorsException($"Validation name cannot be empty for {validationConfiguration.Key} content type.");
+                    }
 
-                if (validationConfigurationItem.TrackAfter == TimeSpan.Zero)
-                {
-                    throw new ConfigurationErrorsException($"{nameof(validationConfigurationItem.TrackAfter)} must be set for validation {validationConfigurationItem.Name}");
+                    if (validationConfigurationItem.TrackAfter == TimeSpan.Zero)
+                    {
+                        throw new ConfigurationErrorsException($"{nameof(validationConfigurationItem.TrackAfter)} must be set for validation {validationConfigurationItem.Name} for {validationConfiguration.Key} content type.");
+                    }
                 }
             }
         }
 
         private void CheckDuplicateValidations()
         {
-            var duplicateValidations = _configuration.GetClassicValidationConfiguration()
-                .Select(v => v.Name)
-                .GroupBy(n => n)
-                .Where(g => g.Count() > 1)
-                .ToList();
-            if (duplicateValidations.Any())
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
             {
-                throw new ConfigurationErrorsException($"Duplicate validations: {string.Join(", ", duplicateValidations.Select(d => d.Key))}");
+                var duplicateValidations = validationConfiguration.Value
+                    .Select(v => v.Name)
+                    .GroupBy(n => n)
+                    .Where(g => g.Count() > 1)
+                    .ToList();
+                if (duplicateValidations.Any())
+                {
+                    throw new ConfigurationErrorsException($"Duplicate validations: {string.Join(", ", duplicateValidations.Select(d => d.Key))} for {validationConfiguration.Key} content type.");
+                }
             }
         }
 
         private void CheckUnknownPrerequisites()
         {
-            var declaredValidations = new HashSet<string>(_configuration.GetClassicValidationConfiguration().Select(v => v.Name));
-            var prerequisites = new HashSet<string>(_configuration.GetClassicValidationConfiguration().Select(v => v.RequiredValidations).SelectMany(p => p));
-            prerequisites.ExceptWith(declaredValidations);
-            if (prerequisites.Any())
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
             {
-                throw new ConfigurationErrorsException($"Unknown validations set as prerequisites: {string.Join(", ", prerequisites)}");
+                var declaredValidations = new HashSet<string>(validationConfiguration.Value.Select(v => v.Name));
+                var prerequisites = new HashSet<string>(validationConfiguration.Value.Select(v => v.RequiredValidations).SelectMany(p => p));
+                prerequisites.ExceptWith(declaredValidations);
+                if (prerequisites.Any())
+                {
+                    throw new ConfigurationErrorsException($"Unknown validations specified as prerequisites: {string.Join(", ", prerequisites)} for {validationConfiguration.Key} content type.");
+                }
             }
         }
 
         private void CheckUnknownValidators()
         {
-            foreach (var validatorItem in _configuration.GetClassicValidationConfiguration())
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
             {
-                if (!_validatorProvider.IsNuGetValidator(validatorItem.Name))
+                foreach (var validatorItem in validationConfiguration.Value)
                 {
-                    throw new ConfigurationErrorsException("Validator implementation not found for " + validatorItem.Name);
+                    if (!_validatorProvider.IsNuGetValidator(validatorItem.Name))
+                    {
+                        throw new ConfigurationErrorsException($"Validator implementation not found for {validatorItem.Name} for {validationConfiguration.Key} content type.");
+                    }
                 }
             }
         }
@@ -117,34 +136,39 @@ namespace NuGet.Services.Validation.Orchestrator
             // we'll just walk up the dependency chain of each runnable validation and look for 
             // not runnable validations
 
-            var validations = _configuration.GetClassicValidationConfiguration().ToDictionary(v => v.Name);
-            var runnableValidations = _configuration.GetClassicValidationConfiguration().Where(v => v.ShouldStart);
-
-            foreach (var validation in runnableValidations)
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
             {
-                var checkQueue = new Queue<string>(validation.RequiredValidations);
-                while (checkQueue.Any())
+                var validations = validationConfiguration.Value.ToDictionary(v => v.Name);
+                var runnableValidations = validationConfiguration.Value.Where(v => v.ShouldStart);
+
+                foreach (var validation in runnableValidations)
                 {
-                    var requiredValidationName = checkQueue.Dequeue();
-                    var requiredValidation = validations[requiredValidationName];
-                    if (!requiredValidation.ShouldStart)
+                    var checkQueue = new Queue<string>(validation.RequiredValidations);
+                    while (checkQueue.Any())
                     {
-                        throw new ConfigurationErrorsException($"Runnable validation {validation.Name} cannot be run because it requires non-runnable validation {requiredValidationName} to complete before it can be started.");
+                        var requiredValidationName = checkQueue.Dequeue();
+                        var requiredValidation = validations[requiredValidationName];
+                        if (!requiredValidation.ShouldStart)
+                        {
+                            throw new ConfigurationErrorsException($"Runnable validation {validation.Name} for {validationConfiguration.Key} content type cannot be run because it requires non-runnable validation {requiredValidationName} to complete before it can be started.");
+                        }
+                        requiredValidation.RequiredValidations.ForEach(checkQueue.Enqueue);
                     }
-                    requiredValidation.RequiredValidations.ForEach(checkQueue.Enqueue);
                 }
             }
         }
 
         private void CheckForCyclesAndParallelProcessors()
         {
-            var processorNames = _configuration
-                .GetClassicValidationConfiguration()
-                .Select(x => x.Name)
-                .Where(x => _validatorProvider.IsNuGetProcessor(x))
-                .ToList();
+            foreach (var validationConfiguration in _configuration.ValidationSteps)
+            {
+                var processorNames = validationConfiguration.Value
+                    .Select(x => x.Name)
+                    .Where(x => _validatorProvider.IsNuGetProcessor(x))
+                    .ToList();
 
-            TopologicalSort.Validate(_configuration.GetClassicValidationConfiguration(), processorNames);
+                TopologicalSort.Validate(validationConfiguration.Value, processorNames);
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     { 
-                        ValidationStepsContentType.NuGet,
+                        "TestContentType",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -55,7 +55,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "FooBar",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -89,7 +89,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "SomeContentType",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -118,7 +118,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "TestContentType",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -150,7 +150,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "ParallelProcessor",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -205,7 +205,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "ParallelProcessor",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -255,7 +255,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "Loops",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -289,7 +289,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "SelfReference",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -317,7 +317,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "SelfReference",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -351,7 +351,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "EmptyValidationName",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -378,7 +378,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "ZeroTimeout",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -416,7 +416,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "Diamonds",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -471,7 +471,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "Diamonds",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -517,7 +517,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "Loops",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -556,7 +556,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "Unconnected",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -594,7 +594,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        "Loops",
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -642,12 +642,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             const string firstValidationName = "FirstValidation";
             const string lastValidationName = "LastValidation";
+            const string contentType = "RequiredToRun";
             var configuration = new ValidationConfiguration
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        ValidationStepsContentType.NuGet,
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -666,7 +667,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             foreach (var intermediateValidationIndex in Enumerable.Range(1, numIntermediateValidations))
             {
                 var intermediateValidationName = $"Validation{intermediateValidationIndex}";
-                configuration.ValidationSteps[ValidationStepsContentType.NuGet].Add(new ValidationConfigurationItem
+                configuration.ValidationSteps[contentType].Add(new ValidationConfigurationItem
                 {
                     Name = intermediateValidationName,
                     TrackAfter = TimeSpan.FromHours(1),
@@ -677,7 +678,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 previousValidationName = intermediateValidationName;
             }
 
-            configuration.ValidationSteps[ValidationStepsContentType.NuGet].Add(new ValidationConfigurationItem
+            configuration.ValidationSteps[contentType].Add(new ValidationConfigurationItem
             {
                 Name = lastValidationName,
                 TrackAfter = TimeSpan.FromHours(1),
@@ -686,7 +687,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 FailureBehavior = lastValidationFailureBehavior
             });
 
-            configuration.ValidationSteps[ValidationStepsContentType.NuGet].Reverse();
+            configuration.ValidationSteps[contentType].Reverse();
 
             var ex = Record.Exception(() => Validate(configuration));
 
