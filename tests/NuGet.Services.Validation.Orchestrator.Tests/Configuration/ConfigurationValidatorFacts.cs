@@ -216,7 +216,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(validatorProvider.Object, configuration));
 
             Assert.Contains(
-                "The processor Processor1 for ParallelProcessor could run in parallel with Validation2. Processors must not run in parallel with any other validators.",
+                "The processor Processor1 for ParallelProcessor content type could run in parallel with Validation2. Processors must not run in parallel with any other validators.",
                 ex.Message);
         }
 
