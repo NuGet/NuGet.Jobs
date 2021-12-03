@@ -20,7 +20,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
-                    { 
+                    {
                         "TestContentType",
                         new List<ValidationConfigurationItem>
                         {
@@ -30,6 +30,18 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                                 TrackAfter = TimeSpan.FromHours(1),
                                 RequiredValidations = new List<string>{ "Validation2" }
                             },
+                            new ValidationConfigurationItem
+                            {
+                                Name = "Validation2",
+                                TrackAfter = TimeSpan.FromHours(1),
+                                RequiredValidations = new List<string>()
+                            }
+                        }
+                    },
+                    {
+                        "AnotherContentType",
+                        new List<ValidationConfigurationItem>
+                        {
                             new ValidationConfigurationItem
                             {
                                 Name = "Validation2",
@@ -50,12 +62,25 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public void ConfigurationValidatorDetectsDuplicates()
         {
             const string validationName = "Validation1";
+            const string badContentType = "BadContentType";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "FooBar",
+                        "GoodContentType",
+                        new List<ValidationConfigurationItem>
+                        {
+                            new ValidationConfigurationItem
+                            {
+                                Name = "Validation",
+                                TrackAfter = TimeSpan.FromHours(1),
+                                RequiredValidations = new List<string>()
+                            }
+                        }
+                    },
+                    {
+                        badContentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -73,23 +98,24 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains("duplicate", ex.Message, StringComparison.OrdinalIgnoreCase);
             Assert.Contains(validationName, ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(badContentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsUnknownValidationPrerequisites()
         {
             const string NonExistentValidationName = "SomeValidation";
+            const string contentType = "SomeContentType";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "SomeContentType",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -103,22 +129,23 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains(NonExistentValidationName, ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsUnknownValidators()
         {
             var validationName = "Validation1";
+            const string contentType = "TestContentType";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "TestContentType",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -133,10 +160,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             };
             var validatorProvider = new Mock<IValidatorProvider>();
 
-            var ex = Record.Exception(() => Validate(validatorProvider.Object, configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(validatorProvider.Object, configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains("Validator implementation not found for " + validationName, ex.Message);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -186,11 +213,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 .Setup(x => x.IsNuGetProcessor(processorName1))
                 .Returns(true);
 
-            var ex = Record.Exception(() => Validate(validatorProvider.Object, configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(validatorProvider.Object, configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains(
-                "The processor Processor1 could run in parallel with Validation2. Processors must not run in parallel with any other validators.",
+                "The processor Processor1 for ParallelProcessor could run in parallel with Validation2. Processors must not run in parallel with any other validators.",
                 ex.Message);
         }
 
@@ -250,12 +276,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
         public void ConfigurationValidatorDetectsLoops()
         {
 
+            const string contentType = "Loops";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "Loops",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -275,21 +302,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains("cycle", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsSelfReferencingValidation()
         {
+            const string contentType = "SelfReference";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "SelfReference",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -303,21 +331,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains("cycle", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ConfigurationValidatorDetectsSelfReferencingValidation2()
         {
+            const string contentType = "SelfReference";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "SelfReference",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -337,21 +366,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains("cycle", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ValidationNamesCantBeEmpty()
         {
+            const string contentType = "EmptyValidationName";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "EmptyValidationName",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -364,21 +394,22 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void ValidationTimeoutsCantBeZero()
         {
+            const string contentType = "ZeroTimeout";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "ZeroTimeout",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -391,9 +422,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.IsType<ConfigurationErrorsException>(ex);
             Assert.Contains(nameof(ValidationConfigurationItem.TrackAfter), ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -589,12 +619,13 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
              *                                  \     /
              *                                   -----
              */
+            const string contentType = "Loops";
             var configuration = new ValidationConfiguration()
             {
                 ValidationSteps = new Dictionary<string, List<ValidationConfigurationItem>>
                 {
                     {
-                        "Loops",
+                        contentType,
                         new List<ValidationConfigurationItem>
                         {
                             new ValidationConfigurationItem
@@ -620,10 +651,10 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
                 }
             };
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.NotNull(ex);
             Assert.Contains("cycle", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         public static IEnumerable<object[]> FailureBehaviorSettingsCombinations
@@ -689,11 +720,11 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
 
             configuration.ValidationSteps[contentType].Reverse();
 
-            var ex = Record.Exception(() => Validate(configuration));
+            var ex = Assert.Throws<ConfigurationErrorsException>(() => Validate(configuration));
 
-            Assert.NotNull(ex);
             Assert.Contains(firstValidationName, ex.Message);
             Assert.Contains("cannot be run", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(contentType, ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         private static void Validate(IValidatorProvider validatorProvider, ValidationConfiguration configuration)

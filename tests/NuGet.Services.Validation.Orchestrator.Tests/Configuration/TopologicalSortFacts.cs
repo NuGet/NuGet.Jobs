@@ -284,7 +284,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             {
                 try
                 {
-                    TopologicalSort.Validate(validators, cannotBeParallel);
+                    TopologicalSort.Validate(validators, cannotBeParallel, "TestContentType");
                     return null;
                 }
                 catch (ConfigurationErrorsException e)

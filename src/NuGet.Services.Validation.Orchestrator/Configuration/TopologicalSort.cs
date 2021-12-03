@@ -35,15 +35,16 @@ namespace NuGet.Services.Validation.Orchestrator
         /// </summary>
         /// <param name="validators">The validator configuration items.</param>
         /// <param name="cannotBeParallel">The names of validators that are also processors.</param>
+        /// <param name="contentType">Content type to mention in error messages.</param>
         /// <exception cref="ConfigurationErrorsException">
         /// Thrown if a cycle or parallel processor is found
         /// </exception>
-        public static void Validate(IReadOnlyList<ValidationConfigurationItem> validators, IReadOnlyList<string> cannotBeParallel)
+        public static void Validate(IReadOnlyList<ValidationConfigurationItem> validators, IReadOnlyList<string> cannotBeParallel, string contentType)
         {
             var allOrders = EnumerateAll(validators);
             if (!allOrders.Any())
             {
-                throw new ConfigurationErrorsException("No validation sequences were found. This indicates a cycle in the validation dependencies.");
+                throw new ConfigurationErrorsException($"No validation sequences were found for {contentType} content type. This indicates a cycle in the validation dependencies.");
             }
 
             // A dictionary mapping the name of the validator to its index in the first topological sort result. All
@@ -62,7 +63,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     if (otherName != name)
                     {
                         throw new ConfigurationErrorsException(
-                            $"The processor {name} could run in parallel with {otherName}. Processors must not run " +
+                            $"The processor {name} for {contentType} content type could run in parallel with {otherName}. Processors must not run " +
                             $"in parallel with any other validators.");
                     }
                 }

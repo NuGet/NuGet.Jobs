@@ -167,7 +167,7 @@ namespace NuGet.Services.Validation.Orchestrator
                     .Where(x => _validatorProvider.IsNuGetProcessor(x))
                     .ToList();
 
-                TopologicalSort.Validate(validationConfiguration.Value, processorNames);
+                TopologicalSort.Validate(validationConfiguration.Value, processorNames, validationConfiguration.Key);
             }
         }
     }
