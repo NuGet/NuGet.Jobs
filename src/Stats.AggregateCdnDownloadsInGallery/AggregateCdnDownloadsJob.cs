@@ -80,7 +80,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
 
             _configuration = _serviceProvider.GetRequiredService<IOptionsSnapshot<AggregateCdnDownloadsConfiguration>>().Value;
             _commandTimeoutSeconds = _configuration.CommandTimeoutSeconds ?? _defaultCommandTimeoutSeconds;
-            _httpClient = new HttpClient();
+            _httpClient = _serviceProvider.GetRequiredService<HttpClient>();
         }
 
         public override async Task Run()
@@ -98,12 +98,12 @@ namespace Stats.AggregateCdnDownloadsInGallery
             {
                 var ff = _serviceProvider.GetRequiredService<IFeatureFlagClient>();
                 string url = jsonConfigurationAccessor.Value.SqlPipelineUrl;
-                if (ff.IsEnabled(AlternateStatisticsSourceFeatureFlagName, false))
+                if (ff.IsEnabled(AlternateStatisticsSourceFeatureFlagName, defaultValue: false))
                 {
                     url = jsonConfigurationAccessor.Value.SynapsePipelineUrl;
                 }
 
-                downloadData = await GetDownloadDataFromDownloadsV1Json(url);
+                downloadData = await GetDownloadDataFromDownloadsV1JsonAsync(url);
             }
 
             if (!downloadData.Any())
@@ -134,7 +134,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
                     // Create a batch of one or more package registrations to update.
                     var batch = PopGroupBatch(remainingGroups, _configuration.BatchSize);
 
-                    var rowsProcessed = await ProcessBatch(batch, connection, packageRegistrationLookup);
+                    var rowsProcessed = await ProcessBatchAsync(batch, connection, packageRegistrationLookup);
 
                     Logger.LogInformation(
                         "There are {GroupCount} package registration groups remaining.",
@@ -191,7 +191,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
             return downloadData;
         }
 
-        private async Task<IReadOnlyList<DownloadCountData>> GetDownloadDataFromDownloadsV1Json(string url)
+        private async Task<IReadOnlyList<DownloadCountData>> GetDownloadDataFromDownloadsV1JsonAsync(string url)
         {
             var result = new List<DownloadCountData>();
             var stopwatch = Stopwatch.StartNew();
@@ -224,7 +224,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
             return result;
         }
 
-        private async Task<int> ProcessBatch(List<IPackageIdGroup> batch, SqlConnection destinationDatabase, IDictionary<string, PackageRegistrationData> packageRegistrationLookup)
+        private async Task<int> ProcessBatchAsync(List<IPackageIdGroup> batch, SqlConnection destinationDatabase, IDictionary<string, PackageRegistrationData> packageRegistrationLookup)
         {
             // Create a temporary table
             Logger.LogDebug("Creating temporary table...");
@@ -453,6 +453,7 @@ namespace Stats.AggregateCdnDownloadsInGallery
             ConfigureInitializationSection<AggregateCdnDownloadsConfiguration>(services, configurationRoot);
             services.Configure<DownloadsV1JsonConfiguration>(configurationRoot.GetSection(DownloadsV1JsonConfigurationSectionName));
             ConfigureFeatureFlagServices(services, configurationRoot);
+            services.AddSingleton(_ => new HttpClient());
         }
     }
 }
