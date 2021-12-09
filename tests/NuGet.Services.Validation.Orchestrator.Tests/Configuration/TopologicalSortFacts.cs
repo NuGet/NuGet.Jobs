@@ -12,7 +12,8 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
     {
         public class Validate
         {
-            private const string CycleError = "No validation sequences were found. This indicates a cycle in the validation dependencies.";
+            private const string TestContentType = "TestContentType";
+            private const string CycleError = "No validation sequences were found for " + TestContentType + " content type. This indicates a cycle in the validation dependencies.";
             private const string ParallelProcessorError = "Processors must not run in parallel with any other validators.";
 
             [Fact]
@@ -284,7 +285,7 @@ namespace NuGet.Services.Validation.Orchestrator.Tests
             {
                 try
                 {
-                    TopologicalSort.Validate(validators, cannotBeParallel, "TestContentType");
+                    TopologicalSort.Validate(validators, cannotBeParallel, TestContentType);
                     return null;
                 }
                 catch (ConfigurationErrorsException e)
