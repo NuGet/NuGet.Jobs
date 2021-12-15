@@ -48,7 +48,7 @@ namespace Stats.PostProcessReports
 
         public async Task CopyFilesAsync()
         {
-            ServicePointManager.DefaultConnectionLimit = 100;
+            ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
             _logger.LogInformation("Connection limit: {ConnectionLimit}", ServicePointManager.DefaultConnectionLimit);
             var blobClient = _storageAccount.CreateCloudBlobClient();
             var sourceContainer = blobClient.GetContainerReference(_configuration.SourceContainerName);
@@ -81,7 +81,7 @@ namespace Stats.PostProcessReports
                     if (individualReports.Any())
                     {
                         var consumerTasks = Enumerable
-                            .Range(1, 20)
+                            .Range(1, _configuration.ReportWriteDegreeOfParallelism)
                             .Select(instanceId => WriteReports(instanceId, individualReports, destinationContainer, sourceBlobStats, blobName))
                             .ToList();
 

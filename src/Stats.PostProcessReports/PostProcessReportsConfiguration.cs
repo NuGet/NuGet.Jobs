@@ -21,5 +21,6 @@ namespace Stats.PostProcessReports
         public string DestinationPath { get; set; }
 
         public string DetailedReportDirectoryName { get; set; }
+        public int ReportWriteDegreeOfParallelism { get; set; } = 10;
     }
 }
