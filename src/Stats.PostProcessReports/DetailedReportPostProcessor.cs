@@ -71,7 +71,7 @@ namespace Stats.PostProcessReports
                 _logger.LogInformation("Blob to consider: {BlobUri}", b.Uri.AbsoluteUri);
             }
 
-            var individualReports = new ConcurrentBag<ReportDetails>();
+            var individualReports = new ConcurrentBag<LineProcessingContext>();
             var endOfIngestion = new ManualResetEventSlim(false);
 
             var producerTasks = Enumerable
@@ -87,7 +87,7 @@ namespace Stats.PostProcessReports
 
             var consumerTasks = Enumerable
                 .Range(1, 20)
-                .Select(_ => WriteReports(individualReports, destinationContainer, endOfIngestion))
+                .Select(instanceId => WriteReports(instanceId, individualReports, destinationContainer, endOfIngestion))
                 .ToList();
 
             await WaitForIngestion();
@@ -100,16 +100,9 @@ namespace Stats.PostProcessReports
             public string PackageId { get; set; }
         };
 
-        private class ReportDetails
-        {
-            public string BlobUrl { get; set; }
-            public int LineNumber { get; set; }
-            public string Data { get; set; }
-        };
-
         private async Task ProcessBlobsAsync(
             ConcurrentBag<IListBlobItem> sourceBlobs,
-            ConcurrentBag<ReportDetails> individualReports)
+            ConcurrentBag<LineProcessingContext> individualReports)
         {
             while (sourceBlobs.TryTake(out var blob))
             {
@@ -118,6 +111,7 @@ namespace Stats.PostProcessReports
                 _logger.LogInformation("Processing {BlobUrl}", sourceBlob.Uri.AbsoluteUri);
                 var sw = Stopwatch.StartNew();
                 var numLines = 0;
+                var blobStats = new BlobStatistics();
                 using (var sourceStream = await sourceBlob.OpenReadAsync())
                 using (var streamReader = new StreamReader(sourceStream))
                 {
@@ -130,11 +124,18 @@ namespace Stats.PostProcessReports
                             continue;
                         }
 
-                        individualReports.Add(new ReportDetails { BlobUrl = sourceBlob.Uri.AbsoluteUri, LineNumber = numLines, Data = line });
+                        individualReports.Add(new LineProcessingContext
+                        {
+                            BlobUrl = sourceBlob.Uri.AbsoluteUri,
+                            LineNumber = numLines,
+                            Data = line,
+                            BlobStatistics = blobStats,
+                        });
                     }
                 }
                 sw.Stop();
-                _logger.LogInformation("Processed {NumLines} lines from {BlobUrl} in {Elapsed}",
+                blobStats.TotalLineCount = numLines;
+                _logger.LogInformation("Read {NumLines} lines from {BlobUrl} in {Elapsed}",
                     numLines,
                     sourceBlob.Uri.AbsoluteUri,
                     sw.Elapsed);
@@ -146,16 +147,19 @@ namespace Stats.PostProcessReports
             }
         }
 
-        private async Task WriteReports(ConcurrentBag<ReportDetails> individualReports, CloudBlobContainer destinationContainer, ManualResetEventSlim ingestionFinished)
+        private async Task WriteReports(
+            int instanceId,
+            ConcurrentBag<LineProcessingContext> individualReports,
+            CloudBlobContainer destinationContainer,
+            ManualResetEventSlim ingestionFinished)
         {
             int numFailures = 0;
             int itemsProcessed = 0;
-            var instanceId = Guid.NewGuid();
             _logger.LogInformation("Starting {InstanceId} instance of report writer", instanceId);
             var sw = Stopwatch.StartNew();
             while (!ingestionFinished.IsSet || !individualReports.IsEmpty)
             {
-                if (!individualReports.TryTake(out ReportDetails details))
+                if (!individualReports.TryTake(out LineProcessingContext details))
                 {
                     // it seems we are consuming lines faster than they are produced
                     await Task.Delay(TimeSpan.FromSeconds(1));
@@ -170,6 +174,7 @@ namespace Stats.PostProcessReports
                 catch (Exception e)
                 {
                     _logger.LogWarning(e, "Failed to parse line {LineNumber} in {BlobUrl}: {Line}", details.LineNumber, details.BlobUrl, details.Data);
+                    details.BlobStatistics.IncrementLinesFailed();
                     ++numFailures;
                     continue;
                 }
@@ -182,6 +187,7 @@ namespace Stats.PostProcessReports
                 {
                     await streamWriter.WriteLineAsync(details.Data);
                 }
+                details.BlobStatistics.IncrementFileCreated();
                 if (++itemsProcessed % 100 == 0)
                 {
                     _logger.LogInformation("Processed {NumItems} items, got {NumFailures} failures to parse in {Elapsed} by {Instance}",
