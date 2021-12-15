@@ -53,22 +53,11 @@ namespace Stats.PostProcessReports
             var blobClient = _storageAccount.CreateCloudBlobClient();
             var sourceContainer = blobClient.GetContainerReference(_configuration.SourceContainerName);
             var destinationContainer = blobClient.GetContainerReference(_configuration.DestinationContainerName);
-            BlobContinuationToken blobContinuationToken = null;
-            var sourceBlobs = new List<IListBlobItem>();
-            string prefix = _configuration.SourcePath + _configuration.DetailedReportDirectoryName + "/";
-            do
-            {
-                var segment = await sourceContainer.ListBlobsSegmentedAsync(prefix, blobContinuationToken);
-                blobContinuationToken = segment.ContinuationToken;
-                foreach (var blob in segment.Results.Where(b => b.Uri.AbsolutePath.EndsWith(".json")))
-                {
-                    sourceBlobs.Add(blob);
-                }   
-            } while (blobContinuationToken != null);
+            List<IListBlobItem> sourceBlobs = await EnumerateSourceBlobsAsync(sourceContainer);
 
-            foreach (var blob in sourceBlobs)
+            foreach (var sourceBlob in sourceBlobs)
             {
-                _logger.LogInformation("Blob to consider: {BlobUri}", blob.Uri.AbsoluteUri);
+                _logger.LogInformation("Blob to consider: {BlobUri}", sourceBlob.Uri.AbsoluteUri);
             }
 
             foreach (var sourceBlob in sourceBlobs)
@@ -91,6 +80,23 @@ namespace Stats.PostProcessReports
             }
 
             _logger.LogInformation("Done processing");
+        }
+
+        private async Task<List<IListBlobItem>> EnumerateSourceBlobsAsync(CloudBlobContainer sourceContainer)
+        {
+            var sourceBlobs = new List<IListBlobItem>();
+            string prefix = _configuration.SourcePath + _configuration.DetailedReportDirectoryName + "/";
+            BlobContinuationToken blobContinuationToken = null;
+            do
+            {
+                var segment = await sourceContainer.ListBlobsSegmentedAsync(prefix, blobContinuationToken);
+                blobContinuationToken = segment.ContinuationToken;
+                foreach (var blob in segment.Results.Where(b => b.Uri.AbsolutePath.EndsWith(".json")))
+                {
+                    sourceBlobs.Add(blob);
+                }
+            } while (blobContinuationToken != null);
+            return sourceBlobs;
         }
 
         private class PackageIdContainer
