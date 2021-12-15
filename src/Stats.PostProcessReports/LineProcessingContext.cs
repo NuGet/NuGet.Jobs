@@ -9,9 +9,7 @@ namespace Stats.PostProcessReports
     /// </summary>
     public class LineProcessingContext
     {
-        public string BlobUrl { get; set; }
         public int LineNumber { get; set; }
         public string Data { get; set; }
-        public BlobStatistics BlobStatistics { get; set; }
     };
 }
