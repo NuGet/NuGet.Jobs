@@ -33,7 +33,7 @@ namespace NuGet.Services.Metadata.Catalog
             return downloadData;
         }
 
-        public async Task ReadAsync(string url, Action<string, string, long> addCount)
+        public async Task ReadAsync(string url, AddDownloadCount addCount)
         {
             var stopwatch = Stopwatch.StartNew();
             var packageCount = 0;

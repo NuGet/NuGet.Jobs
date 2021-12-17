@@ -7,9 +7,11 @@ using Microsoft.Azure.KeyVault.Models;
 
 namespace NuGet.Services.Metadata.Catalog
 {
+    public delegate void AddDownloadCount(string packageId, string packageVersion, long downloadCount);
+
     public interface IDownloadsV1JsonClient
     {
         Task<DownloadData> ReadAsync(string url);
-        Task ReadAsync(string url, Action<string, string, long> addCount);
+        Task ReadAsync(string url, AddDownloadCount addCount);
     }
 }
