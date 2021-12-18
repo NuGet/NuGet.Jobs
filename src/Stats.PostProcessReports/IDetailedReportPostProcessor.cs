@@ -7,6 +7,6 @@ namespace Stats.PostProcessReports
 {
     public interface IDetailedReportPostProcessor
     {
-        Task CopyFilesAsync();
+        Task CopyReportsAsync();
     }
 }

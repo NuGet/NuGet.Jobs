@@ -23,7 +23,7 @@ namespace Stats.PostProcessReports
         public override async Task Run()
         {
             var detailedReportPostProcessor = _serviceProvider.GetRequiredService<IDetailedReportPostProcessor>();
-            await detailedReportPostProcessor.CopyFilesAsync();
+            await detailedReportPostProcessor.CopyReportsAsync();
         }
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
@@ -48,7 +48,11 @@ namespace Stats.PostProcessReports
                 .Register(c =>
                 {
                     var cfg = c.Resolve<IOptionsSnapshot<PostProcessReportsConfiguration>>().Value;
-                    var factory = new AzureStorageFactory(c.Resolve<CloudStorageAccount>(), cfg.SourceContainerName, c.Resolve<ILogger<AzureStorage>>());
+                    var factory = new AzureStorageFactory(
+                        c.Resolve<CloudStorageAccount>(),
+                        cfg.SourceContainerName,
+                        c.Resolve<ILogger<AzureStorage>>(),
+                        cfg.SourcePath + cfg.DetailedReportDirectoryName);
                     return factory.Create();
                 })
                 .Keyed<IStorage>(sourceKey);
@@ -57,7 +61,11 @@ namespace Stats.PostProcessReports
                 .Register(c =>
                 {
                     var cfg = c.Resolve<IOptionsSnapshot<PostProcessReportsConfiguration>>().Value;
-                    var factory = new AzureStorageFactory(c.Resolve<CloudStorageAccount>(), cfg.DestinationContainerName, c.Resolve<ILogger<AzureStorage>>());
+                    var factory = new AzureStorageFactory(
+                        c.Resolve<CloudStorageAccount>(),
+                        cfg.DestinationContainerName,
+                        c.Resolve<ILogger<AzureStorage>>(),
+                        cfg.DestinationPath);
                     return factory.Create();
                 })
                 .Keyed<IStorage>(destinationKey);

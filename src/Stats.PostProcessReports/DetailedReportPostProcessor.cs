@@ -22,21 +22,22 @@ namespace Stats.PostProcessReports
 {
     public class DetailedReportPostProcessor : IDetailedReportPostProcessor
     {
-        //private readonly IStorage _sourceStorage;
-        //private readonly IStorage _destinationStorage;
+        private readonly IStorage _sourceStorage;
+        private readonly IStorage _workStorage;
+        private readonly IStorage _destinationStorage;
         private readonly CloudStorageAccount _storageAccount;
         private readonly PostProcessReportsConfiguration _configuration;
         private readonly ILogger<DetailedReportPostProcessor> _logger;
 
         public DetailedReportPostProcessor(
-            //IStorage sourceStorage,
-            //IStorage destinationStorage,
+            IStorage sourceStorage,
+            IStorage destinationStorage,
             CloudStorageAccount cloudStorageAccount,
             IOptionsSnapshot<PostProcessReportsConfiguration> configurationAccessor,
             ILogger<DetailedReportPostProcessor> logger)
         {
-            //_sourceStorage = sourceStorage ?? throw new ArgumentNullException(nameof(sourceStorage));
-            //_destinationStorage = destinationStorage ?? throw new ArgumentNullException(nameof(destinationStorage));
+            _sourceStorage = sourceStorage ?? throw new ArgumentNullException(nameof(sourceStorage));
+            _destinationStorage = destinationStorage ?? throw new ArgumentNullException(nameof(destinationStorage));
             _storageAccount = cloudStorageAccount ?? throw new ArgumentNullException(nameof(cloudStorageAccount));
             if (configurationAccessor == null)
             {
@@ -46,19 +47,21 @@ namespace Stats.PostProcessReports
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task CopyFilesAsync()
+        public async Task CopyReportsAsync()
         {
             ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
             _logger.LogInformation("Connection limit: {ConnectionLimit}", ServicePointManager.DefaultConnectionLimit);
             var blobClient = _storageAccount.CreateCloudBlobClient();
             var sourceContainer = blobClient.GetContainerReference(_configuration.SourceContainerName);
             var destinationContainer = blobClient.GetContainerReference(_configuration.DestinationContainerName);
-            List<IListBlobItem> sourceBlobs = await EnumerateSourceBlobsAsync(sourceContainer);
+            var sourceBlobs = await EnumerateSourceBlobsAsync(sourceContainer);
 
             foreach (var sourceBlob in sourceBlobs)
             {
                 _logger.LogInformation("Blob to consider: {BlobUri}", sourceBlob.Uri.AbsoluteUri);
             }
+
+            return;
 
             foreach (var sourceBlob in sourceBlobs)
             {
@@ -82,21 +85,11 @@ namespace Stats.PostProcessReports
             _logger.LogInformation("Done processing");
         }
 
-        private async Task<List<IListBlobItem>> EnumerateSourceBlobsAsync(CloudBlobContainer sourceContainer)
+        private async Task<List<StorageListItem>> EnumerateSourceBlobsAsync(CloudBlobContainer sourceContainer)
         {
-            var sourceBlobs = new List<IListBlobItem>();
-            string prefix = _configuration.SourcePath + _configuration.DetailedReportDirectoryName + "/";
-            BlobContinuationToken blobContinuationToken = null;
-            do
-            {
-                var segment = await sourceContainer.ListBlobsSegmentedAsync(prefix, blobContinuationToken);
-                blobContinuationToken = segment.ContinuationToken;
-                foreach (var blob in segment.Results.Where(b => b.Uri.AbsolutePath.EndsWith(".json")))
-                {
-                    sourceBlobs.Add(blob);
-                }
-            } while (blobContinuationToken != null);
-            return sourceBlobs;
+            var blobs = await _sourceStorage.List(CancellationToken.None);
+
+            return blobs.ToList();
         }
 
         private class PackageIdContainer
@@ -105,16 +98,16 @@ namespace Stats.PostProcessReports
         };
 
         private async Task<ConcurrentBag<LineProcessingContext>> ProcessSourceBlobAsync(
-            IListBlobItem blob,
+            StorageListItem blob,
             BlobStatistics blobStats)
         {
             var blobPath = blob.Uri.AbsolutePath.Substring(blob.Uri.AbsolutePath.IndexOf('/', 1) + 1); // dropping container from path
-            var sourceBlob = blob.Container.GetBlockBlobReference(blobPath);
-            _logger.LogInformation("Processing {BlobUrl}", sourceBlob.Uri.AbsoluteUri);
+            _logger.LogInformation("Processing {BlobUrl}", blob.Uri.AbsoluteUri);
             var sw = Stopwatch.StartNew();
             var numLines = 0;
             var individualReports = new ConcurrentBag<LineProcessingContext>();
-            using (var sourceStream = await sourceBlob.OpenReadAsync())
+            var storageContent = await _sourceStorage.Load(blob.Uri, CancellationToken.None);
+            using (var sourceStream = storageContent.GetContentStream())
             using (var streamReader = new StreamReader(sourceStream))
             {
                 string line;
@@ -137,7 +130,7 @@ namespace Stats.PostProcessReports
             blobStats.TotalLineCount = numLines;
             _logger.LogInformation("Read {NumLines} lines from {BlobUrl} in {Elapsed}",
                 numLines,
-                sourceBlob.Uri.AbsoluteUri,
+                blob.Uri.AbsoluteUri,
                 sw.Elapsed);
             return individualReports;
         }
@@ -166,7 +159,7 @@ namespace Stats.PostProcessReports
                         instanceId,
                         details.LineNumber,
                         blobName,
-                        details.Data);;
+                        details.Data);
                     blobStats.IncrementLinesFailed();
                     ++numFailures;
                     continue;
