@@ -17,6 +17,9 @@ namespace Stats.PostProcessReports
         public string SourceContainerName { get; set; }
         public string SourcePath { get; set; }
 
+        public string WorkContainerName { get; set; }
+        public string WorkPath { get; set; }
+
         public string DestinationContainerName { get; set; }
         public string DestinationPath { get; set; }
 

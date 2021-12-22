@@ -34,6 +34,7 @@ namespace Stats.PostProcessReports
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder, IConfigurationRoot configurationRoot)
         {
             const string sourceKey = "SourceStorageKey";
+            const string workKey = "WorkStorageKey";
             const string destinationKey = "DestinationStorageKey";
 
             containerBuilder
@@ -63,6 +64,19 @@ namespace Stats.PostProcessReports
                     var cfg = c.Resolve<IOptionsSnapshot<PostProcessReportsConfiguration>>().Value;
                     var factory = new AzureStorageFactory(
                         c.Resolve<CloudStorageAccount>(),
+                        cfg.SourceContainerName,
+                        c.Resolve<ILogger<AzureStorage>>(),
+                        cfg.SourcePath + cfg.DetailedReportDirectoryName);
+                    return factory.Create();
+                })
+                .Keyed<IStorage>(workKey);
+
+            containerBuilder
+                .Register(c =>
+                {
+                    var cfg = c.Resolve<IOptionsSnapshot<PostProcessReportsConfiguration>>().Value;
+                    var factory = new AzureStorageFactory(
+                        c.Resolve<CloudStorageAccount>(),
                         cfg.DestinationContainerName,
                         c.Resolve<ILogger<AzureStorage>>(),
                         cfg.DestinationPath);
@@ -75,6 +89,9 @@ namespace Stats.PostProcessReports
                 .WithParameter(new ResolvedParameter(
                     (pi, _) => pi.ParameterType == typeof(IStorage) && pi.Name == "sourceStorage",
                     (_, ctx) => ctx.ResolveKeyed<IStorage>(sourceKey)))
+                .WithParameter(new ResolvedParameter(
+                    (pi, _) => pi.ParameterType == typeof(IStorage) && pi.Name == "workStorage",
+                    (_, ctx) => ctx.ResolveKeyed<IStorage>(workKey)))
                 .WithParameter(new ResolvedParameter(
                     (pi, _) => pi.ParameterType == typeof(IStorage) && pi.Name == "destinationStorage",
                     (_, ctx) => ctx.ResolveKeyed<IStorage>(destinationKey)))

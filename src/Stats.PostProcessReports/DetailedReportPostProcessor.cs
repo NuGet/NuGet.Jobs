@@ -31,12 +31,14 @@ namespace Stats.PostProcessReports
 
         public DetailedReportPostProcessor(
             IStorage sourceStorage,
+            IStorage workStorage,
             IStorage destinationStorage,
             CloudStorageAccount cloudStorageAccount,
             IOptionsSnapshot<PostProcessReportsConfiguration> configurationAccessor,
             ILogger<DetailedReportPostProcessor> logger)
         {
             _sourceStorage = sourceStorage ?? throw new ArgumentNullException(nameof(sourceStorage));
+            _workStorage = workStorage ?? throw new ArgumentNullException(nameof(workStorage));
             _destinationStorage = destinationStorage ?? throw new ArgumentNullException(nameof(destinationStorage));
             _storageAccount = cloudStorageAccount ?? throw new ArgumentNullException(nameof(cloudStorageAccount));
             if (configurationAccessor == null)
