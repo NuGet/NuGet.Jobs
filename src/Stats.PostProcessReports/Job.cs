@@ -53,7 +53,9 @@ namespace Stats.PostProcessReports
                         c.Resolve<CloudStorageAccount>(),
                         cfg.SourceContainerName,
                         c.Resolve<ILogger<AzureStorage>>(),
-                        cfg.SourcePath + cfg.DetailedReportDirectoryName);
+                        cfg.SourcePath + cfg.DetailedReportDirectoryName,
+                        useServerSideCopy: true,
+                        initializeContainer: false);
                     return factory.Create();
                 })
                 .Keyed<IStorage>(sourceKey);
@@ -64,9 +66,11 @@ namespace Stats.PostProcessReports
                     var cfg = c.Resolve<IOptionsSnapshot<PostProcessReportsConfiguration>>().Value;
                     var factory = new AzureStorageFactory(
                         c.Resolve<CloudStorageAccount>(),
-                        cfg.SourceContainerName,
+                        cfg.WorkContainerName,
                         c.Resolve<ILogger<AzureStorage>>(),
-                        cfg.SourcePath + cfg.DetailedReportDirectoryName);
+                        cfg.WorkPath,
+                        useServerSideCopy: true,
+                        initializeContainer: false);
                     return factory.Create();
                 })
                 .Keyed<IStorage>(workKey);
@@ -79,7 +83,9 @@ namespace Stats.PostProcessReports
                         c.Resolve<CloudStorageAccount>(),
                         cfg.DestinationContainerName,
                         c.Resolve<ILogger<AzureStorage>>(),
-                        cfg.DestinationPath);
+                        cfg.DestinationPath,
+                        useServerSideCopy: true,
+                        initializeContainer: false);
                     return factory.Create();
                 })
                 .Keyed<IStorage>(destinationKey);

@@ -47,47 +47,47 @@ namespace Stats.PostProcessReports
             }
             _configuration = configurationAccessor.Value ?? throw new ArgumentException($"{nameof(configurationAccessor.Value)} property must not be null", nameof(configurationAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
+            _logger.LogInformation("Connection limit: {ConnectionLimit}", ServicePointManager.DefaultConnectionLimit);
         }
 
         public async Task CopyReportsAsync()
         {
-            ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
-            _logger.LogInformation("Connection limit: {ConnectionLimit}", ServicePointManager.DefaultConnectionLimit);
-            var blobClient = _storageAccount.CreateCloudBlobClient();
-            var sourceContainer = blobClient.GetContainerReference(_configuration.SourceContainerName);
-            var destinationContainer = blobClient.GetContainerReference(_configuration.DestinationContainerName);
-            var sourceBlobs = await EnumerateSourceBlobsAsync(sourceContainer);
+            var sourceBlobs = await EnumerateSourceBlobsAsync();
 
             foreach (var sourceBlob in sourceBlobs)
             {
-                _logger.LogInformation("Blob to consider: {BlobUri}", sourceBlob.Uri.AbsoluteUri);
+                var blobName = GetBlobName(sourceBlob);
+                var targetUrl = _workStorage.ResolveUri(blobName);
+                _logger.LogInformation("{SourceBlobUri} ({BlobName})", sourceBlob.Uri.AbsoluteUri, blobName);
+                _logger.LogInformation("{WorkBlobUrl}", targetUrl);
+                await _sourceStorage.CopyAsync(sourceBlob.Uri, _workStorage, targetUrl, destinationProperties: null, CancellationToken.None);
             }
 
-            return;
+            //foreach (var sourceBlob in sourceBlobs.Take(1))
+            //{
+            //    var sourceBlobStats = new BlobStatistics();
+            //    var individualReports = await ProcessSourceBlobAsync(sourceBlob, sourceBlobStats);
+            //    var blobName = sourceBlob.Uri.AbsoluteUri.Split('/').Last();
+            //    using (_logger.BeginScope("Processing {BlobName}", blobName))
+            //    {
+            //        if (individualReports.Any())
+            //        {
+            //            var consumerTasks = Enumerable
+            //                .Range(1, _configuration.ReportWriteDegreeOfParallelism)
+            //                .Select(instanceId => WriteReports(instanceId, individualReports, destinationContainer, sourceBlobStats, blobName))
+            //                .ToList();
 
-            foreach (var sourceBlob in sourceBlobs)
-            {
-                var sourceBlobStats = new BlobStatistics();
-                var individualReports = await ProcessSourceBlobAsync(sourceBlob, sourceBlobStats);
-                var blobName = sourceBlob.Uri.AbsoluteUri.Split('/').Last();
-                using (_logger.BeginScope("Processing {BlobName}", blobName))
-                {
-                    if (individualReports.Any())
-                    {
-                        var consumerTasks = Enumerable
-                            .Range(1, _configuration.ReportWriteDegreeOfParallelism)
-                            .Select(instanceId => WriteReports(instanceId, individualReports, destinationContainer, sourceBlobStats, blobName))
-                            .ToList();
-
-                        await Task.WhenAll(consumerTasks);
-                    }
-                }
-            }
+            //            await Task.WhenAll(consumerTasks);
+            //        }
+            //    }
+            //}
 
             _logger.LogInformation("Done processing");
         }
 
-        private async Task<List<StorageListItem>> EnumerateSourceBlobsAsync(CloudBlobContainer sourceContainer)
+        private async Task<List<StorageListItem>> EnumerateSourceBlobsAsync()
         {
             var blobs = await _sourceStorage.List(CancellationToken.None);
 
@@ -103,7 +103,7 @@ namespace Stats.PostProcessReports
             StorageListItem blob,
             BlobStatistics blobStats)
         {
-            var blobPath = blob.Uri.AbsolutePath.Substring(blob.Uri.AbsolutePath.IndexOf('/', 1) + 1); // dropping container from path
+            var blobPath = GetPathInContainer(blob);
             _logger.LogInformation("Processing {BlobUrl}", blob.Uri.AbsoluteUri);
             var sw = Stopwatch.StartNew();
             var numLines = 0;
@@ -135,6 +135,42 @@ namespace Stats.PostProcessReports
                 blob.Uri.AbsoluteUri,
                 sw.Elapsed);
             return individualReports;
+        }
+
+        private static string GetBlobName(StorageListItem blob)
+        {
+            var path = blob.Uri.AbsoluteUri;
+            var lastSlash = path.LastIndexOf('/');
+            if (lastSlash < 0)
+            {
+                throw new ArgumentException($"Blob URI path does not contain '/': {blob.Uri.AbsolutePath}", nameof(blob));
+            }
+
+            return path.Substring(lastSlash + 1);
+        }
+
+        private static string GetPathInContainer(StorageListItem blob)
+        {
+            string path = blob.Uri.AbsolutePath;
+            if (path.Length < 4)
+            {
+                // 1. Starting slash
+                // 2. At least one character for a container name
+                // 3. Slash separating container from the rest of the path
+                // 4. At least one character for the rest of the path
+                throw new ArgumentException($"Blob URI path must be at least 4 characters", nameof(blob));
+            }
+
+            // absolute paths start with slash, so we'll start searching for the next one
+            // starting from the second character
+            int secondSlash = path.IndexOf('/', 1);
+
+            if (secondSlash < 0)
+            {
+                throw new ArgumentException($"Blob URI path must have at last 2 levels", nameof(blob));
+            }
+
+            return path.Substring(secondSlash + 1);
         }
 
         private async Task WriteReports(
