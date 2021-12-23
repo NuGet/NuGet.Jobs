@@ -56,7 +56,9 @@ namespace Stats.PostProcessReports
                         cfg.SourcePath + cfg.DetailedReportDirectoryName,
                         useServerSideCopy: true,
                         initializeContainer: false);
-                    return factory.Create();
+                    var storage = factory.Create();
+                    storage.Verbose = false;
+                    return storage;
                 })
                 .Keyed<IStorage>(sourceKey);
 
@@ -71,7 +73,9 @@ namespace Stats.PostProcessReports
                         cfg.WorkPath,
                         useServerSideCopy: true,
                         initializeContainer: false);
-                    return factory.Create();
+                    var storage = factory.Create();
+                    storage.Verbose = false;
+                    return storage;
                 })
                 .Keyed<IStorage>(workKey);
 
@@ -86,7 +90,9 @@ namespace Stats.PostProcessReports
                         cfg.DestinationPath,
                         useServerSideCopy: true,
                         initializeContainer: false);
-                    return factory.Create();
+                    var storage = factory.Create();
+                    storage.Verbose = false;
+                    return storage;
                 })
                 .Keyed<IStorage>(destinationKey);
 

@@ -22,6 +22,8 @@ namespace Stats.PostProcessReports
 {
     public class DetailedReportPostProcessor : IDetailedReportPostProcessor
     {
+        private const string JsonContentType = "application/json";
+
         private readonly IStorage _sourceStorage;
         private readonly IStorage _workStorage;
         private readonly IStorage _destinationStorage;
@@ -65,31 +67,38 @@ namespace Stats.PostProcessReports
                 await _sourceStorage.CopyAsync(sourceBlob.Uri, _workStorage, targetUrl, destinationProperties: null, CancellationToken.None);
             }
 
-            //foreach (var sourceBlob in sourceBlobs.Take(1))
-            //{
-            //    var sourceBlobStats = new BlobStatistics();
-            //    var individualReports = await ProcessSourceBlobAsync(sourceBlob, sourceBlobStats);
-            //    var blobName = sourceBlob.Uri.AbsoluteUri.Split('/').Last();
-            //    using (_logger.BeginScope("Processing {BlobName}", blobName))
-            //    {
-            //        if (individualReports.Any())
-            //        {
-            //            var consumerTasks = Enumerable
-            //                .Range(1, _configuration.ReportWriteDegreeOfParallelism)
-            //                .Select(instanceId => WriteReports(instanceId, individualReports, destinationContainer, sourceBlobStats, blobName))
-            //                .ToList();
+            foreach (var sourceBlob in sourceBlobs.Where(x => x.Uri.AbsoluteUri.EndsWith(".json")).Take(1))
+            {
+                var blobName = GetBlobName(sourceBlob);
+                var workBlobUri = _workStorage.ResolveUri(blobName);
+                var sourceBlobStats = new BlobStatistics();
+                var individualReports = await ProcessSourceBlobAsync(workBlobUri, sourceBlobStats);
+                using (_logger.BeginScope("Processing {BlobName}", blobName))
+                {
+                    if (individualReports.Any())
+                    {
+                        var consumerTasks = Enumerable
+                            .Range(1, _configuration.ReportWriteDegreeOfParallelism)
+                            .Select(instanceId => WriteReports(instanceId, individualReports, sourceBlobStats, blobName))
+                            .ToList();
 
-            //            await Task.WhenAll(consumerTasks);
-            //        }
-            //    }
-            //}
+                        await Task.WhenAll(consumerTasks);
+                        _logger.LogInformation(
+                            "Finished processing {BlobName}: total lines: {TotalLines}, created {FilesCreated} files, failed to parse {FailedLines} lines",
+                            blobName,
+                            sourceBlobStats.TotalLineCount,
+                            sourceBlobStats.FilesCreated,
+                            sourceBlobStats.LinesFailed);
+                    }
+                }
+            }
 
             _logger.LogInformation("Done processing");
         }
 
         private async Task<List<StorageListItem>> EnumerateSourceBlobsAsync()
         {
-            var blobs = await _sourceStorage.List(CancellationToken.None);
+            var blobs = await _sourceStorage.List(true, CancellationToken.None);
 
             return blobs.ToList();
         }
@@ -100,15 +109,14 @@ namespace Stats.PostProcessReports
         };
 
         private async Task<ConcurrentBag<LineProcessingContext>> ProcessSourceBlobAsync(
-            StorageListItem blob,
+            Uri blobUri,
             BlobStatistics blobStats)
         {
-            var blobPath = GetPathInContainer(blob);
-            _logger.LogInformation("Processing {BlobUrl}", blob.Uri.AbsoluteUri);
+            _logger.LogInformation("Processing {BlobUrl}", blobUri.AbsoluteUri);
             var sw = Stopwatch.StartNew();
             var numLines = 0;
             var individualReports = new ConcurrentBag<LineProcessingContext>();
-            var storageContent = await _sourceStorage.Load(blob.Uri, CancellationToken.None);
+            var storageContent = await _workStorage.Load(blobUri, CancellationToken.None);
             using (var sourceStream = storageContent.GetContentStream())
             using (var streamReader = new StreamReader(sourceStream))
             {
@@ -132,7 +140,7 @@ namespace Stats.PostProcessReports
             blobStats.TotalLineCount = numLines;
             _logger.LogInformation("Read {NumLines} lines from {BlobUrl} in {Elapsed}",
                 numLines,
-                blob.Uri.AbsoluteUri,
+                blobUri.AbsoluteUri,
                 sw.Elapsed);
             return individualReports;
         }
@@ -176,7 +184,6 @@ namespace Stats.PostProcessReports
         private async Task WriteReports(
             int instanceId,
             ConcurrentBag<LineProcessingContext> individualReports,
-            CloudBlobContainer destinationContainer,
             BlobStatistics blobStats,
             string blobName)
         {
@@ -203,14 +210,10 @@ namespace Stats.PostProcessReports
                     continue;
                 }
                 var outFilename = $"recentpopularitydetail_{data.PackageId}.json";
-                var destinationBlobPath = $"{_configuration.DestinationPath}/{outFilename}";
+                var destinationUri = _destinationStorage.ResolveUri(outFilename);
+                var storageContent = new StringStorageContent(details.Data, JsonContentType);
 
-                var destinationBlob = destinationContainer.GetBlockBlobReference(destinationBlobPath);
-                using (var destinationStream = await destinationBlob.OpenWriteAsync())
-                using (var streamWriter = new StreamWriter(destinationStream))
-                {
-                    await streamWriter.WriteLineAsync(details.Data);
-                }
+                await _destinationStorage.Save(destinationUri, storageContent, overwrite: true, cancellationToken: CancellationToken.None);
                 blobStats.IncrementFileCreated();
                 if (++itemsProcessed % 100 == 0)
                 {
