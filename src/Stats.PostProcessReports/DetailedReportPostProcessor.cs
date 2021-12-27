@@ -28,6 +28,9 @@ namespace Stats.PostProcessReports
         private const string CopySucceededFilename = "_WorkCopySucceeded";
         private const string JobSucceededFilename = "_JobSucceeded";
         private const string JsonExtension = ".json";
+        private const string TotalLinesMetadataItem = "TotalLines";
+        private const string LinesFailedMetadataItem = "LinesFailed";
+        private const string FilesCreatedMetadataItem = "FilesCreated";
         private readonly IStorage _sourceStorage;
         private readonly IStorage _workStorage;
         private readonly IStorage _destinationStorage;
@@ -96,27 +99,39 @@ namespace Stats.PostProcessReports
                 return;
             }
 
+            await ProcessBlobs(jsonBlobs, cancellationToken);
+
+            _logger.LogInformation("Done processing");
+        }
+
+        private async Task ProcessBlobs(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
+        {
+            var totals = new TotalStats();
             foreach (var sourceBlob in jsonBlobs)
             {
                 var blobName = GetBlobName(sourceBlob);
                 var workBlobUri = _workStorage.ResolveUri(blobName);
                 var sourceBlobStats = new BlobStatistics();
-                var individualReports = await ProcessSourceBlobAsync(workBlobUri, sourceBlobStats);
+                var individualReports = await ProcessSourceBlobAsync(sourceBlob, sourceBlobStats, totals);
                 using (_logger.BeginScope("Processing {BlobName}", blobName))
                 {
-                    if (individualReports.Any())
+                    if (individualReports != null && individualReports.Any())
                     {
                         var consumerTasks = Enumerable
                             .Range(1, _configuration.ReportWriteDegreeOfParallelism)
-                            .Select(instanceId => WriteReports(instanceId, individualReports, sourceBlobStats, blobName))
+                            .Select(instanceId => WriteReports(instanceId, individualReports, sourceBlobStats, blobName, cancellationToken))
                             .ToList();
 
                         await Task.WhenAll(consumerTasks);
+                        ++totals.SourceFilesProcessed;
+                        totals.TotalLinesProcessed += sourceBlobStats.TotalLineCount;
+                        totals.TotalLinesFailed += sourceBlobStats.LinesFailed;
+                        totals.TotalFilesCreated += sourceBlobStats.FilesCreated;
                         var metadata = new Dictionary<string, string>
                         {
-                            { "TotalLines", sourceBlobStats.TotalLineCount.ToString() },
-                            { "LinesFailed", sourceBlobStats.LinesFailed.ToString() },
-                            { "FilesCreated", sourceBlobStats.FilesCreated.ToString() },
+                            { TotalLinesMetadataItem, sourceBlobStats.TotalLineCount.ToString() },
+                            { LinesFailedMetadataItem, sourceBlobStats.LinesFailed.ToString() },
+                            { FilesCreatedMetadataItem, sourceBlobStats.FilesCreated.ToString() },
                         };
                         await _workStorage.SetMetadataAsync(sourceBlob.Uri, metadata);
                         _logger.LogInformation(
@@ -131,8 +146,6 @@ namespace Stats.PostProcessReports
             var jobSucceededUrl = _workStorage.ResolveUri(JobSucceededFilename);
             var jobSucceededContent = new StringStorageContent("", TextContentType);
             await _workStorage.Save(jobSucceededUrl, jobSucceededContent, overwrite: true, cancellationToken: cancellationToken);
-
-            _logger.LogInformation("Done processing");
         }
 
         private async Task<bool> SourceBlobExistsInWorkLocationAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
@@ -177,14 +190,20 @@ namespace Stats.PostProcessReports
         };
 
         private async Task<ConcurrentBag<LineProcessingContext>> ProcessSourceBlobAsync(
-            Uri blobUri,
-            BlobStatistics blobStats)
+            StorageListItem sourceBlob,
+            BlobStatistics blobStats,
+            TotalStats totalStats)
         {
-            _logger.LogInformation("Processing {BlobUrl}", blobUri.AbsoluteUri);
+            _logger.LogInformation("Processing {BlobUrl}", sourceBlob.Uri.AbsoluteUri);
+            if (BlobMetadataExists(sourceBlob, totalStats))
+            {
+                _logger.LogInformation("Blob metadata indicates blob has been processed already, skipping.");
+                return null;
+            }
             var sw = Stopwatch.StartNew();
             var numLines = 0;
             var individualReports = new ConcurrentBag<LineProcessingContext>();
-            var storageContent = await _workStorage.Load(blobUri, CancellationToken.None);
+            var storageContent = await _workStorage.Load(sourceBlob.Uri, CancellationToken.None);
             using (var sourceStream = storageContent.GetContentStream())
             using (var streamReader = new StreamReader(sourceStream))
             {
@@ -208,9 +227,38 @@ namespace Stats.PostProcessReports
             blobStats.TotalLineCount = numLines;
             _logger.LogInformation("Read {NumLines} lines from {BlobUrl} in {Elapsed}",
                 numLines,
-                blobUri.AbsoluteUri,
+                sourceBlob.Uri.AbsoluteUri,
                 sw.Elapsed);
             return individualReports;
+        }
+
+        private static bool BlobMetadataExists(StorageListItem sourceBlob, TotalStats totalStats)
+        {
+            var allMetadataExists = sourceBlob.Metadata.TryGetValue(TotalLinesMetadataItem, out var totalLinesStr);
+            allMetadataExists = sourceBlob.Metadata.TryGetValue(LinesFailedMetadataItem, out var linesFailedStr) && allMetadataExists;
+            allMetadataExists = sourceBlob.Metadata.TryGetValue(FilesCreatedMetadataItem, out var filesCreatedStr) && allMetadataExists;
+
+            if (!allMetadataExists)
+            {
+                // If not all metadata is present, will not update totals and will reprocess the file.
+                return false;
+            }
+
+            var allMetadataParsed = int.TryParse(totalLinesStr, out var totalLines);
+            allMetadataParsed = int.TryParse(linesFailedStr, out var linesFailed) && allMetadataParsed;
+            allMetadataParsed = int.TryParse(filesCreatedStr, out var filesCreated) && allMetadataParsed;
+
+            if (!allMetadataParsed)
+            {
+                // If can't parse, same as above, pretend nothing happened.
+                return false;
+            }
+
+            ++totalStats.SourceFilesProcessed;
+            totalStats.TotalLinesProcessed += totalLines;
+            totalStats.TotalLinesFailed += linesFailed;
+            totalStats.TotalFilesCreated += filesCreated;
+            return true;
         }
 
         private static string GetBlobName(StorageListItem blob)
@@ -253,7 +301,8 @@ namespace Stats.PostProcessReports
             int instanceId,
             ConcurrentBag<LineProcessingContext> individualReports,
             BlobStatistics blobStats,
-            string blobName)
+            string blobName,
+            CancellationToken cancellationToken)
         {
             int numFailures = 0;
             int itemsProcessed = 0;
@@ -281,7 +330,7 @@ namespace Stats.PostProcessReports
                 var destinationUri = _destinationStorage.ResolveUri(outFilename);
                 var storageContent = new StringStorageContent(details.Data, JsonContentType);
 
-                await _destinationStorage.Save(destinationUri, storageContent, overwrite: true, cancellationToken: CancellationToken.None);
+                await _destinationStorage.Save(destinationUri, storageContent, overwrite: true, cancellationToken: cancellationToken);
                 blobStats.IncrementFileCreated();
                 if (++itemsProcessed % 100 == 0)
                 {
