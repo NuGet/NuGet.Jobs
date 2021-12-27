@@ -112,6 +112,13 @@ namespace Stats.PostProcessReports
                             .ToList();
 
                         await Task.WhenAll(consumerTasks);
+                        var metadata = new Dictionary<string, string>
+                        {
+                            { "TotalLines", sourceBlobStats.TotalLineCount.ToString() },
+                            { "LinesFailed", sourceBlobStats.LinesFailed.ToString() },
+                            { "FilesCreated", sourceBlobStats.FilesCreated.ToString() },
+                        };
+                        await _workStorage.SetMetadataAsync(sourceBlob.Uri, metadata);
                         _logger.LogInformation(
                             "Finished processing {BlobName}: total lines: {TotalLines}, created {FilesCreated} files, failed to parse {FailedLines} lines",
                             blobName,
