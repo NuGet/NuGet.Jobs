@@ -23,7 +23,11 @@ namespace Stats.PostProcessReports
     public class DetailedReportPostProcessor : IDetailedReportPostProcessor
     {
         private const string JsonContentType = "application/json";
-
+        private const string TextContentType = "text/plain";
+        private const string SuccessFilename = "_SUCCESS";
+        private const string CopySucceededFilename = "_WorkCopySucceeded";
+        private const string JobSucceededFilename = "_JobSucceeded";
+        private const string JsonExtension = ".json";
         private readonly IStorage _sourceStorage;
         private readonly IStorage _workStorage;
         private readonly IStorage _destinationStorage;
@@ -56,18 +60,43 @@ namespace Stats.PostProcessReports
 
         public async Task CopyReportsAsync()
         {
+            var cancellationToken = CancellationToken.None;
             var sourceBlobs = await EnumerateSourceBlobsAsync();
 
-            foreach (var sourceBlob in sourceBlobs)
+            if (!sourceBlobs.Where(b => GetBlobName(b) == SuccessFilename).Any())
             {
-                var blobName = GetBlobName(sourceBlob);
-                var targetUrl = _workStorage.ResolveUri(blobName);
-                _logger.LogInformation("{SourceBlobUri} ({BlobName})", sourceBlob.Uri.AbsoluteUri, blobName);
-                _logger.LogInformation("{WorkBlobUrl}", targetUrl);
-                await _sourceStorage.CopyAsync(sourceBlob.Uri, _workStorage, targetUrl, destinationProperties: null, CancellationToken.None);
+                _logger.LogInformation("No " + SuccessFilename + " file present in source location, terminating until file is available.");
+                return;
             }
 
-            foreach (var sourceBlob in sourceBlobs.Where(x => x.Uri.AbsoluteUri.EndsWith(".json")).Take(1))
+            var copySucceeded = await _workStorage.ExistsAsync(CopySucceededFilename, cancellationToken);
+            var jobSucceeded = await _workStorage.ExistsAsync(JobSucceededFilename, cancellationToken);
+
+            var jsonBlobs = sourceBlobs.Where(b => b.Uri.AbsolutePath.EndsWith(JsonExtension)).ToList();
+            var copyNeeded = true;
+            var sourceBlobsExist = false;
+            if (copySucceeded)
+            {
+                sourceBlobsExist = await SourceBlobExistsInWorkLocationAsync(sourceBlobs, cancellationToken);
+                copyNeeded = sourceBlobsExist;
+            }
+
+            if (copyNeeded)
+            {
+                await CopySourceBlobsAsync(jsonBlobs, copySucceeded, cancellationToken);
+            }
+            else
+            {
+                _logger.LogInformation("Previous copy succeeded, will not copy.");
+            }
+
+            if (copySucceeded && jobSucceeded && sourceBlobsExist)
+            {
+                _logger.LogInformation("No new data, terminating until updated.");
+                return;
+            }
+
+            foreach (var sourceBlob in jsonBlobs)
             {
                 var blobName = GetBlobName(sourceBlob);
                 var workBlobUri = _workStorage.ResolveUri(blobName);
@@ -92,8 +121,40 @@ namespace Stats.PostProcessReports
                     }
                 }
             }
+            var jobSucceededUrl = _workStorage.ResolveUri(JobSucceededFilename);
+            var jobSucceededContent = new StringStorageContent("", TextContentType);
+            await _workStorage.Save(jobSucceededUrl, jobSucceededContent, overwrite: true, cancellationToken: cancellationToken);
 
             _logger.LogInformation("Done processing");
+        }
+
+        private async Task<bool> SourceBlobExistsInWorkLocationAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
+        {
+            var jsonBlob = jsonBlobs.Select(b => GetBlobName(b)).FirstOrDefault();
+            if (jsonBlob != null)
+            {
+                await _workStorage.ExistsAsync(jsonBlob, cancellationToken);
+            }
+            return false;
+        }
+
+        private async Task CopySourceBlobsAsync(List<StorageListItem> jsonBlobs, bool copySucceeded, CancellationToken cancellationToken)
+        {
+            var copySucceededUrl = _workStorage.ResolveUri(CopySucceededFilename);
+            if (copySucceeded)
+            {
+                await _workStorage.Delete(copySucceededUrl, cancellationToken);
+            }
+            foreach (var sourceBlob in jsonBlobs)
+            {
+                var blobName = GetBlobName(sourceBlob);
+                var targetUrl = _workStorage.ResolveUri(blobName);
+                _logger.LogInformation("{SourceBlobUri} ({BlobName})", sourceBlob.Uri.AbsoluteUri, blobName);
+                _logger.LogInformation("{WorkBlobUrl}", targetUrl);
+                await _sourceStorage.CopyAsync(sourceBlob.Uri, _workStorage, targetUrl, destinationProperties: null, cancellationToken);
+            }
+            var copySucceededContent = new StringStorageContent("", TextContentType);
+            await _workStorage.Save(copySucceededUrl, copySucceededContent, overwrite: true, cancellationToken: cancellationToken);
         }
 
         private async Task<List<StorageListItem>> EnumerateSourceBlobsAsync()
