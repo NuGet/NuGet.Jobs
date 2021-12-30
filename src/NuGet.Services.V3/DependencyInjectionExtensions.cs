@@ -87,6 +87,10 @@ namespace NuGet.Services.V3
                 .Keyed<ICloudBlobClient>(FeatureFlagBindingKey);
 
             containerBuilder
+                .RegisterType<GalleryCloudBlobContainerInformationProvider>()
+                .As<ICloudBlobContainerInformationProvider>();
+
+            containerBuilder
                 .Register(c => new CloudBlobCoreFileStorageService(
                     c.ResolveKeyed<ICloudBlobClient>(FeatureFlagBindingKey),
                     c.Resolve<IDiagnosticsService>(),
