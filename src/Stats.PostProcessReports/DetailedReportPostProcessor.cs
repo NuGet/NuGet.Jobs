@@ -36,6 +36,7 @@ namespace Stats.PostProcessReports
         private readonly IStorage _destinationStorage;
         private readonly CloudStorageAccount _storageAccount;
         private readonly PostProcessReportsConfiguration _configuration;
+        private readonly ITelemetryService _telemetryService;
         private readonly ILogger<DetailedReportPostProcessor> _logger;
 
         public DetailedReportPostProcessor(
@@ -44,6 +45,7 @@ namespace Stats.PostProcessReports
             IStorage destinationStorage,
             CloudStorageAccount cloudStorageAccount,
             IOptionsSnapshot<PostProcessReportsConfiguration> configurationAccessor,
+            ITelemetryService telemetryService,
             ILogger<DetailedReportPostProcessor> logger)
         {
             _sourceStorage = sourceStorage ?? throw new ArgumentNullException(nameof(sourceStorage));
@@ -57,8 +59,10 @@ namespace Stats.PostProcessReports
             _configuration = configurationAccessor.Value ?? throw new ArgumentException($"{nameof(configurationAccessor.Value)} property must not be null", nameof(configurationAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
+            _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger.LogInformation("Connection limit: {ConnectionLimit}", ServicePointManager.DefaultConnectionLimit);
+
+            ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
         }
 
         public async Task CopyReportsAsync()
@@ -133,19 +137,21 @@ namespace Stats.PostProcessReports
                             { LinesFailedMetadataItem, sourceBlobStats.LinesFailed.ToString() },
                             { FilesCreatedMetadataItem, sourceBlobStats.FilesCreated.ToString() },
                         };
-                        await _workStorage.SetMetadataAsync(sourceBlob.Uri, metadata);
+                        await _workStorage.SetMetadataAsync(workBlobUri, metadata);
                         _logger.LogInformation(
                             "Finished processing {BlobName}: total lines: {TotalLines}, created {FilesCreated} files, failed to parse {FailedLines} lines",
                             blobName,
                             sourceBlobStats.TotalLineCount,
                             sourceBlobStats.FilesCreated,
                             sourceBlobStats.LinesFailed);
+                        _telemetryService.ReportFileProcessed(sourceBlobStats.TotalLineCount, sourceBlobStats.FilesCreated, sourceBlobStats.LinesFailed);
                     }
                 }
             }
             var jobSucceededUrl = _workStorage.ResolveUri(JobSucceededFilename);
             var jobSucceededContent = new StringStorageContent("", TextContentType);
             await _workStorage.Save(jobSucceededUrl, jobSucceededContent, overwrite: true, cancellationToken: cancellationToken);
+            _telemetryService.ReportTotals(totals.SourceFilesProcessed, totals.TotalLinesProcessed, totals.TotalFilesCreated, totals.TotalLinesFailed);
         }
 
         private async Task<bool> SourceBlobExistsInWorkLocationAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
@@ -203,7 +209,8 @@ namespace Stats.PostProcessReports
             var sw = Stopwatch.StartNew();
             var numLines = 0;
             var individualReports = new ConcurrentBag<LineProcessingContext>();
-            var storageContent = await _workStorage.Load(sourceBlob.Uri, CancellationToken.None);
+            var workStorageUrl = _workStorage.ResolveUri(GetBlobName(sourceBlob));
+            var storageContent = await _workStorage.Load(workStorageUrl, CancellationToken.None);
             using (var sourceStream = storageContent.GetContentStream())
             using (var streamReader = new StreamReader(sourceStream))
             {

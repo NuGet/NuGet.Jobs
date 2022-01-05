@@ -29,6 +29,8 @@ namespace Stats.PostProcessReports
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
             services.Configure<PostProcessReportsConfiguration>(configurationRoot.GetSection("Configuration"));
+
+            services.AddTransient<ITelemetryService, TelemetryService>();
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder, IConfigurationRoot configurationRoot)
