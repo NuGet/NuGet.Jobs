@@ -79,18 +79,18 @@ namespace Stats.PostProcessReports
             var copySucceeded = await _workStorage.ExistsAsync(CopySucceededFilename, cancellationToken);
             var jobSucceeded = await _workStorage.ExistsAsync(JobSucceededFilename, cancellationToken);
 
-            var jsonBlobs = sourceBlobs.Where(b => b.Uri.AbsolutePath.EndsWith(JsonExtension)).ToList();
+            var sourceJsonBlobs = sourceBlobs.Where(b => b.Uri.AbsolutePath.EndsWith(JsonExtension, StringComparison.OrdinalIgnoreCase)).ToList();
             var copyNeeded = true;
             var sourceBlobsExist = false;
             if (copySucceeded)
             {
-                sourceBlobsExist = await SourceBlobExistsInWorkLocationAsync(sourceBlobs, cancellationToken);
-                copyNeeded = sourceBlobsExist;
+                sourceBlobsExist = await SourceBlobExistsInWorkLocationAsync(sourceJsonBlobs, cancellationToken);
+                copyNeeded = !sourceBlobsExist;
             }
 
             if (copyNeeded)
             {
-                await CopySourceBlobsAsync(jsonBlobs, copySucceeded, cancellationToken);
+                await CopySourceBlobsAsync(sourceJsonBlobs, copySucceeded, cancellationToken);
             }
             else
             {
@@ -103,7 +103,9 @@ namespace Stats.PostProcessReports
                 return;
             }
 
-            await ProcessBlobs(jsonBlobs, cancellationToken);
+            var workBlobs = await EnumerateWorkStorageBlobsAsync();
+            var workJsonBlobs = workBlobs.Where(b => b.Uri.AbsolutePath.EndsWith(JsonExtension, StringComparison.OrdinalIgnoreCase)).ToList();
+            await ProcessBlobs(workJsonBlobs, cancellationToken);
 
             _logger.LogInformation("Done processing");
         }
@@ -159,18 +161,20 @@ namespace Stats.PostProcessReports
             var jsonBlob = jsonBlobs.Select(b => GetBlobName(b)).FirstOrDefault();
             if (jsonBlob != null)
             {
-                await _workStorage.ExistsAsync(jsonBlob, cancellationToken);
+                return await _workStorage.ExistsAsync(jsonBlob, cancellationToken);
             }
             return false;
         }
 
         private async Task CopySourceBlobsAsync(List<StorageListItem> jsonBlobs, bool copySucceeded, CancellationToken cancellationToken)
         {
-            var copySucceededUrl = _workStorage.ResolveUri(CopySucceededFilename);
-            if (copySucceeded)
+            _logger.LogInformation("Cleaning up work storage");
+            var workFilesToDelete = await EnumerateWorkStorageBlobsAsync();
+            foreach (var existingWorkBlob in workFilesToDelete)
             {
-                await _workStorage.Delete(copySucceededUrl, cancellationToken);
+                await _workStorage.Delete(existingWorkBlob.Uri, cancellationToken);
             }
+            _logger.LogInformation("Deleted {NumDeletedFiles} files from work storage", workFilesToDelete.Count);
             foreach (var sourceBlob in jsonBlobs)
             {
                 var blobName = GetBlobName(sourceBlob);
@@ -180,12 +184,20 @@ namespace Stats.PostProcessReports
                 await _sourceStorage.CopyAsync(sourceBlob.Uri, _workStorage, targetUrl, destinationProperties: null, cancellationToken);
             }
             var copySucceededContent = new StringStorageContent("", TextContentType);
+            var copySucceededUrl = _workStorage.ResolveUri(CopySucceededFilename);
             await _workStorage.Save(copySucceededUrl, copySucceededContent, overwrite: true, cancellationToken: cancellationToken);
         }
 
         private async Task<List<StorageListItem>> EnumerateSourceBlobsAsync()
         {
-            var blobs = await _sourceStorage.List(true, CancellationToken.None);
+            var blobs = await _sourceStorage.List(getMetadata: true, cancellationToken: CancellationToken.None);
+
+            return blobs.ToList();
+        }
+
+        private async Task<List<StorageListItem>> EnumerateWorkStorageBlobsAsync()
+        {
+            var blobs = await _workStorage.List(getMetadata: true, cancellationToken: CancellationToken.None);
 
             return blobs.ToList();
         }
