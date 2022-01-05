@@ -8,13 +8,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using NuGet.Services.Storage;
 
@@ -34,7 +31,6 @@ namespace Stats.PostProcessReports
         private readonly IStorage _sourceStorage;
         private readonly IStorage _workStorage;
         private readonly IStorage _destinationStorage;
-        private readonly CloudStorageAccount _storageAccount;
         private readonly PostProcessReportsConfiguration _configuration;
         private readonly ITelemetryService _telemetryService;
         private readonly ILogger<DetailedReportPostProcessor> _logger;
@@ -43,7 +39,6 @@ namespace Stats.PostProcessReports
             IStorage sourceStorage,
             IStorage workStorage,
             IStorage destinationStorage,
-            CloudStorageAccount cloudStorageAccount,
             IOptionsSnapshot<PostProcessReportsConfiguration> configurationAccessor,
             ITelemetryService telemetryService,
             ILogger<DetailedReportPostProcessor> logger)
@@ -51,7 +46,6 @@ namespace Stats.PostProcessReports
             _sourceStorage = sourceStorage ?? throw new ArgumentNullException(nameof(sourceStorage));
             _workStorage = workStorage ?? throw new ArgumentNullException(nameof(workStorage));
             _destinationStorage = destinationStorage ?? throw new ArgumentNullException(nameof(destinationStorage));
-            _storageAccount = cloudStorageAccount ?? throw new ArgumentNullException(nameof(cloudStorageAccount));
             if (configurationAccessor == null)
             {
                 throw new ArgumentNullException(nameof(configurationAccessor));
