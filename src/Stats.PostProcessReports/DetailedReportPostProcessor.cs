@@ -247,6 +247,11 @@ namespace Stats.PostProcessReports
 
         private static bool BlobMetadataExists(StorageListItem sourceBlob, TotalStats totalStats)
         {
+            if (sourceBlob.Metadata == null)
+            {
+                return false;
+            }
+
             var allMetadataExists = sourceBlob.Metadata.TryGetValue(TotalLinesMetadataItem, out var totalLinesStr);
             allMetadataExists = sourceBlob.Metadata.TryGetValue(LinesFailedMetadataItem, out var linesFailedStr) && allMetadataExists;
             allMetadataExists = sourceBlob.Metadata.TryGetValue(FilesCreatedMetadataItem, out var filesCreatedStr) && allMetadataExists;
@@ -339,7 +344,7 @@ namespace Stats.PostProcessReports
                     ++numFailures;
                     continue;
                 }
-                var outFilename = $"recentpopularitydetail_{data.PackageId}.json";
+                var outFilename = $"recentpopularitydetail_{data.PackageId.ToLowerInvariant()}.json";
                 var destinationUri = _destinationStorage.ResolveUri(outFilename);
                 var storageContent = new StringStorageContent(details.Data, JsonContentType);
 
