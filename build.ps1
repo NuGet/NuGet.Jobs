@@ -198,7 +198,7 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\Stats.CollectAzureChinaCDNLogs\Stats.CollectAzureChinaCDNLogs.csproj", `
             "src\Stats.CreateAzureCdnWarehouseReports\Stats.CreateAzureCdnWarehouseReports.csproj", `
             "src\Stats.ImportAzureCdnStatistics\Stats.ImportAzureCdnStatistics.csproj", `
-            "src\Stats.PostProcessReports\Stats.PostProcessReports.csproj", `
+            "src\Stats.PostProcessReports\Stats.PostProcessReports.nuspec", `
             "src\Stats.RollUpDownloadFacts\Stats.RollUpDownloadFacts.csproj", `
             "src\StatusAggregator\StatusAggregator.csproj", `
             "src\Validation.PackageSigning.ProcessSignature\Validation.PackageSigning.ProcessSignature.csproj", `
