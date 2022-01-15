@@ -122,5 +122,19 @@ namespace Tests.Stats.CollectAzureCdnLogs
 
             return mockProvider.Object;
         }
+
+        [Fact]
+        public void HandlesEmptyW3CValues()
+        {
+            var input = "123 0 - - - 443 - - - - - 0 100 - - 123 -";
+
+            var job = new Job();
+            var output = job.GetParsedModifiedLogEntry(
+                0,
+                input,
+                "foo.log");
+
+            Assert.Equal(input + "\r\n", output);
+        }
     }
 }
