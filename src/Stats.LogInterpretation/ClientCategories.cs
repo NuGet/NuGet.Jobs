@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Stats.LogInterpretation
 {
+    /// <summary>
+    /// Built from the SQL functions here: https://github.com/NuGet/NuGet.Jobs/tree/main/src/Stats.Warehouse/Programmability/Functions
+    /// </summary>
     public static class ClientCategories
     {
         public const string NuGet = "NuGet";

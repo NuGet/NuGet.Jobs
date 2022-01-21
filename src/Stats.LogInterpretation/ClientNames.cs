@@ -4,6 +4,10 @@ using System.Text;
 
 namespace Stats.LogInterpretation
 {
+    /// <summary>
+    /// Below exhaustive list of client names has been built from existing SQL functions.
+    /// These can be found here: https://github.com/NuGet/NuGet.Jobs/tree/main/src/Stats.Warehouse/Programmability/Functions
+    /// </summary>
     public static class ClientNames
     {
         public static IReadOnlyList<string> NuGet = new List<string>()
