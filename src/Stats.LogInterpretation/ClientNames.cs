@@ -6,7 +6,7 @@ namespace Stats.LogInterpretation
 {
     public static class ClientNames
     {
-        public static IList<string> NuGet = new List<string>()
+        public static IReadOnlyList<string> NuGet = new List<string>()
         {
             "NuGet Cross-Platform Command Line",
             "NuGet Client V3",
@@ -33,18 +33,18 @@ namespace Stats.LogInterpretation
             "NuGet Desktop MSBuild Task",
         };
 
-        public static IList<string> WebMatrix = new List<string>()
+        public static IReadOnlyList<string> WebMatrix = new List<string>()
         {
             "WebMatrix"
         };
 
-        public static IList<string> NuGetPackageExplorer = new List<string>()
+        public static IReadOnlyList<string> NuGetPackageExplorer = new List<string>()
         {
             "NuGet Package Explorer Metro",
             "NuGet Package Explorer"
         };
 
-        public static IList<string> Script = new List<string>()
+        public static IReadOnlyList<string> Script = new List<string>()
         {
             "Powershell",
             "curl",
@@ -52,7 +52,7 @@ namespace Stats.LogInterpretation
             "Java"
         };
 
-        public static IList<string> Crawler = new List<string>()
+        public static IReadOnlyList<string> Crawler = new List<string>()
         {
             "Bot",
             "bot",
@@ -63,7 +63,7 @@ namespace Stats.LogInterpretation
             "spider"
         };
 
-        public static IList<string> Mobile = new List<string>()
+        public static IReadOnlyList<string> Mobile = new List<string>()
         {
             "Mobile",
             "Android",
@@ -75,7 +75,7 @@ namespace Stats.LogInterpretation
             "iLunascape"
         };
 
-        public static IList<string> Browser = new List<string>()
+        public static IReadOnlyList<string> Browser = new List<string>()
         {
             "Mozilla",
             "Firefox",
@@ -97,13 +97,13 @@ namespace Stats.LogInterpretation
             "Lunascape"
         };
 
-        public static IList<string> AbsoluteBrowserNames = new List<string>()
+        public static IReadOnlyList<string> AbsoluteBrowserNames = new List<string>()
         {
             "IE",
             "Iron"
         };
 
-        public static IList<string> Unknown = new List<string>()
+        public static IReadOnlyList<string> Unknown = new List<string>()
         {
             "PhantomJS",
             "WebKit Nightly",

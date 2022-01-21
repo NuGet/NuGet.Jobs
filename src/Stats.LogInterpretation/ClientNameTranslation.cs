@@ -14,39 +14,39 @@ namespace Stats.LogInterpretation
                 return string.Empty;
             }
 
-            if (clientName.Contains(ClientNames.NuGet))
+            if (clientName.IsContainedInList(ClientNames.NuGet))
             {
                 return ClientCategories.NuGet;
             }
 
-            if (clientName.Contains(ClientNames.WebMatrix))
+            if (clientName.IsContainedInList(ClientNames.WebMatrix))
             {
                 return ClientCategories.WebMatrix;
             }
 
-            if (clientName.Contains(ClientNames.NuGetPackageExplorer))
+            if (clientName.IsContainedInList(ClientNames.NuGetPackageExplorer))
             {
                 return ClientCategories.NuGetPackageExplorer;
             }
 
-            if (clientName.Contains(ClientNames.Script))
+            if (clientName.IsContainedInList(ClientNames.Script))
             {
                 return ClientCategories.Script;
             }
 
-            if (clientName.Contains(ClientNames.Crawler))
+            if (clientName.IsContainedInList(ClientNames.Crawler))
             {
                 return ClientCategories.Crawler;
             }
 
-            if (clientName.Contains(ClientNames.Mobile))
+            if (clientName.IsContainedInList(ClientNames.Mobile))
             {
                 return ClientCategories.Mobile;
             }
 
             // Check these late in the process, because other User Agents tend to also
             // send browser strings (e.g. PowerShell sends the Mozilla string along).
-            if (clientName.Contains(ClientNames.Browser)
+            if (clientName.IsContainedInList(ClientNames.Browser)
                 || ClientNames.AbsoluteBrowserNames
                     .Any(abn => clientName.Equals(abn, StringComparison.OrdinalIgnoreCase)))
             {
@@ -54,7 +54,7 @@ namespace Stats.LogInterpretation
             }
 
             // Explicitly categorize unknowns, test frameworks or others that should be filtered out in the reports
-            if (clientName.Contains(ClientNames.Unknown))
+            if (clientName.IsContainedInList(ClientNames.Unknown))
             {
                 return ClientCategories.Unknown;
             }
@@ -84,7 +84,7 @@ namespace Stats.LogInterpretation
         /// <param name="targetList">List of substrings to verify</param>
         /// <param name="comparison">Instane of <see cref="StringComparison"/>, defaults to <see cref="StringComparison.OrdinalIgnoreCase"/></param>
         /// <returns></returns>
-        private static bool Contains(this string source, IList<string> targetList, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
+        private static bool IsContainedInList(this string source, IReadOnlyList<string> targetList, StringComparison comparison = StringComparison.OrdinalIgnoreCase)
         {
             if (string.IsNullOrWhiteSpace(source))
             {
