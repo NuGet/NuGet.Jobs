@@ -2,7 +2,7 @@
 
   <!-- NuGet dependencies shared across projects -->
   <PropertyGroup>
-    <ServerCommonPackageVersion>2.97.0-agr-blobcopy-5705902</ServerCommonPackageVersion>
+    <ServerCommonPackageVersion>2.98.0-agr-blobcopy-5706232</ServerCommonPackageVersion>
     <NuGetClientPackageVersion>6.0.0</NuGetClientPackageVersion>
     <NuGetGalleryPackageVersion>4.4.5-dev-5589442</NuGetGalleryPackageVersion>
   </PropertyGroup>
