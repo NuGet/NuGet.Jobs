@@ -20,5 +20,7 @@ namespace Stats.PostProcessReports
         /// Reports results of processing all incoming file set.
         /// </summary>
         void ReportTotals(int totalInputFiles, int totalLines, int totalFilesCreated, int totalFailedLines);
+
+        void ReportSourceAge(double sourceAgeHours);
     }
 }

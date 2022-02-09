@@ -19,6 +19,7 @@ namespace Stats.PostProcessReports
         private const string TotalLinesProcessedMetricName = "TotalLinesProcessed";
         private const string TotalFilesCreatedMetricName = "TotalFilesCreated";
         private const string TotalLinesFailedMetricName = "TotalLinesFailed";
+        private const string SourceReportAgeHours = "SourceReportAgeHours";
 
         private readonly ITelemetryClient _telemetryClient;
 
@@ -41,6 +42,11 @@ namespace Stats.PostProcessReports
             _telemetryClient.TrackMetric(TotalLinesProcessedMetricName, totalLines);
             _telemetryClient.TrackMetric(TotalFilesCreatedMetricName, totalFiles);
             _telemetryClient.TrackMetric(TotalLinesFailedMetricName, totalFailedLines);
+        }
+
+        public void ReportSourceAge(double sourceAgeHours)
+        {
+            _telemetryClient.TrackMetric(SourceReportAgeHours, sourceAgeHours);
         }
     }
 }

@@ -56,6 +56,8 @@ namespace Stats.PostProcessReports
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger.LogInformation("Connection limit: {ConnectionLimit}", ServicePointManager.DefaultConnectionLimit);
 
+            // there are HTTP requests sent outside of worker threads, so we'll buffer the target connection
+            // limit a bit to accommodate for anything going slightly unexpected.
             ServicePointManager.DefaultConnectionLimit = _configuration.ReportWriteDegreeOfParallelism + 10;
         }
 
@@ -64,33 +66,41 @@ namespace Stats.PostProcessReports
             var cancellationToken = CancellationToken.None;
             var sourceBlobs = await EnumerateSourceBlobsAsync();
 
-            if (!sourceBlobs.Where(b => GetBlobName(b) == SuccessFilename).Any())
+            var sourceSuccessFile = sourceBlobs.Where(b => GetBlobName(b) == SuccessFilename).FirstOrDefault();
+
+            if (sourceSuccessFile == null)
             {
                 _logger.LogInformation("No " + SuccessFilename + " file present in source location, terminating until file is available.");
                 return;
             }
 
+            if (sourceSuccessFile.LastModifiedUtc.HasValue)
+            {
+                var ageHours = (DateTime.UtcNow - sourceSuccessFile.LastModifiedUtc.Value).TotalHours;
+                _telemetryService.ReportSourceAge(ageHours);
+            }
+
             var copySucceeded = await _workStorage.ExistsAsync(CopySucceededFilename, cancellationToken);
-            var jobSucceeded = await _workStorage.ExistsAsync(JobSucceededFilename, cancellationToken);
 
             var sourceJsonBlobs = sourceBlobs.Where(b => b.Uri.AbsolutePath.EndsWith(JsonExtension, StringComparison.OrdinalIgnoreCase)).ToList();
             var copyNeeded = true;
             var sourceBlobsExist = false;
             if (copySucceeded)
             {
-                sourceBlobsExist = await SourceBlobExistsInWorkLocationAsync(sourceJsonBlobs, cancellationToken);
+                sourceBlobsExist = await AnySourceBlobExistsInWorkLocationAsync(sourceJsonBlobs, cancellationToken);
                 copyNeeded = !sourceBlobsExist;
             }
 
             if (copyNeeded)
             {
-                await CopySourceBlobsAsync(sourceJsonBlobs, copySucceeded, cancellationToken);
+                await CopySourceBlobsAsync(sourceJsonBlobs, cancellationToken);
             }
             else
             {
                 _logger.LogInformation("Previous copy succeeded, will not copy.");
             }
 
+            var jobSucceeded = await _workStorage.ExistsAsync(JobSucceededFilename, cancellationToken);
             if (copySucceeded && jobSucceeded && sourceBlobsExist)
             {
                 _logger.LogInformation("No new data, terminating until updated.");
@@ -150,7 +160,7 @@ namespace Stats.PostProcessReports
             _telemetryService.ReportTotals(totals.SourceFilesProcessed, totals.TotalLinesProcessed, totals.TotalFilesCreated, totals.TotalLinesFailed);
         }
 
-        private async Task<bool> SourceBlobExistsInWorkLocationAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
+        private async Task<bool> AnySourceBlobExistsInWorkLocationAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
         {
             var jsonBlob = jsonBlobs.Select(b => GetBlobName(b)).FirstOrDefault();
             if (jsonBlob != null)
@@ -160,7 +170,7 @@ namespace Stats.PostProcessReports
             return false;
         }
 
-        private async Task CopySourceBlobsAsync(List<StorageListItem> jsonBlobs, bool copySucceeded, CancellationToken cancellationToken)
+        private async Task CopySourceBlobsAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Cleaning up work storage");
             var workFilesToDelete = await EnumerateWorkStorageBlobsAsync();
@@ -289,30 +299,6 @@ namespace Stats.PostProcessReports
             }
 
             return path.Substring(lastSlash + 1);
-        }
-
-        private static string GetPathInContainer(StorageListItem blob)
-        {
-            string path = blob.Uri.AbsolutePath;
-            if (path.Length < 4)
-            {
-                // 1. Starting slash
-                // 2. At least one character for a container name
-                // 3. Slash separating container from the rest of the path
-                // 4. At least one character for the rest of the path
-                throw new ArgumentException($"Blob URI path must be at least 4 characters", nameof(blob));
-            }
-
-            // absolute paths start with slash, so we'll start searching for the next one
-            // starting from the second character
-            int secondSlash = path.IndexOf('/', 1);
-
-            if (secondSlash < 0)
-            {
-                throw new ArgumentException($"Blob URI path must have at last 2 levels", nameof(blob));
-            }
-
-            return path.Substring(secondSlash + 1);
         }
 
         private async Task WriteReports(
