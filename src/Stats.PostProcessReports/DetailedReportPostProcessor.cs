@@ -170,10 +170,30 @@ namespace Stats.PostProcessReports
             return false;
         }
 
+        /// <summary>
+        /// Sorting helper to make sure when we are cleaning up work location, flag
+        /// files are deleted first, so we don't have a chance to end up in an inconsistent
+        /// state if deletion fails at some point.
+        /// </summary>
+        private static int FlagFilesFirst(StorageListItem listItem)
+        {
+            var blobName = GetBlobName(listItem);
+            if (blobName == CopySucceededFilename)
+            {
+                return 0;
+            }
+            if (blobName == JobSucceededFilename)
+            {
+                return 1;
+            }
+
+            return 2;
+        }
+
         private async Task CopySourceBlobsAsync(List<StorageListItem> jsonBlobs, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Cleaning up work storage");
-            var workFilesToDelete = await EnumerateWorkStorageBlobsAsync();
+            var workFilesToDelete = (await EnumerateWorkStorageBlobsAsync()).OrderBy(FlagFilesFirst).ToList();
             foreach (var existingWorkBlob in workFilesToDelete)
             {
                 await _workStorage.Delete(existingWorkBlob.Uri, cancellationToken);
