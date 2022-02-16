@@ -66,11 +66,13 @@ namespace NuGet.Services.AzureSearch
                 case BaseMetadataDocument baseMetadata:
                     JsonSerializer.Serialize(writer, baseMetadata, options);
                     break;
-                default:
+                case KeyedDocument keyed:
                     writer.WriteStartObject();
-                    writer.WriteString("key", value.Key);
+                    writer.WriteString("key", keyed.Key);
                     writer.WriteEndObject();
                     break;
+                default:
+                    throw new NotImplementedException();
             }
         }
     }
