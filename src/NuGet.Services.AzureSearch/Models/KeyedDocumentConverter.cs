@@ -9,7 +9,7 @@ namespace NuGet.Services.AzureSearch
 {
     /// <summary>
     /// This converter is necessary since polymorphic deserialization is not supported by System.Text.Json and by
-    /// extensionion Azure.Search.Documents. However we leverage polymorphism for performance and ergonmics reasons
+    /// extension Azure.Search.Documents. However we leverage polymorphism for performance and ergonomics reasons
     /// in <see cref="BatchPusher"/>. Azure Search supports a mixture document types and actions in a single "index
     /// documents" REST API call so it is possible from a service perspective just not from the SDK, out of the box.
     /// 
