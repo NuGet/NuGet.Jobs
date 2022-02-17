@@ -36,7 +36,7 @@ namespace NuGet.Services.AzureSearch.Support
                 var json = JsonDocument.Parse(rawJson);
                 using (var stream = new MemoryStream())
                 {
-                    Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
+                    var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
                     json.WriteTo(writer);
                     writer.Flush();
                     return Encoding.UTF8.GetString(stream.ToArray());
