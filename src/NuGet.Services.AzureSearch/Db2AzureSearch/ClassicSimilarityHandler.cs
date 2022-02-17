@@ -24,7 +24,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            // Only pacth the API version query parameter on the POST request to create an index. Leave everything else
+            // Only patch the API version query parameter on the POST request to create an index. Leave everything else
             // untouched.
             if (request.Method == HttpMethod.Post
                 && request.RequestUri.PathAndQuery == ExpectedPathAndQuery)
