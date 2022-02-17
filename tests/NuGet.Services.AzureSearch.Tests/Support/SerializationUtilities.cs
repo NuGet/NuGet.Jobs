@@ -23,7 +23,7 @@ namespace NuGet.Services.AzureSearch.Support
             using (var testHandler = new TestHttpClientHandler())
             {
                 var indexClient = new SearchClient(
-                   new Uri("https://unit-test-service/"),
+                   new Uri("https://unit-test-service.test/"),
                    "unit-test-index",
                    new AzureKeyCredential("unit-test-api-key"),
                    new SearchClientOptions
