@@ -50,7 +50,7 @@ namespace Validation.PackageSigning.Core.Tests
         public class TheLoadAsyncMethod
         {
             [Fact]
-            public void UsesExpectedFileNameAndThrowsWhenCertificateFailedToLoadFromStorage()
+            public async Task UsesExpectedFileNameAndThrowsWhenCertificateFailedToLoadFromStorage()
             {
                 // Arrange
                 var certificate = TestResources.GetTestCertificate(TestResources.TrustedCARootCertificate);
@@ -74,7 +74,7 @@ namespace Validation.PackageSigning.Core.Tests
                 Task invocation() => certificateStore.LoadAsync(sha256Thumbprint, cancellationToken);
 
                 // Assert
-                Assert.ThrowsAsync<InvalidOperationException>(invocation);
+                await Assert.ThrowsAsync<InvalidOperationException>(invocation);
                 storage.Verify();
             }
 
