@@ -111,40 +111,6 @@ namespace Validation.PackageSigning.Core.Tests
         public class TheSaveAsyncMethod
         {
             [Fact]
-            public void UsesExpectedFileNameAndUriAndDoesNotOverwriteBlob()
-            {
-                // Arrange
-                var certificate = TestResources.GetTestCertificate(TestResources.TrustedCARootCertificate);
-                var sha256Thumbprint = certificate.ComputeSHA256Thumbprint();
-                var expectedFileName = GetExpectedFileName(sha256Thumbprint);
-                var expectedUri = GetExpectedUri(sha256Thumbprint);
-                var cancellationToken = CancellationToken.None;
-                var storage = new Mock<IStorage>(MockBehavior.Strict);
-                storage
-                    .Setup(m => m.ResolveUri(expectedFileName))
-                    .Returns(expectedUri).Verifiable();
-                storage
-                    .Setup(m => m.Save(
-                        expectedUri,
-                        It.IsAny<StreamStorageContent>(),
-                        false,
-                        cancellationToken))
-                    .Returns(Task.CompletedTask)
-                    .Verifiable();
-
-                var logger = new Mock<ILogger<CertificateStore>>(MockBehavior.Loose);
-                var certificateStore = new CertificateStore(storage.Object, logger.Object);
-
-                // Act
-                Task invocation() => certificateStore.SaveAsync(certificate, cancellationToken);
-
-                // Assert
-                Assert.ThrowsAsync<InvalidOperationException>(invocation);
-                storage.Verify();
-                certificate.Verify();
-            }
-
-            [Fact]
             public async Task SavesCertificateToStorage()
             {
                 // Arrange
