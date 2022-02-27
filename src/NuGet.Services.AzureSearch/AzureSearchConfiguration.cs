@@ -9,6 +9,7 @@ namespace NuGet.Services.AzureSearch
     {
         public string SearchServiceName { get; set; }
         public string SearchServiceApiKey { get; set; }
+        public string SearchServiceManagedIdentityClientId { get; set; }
         public string SearchIndexName { get; set; }
         public string HijackIndexName { get; set; }
         public string StorageConnectionString { get; set; }
