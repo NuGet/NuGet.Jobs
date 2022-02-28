@@ -19,16 +19,26 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
     /// </summary>
     public class ClassicSimilarityHandler : DelegatingHandler
     {
-        private const string ExpectedPathAndQuery = "/indexes?api-version=2020-06-30";
+        private const string ExpectedPath = "/indexes";
+        private const string ExpectedQuery = "api-version=2021-04-30-Preview";
+        private const string ExpectedPathAndQuery = ExpectedPath + "?" + ExpectedQuery;
         private const string QueryReplacement = "api-version=2019-05-06";
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             // Only patch the API version query parameter on the POST request to create an index. Leave everything else
-            // untouched.
-            if (request.Method == HttpMethod.Post
-                && request.RequestUri.PathAndQuery == ExpectedPathAndQuery)
+            // untouched. If the path matches but the query string does not, we throw. This indicates the SDK has
+            // changed its version and the code needs to be updated and tested carefully.
+            if (request.Method == HttpMethod.Post && request.RequestUri.LocalPath == ExpectedPath)
             {
+                if (request.RequestUri.PathAndQuery != ExpectedPathAndQuery)
+                {
+                    throw new InvalidOperationException(
+                        $"The query string for index creation was not the expected value. " +
+                        $"Expected: '{ExpectedQuery}'. " +
+                        $"Actual: '{request.RequestUri.PathAndQuery}'.");
+                }
+
                 var uriBuilder = new UriBuilder(request.RequestUri);
                 uriBuilder.Query = QueryReplacement;
                 request.RequestUri = uriBuilder.Uri;
