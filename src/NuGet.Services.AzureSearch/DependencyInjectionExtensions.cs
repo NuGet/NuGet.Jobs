@@ -257,7 +257,16 @@ namespace NuGet.Services.AzureSearch
                         Transport = transport,
                     };
 
-                    if (!string.IsNullOrEmpty(options.Value.SearchServiceManagedIdentityClientId))
+                    var hasManagedIdentity = !string.IsNullOrEmpty(options.Value.SearchServiceManagedIdentityClientId);
+                    var hasApiKey = !string.IsNullOrEmpty(options.Value.SearchServiceApiKey);
+
+                    if (hasManagedIdentity == hasApiKey)
+                    {
+                        throw new InvalidOperationException($"Either the " +
+                            $"{nameof(AzureSearchConfiguration.SearchServiceManagedIdentityClientId)} or the " +
+                            $"{nameof(AzureSearchConfiguration.SearchServiceApiKey)} configuration value must be set, but not both.");
+                    }
+                    else if (hasManagedIdentity)
                     {
                         return new SearchIndexClient(
                             endpoint,
