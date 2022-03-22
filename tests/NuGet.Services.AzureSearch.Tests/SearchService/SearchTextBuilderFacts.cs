@@ -377,7 +377,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { @"Tags:""""", @"*" },
                     { @"Tags:"" """, @"*" },
                     { @"Tags:""      """, @"*" },
-                    { @"windows Tags:""      """, @"+windows* windows^2 packageId:windows^2" },
+                    { @"windows Tags:""      """, @"+windows* windows^2 packageId:windows^10" },
                     { @"windows Tags:""      "" Tags:sdk", @"+tags:sdk +windows* windows^2" },
 
                     // Duplicate search terms on the same query field are folded
