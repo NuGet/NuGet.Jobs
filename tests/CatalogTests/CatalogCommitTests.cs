@@ -25,8 +25,8 @@ namespace CatalogTests
             var idKeyword = "https://nuget.test/a";
             var commitTimeStamp = DateTime.UtcNow.ToString("O");
             var jObject = new JObject(
-                new JProperty(NgTests.CatalogConstants.IdKeyword, idKeyword),
-                new JProperty(NgTests.CatalogConstants.CommitTimeStamp, commitTimeStamp));
+                new JProperty(CatalogConstants.IdKeyword, idKeyword),
+                new JProperty(CatalogConstants.CommitTimeStamp, commitTimeStamp));
 
             var commit = CatalogCommit.Create(jObject);
 
@@ -58,12 +58,12 @@ namespace CatalogTests
         public void CompareTo_WhenObjIsCatalogCommit_ReturnsValue()
         {
             var jObject0 = new JObject(
-                new JProperty(NgTests.CatalogConstants.IdKeyword, "https://nuget.test/a"),
-                new JProperty(NgTests.CatalogConstants.CommitTimeStamp, DateTime.UtcNow.ToString("O")));
+                new JProperty(CatalogConstants.IdKeyword, "https://nuget.test/a"),
+                new JProperty(CatalogConstants.CommitTimeStamp, DateTime.UtcNow.ToString("O")));
 
             var jObject1 = new JObject(
-                new JProperty(NgTests.CatalogConstants.IdKeyword, "https://nuget.test/b"),
-                new JProperty(NgTests.CatalogConstants.CommitTimeStamp, DateTime.UtcNow.AddHours(1).ToString("O")));
+                new JProperty(CatalogConstants.IdKeyword, "https://nuget.test/b"),
+                new JProperty(CatalogConstants.CommitTimeStamp, DateTime.UtcNow.AddHours(1).ToString("O")));
 
             var commit0 = CatalogCommit.Create(jObject0);
             var commit1 = CatalogCommit.Create(jObject1);
@@ -76,8 +76,8 @@ namespace CatalogTests
         private static CatalogCommit CreateCatalogCommit()
         {
             var jObject = new JObject(
-                new JProperty(NgTests.CatalogConstants.IdKeyword, "https://nuget.test/a"),
-                new JProperty(NgTests.CatalogConstants.CommitTimeStamp, DateTime.UtcNow.ToString("O")));
+                new JProperty(CatalogConstants.IdKeyword, "https://nuget.test/a"),
+                new JProperty(CatalogConstants.CommitTimeStamp, DateTime.UtcNow.ToString("O")));
 
             return CatalogCommit.Create(jObject);
         }

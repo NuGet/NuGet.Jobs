@@ -52,7 +52,7 @@ namespace CatalogTests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => new CatalogIndexEntry(
                     uri,
-                    NgTests.CatalogConstants.NuGetPackageDetails,
+                    CatalogConstants.NuGetPackageDetails,
                     _commitId,
                     _commitTimeStamp,
                     _packageIdentity));
@@ -116,7 +116,7 @@ namespace CatalogTests
             var exception = Assert.Throws<ArgumentException>(
                 () => new CatalogIndexEntry(
                     _uri,
-                    NgTests.CatalogConstants.NuGetPackageDelete,
+                    CatalogConstants.NuGetPackageDelete,
                     commitId,
                     _commitTimeStamp,
                     _packageIdentity));
@@ -130,7 +130,7 @@ namespace CatalogTests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => new CatalogIndexEntry(
                     _uri,
-                    NgTests.CatalogConstants.NuGetPackageDelete,
+                    CatalogConstants.NuGetPackageDelete,
                     _commitId,
                     _commitTimeStamp,
                     packageIdentity: null));
@@ -143,13 +143,13 @@ namespace CatalogTests
         {
             var entry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 _commitTimeStamp,
                 _packageIdentity);
 
             Assert.Equal(_uri.AbsoluteUri, entry.Uri.AbsoluteUri);
-            Assert.Equal(NgTests.CatalogConstants.NuGetPackageDetails, entry.Types.Single());
+            Assert.Equal(CatalogConstants.NuGetPackageDetails, entry.Types.Single());
             Assert.Equal(_commitId, entry.CommitId);
             Assert.Equal(_commitTimeStamp, entry.CommitTimeStamp);
             Assert.Equal(_packageId, entry.Id);
@@ -174,8 +174,8 @@ namespace CatalogTests
             var entry = CatalogIndexEntry.Create(commitItem);
 
             Assert.Equal(_uri.AbsoluteUri, entry.Uri.AbsoluteUri);
-            Assert.Equal(NgTests.CatalogConstants.NuGetPackageDetails, entry.Types.Single());
-            Assert.Equal(commitItemJObject[NgTests.CatalogConstants.CommitId].ToString(), entry.CommitId);
+            Assert.Equal(CatalogConstants.NuGetPackageDetails, entry.Types.Single());
+            Assert.Equal(commitItemJObject[CatalogConstants.CommitId].ToString(), entry.CommitId);
             Assert.Equal(_commitTimeStamp, entry.CommitTimeStamp.ToUniversalTime());
             Assert.Equal(_packageId, entry.Id);
             Assert.Equal(_packageVersion, entry.Version);
@@ -186,7 +186,7 @@ namespace CatalogTests
         {
             var entry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 _commitTimeStamp,
                 _packageIdentity);
@@ -202,13 +202,13 @@ namespace CatalogTests
             var now = DateTime.UtcNow;
             var olderEntry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 now.AddHours(-1),
                 _packageIdentity);
             var newerEntry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 now,
                 _packageIdentity);
@@ -222,13 +222,13 @@ namespace CatalogTests
         {
             var entry0 = new CatalogIndexEntry(
                 new Uri("https://nuget.test/a"),
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 _commitTimeStamp,
                 _packageIdentity);
             var entry1 = new CatalogIndexEntry(
                 new Uri("https://nuget.test/b"),
-                NgTests.CatalogConstants.NuGetPackageDelete,
+                CatalogConstants.NuGetPackageDelete,
                 Guid.NewGuid().ToString(),
                 _commitTimeStamp,
                 new PackageIdentity(id: "b", version: new NuGetVersion("4.5.6")));
@@ -243,7 +243,7 @@ namespace CatalogTests
         {
             var entry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 _commitTimeStamp,
                 _packageIdentity);
@@ -256,7 +256,7 @@ namespace CatalogTests
         {
             var entry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDelete,
+                CatalogConstants.NuGetPackageDelete,
                 _commitId,
                 _commitTimeStamp,
                 _packageIdentity);
@@ -269,12 +269,12 @@ namespace CatalogTests
         {
             var entry = new CatalogIndexEntry(
                 _uri,
-                NgTests.CatalogConstants.NuGetPackageDetails,
+                CatalogConstants.NuGetPackageDetails,
                 _commitId,
                 _commitTimeStamp,
                 _packageIdentity);
 
-            var jObject = CreateCatalogIndexJObject(NgTests.CatalogConstants.NuGetPackageDetails);
+            var jObject = CreateCatalogIndexJObject(CatalogConstants.NuGetPackageDetails);
 
             var expectedResult = jObject.ToString(Formatting.None, _settings.Converters.ToArray());
             var actualResult = JsonConvert.SerializeObject(entry, Formatting.None, _settings);
@@ -283,15 +283,15 @@ namespace CatalogTests
         }
 
         [Theory]
-        [InlineData(NgTests.CatalogConstants.IdKeyword)]
-        [InlineData(NgTests.CatalogConstants.TypeKeyword)]
-        [InlineData(NgTests.CatalogConstants.CommitId)]
-        [InlineData(NgTests.CatalogConstants.CommitTimeStamp)]
-        [InlineData(NgTests.CatalogConstants.NuGetId)]
-        [InlineData(NgTests.CatalogConstants.NuGetVersion)]
+        [InlineData(CatalogConstants.IdKeyword)]
+        [InlineData(CatalogConstants.TypeKeyword)]
+        [InlineData(CatalogConstants.CommitId)]
+        [InlineData(CatalogConstants.CommitTimeStamp)]
+        [InlineData(CatalogConstants.NuGetId)]
+        [InlineData(CatalogConstants.NuGetVersion)]
         public void JsonDeserialization_WhenRequiredPropertyIsMissing_Throws(string propertyToRemove)
         {
-            var jObject = CreateCatalogIndexJObject(NgTests.CatalogConstants.NuGetPackageDetails);
+            var jObject = CreateCatalogIndexJObject(CatalogConstants.NuGetPackageDetails);
 
             jObject.Remove(propertyToRemove);
 
@@ -306,13 +306,13 @@ namespace CatalogTests
         [Fact]
         public void JsonDeserialization_WhenTypeIsPackageDetails_ReturnsCorrectObject()
         {
-            var jObject = CreateCatalogIndexJObject(NgTests.CatalogConstants.NuGetPackageDetails);
+            var jObject = CreateCatalogIndexJObject(CatalogConstants.NuGetPackageDetails);
             var json = jObject.ToString(Formatting.None, _settings.Converters.ToArray());
 
             var entry = JsonConvert.DeserializeObject<CatalogIndexEntry>(json, _settings);
 
             Assert.Equal(_uri.AbsoluteUri, entry.Uri.AbsoluteUri);
-            Assert.Equal(NgTests.CatalogConstants.NuGetPackageDetails, entry.Types.Single());
+            Assert.Equal(CatalogConstants.NuGetPackageDetails, entry.Types.Single());
             Assert.False(entry.IsDelete);
             Assert.Equal(_commitId, entry.CommitId);
             Assert.Equal(_commitTimeStamp, entry.CommitTimeStamp);
@@ -323,13 +323,13 @@ namespace CatalogTests
         [Fact]
         public void JsonDeserialization_WhenTypeIsPackageDelete_ReturnsCorrectObject()
         {
-            var jObject = CreateCatalogIndexJObject(NgTests.CatalogConstants.NuGetPackageDelete);
+            var jObject = CreateCatalogIndexJObject(CatalogConstants.NuGetPackageDelete);
             var json = jObject.ToString(Formatting.None, _settings.Converters.ToArray());
 
             var entry = JsonConvert.DeserializeObject<CatalogIndexEntry>(json, _settings);
 
             Assert.Equal(_uri.AbsoluteUri, entry.Uri.AbsoluteUri);
-            Assert.Equal(NgTests.CatalogConstants.NuGetPackageDelete, entry.Types.Single());
+            Assert.Equal(CatalogConstants.NuGetPackageDelete, entry.Types.Single());
             Assert.True(entry.IsDelete);
             Assert.Equal(_commitId, entry.CommitId);
             Assert.Equal(_commitTimeStamp, entry.CommitTimeStamp);
@@ -340,12 +340,12 @@ namespace CatalogTests
         private JObject CreateCatalogIndexJObject(string type)
         {
             return new JObject(
-                new JProperty(NgTests.CatalogConstants.IdKeyword, _uri),
-                new JProperty(NgTests.CatalogConstants.TypeKeyword, type),
-                new JProperty(NgTests.CatalogConstants.CommitId, _commitId),
-                new JProperty(NgTests.CatalogConstants.CommitTimeStamp, _commitTimeStamp.ToString(NgTests.CatalogConstants.CommitTimeStampFormat)),
-                new JProperty(NgTests.CatalogConstants.NuGetId, _packageId),
-                new JProperty(NgTests.CatalogConstants.NuGetVersion, _packageVersion.ToNormalizedString()));
+                new JProperty(CatalogConstants.IdKeyword, _uri),
+                new JProperty(CatalogConstants.TypeKeyword, type),
+                new JProperty(CatalogConstants.CommitId, _commitId),
+                new JProperty(CatalogConstants.CommitTimeStamp, _commitTimeStamp.ToString(CatalogConstants.CommitTimeStampFormat)),
+                new JProperty(CatalogConstants.NuGetId, _packageId),
+                new JProperty(CatalogConstants.NuGetVersion, _packageVersion.ToNormalizedString()));
         }
     }
 }
