@@ -5,7 +5,7 @@ using System;
 
 namespace NuGet.Services.Metadata.Catalog
 {
-    public static class Constants
+    public static class CatalogConstants
     {
         public static readonly DateTime DateTimeMinValueUtc = DateTimeOffset.MinValue.UtcDateTime;
         public const int MaxPageSize = 550;

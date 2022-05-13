@@ -19,7 +19,7 @@ namespace NuGet.Services.AzureSearch
     public class BaseDocumentBuilder : IBaseDocumentBuilder
     {
         private static readonly VersionRangeFormatter VersionRangeFormatter = new VersionRangeFormatter();
-        private static readonly DateTimeOffset UnlistedPublished = new DateTimeOffset(Metadata.Catalog.Constants.UnpublishedDate);
+        private static readonly DateTimeOffset UnlistedPublished = new DateTimeOffset(Metadata.Catalog.CatalogConstants.UnpublishedDate);
 
         private static readonly HashSet<NuGetFramework> SpecialFrameworks = new HashSet<NuGetFramework>
         {

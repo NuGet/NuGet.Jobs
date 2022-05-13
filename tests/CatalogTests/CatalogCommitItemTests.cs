@@ -47,12 +47,12 @@ namespace CatalogTests
         [Fact]
         public void Create_WhenTypeIsEmpty_Throws()
         {
-            _commitItem[CatalogConstants.TypeKeyword] = new JArray();
+            _commitItem[NgTests.CatalogConstants.TypeKeyword] = new JArray();
 
             var exception = Assert.Throws<ArgumentException>(() => CatalogCommitItem.Create(_context, _commitItem));
 
             Assert.Equal("commitItem", exception.ParamName);
-            Assert.StartsWith($"The value of property '{CatalogConstants.TypeKeyword}' must be non-null and non-empty.", exception.Message);
+            Assert.StartsWith($"The value of property '{NgTests.CatalogConstants.TypeKeyword}' must be non-null and non-empty.", exception.Message);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace CatalogTests
             Assert.Equal(_now, commitItem.CommitTimeStamp.ToUniversalTime());
             Assert.True(Guid.TryParse(commitItem.CommitId, out var commitId));
             Assert.Equal(_packageIdentity, commitItem.PackageIdentity);
-            Assert.Equal(CatalogConstants.NuGetPackageDetails, commitItem.Types.Single());
+            Assert.Equal(NgTests.CatalogConstants.NuGetPackageDetails, commitItem.Types.Single());
             Assert.Equal(Schema.DataTypes.PackageDetails.AbsoluteUri, commitItem.TypeUris.Single().AbsoluteUri);
         }
 

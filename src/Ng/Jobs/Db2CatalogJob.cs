@@ -16,7 +16,7 @@ using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Sql;
-using Constants = NuGet.Services.Metadata.Catalog.Constants;
+using CatalogConstants = NuGet.Services.Metadata.Catalog.CatalogConstants;
 
 namespace Ng.Jobs
 {
@@ -88,9 +88,9 @@ namespace Ng.Jobs
         protected override void Init(IDictionary<string, string> arguments, CancellationToken cancellationToken)
         {
             Verbose = arguments.GetOrDefault(Arguments.Verbose, false);
-            StartDate = arguments.GetOrDefault(Arguments.StartDate, Constants.DateTimeMinValueUtc);
+            StartDate = arguments.GetOrDefault(Arguments.StartDate, CatalogConstants.DateTimeMinValueUtc);
             Top = arguments.GetOrDefault(Arguments.CursorSize, 20);
-            MaxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, Constants.MaxPageSize);
+            MaxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, CatalogConstants.MaxPageSize);
             SkipCreatedPackagesProcessing = arguments.GetOrDefault(Arguments.SkipCreatedPackagesProcessing, false);
 
             StorageFactory preferredPackageSourceStorageFactory = null;
@@ -179,18 +179,18 @@ namespace Ng.Jobs
 
                     // baseline timestamps
                     var catalogProperties = await CatalogProperties.ReadAsync(CatalogStorage, TelemetryService, cancellationToken);
-                    var lastCreated = catalogProperties.LastCreated ?? (StartDate ?? Constants.DateTimeMinValueUtc);
+                    var lastCreated = catalogProperties.LastCreated ?? (StartDate ?? CatalogConstants.DateTimeMinValueUtc);
                     var lastEdited = catalogProperties.LastEdited ?? lastCreated;
                     var lastDeleted = catalogProperties.LastDeleted ?? lastCreated;
 
-                    if (lastDeleted == Constants.DateTimeMinValueUtc)
+                    if (lastDeleted == CatalogConstants.DateTimeMinValueUtc)
                     {
                         lastDeleted = SkipCreatedPackagesProcessing ? lastEdited : lastCreated;
                     }
 
                     try
                     {
-                        if (lastDeleted > Constants.DateTimeMinValueUtc)
+                        if (lastDeleted > CatalogConstants.DateTimeMinValueUtc)
                         {
                             using (TelemetryService.TrackDuration(TelemetryConstants.DeletedPackagesSeconds))
                             {

@@ -140,16 +140,17 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         {
             var allPackages = await GetPackages(cursor);
 
-            return OrderPackagesByKeyDate(allPackages, keyDateFunc);
+            return OrderPackagesByKeyDate(allPackages, keyDateFunc, _maxPageSize);
         }
 
         /// <summary>
         /// Returns a <see cref="SortedList{DateTime, IList{FeedPackageDetails}}"/> of packages.
         /// </summary>
         /// <param name="keyDateFunc">The <see cref="DateTime"/> field to sort the <see cref="FeedPackageDetails"/> on.</param>
-        internal SortedList<DateTime, IList<FeedPackageDetails>> OrderPackagesByKeyDate(
+        internal static SortedList<DateTime, IList<FeedPackageDetails>> OrderPackagesByKeyDate(
             IReadOnlyCollection<FeedPackageDetails> packages,
-            Func<FeedPackageDetails, DateTime> keyDateFunc)
+            Func<FeedPackageDetails, DateTime> keyDateFunc,
+            int maxPageSize)
         {
             var result = new SortedList<DateTime, IList<FeedPackageDetails>>();
 
@@ -171,7 +172,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
             {
                 if (result.TryGetValue(keyDate, out IList<FeedPackageDetails> packagesForKeyDate))
                 {
-                    if (packagesCount > 0 && packagesCount + packagesForKeyDate.Count > _maxPageSize)
+                    if (packagesCount > 0 && packagesCount + packagesForKeyDate.Count > maxPageSize)
                     {
                         break;
                     }

@@ -37,7 +37,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Monitoring
         }
 
         /// <remarks>
-        /// Any values greater than <see cref="Constants.MaxPageSize"/> will be ignored by <see cref="IGalleryDatabaseQueryService"/>.
+        /// Any values greater than <see cref="CatalogConstants.MaxPageSize"/> will be ignored by <see cref="IGalleryDatabaseQueryService"/>.
         /// </remarks>
         protected override async Task<IReadOnlyCollection<FeedPackageDetails>> GetPackagesToCheckAsync(DateTime since, DateTime max, int top, CancellationToken cancellationToken)
         {

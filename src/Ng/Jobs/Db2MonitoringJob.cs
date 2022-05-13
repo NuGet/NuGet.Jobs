@@ -20,7 +20,6 @@ using NuGet.Services.Sql;
 using NuGet.Services.Storage;
 using CatalogStorage = NuGet.Services.Metadata.Catalog.Persistence.Storage;
 using CatalogStorageFactory = NuGet.Services.Metadata.Catalog.Persistence.StorageFactory;
-using Constants = NuGet.Services.Metadata.Catalog.Constants;
 
 namespace Ng.Jobs
 {
@@ -61,7 +60,7 @@ namespace Ng.Jobs
         {
             var verbose = arguments.GetOrDefault(Arguments.Verbose, false);
             _maxRequeueQueueSize = arguments.GetOrDefault(Arguments.MaxRequeueQueueSize, DefaultMaxQueueSize);
-            _maxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, Constants.MaxPageSize);
+            _maxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, CatalogConstants.MaxPageSize);
 
             CommandHelpers.AssertAzureStorage(arguments);
 

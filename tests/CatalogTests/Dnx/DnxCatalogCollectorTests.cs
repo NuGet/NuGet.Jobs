@@ -37,27 +37,27 @@ namespace CatalogTests.Dnx
         private const IAzureStorage _nullPreferredPackageSourceStorage = null;
         private static readonly Uri _contentBaseAddress = new Uri("http://tempuri.org/packages/");
         private readonly JObject _contextKeyword = new JObject(
-            new JProperty(CatalogConstants.VocabKeyword, CatalogConstants.NuGetSchemaUri),
-            new JProperty(CatalogConstants.NuGet, CatalogConstants.NuGetSchemaUri),
-            new JProperty(CatalogConstants.Items,
+            new JProperty(NgTests.CatalogConstants.VocabKeyword, NgTests.CatalogConstants.NuGetSchemaUri),
+            new JProperty(NgTests.CatalogConstants.NuGet, NgTests.CatalogConstants.NuGetSchemaUri),
+            new JProperty(NgTests.CatalogConstants.Items,
                 new JObject(
-                    new JProperty(CatalogConstants.IdKeyword, CatalogConstants.Item),
-                    new JProperty(CatalogConstants.ContainerKeyword, CatalogConstants.SetKeyword))),
-            new JProperty(CatalogConstants.Parent,
+                    new JProperty(NgTests.CatalogConstants.IdKeyword, NgTests.CatalogConstants.Item),
+                    new JProperty(NgTests.CatalogConstants.ContainerKeyword, NgTests.CatalogConstants.SetKeyword))),
+            new JProperty(NgTests.CatalogConstants.Parent,
                 new JObject(
-                    new JProperty(CatalogConstants.TypeKeyword, CatalogConstants.IdKeyword))),
-            new JProperty(CatalogConstants.CommitTimeStamp,
+                    new JProperty(NgTests.CatalogConstants.TypeKeyword, NgTests.CatalogConstants.IdKeyword))),
+            new JProperty(NgTests.CatalogConstants.CommitTimeStamp,
                 new JObject(
-                    new JProperty(CatalogConstants.TypeKeyword, CatalogConstants.XsdDateTime))),
-            new JProperty(CatalogConstants.NuGetLastCreated,
+                    new JProperty(NgTests.CatalogConstants.TypeKeyword, NgTests.CatalogConstants.XsdDateTime))),
+            new JProperty(NgTests.CatalogConstants.NuGetLastCreated,
                 new JObject(
-                    new JProperty(CatalogConstants.TypeKeyword, CatalogConstants.XsdDateTime))),
-            new JProperty(CatalogConstants.NuGetLastEdited,
+                    new JProperty(NgTests.CatalogConstants.TypeKeyword, NgTests.CatalogConstants.XsdDateTime))),
+            new JProperty(NgTests.CatalogConstants.NuGetLastEdited,
                 new JObject(
-                    new JProperty(CatalogConstants.TypeKeyword, CatalogConstants.XsdDateTime))),
-            new JProperty(CatalogConstants.NuGetLastDeleted,
+                    new JProperty(NgTests.CatalogConstants.TypeKeyword, NgTests.CatalogConstants.XsdDateTime))),
+            new JProperty(NgTests.CatalogConstants.NuGetLastDeleted,
                 new JObject(
-                    new JProperty(CatalogConstants.TypeKeyword, CatalogConstants.XsdDateTime))));
+                    new JProperty(NgTests.CatalogConstants.TypeKeyword, NgTests.CatalogConstants.XsdDateTime))));
         private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings()
         {
             DateParseHandling = DateParseHandling.None,
@@ -849,9 +849,9 @@ namespace CatalogTests.Dnx
 
                 var independentPage = new CatalogIndependentPage(
                     catalogPageUri.AbsoluteUri,
-                    CatalogConstants.CatalogPage,
+                    NgTests.CatalogConstants.CatalogPage,
                     commitId,
-                    commitTimeStamp.ToString(CatalogConstants.CommitTimeStampFormat),
+                    commitTimeStamp.ToString(NgTests.CatalogConstants.CommitTimeStampFormat),
                     packageDetails.Length,
                     catalogIndexUri.AbsoluteUri,
                     packageDetails,
@@ -950,7 +950,7 @@ namespace CatalogTests.Dnx
 
                 var independentPage = new CatalogIndependentPage(
                     catalogPageUri.AbsoluteUri,
-                    CatalogConstants.CatalogPage,
+                    NgTests.CatalogConstants.CatalogPage,
                     independentPackageDetails1.CommitId,
                     independentPackageDetails1.CommitTimeStamp,
                     packageDetails.Length,
@@ -1053,9 +1053,9 @@ namespace CatalogTests.Dnx
 
                 var independentPage = new CatalogIndependentPage(
                     catalogPageUri.AbsoluteUri,
-                    CatalogConstants.CatalogPage,
+                    NgTests.CatalogConstants.CatalogPage,
                     independentPackageDetails1.CommitId,
-                    commitTimeStamp.ToString(CatalogConstants.CommitTimeStampFormat),
+                    commitTimeStamp.ToString(NgTests.CatalogConstants.CommitTimeStampFormat),
                     packageDetails.Length,
                     catalogIndexUri.AbsoluteUri,
                     packageDetails,
