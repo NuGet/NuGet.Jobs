@@ -65,17 +65,20 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         private readonly Db2CatalogProjection _db2catalogProjection;
         private readonly ITelemetryService _telemetryService;
         private readonly int _commandTimeout;
+        private readonly int _maxPageSize;
 
         public GalleryDatabaseQueryService(
             ISqlConnectionFactory connectionFactory,
             PackageContentUriBuilder packageContentUriBuilder,
             ITelemetryService telemetryService,
-            int commandTimeout)
+            int commandTimeout,
+            int maxPageSize)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _db2catalogProjection = new Db2CatalogProjection(packageContentUriBuilder);
             _commandTimeout = commandTimeout;
+            _maxPageSize = maxPageSize;
         }
 
         public Task<SortedList<DateTime, IList<FeedPackageDetails>>> GetPackagesCreatedSince(DateTime since, int top)
@@ -144,7 +147,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         /// Returns a <see cref="SortedList{DateTime, IList{FeedPackageDetails}}"/> of packages.
         /// </summary>
         /// <param name="keyDateFunc">The <see cref="DateTime"/> field to sort the <see cref="FeedPackageDetails"/> on.</param>
-        internal static SortedList<DateTime, IList<FeedPackageDetails>> OrderPackagesByKeyDate(
+        internal SortedList<DateTime, IList<FeedPackageDetails>> OrderPackagesByKeyDate(
             IReadOnlyCollection<FeedPackageDetails> packages,
             Func<FeedPackageDetails, DateTime> keyDateFunc)
         {
@@ -168,7 +171,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
             {
                 if (result.TryGetValue(keyDate, out IList<FeedPackageDetails> packagesForKeyDate))
                 {
-                    if (packagesCount > 0 && packagesCount + packagesForKeyDate.Count > Constants.MaxPageSize)
+                    if (packagesCount > 0 && packagesCount + packagesForKeyDate.Count > _maxPageSize)
                     {
                         break;
                     }
