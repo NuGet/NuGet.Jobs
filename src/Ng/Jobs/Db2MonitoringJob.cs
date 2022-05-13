@@ -60,7 +60,7 @@ namespace Ng.Jobs
         {
             var verbose = arguments.GetOrDefault(Arguments.Verbose, false);
             _maxRequeueQueueSize = arguments.GetOrDefault(Arguments.MaxRequeueQueueSize, DefaultMaxQueueSize);
-            _maxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, CatalogConstants.MaxPageSize);
+            _maxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, NuGet.Services.Metadata.Catalog.Constants.MaxPageSize);
 
             CommandHelpers.AssertAzureStorage(arguments);
 

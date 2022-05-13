@@ -148,7 +148,7 @@ namespace NuGet.Services.Metadata.Catalog
         {
             stream.Seek(0, SeekOrigin.Begin);
 
-            using (var hashAlgorithm = HashAlgorithm.Create(CatalogConstants.Sha512))
+            using (var hashAlgorithm = HashAlgorithm.Create(Constants.Sha512))
             {
                 return Convert.ToBase64String(hashAlgorithm.ComputeHash(stream));
             }

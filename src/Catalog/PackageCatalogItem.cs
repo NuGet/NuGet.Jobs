@@ -102,7 +102,7 @@ namespace NuGet.Services.Metadata.Catalog
             // packageSize and packageHash
             graph.Assert(resource.Subject, graph.CreateUriNode(Schema.Predicates.PackageSize), graph.CreateLiteralNode(NupkgMetadata.PackageSize.ToString(), Schema.DataTypes.Integer));
             graph.Assert(resource.Subject, graph.CreateUriNode(Schema.Predicates.PackageHash), graph.CreateLiteralNode(NupkgMetadata.PackageHash));
-            graph.Assert(resource.Subject, graph.CreateUriNode(Schema.Predicates.PackageHashAlgorithm), graph.CreateLiteralNode(CatalogConstants.Sha512));
+            graph.Assert(resource.Subject, graph.CreateUriNode(Schema.Predicates.PackageHashAlgorithm), graph.CreateLiteralNode(Constants.Sha512));
 
             // identity and version
             SetIdVersionFromGraph(graph);
@@ -180,7 +180,7 @@ namespace NuGet.Services.Metadata.Catalog
         public static bool GetListed(DateTime published)
         {
             // if the published date is 1900/01/01, then the package is unlisted
-            if (published.ToUniversalTime() == CatalogConstants.UnpublishedDate)
+            if (published.ToUniversalTime() == Constants.UnpublishedDate)
             {
                 return false;
             }

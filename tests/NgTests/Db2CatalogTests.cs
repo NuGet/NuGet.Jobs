@@ -109,8 +109,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         [Fact]
@@ -149,16 +149,16 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             // Nothing new in the feed this time.
             await RunInternalAndVerifyAsync(
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: editedPackage.FeedPackageDetails.LastEditedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
                 expectedLastEdited: editedPackage.FeedPackageDetails.LastEditedDate);
 
             // Nothing new in the feed this time.
@@ -189,7 +189,7 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: editedPackage.FeedPackageDetails.LastEditedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
                 expectedLastEdited: editedPackage.FeedPackageDetails.LastEditedDate);
         }
 
@@ -215,8 +215,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package1.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
                 skippedPackage: package2);
         }
 
@@ -242,7 +242,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package2.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: package1.FeedPackageDetails.CreatedDate,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             package1 = AddEditedPackageToFeed(package1);
             package2 = AddEditedPackageToFeed(package2, package1.FeedPackageDetails.LastEditedDate);
@@ -275,8 +275,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package1.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var package2 = AddCreatedPackageToFeed();
 
@@ -285,7 +285,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package2.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: package1.FeedPackageDetails.CreatedDate,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         [Fact]
@@ -327,8 +327,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var editedPackage = AddEditedPackageToFeed(package);
 
@@ -358,8 +358,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var editedPackage = AddEditedPackageToFeed(package);
 
@@ -367,7 +367,7 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: editedPackage.FeedPackageDetails.LastEditedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
                 expectedLastEdited: editedPackage.FeedPackageDetails.LastEditedDate);
         }
 
@@ -388,8 +388,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var editedPackage = AddEditedPackageToFeed(package);
 
@@ -419,8 +419,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var editedPackage = AddEditedPackageToFeed(package);
 
@@ -428,7 +428,7 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: editedPackage.FeedPackageDetails.LastEditedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
                 expectedLastEdited: editedPackage.FeedPackageDetails.LastEditedDate);
         }
 
@@ -445,7 +445,7 @@ namespace NgTests
                 galleryDatabaseMock: galleryDatabaseMock);
 
             var package = CreatePackageCreationOrEdit();
-            var lastDeleted = NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc;
+            var lastDeleted = NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc;
 
             for (var i = 0; i < 3; ++i)
             {
@@ -458,7 +458,7 @@ namespace NgTests
                     expectedLastDeleted: lastDeleted,
                     expectedLastEdited: package.FeedPackageDetails.LastEditedDate);
 
-                if (lastDeleted == NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc)
+                if (lastDeleted == NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc)
                 {
                     lastDeleted = package.FeedPackageDetails.LastEditedDate;
                 }
@@ -483,8 +483,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var deletedPackage = AddDeletedPackage(package);
 
@@ -493,7 +493,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: deletedPackage.DeletionTime.UtcDateTime,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         [Fact]
@@ -516,7 +516,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package2.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: package1.FeedPackageDetails.CreatedDate,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var deletedPackage1 = AddDeletedPackage(package1);
             var deletedPackage2 = AddDeletedPackage(package2);
@@ -526,7 +526,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package2.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: deletedPackage2.DeletionTime.UtcDateTime,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         // TODO: Reenable this test.
@@ -549,8 +549,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var deletionTime = DateTimeOffset.UtcNow;
 
@@ -562,7 +562,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: deletionTime.UtcDateTime,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         [Fact]
@@ -583,8 +583,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var deletedPackage = AddDeletedPackage(package, deletionTime: DateTime.UtcNow.AddMinutes(-16));
 
@@ -592,8 +592,8 @@ namespace NgTests
                 galleryDatabaseMock,
                 top,
                 expectedLastCreated: package.FeedPackageDetails.CreatedDate,
-                expectedLastDeleted: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc,
+                expectedLastDeleted: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc,
                 skippedPackage: deletedPackage);
         }
 
@@ -617,7 +617,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package2.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: package1.FeedPackageDetails.CreatedDate,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
         }
 
         [Fact]
@@ -641,7 +641,7 @@ namespace NgTests
                 top,
                 expectedLastCreated: package2.FeedPackageDetails.CreatedDate,
                 expectedLastDeleted: package1.FeedPackageDetails.CreatedDate,
-                expectedLastEdited: NuGet.Services.Metadata.Catalog.CatalogConstants.DateTimeMinValueUtc);
+                expectedLastEdited: NuGet.Services.Metadata.Catalog.Constants.DateTimeMinValueUtc);
 
             var editedPackage1 = AddEditedPackageToFeed(package1);
             var editedPackage2 = AddEditedPackageToFeed(package2);
@@ -1080,7 +1080,7 @@ namespace NgTests
                     contentUri: _packageContentUriBuilder.Build("UnlistedPackage", "1.0.0"),
                     createdDate: new DateTime(2015, 1, 1).ForceUtc(),
                     lastEditedDate: DateTime.MinValue,
-                    publishedDate: NuGet.Services.Metadata.Catalog.CatalogConstants.UnpublishedDate,
+                    publishedDate: NuGet.Services.Metadata.Catalog.Constants.UnpublishedDate,
                     packageId: "UnlistedPackage",
                     packageNormalizedVersion: "1.0.0",
                     packageFullVersion: "1.0.0+metadata"),
@@ -1097,7 +1097,7 @@ namespace NgTests
                     packageFullVersion: "1.0.0-alpha.1")
             };
 
-            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.CreatedDate, NuGet.Services.Metadata.Catalog.CatalogConstants.MaxPageSize);
+            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.CreatedDate, NuGet.Services.Metadata.Catalog.Constants.MaxPageSize);
         }
 
         private SortedList<DateTime, IList<FeedPackageDetails>> GetEditedPackages()
@@ -1114,12 +1114,12 @@ namespace NgTests
                     packageFullVersion: "1.0.1")
             };
 
-            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, NuGet.Services.Metadata.Catalog.CatalogConstants.MaxPageSize);
+            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, NuGet.Services.Metadata.Catalog.Constants.MaxPageSize);
         }
 
         private SortedList<DateTime, IList<FeedPackageDetails>> GetEmptyPackages()
         {
-            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(new List<FeedPackageDetails>(), p => p.CreatedDate, NuGet.Services.Metadata.Catalog.CatalogConstants.MaxPageSize);
+            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(new List<FeedPackageDetails>(), p => p.CreatedDate, NuGet.Services.Metadata.Catalog.Constants.MaxPageSize);
         }
 
         private SortedList<DateTime, IList<FeedPackageDetails>> GetCreatedPackagesSecondRequest()
@@ -1136,7 +1136,7 @@ namespace NgTests
                     packageFullVersion: "1.0.0")
             };
 
-            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.CreatedDate, NuGet.Services.Metadata.Catalog.CatalogConstants.MaxPageSize);
+            return GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.CreatedDate, NuGet.Services.Metadata.Catalog.Constants.MaxPageSize);
         }
 
         private void InitializeTest(
@@ -1178,7 +1178,7 @@ namespace NgTests
                 contentUri: _packageContentUriBuilder.Build(package.Id, normalizedVersion),
                 createdDate: created.UtcDateTime,
                 lastEditedDate: DateTime.MinValue,
-                publishedDate: isListed ? created.UtcDateTime : NuGet.Services.Metadata.Catalog.CatalogConstants.UnpublishedDate,
+                publishedDate: isListed ? created.UtcDateTime : NuGet.Services.Metadata.Catalog.Constants.UnpublishedDate,
                 packageId: package.Id,
                 packageNormalizedVersion: normalizedVersion,
                 packageFullVersion: fullVersion,
@@ -1589,9 +1589,9 @@ namespace NgTests
             Assert.Equal(
                 packageOperation.FeedPackageDetails.LastEditedDate.ToString("O"),
                 DateTime.Parse(packageDetails[CatalogConstants.LastEdited].Value<string>(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind).ToString("O"));
-            Assert.Equal(packageOperation.FeedPackageDetails.PublishedDate != NuGet.Services.Metadata.Catalog.CatalogConstants.UnpublishedDate, packageDetails[CatalogConstants.Listed].Value<bool>());
+            Assert.Equal(packageOperation.FeedPackageDetails.PublishedDate != NuGet.Services.Metadata.Catalog.Constants.UnpublishedDate, packageDetails[CatalogConstants.Listed].Value<bool>());
             Assert.Equal(GetPackageHash(packageOperation.Package), packageDetails[CatalogConstants.PackageHash].Value<string>());
-            Assert.Equal(NuGet.Services.Metadata.Catalog.CatalogConstants.Sha512, packageDetails[CatalogConstants.PackageHashAlgorithm].Value<string>());
+            Assert.Equal(NuGet.Services.Metadata.Catalog.Constants.Sha512, packageDetails[CatalogConstants.PackageHashAlgorithm].Value<string>());
             Assert.Equal(packageOperation.Package.Stream.Length, packageDetails[CatalogConstants.PackageSize].Value<int>());
             Assert.Equal(
                 packageOperation.FeedPackageDetails.PublishedDate.ToString("O"),
@@ -1843,7 +1843,7 @@ namespace NgTests
 
         private static string GetPackageHash(TestPackage package)
         {
-            using (var hashAlgorithm = HashAlgorithm.Create(NuGet.Services.Metadata.Catalog.CatalogConstants.Sha512))
+            using (var hashAlgorithm = HashAlgorithm.Create(NuGet.Services.Metadata.Catalog.Constants.Sha512))
             {
                 package.Stream.Position = 0;
 

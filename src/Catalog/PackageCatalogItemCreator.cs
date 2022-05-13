@@ -124,7 +124,7 @@ namespace NuGet.Services.Metadata.Catalog
 
                 var metadata = await blob.GetMetadataAsync(cancellationToken);
 
-                if (metadata.TryGetValue(CatalogConstants.Sha512, out packageHash))
+                if (metadata.TryGetValue(Constants.Sha512, out packageHash))
                 {
                     using (var stream = await blob.GetStreamAsync(cancellationToken))
                     {

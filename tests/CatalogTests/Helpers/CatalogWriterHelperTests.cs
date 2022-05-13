@@ -36,7 +36,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism: 1,
                         createdPackages: null,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: CancellationToken.None,
                         telemetryService: Mock.Of<ITelemetryService>(),
                         logger: Mock.Of<ILogger>()));
@@ -60,7 +60,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism: 1,
                         createdPackages: null,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: CancellationToken.None,
                         telemetryService: Mock.Of<ITelemetryService>(),
                         logger: Mock.Of<ILogger>()));
@@ -84,7 +84,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism: 1,
                         createdPackages: null,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: CancellationToken.None,
                         telemetryService: Mock.Of<ITelemetryService>(),
                         logger: Mock.Of<ILogger>()));
@@ -108,7 +108,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism,
                         createdPackages: false,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: CancellationToken.None,
                         telemetryService: Mock.Of<ITelemetryService>(),
                         logger: Mock.Of<ILogger>()));
@@ -131,7 +131,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism: 1,
                         createdPackages: null,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: CancellationToken.None,
                         telemetryService: null,
                         logger: Mock.Of<ILogger>()));
@@ -153,7 +153,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism: 1,
                         createdPackages: null,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: CancellationToken.None,
                         telemetryService: Mock.Of<ITelemetryService>(),
                         logger: null));
@@ -175,7 +175,7 @@ namespace CatalogTests.Helpers
                         maxDegreeOfParallelism: 1,
                         createdPackages: null,
                         updateCreatedFromEdited: false,
-                        CatalogConstants.MaxPageSize,
+                        Constants.MaxPageSize,
                         cancellationToken: new CancellationToken(canceled: true),
                         telemetryService: Mock.Of<ITelemetryService>(),
                         logger: Mock.Of<ILogger>()));
@@ -451,7 +451,7 @@ namespace CatalogTests.Helpers
                     maxDegreeOfParallelism,
                     CreatedPackages,
                     UpdateCreatedFromEdited,
-                    CatalogConstants.MaxPageSize,
+                    Constants.MaxPageSize,
                     CancellationToken.None,
                     TelemetryService.Object,
                     Logger.Object);

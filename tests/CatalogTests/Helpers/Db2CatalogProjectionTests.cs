@@ -9,7 +9,7 @@ using Moq;
 using NuGet.Services.Entities;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using Xunit;
-using CatalogConstants = NuGet.Services.Metadata.Catalog.CatalogConstants;
+using Constants = NuGet.Services.Metadata.Catalog.Constants;
 
 namespace CatalogTests.Helpers
 {
@@ -19,7 +19,7 @@ namespace CatalogTests.Helpers
         public void UnpublishedDateDidNotChange()
         {
             var expected = new DateTime(1900, 1, 1, 0, 0, 0);
-            Assert.Equal(expected, CatalogConstants.UnpublishedDate);
+            Assert.Equal(expected, Constants.UnpublishedDate);
         }
 
         public class TheConstructor
@@ -69,7 +69,7 @@ namespace CatalogTests.Helpers
                 var lastEditedDate = utcNow.AddMinutes(-5);
                 var publishedDate = createdDate;
                 var expectedContentUri = _packageContentUriBuilder.Build(packageId, normalizedPackageVersion);
-                var expectedPublishedDate = listed ? publishedDate : CatalogConstants.UnpublishedDate;
+                var expectedPublishedDate = listed ? publishedDate : Constants.UnpublishedDate;
                 var expectedLicenseNames = hideLicenseReport ? null : licenseNames;
                 var expectedLicenseReportUrl = hideLicenseReport ? null : licenseReportUrl;
                 var expectedRequiresLicenseAcceptance = true;

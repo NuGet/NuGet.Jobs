@@ -53,7 +53,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                 packageContentUri,
                 dataReader.ReadDateTime(Db2CatalogProjectionColumnNames.Created).ForceUtc(),
                 dataReader.ReadNullableUtcDateTime(Db2CatalogProjectionColumnNames.LastEdited),
-                listed ? dataReader.ReadDateTime(Db2CatalogProjectionColumnNames.Published).ForceUtc() : CatalogConstants.UnpublishedDate,
+                listed ? dataReader.ReadDateTime(Db2CatalogProjectionColumnNames.Published).ForceUtc() : Constants.UnpublishedDate,
                 packageId,
                 normalizedPackageVersion,
                 fullPackageVersion,
