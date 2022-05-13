@@ -7,7 +7,7 @@ using System.Linq;
 using NuGet.Services.Entities;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using Xunit;
-using Constants = NuGet.Services.Metadata.Catalog.Constants;
+using CatalogConstants = NuGet.Services.Metadata.Catalog.Constants;
 
 namespace CatalogTests.Helpers
 {
@@ -140,8 +140,8 @@ namespace CatalogTests.Helpers
                 };
 
                 // Act
-                var orderedByCreatedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.CreatedDate, Constants.MaxPageSize);
-                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, Constants.MaxPageSize);
+                var orderedByCreatedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.CreatedDate, CatalogConstants.MaxPageSize);
+                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, CatalogConstants.MaxPageSize);
 
                 // Assert
                 Assert.Equal(firstCreatedPackage.CreatedDate, orderedByCreatedDate.First().Key);
@@ -177,7 +177,7 @@ namespace CatalogTests.Helpers
                 // Ensure the last timestamp has enough packages to have it exceed the max page size.
                 // This simulates TOP 20 WITH TIES behavior encountering bulk changes to these packages
                 var lastTimestamp = utcNow.AddHours(-8);
-                for (int i = 0; i < Constants.MaxPageSize - top + 2; i++)
+                for (int i = 0; i < CatalogConstants.MaxPageSize - top + 2; i++)
                 {
                     packages.Add(new FeedPackageDetails(
                         new Uri($"https://unittest.org/packages/BatchUpdatedPackage.Id/1.0.{i}"),
@@ -190,12 +190,12 @@ namespace CatalogTests.Helpers
                 }
 
                 // Act
-                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, Constants.MaxPageSize);
+                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, CatalogConstants.MaxPageSize);
 
                 // Assert
                 Assert.Equal(top - 1, orderedByLastEditedDate.Count);
                 Assert.DoesNotContain(lastTimestamp, orderedByLastEditedDate.Keys);
-                Assert.True(orderedByLastEditedDate.Values.Sum(v => v.Count) <= Constants.MaxPageSize);
+                Assert.True(orderedByLastEditedDate.Values.Sum(v => v.Count) <= CatalogConstants.MaxPageSize);
             }
 
             [Fact]
@@ -222,7 +222,7 @@ namespace CatalogTests.Helpers
                 // Ensure the next timestamp has enough packages to have it reach the max page size.
                 // This simulates encountering bulk changes at timestamp 11.
                 var timestampForBulkChanges = utcNow.AddHours(-8);
-                for (int i = 0; i < Constants.MaxPageSize - top + 10; i++)
+                for (int i = 0; i < CatalogConstants.MaxPageSize - top + 10; i++)
                 {
                     packages.Add(new FeedPackageDetails(
                         new Uri($"https://unittest.org/packages/BatchUpdatedPackage.Id/1.0.{i}"),
@@ -248,12 +248,12 @@ namespace CatalogTests.Helpers
                 }
 
                 // Act
-                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, Constants.MaxPageSize);
+                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, CatalogConstants.MaxPageSize);
 
                 // Assert
                 Assert.Equal(top - 10 + 1, orderedByLastEditedDate.Count);
                 Assert.Contains(timestampForBulkChanges, orderedByLastEditedDate.Keys);
-                Assert.True(orderedByLastEditedDate.Values.Sum(v => v.Count) <= Constants.MaxPageSize);
+                Assert.True(orderedByLastEditedDate.Values.Sum(v => v.Count) <= CatalogConstants.MaxPageSize);
             }
 
             [Fact]
@@ -265,7 +265,7 @@ namespace CatalogTests.Helpers
 
                 // Ensure the first timestamp has enough packages to overflow.
                 var timestampForBulkChanges = utcNow.AddHours(-8);
-                for (int i = 0; i < Constants.MaxPageSize + 1; i++)
+                for (int i = 0; i < CatalogConstants.MaxPageSize + 1; i++)
                 {
                     packages.Add(new FeedPackageDetails(
                         new Uri($"https://unittest.org/packages/BatchUpdatedPackage.Id{i}/1.0.{i}"),
@@ -291,12 +291,12 @@ namespace CatalogTests.Helpers
                 }
 
                 // Act
-                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, Constants.MaxPageSize);
+                var orderedByLastEditedDate = GalleryDatabaseQueryService.OrderPackagesByKeyDate(packages, p => p.LastEditedDate, CatalogConstants.MaxPageSize);
 
                 // Assert
                 Assert.Single(orderedByLastEditedDate);
                 Assert.Equal(timestampForBulkChanges, orderedByLastEditedDate.Single().Key);
-                Assert.True(orderedByLastEditedDate.Values.Sum(v => v.Count) >= Constants.MaxPageSize);
+                Assert.True(orderedByLastEditedDate.Values.Sum(v => v.Count) >= CatalogConstants.MaxPageSize);
             }
         }
     }
