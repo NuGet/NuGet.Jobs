@@ -17,14 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>11.0.2</Version>
-    </PackageReference>
-    <PackageReference Include="NuGet.Versioning">
-      <Version>$(NuGetClientPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="UAParser">
-      <Version>3.1.44</Version>
-    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" VersionOverride="11.0.2">
+      </PackageReference>
+    <PackageReference Include="NuGet.Versioning" VersionOverride="$(NuGetClientPackageVersion)">
+      </PackageReference>
+    <PackageReference Include="UAParser" VersionOverride="3.1.44">
+      </PackageReference>
   </ItemGroup>
 </Project>
