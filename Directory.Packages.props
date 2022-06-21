@@ -3,7 +3,6 @@
     <PropertyGroup> 
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
         <EnablePackageVersionOverride>true</EnablePackageVersionOverride>
-        <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     </PropertyGroup>
     <ItemGroup>
         <PackageVersion Include="Autofac" Version="4.9.1" />
