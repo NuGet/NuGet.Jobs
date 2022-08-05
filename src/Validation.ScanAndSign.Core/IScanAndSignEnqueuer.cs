@@ -14,7 +14,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
         /// </summary>
         /// <param name="validationId">Validation ID for which scan is requested.</param>
         /// <param name="nupkgUrl">Url of the package to scan.</param>
-        /// <param name="context">Request context to pass to the actual signing service.</param>
+        /// <param name="context">Request context to pass to the actual scan/sign job.</param>
         Task EnqueueScanAsync(
             Guid validationId,
             string nupkgUrl,
@@ -26,7 +26,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
         /// <param name="validationId">Validation ID for which scan is requested.</param>
         /// <param name="nupkgUrl">Url of the package to scan.</param>
         /// <param name="messageDeliveryDelayOverride">The message delivery delay.</param>
-        /// <param name="context">Request context to pass to the actual signing service.</param>
+        /// <param name="context">Request context to pass to the actual scan/sign job.</param>
         Task EnqueueScanAsync(
             Guid validationId,
             string nupkgUrl,
@@ -40,7 +40,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
         /// <param name="nupkgUrl">Url of the package to scan and sign.</param>
         /// <param name="v3ServiceIndexUrl">The service index URL that should be put on the package's repository signature.</param>
         /// <param name="owners">The list of owners that should be put on the package's repository signature.</param>
-        /// <param name="context">Request context to pass to the actual signing service.</param>
+        /// <param name="context">Request context to pass to the actual scan/sign job.</param>
         Task EnqueueScanAndSignAsync(
             Guid validationId,
             string nupkgUrl,
@@ -55,7 +55,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
         /// <param name="nupkgUrl">Url of the package to scan and sign.</param>
         /// <param name="v3ServiceIndexUrl">The service index URL that should be put on the package's repository signature.</param>
         /// <param name="owners">The list of owners that should be put on the package's repository signature.</param>
-        /// <param name="context">Request context to pass to the actual signing service.</param>
+        /// <param name="context">Request context to pass to the actual scan/sign job.</param>
         /// <param name="messageDeliveryDelayOverride">The message delivery delay.</param>
         Task EnqueueScanAndSignAsync(
             Guid validationId,
