@@ -21,6 +21,7 @@ namespace NuGet.Jobs.Validation.ScanAndSign
             try
             {
                 var deserializedMessage2 = _serializer2.Deserialize(message);
+
                 return new ScanAndSignMessage(
                     deserializedMessage2.OperationRequestType,
                     deserializedMessage2.PackageValidationId,
