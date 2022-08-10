@@ -1,14 +1,14 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Azure;
-using Azure.Search.Documents;
-using Azure.Search.Documents.Models;
-using NuGet.Services.AzureSearch.SearchService;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Search.Documents;
+using Azure.Search.Documents.Models;
+using NuGet.Services.AzureSearch.SearchService;
 
 namespace NuGet.Services.AzureSearch.Wrappers
 {
