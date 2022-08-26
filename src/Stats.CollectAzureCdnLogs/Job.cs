@@ -39,14 +39,13 @@ namespace Stats.CollectAzureCdnLogs
         {
             base.Init(serviceContainer, jobArgsDictionary);
 
-            _telemetryService = serviceContainer.GetRequiredService<ITelemetryService>();
-
             InitializeJobConfiguration(_serviceProvider);
         }
 
         public void InitializeJobConfiguration(IServiceProvider serviceProvider)
         {
             _configuration = serviceProvider.GetRequiredService<IOptionsSnapshot<CollectAzureCdnLogsConfiguration>>().Value;
+            _telemetryService = serviceProvider.GetRequiredService<ITelemetryService>();
 
             if (string.IsNullOrEmpty(_configuration.AzureCdnAccountNumber))
             {
