@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using Stats.CollectAzureCdnLogs;
@@ -113,6 +114,10 @@ namespace Tests.Stats.CollectAzureCdnLogs
                     if (serviceType == typeof(IOptionsSnapshot<CollectAzureCdnLogsConfiguration>))
                     {
                         return mockOptionsSnapshot.Object;
+                    }
+                    else if (serviceType == typeof(ITelemetryService))
+                    {
+                        return Mock.Of<ITelemetryService>();
                     }
                     else
                     {
