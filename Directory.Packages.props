@@ -24,7 +24,6 @@
         <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="6.0.0" />
         <PackageVersion Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" Version="3.6.0" />
         <PackageVersion Include="Microsoft.Data.Services.Client" Version="5.8.4" />
-        <PackageVersion Include="Microsoft.Extensions.CommandLineUtils" Version="None" />
         <PackageVersion Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
         <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
         <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
