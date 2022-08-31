@@ -90,8 +90,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata" VersionOverride="1.7.0-preview1-26717-04">
-      </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata" VersionOverride="1.7.0-preview1-26717-04" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Scripts\nssm.exe" />

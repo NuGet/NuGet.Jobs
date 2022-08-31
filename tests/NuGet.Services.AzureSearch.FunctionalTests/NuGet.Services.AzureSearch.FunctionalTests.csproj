@@ -73,14 +73,10 @@
     <Compile Include="Relevancy\V3RelevancyFunctionalTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="NuGet.Services.Configuration" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="NuGet.Versioning" VersionOverride="$(NuGetClientPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="xunit" VersionOverride="2.4.1">
-      </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" VersionOverride="2.2.0" />
+    <PackageReference Include="NuGet.Services.Configuration" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGet.Versioning" VersionOverride="$(NuGetClientPackageVersion)" />
+    <PackageReference Include="xunit" VersionOverride="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

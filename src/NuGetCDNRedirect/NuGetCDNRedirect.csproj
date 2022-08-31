@@ -102,16 +102,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.ApplicationInsights.Web" VersionOverride="2.4.1">
-      </PackageReference>
-    <PackageReference Include="Microsoft.AspNet.Mvc" VersionOverride="5.2.3">
-      </PackageReference>
-    <PackageReference Include="Microsoft.AspNet.Web.Optimization" VersionOverride="1.1.3">
-      </PackageReference>
-    <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" VersionOverride="3.6.0">
-      </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1">
-      </PackageReference>
+    <PackageReference Include="Microsoft.ApplicationInsights.Web" VersionOverride="2.4.1" />
+    <PackageReference Include="Microsoft.AspNet.Mvc" VersionOverride="5.2.3" />
+    <PackageReference Include="Microsoft.AspNet.Web.Optimization" VersionOverride="1.1.3" />
+    <PackageReference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform" VersionOverride="3.6.0" />
+    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Connected Services\Application Insights\ConnectedService.json" />

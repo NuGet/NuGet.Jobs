@@ -53,10 +53,8 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Moq" VersionOverride="4.13.1">
-      </PackageReference>
-    <PackageReference Include="xunit" VersionOverride="2.4.1">
-      </PackageReference>
+    <PackageReference Include="Moq" VersionOverride="4.13.1" />
+    <PackageReference Include="xunit" VersionOverride="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

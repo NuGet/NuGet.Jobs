@@ -55,10 +55,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.ComponentModel.EventBasedAsync" VersionOverride="4.0.11">
-      </PackageReference>
-    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3">
-      </PackageReference>
+    <PackageReference Include="System.ComponentModel.EventBasedAsync" VersionOverride="4.0.11" />
+    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3" />
   </ItemGroup>
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>

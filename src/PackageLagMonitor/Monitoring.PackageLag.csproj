@@ -91,16 +91,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Primitives" VersionOverride="2.2.0">
-      </PackageReference>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" VersionOverride="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" VersionOverride="2.2.0" />
     <PackageReference Include="MicroBuild.Core" VersionOverride="0.3.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

@@ -22,23 +22,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac" VersionOverride="4.9.1">
-      </PackageReference>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="NuGet.Packaging" VersionOverride="$(NuGetClientPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="Autofac" VersionOverride="4.9.1" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0" />
+    <PackageReference Include="NuGet.Packaging" VersionOverride="$(NuGetClientPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="NuGet.Services.ServiceBus" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="NuGet.Services.Storage" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="NuGet.Services.ServiceBus" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGet.Services.Storage" VersionOverride="$(ServerCommonPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup>

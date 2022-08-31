@@ -13,29 +13,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0">
-      </PackageReference>
-    <PackageReference Include="Dapper.StrongName" VersionOverride="1.50.2">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="NuGet.Services.Configuration" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="NuGet.Services.Logging" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="NuGet.Services.Sql" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="NuGet.Services.FeatureFlags" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
-    <PackageReference Include="NuGetGallery.Core" VersionOverride="$(NuGetGalleryPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0" />
+    <PackageReference Include="Dapper.StrongName" VersionOverride="1.50.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0" />
+    <PackageReference Include="NuGet.Services.Configuration" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGet.Services.Logging" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGet.Services.Sql" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGet.Services.FeatureFlags" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGetGallery.Core" VersionOverride="$(NuGetGalleryPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="NuGet.Services.Messaging.Email" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="NuGet.Services.Messaging.Email" VersionOverride="$(ServerCommonPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup>

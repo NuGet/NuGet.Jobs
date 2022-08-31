@@ -95,14 +95,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1">
-      </PackageReference>
-    <PackageReference Include="System.Net.Http" VersionOverride="4.3.4">
-      </PackageReference>
-    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3">
-      </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" VersionOverride="2.2.0" />
+    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
+    <PackageReference Include="System.Net.Http" VersionOverride="4.3.4" />
+    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

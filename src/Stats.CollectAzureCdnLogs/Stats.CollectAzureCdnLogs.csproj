@@ -98,8 +98,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Data.Services.Client" VersionOverride="5.8.4">
-      </PackageReference>
+    <PackageReference Include="Microsoft.Data.Services.Client" VersionOverride="5.8.4" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

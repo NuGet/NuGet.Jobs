@@ -62,10 +62,8 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Moq" VersionOverride="4.10.1">
-      </PackageReference>
-    <PackageReference Include="xunit" VersionOverride="2.4.1">
-      </PackageReference>
+    <PackageReference Include="Moq" VersionOverride="4.10.1" />
+    <PackageReference Include="xunit" VersionOverride="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

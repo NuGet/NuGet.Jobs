@@ -52,10 +52,8 @@
     <Compile Include="Support\XunitLoggerProvider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" VersionOverride="2.2.0">
-      </PackageReference>
-    <PackageReference Include="xunit" VersionOverride="2.4.1">
-      </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" VersionOverride="2.2.0" />
+    <PackageReference Include="xunit" VersionOverride="2.4.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Validation.PackageSigning.Helpers\Tests.ContextHelpers.csproj">

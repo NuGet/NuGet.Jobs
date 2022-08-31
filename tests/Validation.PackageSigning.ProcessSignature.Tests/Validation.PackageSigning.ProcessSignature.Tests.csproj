@@ -53,12 +53,9 @@
     <Compile Include="Telemetry\TelemetryServiceFacts.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Moq" VersionOverride="4.13.1">
-      </PackageReference>
-    <PackageReference Include="SharpZipLib" VersionOverride="1.1.0">
-      </PackageReference>
-    <PackageReference Include="xunit" VersionOverride="2.4.1">
-      </PackageReference>
+    <PackageReference Include="Moq" VersionOverride="4.13.1" />
+    <PackageReference Include="SharpZipLib" VersionOverride="1.1.0" />
+    <PackageReference Include="xunit" VersionOverride="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

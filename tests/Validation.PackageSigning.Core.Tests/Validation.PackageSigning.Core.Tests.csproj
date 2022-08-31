@@ -65,14 +65,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Moq" VersionOverride="4.13.1">
-      </PackageReference>
-    <PackageReference Include="System.Threading.Tasks.Extensions" VersionOverride="4.5.4">
-      </PackageReference>
-    <PackageReference Include="Test.Utility" VersionOverride="6.1.0-preview.1.67">
-      </PackageReference>
-    <PackageReference Include="xunit" VersionOverride="2.4.1">
-      </PackageReference>
+    <PackageReference Include="Moq" VersionOverride="4.13.1" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" VersionOverride="4.5.4" />
+    <PackageReference Include="Test.Utility" VersionOverride="6.1.0-preview.1.67" />
+    <PackageReference Include="xunit" VersionOverride="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

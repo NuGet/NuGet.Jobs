@@ -67,12 +67,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Dapper.StrongName" VersionOverride="1.50.2">
-      </PackageReference>
-    <PackageReference Include="Microsoft.Data.Services.Client" VersionOverride="5.8.4">
-      </PackageReference>
-    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3">
-      </PackageReference>
+    <PackageReference Include="Dapper.StrongName" VersionOverride="1.50.2" />
+    <PackageReference Include="Microsoft.Data.Services.Client" VersionOverride="5.8.4" />
+    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

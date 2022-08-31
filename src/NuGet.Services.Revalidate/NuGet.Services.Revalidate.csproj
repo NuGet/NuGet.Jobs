@@ -117,8 +117,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="NuGet.Services.Status" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="NuGet.Services.Status" VersionOverride="$(ServerCommonPackageVersion)" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

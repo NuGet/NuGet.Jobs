@@ -68,8 +68,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Services.Storage" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="NuGet.Services.Storage" VersionOverride="$(ServerCommonPackageVersion)" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

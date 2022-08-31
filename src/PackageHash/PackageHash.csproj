@@ -76,8 +76,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Services.Cursor" VersionOverride="$(ServerCommonPackageVersion)">
-      </PackageReference>
+    <PackageReference Include="NuGet.Services.Cursor" VersionOverride="$(ServerCommonPackageVersion)" />
   </ItemGroup>
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>
