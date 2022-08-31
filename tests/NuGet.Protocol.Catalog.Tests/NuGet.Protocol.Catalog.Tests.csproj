@@ -70,7 +70,10 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  
+  <!-- 
+  Even though this is a test project, it needs to be strong-named because it tests internal fields of NuGet.Indexing.
+  Strong-name signed assemblies must specify a public key in their InternalsVisibleTo declarations.
+  -->
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>
     <SignPath Condition="'$(BUILD_SOURCESDIRECTORY)' != ''">$(BUILD_SOURCESDIRECTORY)\build</SignPath>
