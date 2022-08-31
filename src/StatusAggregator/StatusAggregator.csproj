@@ -150,13 +150,13 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Autofac" VersionOverride="4.9.1" />
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0" />
-    <PackageReference Include="NuGet.Services.Incidents" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="NuGet.Services.Status" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="NuGet.Services.Status.Table" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="MicroBuild.Core" VersionOverride="0.3.0">
+    <PackageReference Include="Autofac" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="NuGet.Services.Incidents" />
+    <PackageReference Include="NuGet.Services.Status" />
+    <PackageReference Include="NuGet.Services.Status.Table" />
+    <PackageReference Include="MicroBuild.Core">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -58,9 +58,9 @@
     <None Include="SplitLargeFiles.nuspec" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
-    <PackageReference Include="NuGet.Services.KeyVault" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="NuGet.Services.KeyVault" />
+    <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
   <PropertyGroup>
     <SignPath>..\..\build</SignPath>

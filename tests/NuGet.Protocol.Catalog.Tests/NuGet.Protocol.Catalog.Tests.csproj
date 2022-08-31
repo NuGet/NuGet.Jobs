@@ -55,10 +55,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" VersionOverride="5.5.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" VersionOverride="2.2.0" />
-    <PackageReference Include="xunit" VersionOverride="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

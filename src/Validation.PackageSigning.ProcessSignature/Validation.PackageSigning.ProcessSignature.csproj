@@ -91,7 +91,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" VersionOverride="0.3.0">
+    <PackageReference Include="MicroBuild.Core">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

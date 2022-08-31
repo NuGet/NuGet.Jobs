@@ -91,14 +91,14 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" VersionOverride="0.3.0">
+    <PackageReference Include="MicroBuild.Core">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" VersionOverride="2.2.0" />
-    <PackageReference Include="Newtonsoft.Json" VersionOverride="13.0.1" />
-    <PackageReference Include="System.Net.Http" VersionOverride="4.3.4" />
-    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="System.Net.Http" />
+    <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

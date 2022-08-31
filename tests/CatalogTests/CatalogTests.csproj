@@ -331,12 +331,12 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="dotNetRDF" VersionOverride="1.0.8.3533" />
-    <PackageReference Include="NuGet.StrongName.json-ld.net" VersionOverride="1.0.6" />
-    <PackageReference Include="Microsoft.WindowsAzure.ConfigurationManager" VersionOverride="3.1.0" />
-    <PackageReference Include="Moq" VersionOverride="4.10.1" />
-    <PackageReference Include="xunit" VersionOverride="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
+    <PackageReference Include="dotNetRDF" />
+    <PackageReference Include="NuGet.StrongName.json-ld.net" />
+    <PackageReference Include="Microsoft.WindowsAzure.ConfigurationManager" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

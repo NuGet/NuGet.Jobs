@@ -60,12 +60,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.ComponentModel.EventBasedAsync" VersionOverride="4.0.11" />
-    <PackageReference Include="MicroBuild.Core" VersionOverride="0.3.0">
+    <PackageReference Include="System.ComponentModel.EventBasedAsync" />
+    <PackageReference Include="MicroBuild.Core">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="WindowsAzure.Storage" VersionOverride="9.3.3" />
+    <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="tools\azcopy\ReadMe.txt" />

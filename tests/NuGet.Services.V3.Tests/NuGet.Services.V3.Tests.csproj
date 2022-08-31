@@ -60,9 +60,9 @@
     <Compile Include="Support\XunitLoggerProvider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Moq" VersionOverride="4.10.1" />
-    <PackageReference Include="xunit" VersionOverride="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.4.1">
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

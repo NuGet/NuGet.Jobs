@@ -7,10 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" VersionOverride="2.16.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
 
     
-    <PackageReference Include="Microsoft.AspNetCore.Http" VersionOverride="2.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" />
   </ItemGroup>
 
   <ItemGroup>

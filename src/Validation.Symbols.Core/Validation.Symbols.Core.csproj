@@ -64,11 +64,11 @@
     <Compile Include="ZipArchiveService.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Build.Tasks.Pack" VersionOverride="4.8.0">
+    <PackageReference Include="NuGet.Build.Tasks.Pack">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="MicroBuild.Core" VersionOverride="0.3.0">
+    <PackageReference Include="MicroBuild.Core">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

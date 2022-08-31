@@ -41,8 +41,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="moq" VersionOverride="4.13.1" />
-    <PackageReference Include="NuGet.Services.Testing.Entities" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="NuGet.Services.Testing.Entities" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Validation.PackageSigning.Core\Validation.PackageSigning.Core.csproj">

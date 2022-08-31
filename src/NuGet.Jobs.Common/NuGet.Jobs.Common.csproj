@@ -13,19 +13,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" VersionOverride="4.4.0" />
-    <PackageReference Include="Dapper.StrongName" VersionOverride="1.50.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" VersionOverride="2.2.0" />
-    <PackageReference Include="NuGet.Services.Configuration" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="NuGet.Services.Logging" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="NuGet.Services.Sql" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="NuGet.Services.FeatureFlags" VersionOverride="$(ServerCommonPackageVersion)" />
-    <PackageReference Include="NuGetGallery.Core" VersionOverride="$(NuGetGalleryPackageVersion)" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" />
+    <PackageReference Include="Dapper.StrongName" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="NuGet.Services.Configuration" />
+    <PackageReference Include="NuGet.Services.Logging" />
+    <PackageReference Include="NuGet.Services.Sql" />
+    <PackageReference Include="NuGet.Services.FeatureFlags" />
+    <PackageReference Include="NuGetGallery.Core" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="NuGet.Services.Messaging.Email" VersionOverride="$(ServerCommonPackageVersion)" />
+    <PackageReference Include="NuGet.Services.Messaging.Email" />
   </ItemGroup>
 
   <ItemGroup>
