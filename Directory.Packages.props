@@ -2,7 +2,7 @@
 <Project>
     <PropertyGroup> 
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-        <EnablePackageVersionOverride>false</EnablePackageVersionOverride>
+        <EnablePackageVersionOverride>true</EnablePackageVersionOverride>
     </PropertyGroup>
     <ItemGroup>
         <PackageVersion Include="Autofac" Version="4.9.1" />
@@ -32,6 +32,8 @@
         <PackageVersion Include="Microsoft.Extensions.Options" Version="2.2.0" />
         <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.2.0" />
         <PackageVersion Include="Microsoft.Extensions.Primitives" Version="2.2.0" />
+        <PackageVersion Include="Microsoft.Internal.Analyzers" Version="2.6.11" />
+        <PackageVersion Include="Microsoft.Internal.Analyzers.Rulesets" Version="1.0.32" />
         <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
         <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0" />
         <PackageVersion Include="Microsoft.WindowsAzure.ConfigurationManager" Version="3.1.0" />
@@ -45,6 +47,7 @@
         <PackageVersion Include="NuGet.Services.Entities" Version="$(NuGetGalleryPackageVersion)" />
         <PackageVersion Include="NuGet.Services.FeatureFlags" Version="$(ServerCommonPackageVersion)" />
         <PackageVersion Include="NuGet.Services.Incidents" Version="$(ServerCommonPackageVersion)" />
+        <PackageVersion Include="NuGet.Services.Internal" Version="4.4.5-master-4165535" />
         <PackageVersion Include="NuGet.Services.KeyVault" Version="$(ServerCommonPackageVersion)" />
         <PackageVersion Include="NuGet.Services.Logging" Version="$(ServerCommonPackageVersion)" />
         <PackageVersion Include="NuGet.Services.Messaging.Email" Version="$(ServerCommonPackageVersion)" />
