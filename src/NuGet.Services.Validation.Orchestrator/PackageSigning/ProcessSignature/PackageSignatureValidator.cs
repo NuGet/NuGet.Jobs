@@ -95,7 +95,7 @@ namespace NuGet.Services.Validation.PackageSigning.ProcessSignature
                 if (response.Issues.Count == 1)
                 {
                     var singleIssueCode = response.Issues[0].IssueCode;
-                    if (singleIssueCode == ValidationIssueCode.PackageIsSigned
+                    if (singleIssueCode == ValidationIssueCode.PackageIsNotSigned
                         || singleIssueCode == ValidationIssueCode.PackageIsSignedWithUnauthorizedCertificate)
                     {
                         /// This indicates that the package owner changed their certificate requirements on the package

@@ -128,7 +128,7 @@ namespace NuGet.Services.Validation.PackageSigning
             }
 
             [Theory]
-            [InlineData(ValidationIssueCode.PackageIsSigned)]
+            [InlineData(ValidationIssueCode.PackageIsNotSigned)]
             [InlineData(ValidationIssueCode.PackageIsSignedWithUnauthorizedCertificate)]
             public async Task WhenStateIsFailedAndIssueCanBeCausedByOwner_ReturnsFailedValidation(ValidationIssueCode issueCode)
             {
