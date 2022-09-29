@@ -60,8 +60,18 @@ namespace StatusAggregator.Collector
                 .ToList();
 
             _logger.LogInformation("Parsed {ParsedIncidentCount} incidents.", parsedIncidents.Count);
+            foreach (var parsedIncident in parsedIncidents)
+            {
+                _logger.LogInformation(
+                   "Parsed incident: ID {ParsedIncidentID} at {ParsedIncidentStartTime}",
+                   parsedIncident.Id, parsedIncident.StartTime);
+            }
+
+            var count = 0;
             foreach (var parsedIncident in parsedIncidents.OrderBy(i => i.StartTime))
             {
+                count++;
+                _logger.LogInformation("Start processing {count} parsed incident {ParsedIncidentID}", count, parsedIncident.Id);
                 _logger.LogInformation(
                     "Creating incident for parsed incident with ID {ParsedIncidentID} affecting {ParsedIncidentPath} at {ParsedIncidentStartTime} with status {ParsedIncidentStatus}.",
                     parsedIncident.Id, parsedIncident.AffectedComponentPath, parsedIncident.StartTime, parsedIncident.AffectedComponentStatus);
