@@ -2,11 +2,13 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.Options;
 using Moq;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureSearch.Support;
 using NuGet.Services.Entities;
+using NuGetGallery.Frameworks;
 using Xunit;
 
 namespace NuGet.Services.AzureSearch
@@ -389,6 +391,85 @@ namespace NuGet.Services.AzureSearch
                 Assert.Equal($"{Data.GalleryBaseUrl}packages/{expected}/{Data.NormalizedVersion}/license", full.LicenseUrl);
                 Assert.Equal($"{Data.FlatContainerBaseUrl}{Data.FlatContainerContainerName}/{Data.LowerPackageId}/{Data.LowerNormalizedVersion}/icon", full.IconUrl);
             }
+
+            [Theory]
+            [MemberData(nameof(TargetFrameworkCases))]
+            public void AddsFrameworksAndTfmsFromPackage(List<string> supportedFrameworks, List<string> expectedTfms, List<string> expectedFrameworks)
+            {
+                // arrange
+                var package = new Package
+                {
+                    PackageRegistration = new PackageRegistration
+                    {
+                        Id = "TestPackage",
+                    },
+                    Id = "TestPackage",
+                    NormalizedVersion = Data.NormalizedVersion,
+                    LicenseExpression = "Unlicense",
+                    HasEmbeddedIcon = true,
+                    SupportedFrameworks = supportedFrameworks
+                                                .Select(f => new PackageFramework() { TargetFramework = f })
+                                                .ToArray(),
+                };
+
+                var full = new HijackDocument.Full();
+
+                // act
+                Target.PopulateMetadata(full, Data.PackageId, package);
+
+                // assert
+                Assert.True(full.Tfms.Length == expectedTfms.Count);
+                foreach (var item in expectedTfms)
+                {
+                    Assert.Contains(item, full.Tfms);
+                }
+
+                Assert.True(full.Frameworks.Length == expectedFrameworks.Count);
+                foreach (var item in expectedFrameworks)
+                {
+                    Assert.Contains(item, full.Frameworks);
+                }
+            }
+
+            public static IEnumerable<object[]> TargetFrameworkCases =>
+                new List<object[]>
+                {
+                    new object[] {new List<string> {}, new List<string>(), new List<string> {}},
+                    new object[] {new List<string> {"any"}, new List<string> {"any"}, new List<string> {}},
+                    new object[] {new List<string> {"net"}, new List<string> {"net"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"win"}, new List<string> {"win"}, new List<string> {}},
+                    new object[] {new List<string> {"foo"}, new List<string> {}, new List<string> {}}, // unsupported tfm is not included
+                    new object[] {new List<string> {"dotnet"}, new List<string> {"dotnet"}, new List<string> {}},
+                    new object[] {new List<string> {"net472"}, new List<string> {"net472"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"net5.0"}, new List<string> {"net5.0"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"netcoreapp3.0"}, new List<string> { "netcoreapp3.0" }, new List<string> { "netcore" } },
+                    new object[] {new List<string> {"netstandard2.0"}, new List<string> { "netstandard2.0" }, new List<string> { "netstandard" } },
+                    new object[] {new List<string> {"net40", "net45"}, new List<string> {"net40", "net45"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"net5.0-tvos", "net5.0-ios"}, new List<string> {"net5.0-ios", "net5.0-tvos"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"net5.0-tvos", "net5.0-ios13.0"}, new List<string> {"net5.0-ios13.0", "net5.0-tvos"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"net5.1-tvos", "net5.1", "net5.0-tvos"}, new List<string> {"net5.0-tvos", "net5.1", "net5.1-tvos"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"net5.0", "netcoreapp3.1", "native"}, new List<string> {"native", "net5.0", "netcoreapp3.1"}, new List<string> {"net", "netcore"}},
+
+                    new object[] {new List<string> {"netcoreapp3.1", "netstandard2.0"}, new List<string> {"netcoreapp3.1", "netstandard2.0"},
+                                    new List<string> {"netcore", "netstandard"}},
+
+                    new object[] {new List<string> {"netstandard2.1", "net45", "net472", "tizen40"}, new List<string> {"netstandard2.1", "net45", "net472", "tizen40"},
+                                    new List<string> {"netframework", "netstandard"}},
+
+                    new object[] {new List<string>{"net40", "net471", "net5.0-watchos", "netstandard2.0", "netstandard2.1"},
+                                    new List<string>{"net40", "net471", "net5.0-watchos", "netstandard2.0", "netstandard2.1"}, new List<string> {"netframework", "net", "netstandard"}},
+
+                    new object[] {new List<string>{"net45", "netstandard2.1", "xamarinios"}, new List<string>{"net45", "netstandard2.1", "xamarinios"},
+                                    new List<string> {"netframework", "netstandard"}},
+
+                    new object[] {new List<string> {"portable-net45+sl4+win+wp71", "portable-net45+sl5+win+wp71+wp8"},
+                                    new List<string> {"portable-net45+sl4+win+wp71", "portable-net45+sl5+win+wp71+wp8"}, new List<string> {}},
+
+                    new object[] {new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0",
+                            "portable-net40+sl5+win8+wp8+wpa81", "portable-net45+win8+wp8+wpa81"},
+                                    new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0",
+                            "portable-net40+sl5+win8+wp8+wpa81", "portable-net45+win8+wp8+wpa81"}, new List<string> {"netframework", "netstandard"}}
+                };
         }
 
         public abstract class Facts

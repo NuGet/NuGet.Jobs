@@ -16,6 +16,7 @@ namespace NuGet.Services.AzureSearch
         string Description { get; set; }
         long? FileSize { get; set; }
         string FlattenedDependencies { get; set; }
+        string[] Frameworks { get; set; }
         string Hash { get; set; }
         string HashAlgorithm { get; set; }
         string IconUrl { get; set; }
@@ -36,6 +37,7 @@ namespace NuGet.Services.AzureSearch
         string SortableTitle { get; set; }
         string Summary { get; set; }
         string[] Tags { get; set; }
+        string[] Tfms { get; set; }
         string Title { get; set; }
     }
 }

@@ -95,6 +95,7 @@ namespace NuGet.Services.AzureSearch
             document.Description = package.Description;
             document.FileSize = package.PackageFileSize;
             document.FlattenedDependencies = package.FlattenedDependencies;
+            document.Frameworks = package.SupportedFrameworks == null ? Array.Empty<string>() : GetFrameworksFromPackage(package.SupportedFrameworks);
             document.Hash = package.Hash;
             document.HashAlgorithm = package.HashAlgorithm;
             document.Language = package.Language;
@@ -112,6 +113,7 @@ namespace NuGet.Services.AzureSearch
             document.SortableTitle = GetSortableTitle(package.Title, packageId);
             document.Summary = package.Summary;
             document.Tags = package.Tags == null ? Array.Empty<string>() : Utils.SplitTags(package.Tags);
+            document.Tfms = package.SupportedFrameworks == null ? Array.Empty<string>() : GetTfmsFromPackage(package.SupportedFrameworks);
             document.Title = GetTitle(package.Title, packageId);
             document.TokenizedPackageId = packageId;
 
@@ -318,6 +320,46 @@ namespace NuGet.Services.AzureSearch
                     // whenever someone uploads an unsupported framework
                 }
             }
+        }
+
+        private static string[] GetFrameworksFromPackage(ICollection<PackageFramework> supportedFrameworks)
+        {
+            var tfms = supportedFrameworks
+                            .Where(f => !f.FrameworkName.IsUnsupported)
+                            .Select(f => f.FrameworkName)
+                            .ToArray();
+
+            return ParseFrameworkGenerations(tfms);
+        }
+
+        private static string[] GetTfmsFromPackage(ICollection<PackageFramework> supportedFrameworks)
+        {
+            return supportedFrameworks
+                            .Where(f => !f.FrameworkName.IsUnsupported)
+                            .Select(f => f.FrameworkName.GetShortFolderName())
+                            .ToArray();
+        }
+
+        private static string[] ParseFrameworkGenerations(ICollection<NuGetFramework> tfms)
+        {
+            var frameworks = new HashSet<string>();
+            foreach (var framework in tfms)
+            {
+                switch (framework.Framework)
+                {
+                    case ".NETFramework":
+                        frameworks.Add("netframework");
+                        break;
+                    case ".NETCoreApp":
+                        frameworks.Add(framework.Version.Major >= 5 ? "net" : "netcore");
+                        break;
+                    case ".NETStandard":
+                        frameworks.Add("netstandard");
+                        break;
+                }
+            }
+
+            return frameworks.ToArray();
         }
     }
 }
