@@ -51,9 +51,10 @@ namespace StatusAggregator.Update
                 {
                     endTime = DateTime.UtcNow;
                     _logger.LogError("Incident {IncidentApiId} was not found at ICM", entity.IncidentApiId);
-                }
-
-                throw;
+                } else
+                {
+                    throw;
+                }                
             }
 
             if (endTime != null)
