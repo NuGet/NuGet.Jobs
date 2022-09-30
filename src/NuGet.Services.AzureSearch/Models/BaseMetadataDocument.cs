@@ -24,10 +24,6 @@ namespace NuGet.Services.AzureSearch
 
         public long? FileSize { get; set; }
         public string FlattenedDependencies { get; set; }
-
-        [SimpleField(IsFilterable = true)]
-        public string[] Frameworks { get; set; }
-
         public string Hash { get; set; }
         public string HashAlgorithm { get; set; }
         public string IconUrl { get; set; }
@@ -69,9 +65,6 @@ namespace NuGet.Services.AzureSearch
 
         [SearchableField(AnalyzerName = TagsCustomAnalyzer.Name)]
         public string[] Tags { get; set; }
-
-        [SimpleField(IsFilterable = true)]
-        public string[] Tfms { get; set; }
 
         [SearchableField(AnalyzerName = DescriptionAnalyzer.Name)]
         public string Title { get; set; }

@@ -51,7 +51,7 @@ namespace NuGet.Services
             RequiresLicenseAcceptance = true,
             SemVerLevelKey = SemVerLevelKey.SemVer2,
             Summary = "Summary.",
-            SupportedFrameworks = new List<PackageFramework> { new PackageFramework() {TargetFramework = "net40"} },
+            SupportedFrameworks = new List<PackageFramework> { new PackageFramework() {TargetFramework = "net40-client" } },
             Tags = "Microsoft Azure Storage Table Blob File Queue Scalable windowsazureofficial",
             Title = "Windows Azure Storage",
             Version = "7.1.2.0-alpha+git",
