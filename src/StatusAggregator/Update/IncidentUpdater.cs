@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NuGet.Jobs.Extensions;
@@ -35,8 +36,25 @@ namespace StatusAggregator.Update
                 return;
             }
 
-            var activeIncident = await _incidentApiClient.GetIncident(entity.IncidentApiId);
-            var endTime = activeIncident.MitigationData?.Date;
+            DateTime? endTime;
+            try
+            {
+                var activeIncident = await _incidentApiClient.GetIncident(entity.IncidentApiId);
+                endTime = activeIncident.MitigationData?.Date;
+            }
+            catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
+            {
+                var response = e.Response as HttpWebResponse;
+                if (response != null && response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    endTime = DateTime.UtcNow;
+                    _logger.LogError("Incident with ID {IncidentApiId} was not found.", entity.IncidentApiId);
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             if (endTime != null)
             {
