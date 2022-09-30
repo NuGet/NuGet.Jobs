@@ -129,6 +129,9 @@ namespace NuGet.Services.AzureSearch
       ""description"": ""Description."",
       ""fileSize"": 3039254,
       ""flattenedDependencies"": ""Microsoft.Data.OData:5.6.4:net40-client|Newtonsoft.Json:6.0.8:net40-client"",
+      ""frameworks"": [
+        ""netframework""
+      ],
       ""hash"": ""oMs9XKzRTsbnIpITcqZ5XAv1h2z6oyJ33\u002BZ/PJx36iVikge/8wm5AORqAv7soKND3v5/0QWW9PQ0ktQuQu9aQQ=="",
       ""hashAlgorithm"": ""SHA512"",
       ""iconUrl"": ""http://go.microsoft.com/fwlink/?LinkID=288890"",
@@ -156,6 +159,9 @@ namespace NuGet.Services.AzureSearch
         ""Queue"",
         ""Scalable"",
         ""windowsazureofficial""
+      ],
+      ""tfms"": [
+        ""net40""
       ],
       ""title"": ""Windows Azure Storage"",
       ""tokenizedPackageId"": ""WindowsAzure.Storage"",
@@ -299,6 +305,7 @@ namespace NuGet.Services.AzureSearch
       ""description"": ""Description."",
       ""fileSize"": 3039254,
       ""flattenedDependencies"": ""Microsoft.Data.OData:5.6.4:net40-client|Newtonsoft.Json:6.0.8:net40-client"",
+      ""frameworks"": null,
       ""hash"": ""oMs9XKzRTsbnIpITcqZ5XAv1h2z6oyJ33\u002BZ/PJx36iVikge/8wm5AORqAv7soKND3v5/0QWW9PQ0ktQuQu9aQQ=="",
       ""hashAlgorithm"": ""SHA512"",
       ""iconUrl"": ""http://go.microsoft.com/fwlink/?LinkID=288890"",
@@ -327,6 +334,7 @@ namespace NuGet.Services.AzureSearch
         ""Scalable"",
         ""windowsazureofficial""
       ],
+      ""tfms"": null,
       ""title"": ""Windows Azure Storage"",
       ""tokenizedPackageId"": ""WindowsAzure.Storage"",
       ""lastCommitTimestamp"": ""2018-12-13T12:30:00\u002B00:00"",
