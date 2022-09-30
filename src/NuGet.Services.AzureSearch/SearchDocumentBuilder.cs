@@ -394,17 +394,17 @@ namespace NuGet.Services.AzureSearch
             var frameworks = new HashSet<string>();
             foreach (var framework in tfms)
             {
-                switch (framework.Framework.ToLower())
+                if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.Net, framework.Framework))
                 {
-                    case ".netframework":
-                        frameworks.Add("netframework");
-                        break;
-                    case ".netcoreapp":
-                        frameworks.Add(framework.Version.Major >= 5 ? "net" : "netcore");
-                        break;
-                    case ".netstandard":
-                        frameworks.Add("netstandard");
-                        break;
+                    frameworks.Add("netframework");
+                }
+                else if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.NetCoreApp, framework.Framework))
+                {
+                    frameworks.Add(framework.Version.Major >= 5 ? "net" : "netcore");
+                }
+                else if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.NetStandard, framework.Framework))
+                {
+                    frameworks.Add("netstandard");
                 }
             }
 
