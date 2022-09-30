@@ -58,7 +58,7 @@ namespace StatusAggregator.Update
 
             if (children.Any())
             {
-                _logger.LogInformation("Aggregation has {ChildrenCount} children. Updating each child.", children.Count);
+                _logger.LogInformation("Aggregation {AggregationEntityId} has {ChildrenCount} children. Updating each child.", aggregationEntity.RowKey, children.Count);
                 foreach (var child in children)
                 {
                     await _aggregatedEntityUpdater.UpdateAsync(child, cursor);
