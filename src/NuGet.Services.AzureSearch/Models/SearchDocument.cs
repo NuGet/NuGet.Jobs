@@ -47,16 +47,17 @@ namespace NuGet.Services.AzureSearch
             public string[] PackageTypes { get; set; }
 
             /// <summary>
-            /// The list of a package's supported target framework generations. These framework generations will be
-            /// standardized strings of the form "net", "netframework", "netcore", or "netstandard", for the four
-            /// generations supported by the NuGet.org filtering experience.
+            /// The list of a package's supported target framework generations. The four generations supported by
+            /// the NuGet.org filtering experience will be represented by standardized shortname identifiers.
+            /// eg. net, netframework, netcoreapp, netstandard
             /// </summary>
             [SimpleField(IsFilterable = true)]
             public string[] Frameworks { get; set; }
 
             /// <summary>
-            /// The list of a package's supported target framework monikers, stored as their normalized TFM strings 
-            /// (same as the 'short folder name'). eg. net472, netcoreapp3.1, tizen40
+            /// The list of a package's supported target framework monikers, stored as normalized TFM strings (same 
+            /// as the 'short folder name'). This only refers to a package's asset frameworks, not the computed ones. 
+            /// eg. net5.0, net472, netcoreapp3.1, tizen40
             /// </summary>
             [SimpleField(IsFilterable = true)]
             public string[] Tfms { get; set; }
