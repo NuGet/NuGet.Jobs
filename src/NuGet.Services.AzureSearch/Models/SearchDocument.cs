@@ -55,8 +55,8 @@ namespace NuGet.Services.AzureSearch
             public string[] Frameworks { get; set; }
 
             /// <summary>
-            /// The list of a package's supported target framework monikers, stored as normalized TFM strings (same 
-            /// as the 'short folder name'). This only refers to a package's asset frameworks, not the computed ones. 
+            /// The list of a package's supported target framework monikers, stored as normalized TFM strings (same
+            /// as the 'short folder name'). This only refers to a package's asset frameworks, not the computed ones.
             /// eg. net5.0, net472, netcoreapp3.1, tizen40
             /// </summary>
             [SimpleField(IsFilterable = true)]
