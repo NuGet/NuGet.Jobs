@@ -375,7 +375,7 @@ namespace NuGet.Services.AzureSearch
         private static string[] GetFrameworksFromPackage(ICollection<PackageFramework> supportedFrameworks)
         {
             var tfms = supportedFrameworks
-                            .Where(f => f.FrameworkName.IsSpecificFramework)
+                            .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
                             .Select(f => f.FrameworkName)
                             .ToArray();
 
@@ -385,7 +385,7 @@ namespace NuGet.Services.AzureSearch
         private static string[] GetTfmsFromPackage(ICollection<PackageFramework> supportedFrameworks)
         {
             return supportedFrameworks
-                            .Where(f => f.FrameworkName.IsSpecificFramework)
+                            .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
                             .Select(f => f.FrameworkName.GetShortFolderName())
                             .ToArray();
         }

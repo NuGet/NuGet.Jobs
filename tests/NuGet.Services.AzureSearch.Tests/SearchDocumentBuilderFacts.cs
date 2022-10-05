@@ -946,13 +946,8 @@ namespace NuGet.Services.AzureSearch
                     new object[] {new List<string>{"net45", "netstandard2.1", "xamarinios"}, new List<string>{"net45", "netstandard2.1", "xamarinios"},
                                     new List<string> {"netframework", "netstandard"}},
 
-                    new object[] {new List<string> {"portable-net45+sl4+win+wp71", "portable-net45+sl5+win+wp71+wp8"},
-                                    new List<string> {"portable-net45+sl4+win+wp71", "portable-net45+sl5+win+wp71+wp8"}, new List<string> {}},
-
-                    new object[] {new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0",
-                            "portable-net40+sl5+win8+wp8+wpa81", "portable-net45+win8+wp8+wpa81"},
-                                    new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0",
-                            "portable-net40+sl5+win8+wp8+wpa81", "portable-net45+win8+wp8+wpa81"}, new List<string> {"netframework", "netstandard"}}
+                    new object[] {new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0"},
+                                    new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0"}, new List<string> {"netframework", "netstandard"}}
                 };
         }
 
