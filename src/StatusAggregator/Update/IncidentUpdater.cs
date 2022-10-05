@@ -18,6 +18,12 @@ namespace StatusAggregator.Update
         private readonly IIncidentApiClient _incidentApiClient;
         private readonly ILogger<IncidentUpdater> _logger;
 
+        private static readonly Func<WebException, bool> _filter = (e) =>
+        {
+            return e.Status == WebExceptionStatus.ProtocolError
+                && (e.Response as HttpWebResponse)?.StatusCode == HttpStatusCode.NotFound;
+        };
+
         public IncidentUpdater(
             ITableWrapper table,
             IIncidentApiClient incidentApiClient,
@@ -42,18 +48,10 @@ namespace StatusAggregator.Update
                 var activeIncident = await _incidentApiClient.GetIncident(entity.IncidentApiId);
                 endTime = activeIncident.MitigationData?.Date;
             }
-            catch (WebException e) when (e.Status == WebExceptionStatus.ProtocolError)
+            catch (WebException e) when (_filter(e))
             {
-                var response = e.Response as HttpWebResponse;
-                if (response != null && response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    endTime = DateTime.UtcNow;
-                    _logger.LogError("Incident with ID {IncidentApiId} was not found.", entity.IncidentApiId);
-                }
-                else
-                {
-                    throw;
-                }
+                endTime = DateTime.UtcNow;
+                _logger.LogError("Incident with ID {IncidentApiId} was not found.", entity.IncidentApiId);
             }
 
             if (endTime != null)
