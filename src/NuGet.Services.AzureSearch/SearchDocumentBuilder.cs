@@ -7,6 +7,7 @@ using System.Linq;
 using NuGet.Frameworks;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.Entities;
+using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch
 {
@@ -17,7 +18,7 @@ namespace NuGet.Services.AzureSearch
 
         private readonly IBaseDocumentBuilder _baseDocumentBuilder;
 
-        public SearchDocumentBuilder(IBaseDocumentBuilder baseDocumentBuilder)
+    public SearchDocumentBuilder(IBaseDocumentBuilder baseDocumentBuilder)
         {
             _baseDocumentBuilder = baseDocumentBuilder ?? throw new ArgumentNullException(nameof(baseDocumentBuilder));
         }
@@ -396,15 +397,17 @@ namespace NuGet.Services.AzureSearch
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.Net, framework.Framework))
                 {
-                    frameworks.Add("netframework");
+                    frameworks.Add(AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetFramework);
                 }
                 else if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.NetCoreApp, framework.Framework))
                 {
-                    frameworks.Add(framework.Version.Major >= 5 ? "net" : "netcore");
+                    frameworks.Add(framework.Version.Major >= 5
+                        ? AssetFrameworkHelper.FrameworkGenerationIdentifiers.Net
+                        : AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetCoreApp);
                 }
                 else if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.NetStandard, framework.Framework))
                 {
-                    frameworks.Add("netstandard");
+                    frameworks.Add(AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetStandard);
                 }
             }
 
