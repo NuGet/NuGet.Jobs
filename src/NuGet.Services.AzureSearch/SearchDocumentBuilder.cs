@@ -18,7 +18,7 @@ namespace NuGet.Services.AzureSearch
 
         private readonly IBaseDocumentBuilder _baseDocumentBuilder;
 
-    public SearchDocumentBuilder(IBaseDocumentBuilder baseDocumentBuilder)
+        public SearchDocumentBuilder(IBaseDocumentBuilder baseDocumentBuilder)
         {
             _baseDocumentBuilder = baseDocumentBuilder ?? throw new ArgumentNullException(nameof(baseDocumentBuilder));
         }
