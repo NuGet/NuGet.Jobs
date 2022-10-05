@@ -918,7 +918,7 @@ namespace NuGet.Services.AzureSearch
                 new List<object[]>
                 {
                     new object[] {new List<string> {}, new List<string>(), new List<string> {}},
-                    new object[] {new List<string> {"any"}, new List<string> {"any"}, new List<string> {}},
+                    new object[] {new List<string> {"any"}, new List<string> {}, new List<string> {}},
                     new object[] {new List<string> {"net"}, new List<string> {"net"}, new List<string> {"netframework"}},
                     new object[] {new List<string> {"win"}, new List<string> {"win"}, new List<string> {}},
                     new object[] {new List<string> {"foo"}, new List<string> {}, new List<string> {}}, // unsupported tfm is not included
