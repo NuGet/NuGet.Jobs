@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -148,6 +149,7 @@ namespace NuGet.Tools.SplitLargeFiles
             Console.WriteLine($"  Input path: {inputPath}");
             Console.WriteLine($"  Desired output file size (bytes): {desiredFileSize}");
             Console.WriteLine($"  File Index Format: {fileIndexFormat} (ex: '{string.Format(fileIndexFormat, 0)}')");
+            Console.WriteLine($"  Start time: {DateTime.Now}");
             Console.WriteLine();
 
             if (!File.Exists(inputPath))
@@ -160,7 +162,13 @@ namespace NuGet.Tools.SplitLargeFiles
             {
 
                 Console.WriteLine("Gathering data about the input file...");
+                var stopwatch = Stopwatch.StartNew();
                 var properties = FileProperties.FromFileStream(inputStream);
+                stopwatch.Stop();
+                Console.WriteLine("Gathering data took {0:F0} seconds ({1}), throughput: {2:F1} KB/s",
+                    stopwatch.Elapsed.TotalSeconds,
+                    stopwatch.Elapsed,
+                    properties.Size / 1024 / stopwatch.Elapsed.TotalSeconds);
 
                 // Generate the output path format.
                 var outputPathFormat = GenerateOutputPathFormat(inputPath, fileIndexFormat, properties.IsGzipped);
@@ -191,20 +199,34 @@ namespace NuGet.Tools.SplitLargeFiles
 
                 using (var reader = new StreamReader(readStream, properties.Encoding))
                 {
+                    long totalBytesWritten = 0;
+                    stopwatch.Restart();
                     for (var fileIndex = 0; fileIndex < fileCount; fileIndex++)
                     {
                         var isLastFile = fileIndex >= fileCount - 1;
                         var outputPath = string.Format(outputPathFormat, fileIndex);
 
                         Console.Write($"[{fileIndex + 1}/{fileCount}] Writing {outputPath}...");
-                        WriteOutputFile(properties, reader, linesPerFile, outputPath, isLastFile);
-                        Console.WriteLine(" done.");
+                        var chunkStopwatch = Stopwatch.StartNew();
+                        var bytesWritten = WriteOutputFile(properties, reader, linesPerFile, outputPath, isLastFile);
+                        chunkStopwatch.Stop();
+                        Console.WriteLine(" done in {0:F0} seconds ({1}). Throughput {2:F1} KB/s.",
+                            chunkStopwatch.Elapsed.TotalSeconds,
+                            chunkStopwatch.Elapsed,
+                            bytesWritten / 1024 / chunkStopwatch.Elapsed.TotalSeconds);
+                        totalBytesWritten += bytesWritten;
                     }
+                    stopwatch.Stop();
+                    Console.WriteLine("Total operation time {0:F0} seconds ({1}). Throughput {2:F1} KB/s.",
+                        stopwatch.Elapsed.TotalSeconds,
+                        stopwatch.Elapsed,
+                        totalBytesWritten / 1024 / stopwatch.Elapsed.TotalSeconds);
                 }
             }
 
             Console.WriteLine();
             Console.WriteLine("The file has been split up.");
+            Console.WriteLine($"  End time: {DateTime.Now}");
 
             return 0;
         }
@@ -253,7 +275,7 @@ namespace NuGet.Tools.SplitLargeFiles
             return Path.Combine(directory, withoutExtension + fileIndexFormat + extension + gzipSuffix);
         }
 
-        private static void WriteOutputFile(FileProperties properties, StreamReader reader, long linesPerFile, string outputPath, bool isLastFile)
+        private static long WriteOutputFile(FileProperties properties, StreamReader reader, long linesPerFile, string outputPath, bool isLastFile)
         {
             using (var outputStream = new FileStream(outputPath, FileMode.Create))
             {
@@ -273,6 +295,7 @@ namespace NuGet.Tools.SplitLargeFiles
                         lineIndex++;
                         writer.WriteLine(line);
                     }
+                    return outputStream.Length;
                 }
             }
         }
