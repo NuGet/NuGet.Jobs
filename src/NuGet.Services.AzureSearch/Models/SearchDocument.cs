@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using Azure.Search.Documents.Indexes;
+using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch
 {
@@ -48,8 +49,9 @@ namespace NuGet.Services.AzureSearch
 
             /// <summary>
             /// The list of a package's supported target framework generations. The four generations supported by
-            /// the NuGet.org filtering experience will be represented by standardized shortname identifiers.
-            /// eg. net, netframework, netcoreapp, netstandard
+            /// the NuGet.org filtering experience will be represented by standardized shortname identifiers stored
+            /// by the <see cref="AssetFrameworkHelper.FrameworkGenerationIdentifiers"/> class.
+            /// eg. net, netframework
             /// </summary>
             [SimpleField(IsFilterable = true)]
             public string[] Frameworks { get; set; }
