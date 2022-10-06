@@ -232,8 +232,8 @@ namespace Stats.CollectAzureCdnLogs
                                         using (var resultGzipStream = new GZipOutputStream(resultLogStream))
                                         {
                                             resultGzipStream.IsStreamOwner = false;
-                                            lineCount = await ProcessLogStream(rawGzipStream, resultGzipStream, fileName);
-                                            await resultGzipStream.FlushAsync();
+                                            lineCount = ProcessLogStream(rawGzipStream, resultGzipStream, fileName);
+                                            resultGzipStream.Flush();
                                         }
 
                                         // commit to blob storage
@@ -287,26 +287,26 @@ namespace Stats.CollectAzureCdnLogs
             }
         }
 
-        private async Task<int> ProcessLogStream(Stream sourceStream, Stream targetStream, string fileName)
+        private int ProcessLogStream(Stream sourceStream, Stream targetStream, string fileName)
         {
             // note: not using async/await pattern as underlying streams do not support async
             using (var sourceStreamReader = new StreamReader(sourceStream))
             using (var targetStreamWriter = new StreamWriter(targetStream))
             {
-                await targetStreamWriter.WriteAsync("#Fields: timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
+                targetStreamWriter.Write("#Fields: timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
 
                 try
                 {
                     var lineNumber = 0;
                     do
                     {
-                        var rawLogLine = await sourceStreamReader.ReadLineAsync();
+                        var rawLogLine = sourceStreamReader.ReadLine();
                         lineNumber++;
 
                         var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine, fileName);
                         if (!string.IsNullOrEmpty(logLine))
                         {
-                            await targetStreamWriter.WriteAsync(logLine);
+                            targetStreamWriter.Write(logLine);
                         }
                     }
                     while (!sourceStreamReader.EndOfStream);
