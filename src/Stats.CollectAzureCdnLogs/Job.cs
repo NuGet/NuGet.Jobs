@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -203,6 +204,10 @@ namespace Stats.CollectAzureCdnLogs
                     // Skip already processed ".download" files.
                     if (!skipProcessing)
                     {
+                        // ensure the .download suffix is trimmed away
+                        var fileName = rawLogFile.FileName.Replace(".download", string.Empty);
+
+                        using (_telemetryService.TrackLogProcessingDuration(fileName))
                         // open the raw log from FTP
                         using (var rawLogStream = await ftpClient.OpenReadAsync(rawLogUri))
                         using (var rawLogStreamInMemory = new MemoryStream())
@@ -213,50 +218,45 @@ namespace Stats.CollectAzureCdnLogs
 
                             // process the raw, compressed memory stream
                             using (var rawGzipStream = new GZipInputStream(rawLogStreamInMemory))
+                            using (Logger.BeginScope("Started uploading file '{FileName}' to {BlobUri}.", fileName, rawLogFile.Uri.ToString()))
                             {
-                                // ensure the .download suffix is trimmed away
-                                var fileName = rawLogFile.FileName.Replace(".download", string.Empty);
-
-                                using (Logger.BeginScope("Started uploading file '{FileName}' to {BlobUri}.", fileName, rawLogFile.Uri.ToString()))
+                                try
                                 {
+                                    // open the resulting cleaned blob and stream modified entries
+                                    // note the missing using() statement so that we can skip committing if an exception occurs
+                                    var resultLogStream = await azureClient.OpenBlobForWriteAsync(cloudBlobContainer, rawLogFile, fileName);
+
                                     try
                                     {
-                                        // open the resulting cleaned blob and stream modified entries
-                                        // note the missing using() statement so that we can skip committing if an exception occurs
-                                        var resultLogStream = await azureClient.OpenBlobForWriteAsync(cloudBlobContainer, rawLogFile, fileName);
-
-                                        try
+                                        var lineCount = 0;
+                                        using (var resultGzipStream = new GZipOutputStream(resultLogStream))
                                         {
-                                            using (var resultGzipStream = new GZipOutputStream(resultLogStream))
-                                            {
-                                                resultGzipStream.IsStreamOwner = false;
-
-                                                ProcessLogStream(rawGzipStream, resultGzipStream, fileName);
-
-                                                resultGzipStream.Flush();
-                                            }
-
-                                            // commit to blob storage
-                                            resultLogStream.Commit();
-
-                                            uploadSucceeded = true;
-                                        }
-                                        catch
-                                        {
-                                            uploadSucceeded = false;
-                                            throw;
+                                            resultGzipStream.IsStreamOwner = false;
+                                            lineCount = await ProcessLogStream(rawGzipStream, resultGzipStream, fileName);
+                                            await resultGzipStream.FlushAsync();
                                         }
 
-                                        Logger.LogInformation("Finished uploading file.");
+                                        // commit to blob storage
+                                        resultLogStream.Commit();
+
+                                        uploadSucceeded = true;
+                                        _telemetryService.TrackProcessedBlob(fileName, rawLogStreamInMemory.Length, lineCount);
                                     }
-                                    catch (Exception exception)
+                                    catch
                                     {
-                                        Logger.LogError(
-                                            LogEvents.FailedBlobUpload,
-                                            exception,
-                                            LogMessages.FailedBlobUpload,
-                                            rawLogUri);
+                                        uploadSucceeded = false;
+                                        throw;
                                     }
+
+                                    Logger.LogInformation("Finished uploading file.");
+                                }
+                                catch (Exception exception)
+                                {
+                                    Logger.LogError(
+                                        LogEvents.FailedBlobUpload,
+                                        exception,
+                                        LogMessages.FailedBlobUpload,
+                                        rawLogUri);
                                 }
                             }
                         }
@@ -287,38 +287,37 @@ namespace Stats.CollectAzureCdnLogs
             }
         }
 
-        private void ProcessLogStream(Stream sourceStream, Stream targetStream, string fileName)
+        private async Task<int> ProcessLogStream(Stream sourceStream, Stream targetStream, string fileName)
         {
             // note: not using async/await pattern as underlying streams do not support async
             using (var sourceStreamReader = new StreamReader(sourceStream))
+            using (var targetStreamWriter = new StreamWriter(targetStream))
             {
-                using (var targetStreamWriter = new StreamWriter(targetStream))
+                await targetStreamWriter.WriteAsync("#Fields: timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
+
+                try
                 {
-                    targetStreamWriter.Write("#Fields: timestamp time-taken c-ip filesize s-ip s-port sc-status sc-bytes cs-method cs-uri-stem - rs-duration rs-bytes c-referrer c-user-agent customer-id x-ec_custom-1\n");
-
-                    try
+                    var lineNumber = 0;
+                    do
                     {
-                        var lineNumber = 0;
-                        do
+                        var rawLogLine = await sourceStreamReader.ReadLineAsync();
+                        lineNumber++;
+
+                        var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine, fileName);
+                        if (!string.IsNullOrEmpty(logLine))
                         {
-                            var rawLogLine = sourceStreamReader.ReadLine();
-                            lineNumber++;
-
-                            var logLine = GetParsedModifiedLogEntry(lineNumber, rawLogLine, fileName);
-                            if (!string.IsNullOrEmpty(logLine))
-                            {
-                                targetStreamWriter.Write(logLine);
-                            }
+                            await targetStreamWriter.WriteAsync(logLine);
                         }
-                        while (!sourceStreamReader.EndOfStream);
                     }
-                    catch (SharpZipBaseException e)
-                    {
-                        // this raw log file may be corrupt...
-                        Logger.LogError(LogEvents.FailedToProcessLogStream, e, LogMessages.ProcessingLogStreamFailed);
+                    while (!sourceStreamReader.EndOfStream);
+                    return lineNumber;
+                }
+                catch (SharpZipBaseException e)
+                {
+                    // this raw log file may be corrupt...
+                    Logger.LogError(LogEvents.FailedToProcessLogStream, e, LogMessages.ProcessingLogStreamFailed);
 
-                        throw;
-                    }
+                    throw;
                 }
             }
         }
