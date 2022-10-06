@@ -229,6 +229,9 @@ namespace Stats.CollectAzureCdnLogs
                                     try
                                     {
                                         var lineCount = 0;
+                                        // ProcessLogStream function below closes the stream, so we need to take note of its length
+                                        // now to log later.
+                                        var compressedBlobSize = rawLogStreamInMemory.Length;
                                         using (var resultGzipStream = new GZipOutputStream(resultLogStream))
                                         {
                                             resultGzipStream.IsStreamOwner = false;
@@ -240,7 +243,7 @@ namespace Stats.CollectAzureCdnLogs
                                         resultLogStream.Commit();
 
                                         uploadSucceeded = true;
-                                        _telemetryService.TrackProcessedBlob(fileName, rawLogStreamInMemory.Length, lineCount);
+                                        _telemetryService.TrackProcessedBlob(fileName, compressedBlobSize, lineCount);
                                     }
                                     catch
                                     {
