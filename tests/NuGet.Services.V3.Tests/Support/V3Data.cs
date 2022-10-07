@@ -95,7 +95,16 @@ namespace NuGet.Services
             PackageHash = "oMs9XKzRTsbnIpITcqZ5XAv1h2z6oyJ33+Z/PJx36iVikge/8wm5AORqAv7soKND3v5/0QWW9PQ0ktQuQu9aQQ==",
             PackageHashAlgorithm = "SHA512",
             PackageId = PackageId,
+            PackageEntries = new List<NuGet.Protocol.Catalog.PackageEntry>
+            {
+                new NuGet.Protocol.Catalog.PackageEntry
+                {
+                    FullName = "lib/net40-client/Package.dll",
+                    Name = "Package.dll"
+                },
+            },
             PackageSize = 3039254,
+            PackageTypes = new List<NuGet.Protocol.Catalog.PackageType>(),
             PackageVersion = FullVersion,
             ProjectUrl = "https://github.com/Azure/azure-storage-net",
             Published = new DateTimeOffset(new DateTime(2017, 1, 3), TimeSpan.Zero),

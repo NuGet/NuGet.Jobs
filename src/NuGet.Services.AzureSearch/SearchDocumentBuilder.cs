@@ -177,6 +177,13 @@ namespace NuGet.Services.AzureSearch
                 leaf.PackageTypes.Select(pt => pt.Name).ToArray() :
                 null;
 
+            var frameworks = leaf.PackageEntries == null
+                                                ? Array.Empty<string>()
+                                                : GetFrameworksFromCatalogLeaf(leaf);
+            var tfms = leaf.PackageEntries == null
+                                                ? Array.Empty<string>()
+                                                : GetTfmsFromCatalogLeaf(leaf);
+
             PopulateUpdateLatest(
                 document,
                 leaf.PackageId,
@@ -190,8 +197,8 @@ namespace NuGet.Services.AzureSearch
                 fullVersion: fullVersion,
                 owners: owners,
                 packageTypes: packageTypes,
-                frameworks: Array.Empty<String>(),
-                tfms: Array.Empty<String>());
+                frameworks: frameworks,
+                tfms: tfms);
             _baseDocumentBuilder.PopulateMetadata(document, normalizedVersion, leaf);
 
             return document;
@@ -217,8 +224,12 @@ namespace NuGet.Services.AzureSearch
                 package.PackageTypes.Select(pt => pt.Name).ToArray() :
                 null;
 
-            var frameworks = package.SupportedFrameworks == null ? Array.Empty<string>() : GetFrameworksFromPackage(package.SupportedFrameworks);
-            var tfms = package.SupportedFrameworks == null ? Array.Empty<string>() : GetTfmsFromPackage(package.SupportedFrameworks);
+            var frameworks = package.SupportedFrameworks == null
+                                                ? Array.Empty<string>()
+                                                : GetFrameworksFromPackage(package.SupportedFrameworks);
+            var tfms = package.SupportedFrameworks == null
+                                                ? Array.Empty<string>()
+                                                : GetTfmsFromPackage(package.SupportedFrameworks);
 
             PopulateUpdateLatest(
                 document,
@@ -390,6 +401,22 @@ namespace NuGet.Services.AzureSearch
                             .ToArray();
         }
 
+        private static string[] GetFrameworksFromCatalogLeaf(PackageDetailsCatalogLeaf leaf)
+        {
+            var tfms = GetSupportedFrameworks(leaf)
+                            .ToArray();
+
+            return ParseFrameworkGenerations(tfms);
+        }
+
+        private static string[] GetTfmsFromCatalogLeaf(PackageDetailsCatalogLeaf leaf)
+        {
+            return GetSupportedFrameworks(leaf)
+                            .Select(f => f.GetShortFolderName())
+                            .Where(f => f != null)
+                            .ToArray();
+        }
+
         private static string[] ParseFrameworkGenerations(ICollection<NuGetFramework> tfms)
         {
             var frameworks = new HashSet<string>();
@@ -412,6 +439,32 @@ namespace NuGet.Services.AzureSearch
             }
 
             return frameworks.ToArray();
+        }
+
+        private static IEnumerable<NuGetFramework> GetSupportedFrameworks(PackageDetailsCatalogLeaf leaf)
+        {
+            string[] files = leaf.PackageEntries.Count == 0
+                                    ? Array.Empty<string>()
+                                    : leaf.PackageEntries.Select(pe => pe.FullName).ToArray();
+            var packageTypes = leaf.PackageTypes == null
+                                    ? new List<Packaging.Core.PackageType>()
+                                    : GetPackageTypes(leaf);
+
+            return AssetFrameworkHelper.GetAssetFrameworks(leaf.PackageId, packageTypes, files)
+                                                .Where(f => f.IsSpecificFramework && !f.IsPCL);
+        }
+
+        private static List<Packaging.Core.PackageType> GetPackageTypes(PackageDetailsCatalogLeaf leaf)
+        {
+            return leaf.PackageTypes.Count == 0
+                            ? new List<Packaging.Core.PackageType>()
+                            : leaf.PackageTypes
+                                        .Select(pt => new Packaging.Core.PackageType(
+                                                                pt.Name,
+                                                                pt.Version == null
+                                                                    ? Packaging.Core.PackageType.EmptyVersion
+                                                                    : new Version(pt.Version)))
+                                        .ToList();
         }
     }
 }
