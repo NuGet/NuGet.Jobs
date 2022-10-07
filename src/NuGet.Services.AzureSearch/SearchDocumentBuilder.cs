@@ -2,9 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using NuGet.Frameworks;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.Entities;
+using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch
 {
@@ -186,7 +189,9 @@ namespace NuGet.Services.AzureSearch
                 isLatest: isLatest,
                 fullVersion: fullVersion,
                 owners: owners,
-                packageTypes: packageTypes);
+                packageTypes: packageTypes,
+                frameworks: Array.Empty<String>(),
+                tfms: Array.Empty<String>());
             _baseDocumentBuilder.PopulateMetadata(document, normalizedVersion, leaf);
 
             return document;
@@ -212,6 +217,9 @@ namespace NuGet.Services.AzureSearch
                 package.PackageTypes.Select(pt => pt.Name).ToArray() :
                 null;
 
+            var frameworks = package.SupportedFrameworks == null ? Array.Empty<string>() : GetFrameworksFromPackage(package.SupportedFrameworks);
+            var tfms = package.SupportedFrameworks == null ? Array.Empty<string>() : GetTfmsFromPackage(package.SupportedFrameworks);
+
             PopulateUpdateLatest(
                 document,
                 packageId,
@@ -224,7 +232,9 @@ namespace NuGet.Services.AzureSearch
                 isLatest: isLatest,
                 fullVersion: fullVersion,
                 owners: owners,
-                packageTypes: packageTypes);
+                packageTypes: packageTypes,
+                frameworks: frameworks,
+                tfms: tfms);
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
             PopulateIsExcludedByDefault(document, isExcludedByDefault);
@@ -271,7 +281,9 @@ namespace NuGet.Services.AzureSearch
             bool isLatest,
             string fullVersion,
             string[] owners,
-            string[] packageTypes)
+            string[] packageTypes,
+            string[] frameworks,
+            string[] tfms)
         {
             PopulateVersions(
                 document,
@@ -285,6 +297,8 @@ namespace NuGet.Services.AzureSearch
                 isLatest);
             document.SearchFilters = DocumentUtilities.GetSearchFilterString(searchFilters);
             document.FullVersion = fullVersion;
+            document.Frameworks = frameworks;
+            document.Tfms = tfms;
 
             // If the package has explicit types, we will set them here.
             // Otherwise, we will treat the package as a "Depedency" type and fill in the explicit type.
@@ -356,6 +370,48 @@ namespace NuGet.Services.AzureSearch
             bool isExcludedByDefault) where T : KeyedDocument, SearchDocument.IIsExcludedByDefault
         {
             document.IsExcludedByDefault = isExcludedByDefault;
+        }
+
+        private static string[] GetFrameworksFromPackage(ICollection<PackageFramework> supportedFrameworks)
+        {
+            var tfms = supportedFrameworks
+                            .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
+                            .Select(f => f.FrameworkName)
+                            .ToArray();
+
+            return ParseFrameworkGenerations(tfms);
+        }
+
+        private static string[] GetTfmsFromPackage(ICollection<PackageFramework> supportedFrameworks)
+        {
+            return supportedFrameworks
+                            .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
+                            .Select(f => f.FrameworkName.GetShortFolderName())
+                            .ToArray();
+        }
+
+        private static string[] ParseFrameworkGenerations(ICollection<NuGetFramework> tfms)
+        {
+            var frameworks = new HashSet<string>();
+            foreach (var framework in tfms)
+            {
+                if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.Net, framework.Framework))
+                {
+                    frameworks.Add(AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetFramework);
+                }
+                else if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.NetCoreApp, framework.Framework))
+                {
+                    frameworks.Add(framework.Version.Major >= 5
+                        ? AssetFrameworkHelper.FrameworkGenerationIdentifiers.Net
+                        : AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetCoreApp);
+                }
+                else if (StringComparer.OrdinalIgnoreCase.Equals(FrameworkConstants.FrameworkIdentifiers.NetStandard, framework.Framework))
+                {
+                    frameworks.Add(AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetStandard);
+                }
+            }
+
+            return frameworks.ToArray();
         }
     }
 }

@@ -392,6 +392,8 @@ namespace NuGet.Services.AzureSearch
       ""packageTypes"": [
         ""Dependency""
       ],
+      ""frameworks"": [],
+      ""tfms"": [],
       ""isLatestStable"": false,
       ""isLatest"": true,
       ""semVerLevel"": 2,
@@ -719,6 +721,12 @@ namespace NuGet.Services.AzureSearch
       ""packageTypes"": [
         ""Dependency""
       ],
+      ""frameworks"": [
+        ""netframework""
+      ],
+      ""tfms"": [
+        ""net40-client""
+      ],
       ""isLatestStable"": false,
       ""isLatest"": true,
       ""semVerLevel"": 2,
@@ -858,6 +866,89 @@ namespace NuGet.Services.AzureSearch
 
                 Assert.Equal(Data.GalleryLicenseUrl, document.LicenseUrl);
             }
+
+            [Theory]
+            [MemberData(nameof(TargetFrameworkCases))]
+            public void AddsFrameworksAndTfmsFromPackage(List<string> supportedFrameworks, List<string> expectedTfms, List<string> expectedFrameworks)
+            {
+                // arrange
+                var package = new Package
+                {
+                    PackageRegistration = new PackageRegistration
+                    {
+                        Id = "TestPackage",
+                    },
+                    Id = "TestPackage",
+                    NormalizedVersion = Data.NormalizedVersion,
+                    LicenseExpression = "Unlicense",
+                    HasEmbeddedIcon = true,
+                    SupportedFrameworks = supportedFrameworks
+                                                .Select(f => new PackageFramework() { TargetFramework = f })
+                                                .ToArray(),
+                };
+
+                // act
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                // assert
+                Assert.True(document.Tfms.Length == expectedTfms.Count);
+                foreach (var item in expectedTfms)
+                {
+                    Assert.Contains(item, document.Tfms);
+                }
+
+                Assert.True(document.Frameworks.Length == expectedFrameworks.Count);
+                foreach (var item in expectedFrameworks)
+                {
+                    Assert.Contains(item, document.Frameworks);
+                }
+            }
+
+            public static IEnumerable<object[]> TargetFrameworkCases =>
+                new List<object[]>
+                {
+                    new object[] {new List<string> {}, new List<string>(), new List<string> {}},
+                    new object[] {new List<string> {"any"}, new List<string> {}, new List<string> {}},
+                    new object[] {new List<string> {"net"}, new List<string> {"net"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"win"}, new List<string> {"win"}, new List<string> {}},
+                    new object[] {new List<string> {"foo"}, new List<string> {}, new List<string> {}}, // unsupported tfm is not included
+                    new object[] {new List<string> {"dotnet"}, new List<string> {"dotnet"}, new List<string> {}},
+                    new object[] {new List<string> {"net472"}, new List<string> {"net472"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"net40-client"}, new List<string> {"net40-client"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"net5.0"}, new List<string> {"net5.0"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"netcoreapp3.0"}, new List<string> { "netcoreapp3.0" }, new List<string> { "netcoreapp" } },
+                    new object[] {new List<string> {"netstandard2.0"}, new List<string> { "netstandard2.0" }, new List<string> { "netstandard" } },
+                    new object[] {new List<string> {"net40", "net45"}, new List<string> {"net40", "net45"}, new List<string> {"netframework"}},
+                    new object[] {new List<string> {"net5.0-tvos", "net5.0-ios"}, new List<string> {"net5.0-ios", "net5.0-tvos"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"net5.0-tvos", "net5.0-ios13.0"}, new List<string> {"net5.0-ios13.0", "net5.0-tvos"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"net5.1-tvos", "net5.1", "net5.0-tvos"}, new List<string> {"net5.0-tvos", "net5.1", "net5.1-tvos"}, new List<string> {"net"}},
+                    new object[] {new List<string> {"net5.0", "netcoreapp3.1", "native"}, new List<string> {"native", "net5.0", "netcoreapp3.1"}, new List<string> {"net", "netcoreapp"}},
+
+                    new object[] {new List<string> {"netcoreapp3.1", "netstandard2.0"}, new List<string> {"netcoreapp3.1", "netstandard2.0"},
+                                    new List<string> {"netcoreapp", "netstandard"}},
+
+                    new object[] {new List<string> {"netstandard2.1", "net45", "net472", "tizen40"}, new List<string> {"netstandard2.1", "net45", "net472", "tizen40"},
+                                    new List<string> {"netframework", "netstandard"}},
+
+                    new object[] {new List<string>{"net40", "net471", "net5.0-watchos", "netstandard2.0", "netstandard2.1"},
+                                    new List<string>{"net40", "net471", "net5.0-watchos", "netstandard2.0", "netstandard2.1"}, new List<string> {"netframework", "net", "netstandard"}},
+
+                    new object[] {new List<string>{"net45", "netstandard2.1", "xamarinios"}, new List<string>{"net45", "netstandard2.1", "xamarinios"},
+                                    new List<string> {"netframework", "netstandard"}},
+
+                    new object[] {new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0"},
+                                    new List<string> {"net20", "net35", "net40", "net45", "netstandard1.0", "netstandard1.3", "netstandard2.0"}, new List<string> {"netframework", "netstandard"}}
+                };
         }
 
         public abstract class BaseFacts
