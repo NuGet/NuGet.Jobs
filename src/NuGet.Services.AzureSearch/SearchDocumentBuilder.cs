@@ -446,7 +446,7 @@ namespace NuGet.Services.AzureSearch
             string[] files = leaf.PackageEntries.Count == 0
                                     ? Array.Empty<string>()
                                     : leaf.PackageEntries.Select(pe => pe.FullName).ToArray();
-            var packageTypes = leaf.PackageTypes == null
+            var packageTypes = leaf.PackageTypes == null || leaf.PackageTypes.Count == 0
                                     ? new List<Packaging.Core.PackageType>()
                                     : GetPackageTypes(leaf);
 
@@ -456,15 +456,13 @@ namespace NuGet.Services.AzureSearch
 
         private static List<Packaging.Core.PackageType> GetPackageTypes(PackageDetailsCatalogLeaf leaf)
         {
-            return leaf.PackageTypes.Count == 0
-                            ? new List<Packaging.Core.PackageType>()
-                            : leaf.PackageTypes
-                                        .Select(pt => new Packaging.Core.PackageType(
-                                                                pt.Name,
-                                                                pt.Version == null
-                                                                    ? Packaging.Core.PackageType.EmptyVersion
-                                                                    : new Version(pt.Version)))
-                                        .ToList();
+            return leaf.PackageTypes
+                            .Select(pt => new Packaging.Core.PackageType(
+                                                    pt.Name,
+                                                    pt.Version == null
+                                                        ? Packaging.Core.PackageType.EmptyVersion
+                                                        : new Version(pt.Version)))
+                            .ToList();
         }
     }
 }
