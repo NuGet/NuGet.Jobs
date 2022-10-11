@@ -99,8 +99,8 @@ namespace NuGet.Services
             {
                 new NuGet.Protocol.Catalog.PackageEntry
                 {
-                    FullName = "lib/net40-client/Package.dll",
-                    Name = "Package.dll"
+                    FullName = $"lib/net40-client/{PackageId}.dll",
+                    Name = $"{PackageId}.dll"
                 },
             },
             PackageSize = 3039254,
