@@ -594,13 +594,13 @@ namespace NuGet.Services.AzureSearch
                     owners: Data.Owners);
 
                 // assert
-                Assert.True(document.Tfms.Length == expectedTfms.Count);
+                Assert.Equal(document.Tfms.Length, expectedTfms.Count);
                 foreach (var item in expectedTfms)
                 {
                     Assert.Contains(item, document.Tfms);
                 }
 
-                Assert.True(document.Frameworks.Length == expectedFrameworks.Count);
+                Assert.Equal(document.Frameworks.Length, expectedFrameworks.Count);
                 foreach (var item in expectedFrameworks)
                 {
                     Assert.Contains(item, document.Frameworks);
@@ -609,20 +609,17 @@ namespace NuGet.Services.AzureSearch
 
             [Theory]
             [MemberData(nameof(AdditionalCatalogTFMCases))]
-            public void CalculatesAssetFrameworksFromPackageEntriesAndPackageTypes(bool isTools, List<string> files, List<string> expectedTfms, List<string> expectedFrameworks)
+            public void CalculatesAssetFrameworksFromPackageEntriesAndPackageTypes(List<NuGet.Protocol.Catalog.PackageType> packageTypes,
+                                                                                   List<string> files,
+                                                                                   List<string> expectedTfms,
+                                                                                   List<string> expectedFrameworks)
             {
                 // arrange
                 var leaf = Data.Leaf;
                 leaf.PackageEntries = files
                                         .Select(f => new NuGet.Protocol.Catalog.PackageEntry { FullName = f })
                                         .ToList();
-                if (isTools)
-                {
-                    leaf.PackageTypes = new List<NuGet.Protocol.Catalog.PackageType>
-                                            {
-                                                new NuGet.Protocol.Catalog.PackageType{ Name = "DotnetTool" }
-                                            };
-                }
+                leaf.PackageTypes = packageTypes;
 
                 // act
                 var document = _target.UpdateLatestFromCatalog(
@@ -636,13 +633,13 @@ namespace NuGet.Services.AzureSearch
                     owners: Data.Owners);
 
                 // assert
-                Assert.True(document.Tfms.Length == expectedTfms.Count);
+                Assert.Equal(document.Tfms.Length, expectedTfms.Count);
                 foreach (var item in expectedTfms)
                 {
                     Assert.Contains(item, document.Tfms);
                 }
 
-                Assert.True(document.Frameworks.Length == expectedFrameworks.Count);
+                Assert.Equal(document.Frameworks.Length, expectedFrameworks.Count);
                 foreach (var item in expectedFrameworks)
                 {
                     Assert.Contains(item, document.Frameworks);
@@ -987,13 +984,13 @@ namespace NuGet.Services.AzureSearch
                     isExcludedByDefault: false);
 
                 // assert
-                Assert.True(document.Tfms.Length == expectedTfms.Count);
+                Assert.Equal(document.Tfms.Length, expectedTfms.Count);
                 foreach (var item in expectedTfms)
                 {
                     Assert.Contains(item, document.Tfms);
                 }
 
-                Assert.True(document.Frameworks.Length == expectedFrameworks.Count);
+                Assert.Equal(document.Frameworks.Length, expectedFrameworks.Count);
                 foreach (var item in expectedFrameworks)
                 {
                     Assert.Contains(item, document.Frameworks);
@@ -1212,37 +1209,48 @@ namespace NuGet.Services.AzureSearch
             public static IEnumerable<object[]> AdditionalCatalogTFMCases =>
             new List<object[]>
             {
-                    new object[] {false, new List<string> {"lib/netcoreapp31/_._", "lib/netstandard20/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(),
+                                    new List<string> {"lib/netcoreapp31/_._", "lib/netstandard20/_._"},
                                     new List<string> {"netcoreapp3.1", "netstandard2.0"}, new List<string> {"netcoreapp", "netstandard"}},
-                    new object[] {false, new List<string> {"lib/net40/_._", "lib/net4.7.1/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(), new List<string> {"lib/net40/_._", "lib/net4.7.1/_._"},
                                     new List<string> {"net40", "net471"}, new List<string> {"netframework"}},
-                    new object[] {false, new List<string> {"lib/_._"}, new List<string> {"net"}, new List<string> {"netframework"}}, // no version
-
-                    new object[] {false, new List<string> {"runtimes/win/net40/_._", "runtimes/win/net471/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(), new List<string> {"lib/_._"},
+                                    new List<string> {"net"}, new List<string> {"netframework"}}, // no version
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(),
+                                    new List<string> {"runtimes/win/net40/_._", "runtimes/win/net471/_._"},
                                     new List<string>(), new List<string>()}, // no "lib" dir
-                    new object[] {false, new List<string> {"runtimes/win/lib/net40/", "runtimes/win/lib/net471/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(),
+                                    new List<string> {"runtimes/win/lib/net40/", "runtimes/win/lib/net471/_._"},
                                     new List<string> {"net471"}, new List<string> {"netframework"}}, // no file in "net40" dir
-                    new object[] {false, new List<string> {"lib/net5.0/_1._", "lib/net5.0/_2._", "lib/native/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(),
+                                    new List<string> {"lib/net5.0/_1._", "lib/net5.0/_2._", "lib/native/_._"},
                                     new List<string> {"native", "net5.0" }, new List<string> {"net"}},
-                    new object[] {false, new List<string> {"ref/_._"}, new List<string>(), new List<string>()},
-                    new object[] {false, new List<string> {"ref/net40/_._", "ref/net451/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(), new List<string> {"ref/_._"},
+                                    new List<string>(), new List<string>()},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(),
+                                    new List<string> {"ref/net40/_._", "ref/net451/_._"},
                                     new List<string> {"net40", "net451"}, new List<string> {"netframework"}},
-                    new object[] {false, new List<string> {"contentFiles/vb/net45/_._", "contentFiles/cs/netcoreapp3.1/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(),
+                                    new List<string> {"contentFiles/vb/net45/_._", "contentFiles/cs/netcoreapp3.1/_._"},
                                     new List<string>{"net45", "netcoreapp3.1"}, new List<string> {"netframework", "netcoreapp"}},
 
                     // Tools cases
-                    new object[] {true, new List<string> {"tools/netcoreapp3.1/_._"}, new List<string>(), new List<string>()},
-                    new object[] {true, new List<string> {"tools/netcoreapp3.1/win10-x86/tool1/_._", "tools/netcoreapp3.1/win10-x86/tool2/_._" },
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType> {new NuGet.Protocol.Catalog.PackageType{ Name = "DotnetTool" }},
+                                    new List<string> {"tools/netcoreapp3.1/_._"}, new List<string>(), new List<string>()},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType> {new NuGet.Protocol.Catalog.PackageType{ Name = "DotnetTool" }},
+                                    new List<string> {"tools/netcoreapp3.1/win10-x86/tool1/_._", "tools/netcoreapp3.1/win10-x86/tool2/_._" },
                                     new List<string> {"netcoreapp3.1"}, new List<string> {"netcoreapp"}},
-                    new object[] {true, new List<string> {"tools/netcoreapp3.1/any/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType> {new NuGet.Protocol.Catalog.PackageType{ Name = "DotnetTool" }},
+                                    new List<string> {"tools/netcoreapp3.1/any/_._"},
                                     new List<string> {"netcoreapp3.1"}, new List<string> {"netcoreapp"}},
-                    new object[] {false, new List<string> {"tools/netcoreapp3.1/any/_._"},
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(), new List<string> {"tools/netcoreapp3.1/any/_._"},
                                     new List<string>(), new List<string>()}, // not a tools package, no supported TFMs
-                    new object[] {false, new List<string> {"Foo.nuspec", "runtimes/win10-x86/lib/net40/_._", "runtimes/win10-x86/lib/net471/_._",
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType>(), // not a tools package
+                                    new List<string> {"Foo.nuspec", "runtimes/win10-x86/lib/net40/_._", "runtimes/win10-x86/lib/net471/_._",
                                     "ref/net5.0-watchos/_1._", "ref/net5.0-watchos/_2._", "tools/netcoreapp3.1/win10-x86/tool1/_._",
                                     "tools/netcoreapp3.1/win10-x86/tool2/_._"},
                                     new List<string> {"net40", "net471", "net5.0-watchos"}, new List<string> {"netframework", "net"}},
-                    new object[] {true, // tools package
+                    new object[] {new List<NuGet.Protocol.Catalog.PackageType> {new NuGet.Protocol.Catalog.PackageType{ Name = "DotnetTool" }},
                                     new List<string> {"Foo.nuspec", "runtimes/win10-x86/lib/net40/_._", "runtimes/win10-x86/lib/net471/_._",
                                     "ref/net5.0-watchos/_1._", "ref/net5.0-watchos/_2._", "tools/netcoreapp3.1/win10-x86/tool1/_._",
                                     "tools/netcoreapp3.1/win10-x86/tool2/_._"},

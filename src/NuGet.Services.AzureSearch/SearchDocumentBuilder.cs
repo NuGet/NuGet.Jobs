@@ -177,12 +177,8 @@ namespace NuGet.Services.AzureSearch
                 leaf.PackageTypes.Select(pt => pt.Name).ToArray() :
                 null;
 
-            var frameworks = leaf.PackageEntries == null
-                                                ? Array.Empty<string>()
-                                                : GetFrameworksFromCatalogLeaf(leaf);
-            var tfms = leaf.PackageEntries == null
-                                                ? Array.Empty<string>()
-                                                : GetTfmsFromCatalogLeaf(leaf);
+            var frameworks = GetFrameworksFromCatalogLeaf(leaf);
+            var tfms = GetTfmsFromCatalogLeaf(leaf);
 
             PopulateUpdateLatest(
                 document,
@@ -443,7 +439,7 @@ namespace NuGet.Services.AzureSearch
 
         private static IEnumerable<NuGetFramework> GetSupportedFrameworks(PackageDetailsCatalogLeaf leaf)
         {
-            string[] files = leaf.PackageEntries.Count == 0
+            string[] files = leaf.PackageEntries == null || leaf.PackageEntries.Count == 0
                                     ? Array.Empty<string>()
                                     : leaf.PackageEntries.Select(pe => pe.FullName).ToArray();
             var packageTypes = leaf.PackageTypes == null || leaf.PackageTypes.Count == 0
