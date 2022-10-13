@@ -14,7 +14,7 @@ namespace Stats.CollectAzureCdnLogs
     public class TelemetryService : ITelemetryService
     {
         private const string Prefix = "Stats.CollectAzureCdnLogs.";
-        private const string FilenamePropertyName = "Filename";
+        private const string FileNamePropertyName = "FileName";
         private readonly ITelemetryClient _telemetryClient;
 
         public TelemetryService(ITelemetryClient telemetryClient)
@@ -29,7 +29,7 @@ namespace Stats.CollectAzureCdnLogs
 
         public void TrackProcessedBlob(string fileName, long compressedBytes, int lineCount)
         {
-            var properties = new Dictionary<string, string> { { FilenamePropertyName, fileName } };
+            var properties = new Dictionary<string, string> { { FileNamePropertyName, fileName } };
             _telemetryClient.TrackMetric(Prefix + "LogCompressedSourceFileSizeBytes", compressedBytes, properties);
             _telemetryClient.TrackMetric(Prefix + "LogLineCount", lineCount, properties);
         }
@@ -37,7 +37,7 @@ namespace Stats.CollectAzureCdnLogs
         public IDisposable TrackLogProcessingDuration(string fileName)
             => _telemetryClient.TrackDuration(Prefix + "LogProcessingTimeSeconds", new Dictionary<string, string>
                 {
-                    { FilenamePropertyName, fileName },
+                    { FileNamePropertyName, fileName },
                 });
     }
 }
