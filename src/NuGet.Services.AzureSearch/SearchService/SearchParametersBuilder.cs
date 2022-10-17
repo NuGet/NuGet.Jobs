@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using NuGet.Packaging;
@@ -83,7 +84,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
-                ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType);
+                ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, request.Frameworks, request.Tfms);
             }
 
             return searchParameters;
@@ -147,7 +148,9 @@ namespace NuGet.Services.AzureSearch.SearchService
             SearchOptions searchParameters,
             SearchRequest request,
             bool isDefaultSearch,
-            string packageType)
+            string packageType,
+            string frameworks = null,
+            string tfms = null)
         {
             var searchFilters = GetSearchFilters(request);
 
@@ -163,6 +166,16 @@ namespace NuGet.Services.AzureSearch.SearchService
             if (packageType != null && PackageIdValidator.IsValidPackageId(packageType))
             {
                 filterString += $" and {IndexFields.Search.FilterablePackageTypes}/any(p: p eq '{packageType.ToLowerInvariant()}')";
+            }
+
+            if (frameworks != null)
+            {
+                filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Frameworks, frameworks);
+            }
+
+            if (tfms != null)
+            {
+                filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Tfms, tfms);
             }
 
             searchParameters.Filter = filterString;
@@ -222,6 +235,19 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             return orderBy;
+        }
+
+        // Constructs filter strings for both Frameworks and Tfms.
+        // indexField: Determines which field you are targeting
+        //             i.e. IndexFields.Search.Frameworks or IndexFields.Search.Tfms
+        // frameworks: Comma-separated list of a user's selected Frameworks or Tfms
+        private string GetFrameworksOrTfmsFilterString(string indexField, string frameworks)
+        {
+            var filterStrings = frameworks
+                                    .Split(',')
+                                    .Select(f => $"{indexField}/any(f: f eq '{f.ToLowerInvariant()}')");
+
+            return " and (" + String.Join(" and ", filterStrings) + ")";
         }
     }
 }

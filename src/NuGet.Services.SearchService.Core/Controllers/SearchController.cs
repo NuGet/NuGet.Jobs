@@ -68,6 +68,8 @@ namespace NuGet.Services.SearchService.Controllers
             string sortBy = null,
             bool? luceneQuery = true,
             string packageType = null,
+            string frameworks = null,
+            string tfms = null,
             bool? testData = false,
             bool? debug = false)
         {
@@ -85,6 +87,8 @@ namespace NuGet.Services.SearchService.Controllers
                 SortBy = ParameterUtilities.ParseV2SortBy(sortBy),
                 LuceneQuery = luceneQuery ?? true,
                 PackageType = packageType,
+                Frameworks = frameworks,
+                Tfms = tfms,
                 IncludeTestData = testData ?? false,
                 ShowDebug = debug ?? false,
             };
