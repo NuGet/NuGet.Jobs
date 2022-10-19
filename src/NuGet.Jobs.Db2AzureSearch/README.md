@@ -65,6 +65,7 @@ Once you've created your Azure resources, you can create your `settings.json` fi
 * The `SearchServiceApiKey` setting is an admin key that has write permissions to the Azure Search resource. Make sure the Azure Search resource you're connecting to has API keys enabled (either in parallel with managed identities "RBAC" access or with managed identities authentication disabled).
 * The `StorageConnectionString` and `AuxiliaryDataStorageConnectionString` settings are both the connection string to your Azure Blob Storage account.
 * The `DownloadsV1JsonUrl` setting is the URL to `downloads.v1.json` file above. Make sure it works without authentication.
+* The `FeatureFlags:ConnectionString` setting is the connection string to your Azure Blob storage account. 
 
 ```json
 {
@@ -103,6 +104,10 @@ Once you've created your Azure resources, you can create your `settings.json` fi
       "DownloadScoreBoost": 30000,
       "PopularityTransfer": 0.99
     }
+  },
+
+  "FeatureFlags": {
+    "ConnectionString": "PLACEHOLDER"
   }
 }
 ```
