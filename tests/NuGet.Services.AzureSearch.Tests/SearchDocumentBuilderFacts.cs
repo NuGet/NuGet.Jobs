@@ -701,6 +701,15 @@ namespace NuGet.Services.AzureSearch
       ""totalDownloadCount"": 1001,
       ""downloadScore"": 0.14381174563233068,
       ""isExcludedByDefault"": false,
+      ""deprecationInfo"": {
+        ""alternatePkg"": {
+          ""id"": null,
+          ""range"": null
+        },
+        ""message"": null,
+        ""reasons"": []
+      },
+      ""vulnerabilities"": [],
       ""owners"": [
         ""Microsoft"",
         ""azure-sdk""

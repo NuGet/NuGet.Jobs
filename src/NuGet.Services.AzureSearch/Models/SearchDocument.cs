@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using Azure.Search.Documents.Indexes;
+using System.Collections.Generic;
 
 namespace NuGet.Services.AzureSearch
 {
@@ -25,6 +26,10 @@ namespace NuGet.Services.AzureSearch
 
             [SimpleField(IsFilterable = true)]
             public bool? IsExcludedByDefault { get; set; }
+
+            public Deprecation DeprecationInfo { get; set; }
+
+            public List<Vulnerability> Vulnerabilities { get; set; }
         }
 
         /// <summary>
@@ -145,5 +150,28 @@ namespace NuGet.Services.AzureSearch
             public bool IsLatestStable { get; }
             public bool IsLatest { get; }
         }
+    }
+
+    public class Deprecation
+    {
+        public AlternatePackage AlternatePkg { get; set; }
+
+        public string Message { get; set; }
+
+        public string[] Reasons { get; set; }
+    }
+
+    public class AlternatePackage
+    {
+        public string Id { get; set; }
+
+        public string Range { get; set; }
+    }
+
+    public class Vulnerability
+    {
+        public string AdvisoryURL { get; set; }
+
+        public int Severity { get; set; }
     }
 }

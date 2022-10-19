@@ -946,7 +946,8 @@ namespace NuGet.Services.AzureSearch.SearchService
           ""downloads"": 23,
           ""@id"": ""https://example/reg-gz-semver2/windowsazure.storage/7.1.2-alpha.json""
         }
-      ]
+      ],
+      ""vulnerabilities"": []
     }
   ]
 }", actualJson);
@@ -1117,7 +1118,8 @@ namespace NuGet.Services.AzureSearch.SearchService
           ""downloads"": 23,
           ""@id"": ""https://example/reg-gz-semver2/windowsazure.storage/7.1.2-alpha.json""
         }
-      ]
+      ],
+      ""vulnerabilities"": []
     }
   ]
 }", actualJson);

@@ -74,5 +74,6 @@ namespace NuGet.Services.AzureSearch
         /// </summary>
         [SearchableField(AnalyzerName = PackageIdCustomAnalyzer.Name)]
         public string TokenizedPackageId { get; set; }
+
     }
 }

@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Azure.Search.Documents;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using NuGet.Protocol.Registration;
+using NuGet.Services.AzureSearch;
 using NuGet.Services.AzureSearch.Wrappers;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Versioning;
@@ -398,6 +400,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                         };
                     })
                     .ToList(),
+                DeprecationInfo = result.DeprecationInfo.Message != null ? result.DeprecationInfo : null,
+                Vulnerabilities = result.Vulnerabilities.Count > 0 ? result.Vulnerabilities : new List<Vulnerability>(),
             };
 
             if (_featureFlagService.IsV3OwnersPropertyEnabled())
