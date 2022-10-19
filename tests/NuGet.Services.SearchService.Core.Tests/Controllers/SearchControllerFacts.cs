@@ -145,6 +145,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.False(lastRequest.ShowDebug);
                 Assert.Null(lastRequest.PackageType);
+                Assert.Null(lastRequest.Frameworks);
+                Assert.Null(lastRequest.Tfms);
             }
 
             [Fact]
@@ -167,7 +169,9 @@ namespace NuGet.Services.SearchService.Controllers
                     sortBy: null,
                     luceneQuery: null,
                     debug: null,
-                    packageType: null);
+                    packageType: null,
+                    frameworks: null,
+                    tfms: null);
 
                 _searchService.Verify(x => x.V2SearchAsync(It.IsAny<V2SearchRequest>()), Times.Once);
                 Assert.NotNull(lastRequest);
@@ -181,6 +185,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.False(lastRequest.ShowDebug);
                 Assert.Null(lastRequest.PackageType);
+                Assert.Null(lastRequest.Frameworks);
+                Assert.Null(lastRequest.Tfms);
             }
 
             [Fact]
@@ -203,7 +209,9 @@ namespace NuGet.Services.SearchService.Controllers
                     sortBy: "lastEdited",
                     luceneQuery: true,
                     debug: true,
-                    packageType: "dotnettool");
+                    packageType: "dotnettool",
+                    frameworks: "netcoreapp",
+                    tfms: "net5.0,netstandard2.1");
 
                 _searchService.Verify(x => x.V2SearchAsync(It.IsAny<V2SearchRequest>()), Times.Once);
                 Assert.NotNull(lastRequest);
@@ -217,6 +225,11 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.True(lastRequest.ShowDebug);
                 Assert.Equal("dotnettool", lastRequest.PackageType);
+                Assert.Equal(1, lastRequest.Frameworks.Count);
+                Assert.Contains("netcoreapp", lastRequest.Frameworks);
+                Assert.Equal(2, lastRequest.Tfms.Count);
+                Assert.Contains("net5.0", lastRequest.Tfms);
+                Assert.Contains("netstandard2.1", lastRequest.Tfms);
             }
 
             [Theory]
