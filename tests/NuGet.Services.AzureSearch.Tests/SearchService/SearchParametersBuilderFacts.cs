@@ -254,7 +254,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             [Theory]
             [MemberData(nameof(FrameworkAndTfmFilters))]
-            public void FrameworkAndTfmFiltering(string frameworks, string tfms, string expectedFilterString)
+            public void FrameworkAndTfmFiltering(List<string> frameworks, List<string> tfms, string expectedFilterString)
             {
                 var request = new V2SearchRequest
                 {
@@ -587,18 +587,24 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             public static IEnumerable<object[]> FrameworkAndTfmFilters => new[]
             {
-                new object[] { "netstandard", "net472",
+                new object[] { new List<string> {"netstandard"}, new List<string> {"net472"},
                     "(frameworks/any(f: f eq 'netstandard')) and (tfms/any(f: f eq 'net472'))" },
-                new object[] { null, "net5.0",
-                    "(tfms/any(f: f eq 'net5.0'))" },
-                new object[] { "netcoreapp", null,
+                new object[] { new List<string> {"netcoreapp"}, null,
                     "(frameworks/any(f: f eq 'netcoreapp'))" },
-                new object[] { "netframework", "netstandard2.1,netstandard2.0",
-                    "(frameworks/any(f: f eq 'netframework')) and (tfms/any(f: f eq 'netstandard2.1')" +
-                    " and tfms/any(f: f eq 'netstandard2.0'))" },
-                new object[] { "net,netstandard", "netcoreapp3.1",
+                new object[] { null, new List<string> {"net5.0"},
+                    "(tfms/any(f: f eq 'net5.0'))" },
+                new object[] { new List<string> {"netframework"}, new List<string> {"foo"},
+                    "(frameworks/any(f: f eq 'netframework'))" },
+                new object[] { new List<string> {"foo"}, new List<string> {"net40-client"},
+                    "(tfms/any(f: f eq 'net40-client'))" },
+                new object[] { new List<string> {"net", "netstandard"},
+                    new List<string> {"netcoreapp3.1"},
                     "(frameworks/any(f: f eq 'net') and frameworks/any(f: f eq 'netstandard'))" +
                     " and (tfms/any(f: f eq 'netcoreapp3.1'))" },
+                new object[] { new List<string> {"netframework"},
+                    new List<string> {"netstandard2.1", "netstandard2.0"},
+                    "(frameworks/any(f: f eq 'netframework'))" +
+                    " and (tfms/any(f: f eq 'netstandard2.1') and tfms/any(f: f eq 'netstandard2.0'))" },
             };
 
             public BaseFacts()

@@ -7,6 +7,7 @@ using System.Linq;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using NuGet.Packaging;
+using NuGet.Services.Entities;
 using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.SearchService
@@ -149,8 +150,8 @@ namespace NuGet.Services.AzureSearch.SearchService
             SearchRequest request,
             bool isDefaultSearch,
             string packageType,
-            string frameworks = null,
-            string tfms = null)
+            IReadOnlyList<string> frameworks = default,
+            IReadOnlyList<string> tfms = default)
         {
             var searchFilters = GetSearchFilters(request);
 
@@ -168,12 +169,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                 filterString += $" and {IndexFields.Search.FilterablePackageTypes}/any(p: p eq '{packageType.ToLowerInvariant()}')";
             }
 
-            if (frameworks != null)
+            if (frameworks != default)
             {
                 filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Frameworks, frameworks);
             }
 
-            if (tfms != null)
+            if (tfms != default)
             {
                 filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Tfms, tfms);
             }
@@ -241,13 +242,39 @@ namespace NuGet.Services.AzureSearch.SearchService
         // indexField: Determines which field you are targeting
         //             i.e. IndexFields.Search.Frameworks or IndexFields.Search.Tfms
         // frameworks: Comma-separated list of a user's selected Frameworks or Tfms
-        private string GetFrameworksOrTfmsFilterString(string indexField, string frameworks)
+        private string GetFrameworksOrTfmsFilterString(string indexField, IReadOnlyList<string> frameworks)
         {
             var filterStrings = frameworks
-                                    .Split(',')
+                                    .Where(f => IsValidFrameworkOrTfm(indexField, f))
                                     .Select(f => $"{indexField}/any(f: f eq '{f.ToLowerInvariant()}')");
 
-            return " and (" + String.Join(" and ", filterStrings) + ")";
+            return filterStrings.Count() == 0
+                                ? String.Empty
+                                : " and (" + String.Join(" and ", filterStrings) + ")";
+        }
+
+        private bool IsValidFrameworkOrTfm(string indexField, string framework)
+        {
+            if (indexField == IndexFields.Search.Frameworks)
+            {
+                if (framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.Net ||
+                    framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetFramework ||
+                    framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetCoreApp ||
+                    framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetStandard)
+                {
+                    return true;
+                }
+            }
+            else if (indexField == IndexFields.Search.Tfms)
+            {
+                var tfm = new PackageFramework() { TargetFramework = framework };
+                if (tfm.FrameworkName.IsSpecificFramework && !tfm.FrameworkName.IsPCL)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
