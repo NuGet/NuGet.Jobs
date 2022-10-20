@@ -54,6 +54,9 @@ In your Azure Blob Storage account, you will need to create a container named `n
 1. `downloads.v1.json` with content `[]`
 1. `ExcludedPackages.v1.json` with content `[]`
 
+You will also need to create a second container (if it does not already exist) named `content` and upload the following file:
+1. `flags.json ` with content `{}`
+
 If you are on the nuget.org team, you can copy these files from the [PROD auxiliary files container](https://nuget.visualstudio.com/DefaultCollection/NuGetMicrosoft/_git/NuGetDeployment?path=%2Fsrc%2FJobs%2FNuGet.Jobs.Cloud%2FJobs%2FDb2AzureSearch%2FPROD%2Fnorthcentralus%2Fappsettings.json&version=GBmaster&line=18&lineEnd=24&lineStartColumn=1&lineEndColumn=1&lineStyle=plain).
 
 #### Settings
