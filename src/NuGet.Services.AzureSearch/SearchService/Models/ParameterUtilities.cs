@@ -58,24 +58,28 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         public static IReadOnlyList<string> ParseFrameworks(string frameworks)
         {
-            return frameworks == null ? new List<string>() : frameworks
-                                                                .Split(',')
-                                                                .Select(f => f.ToLowerInvariant().Trim())
-                                                                .Where(f => f != String.Empty)
-                                                                .Where(f => FrameworkGenerationIdentifiers.Contains(f))
-                                                                .ToList();
+            return frameworks == null
+                                    ? (IReadOnlyList<string>)Array.Empty<string>()
+                                    : frameworks
+                                        .Split(',')
+                                        .Select(f => f.ToLowerInvariant().Trim())
+                                        .Where(f => f != String.Empty)
+                                        .Where(f => FrameworkGenerationIdentifiers.Contains(f))
+                                        .ToList();
         }
 
         public static IReadOnlyList<string> ParseTfms(string tfms)
         {
-            return tfms == null ? new List<string>() : tfms
-                                                        .Split(',')
-                                                        .Select(f => f.Trim())
-                                                        .Where(f => f != String.Empty)
-                                                        .Select(f => NuGetFramework.Parse(f))
-                                                        .Where(f => f.IsSpecificFramework && !f.IsPCL)
-                                                        .Select(f => f.GetShortFolderName())
-                                                        .ToList();
+            return tfms == null
+                            ? (IReadOnlyList<string>)Array.Empty<string>()
+                            : tfms
+                                .Split(',')
+                                .Select(f => f.Trim())
+                                .Where(f => f != String.Empty)
+                                .Select(f => NuGetFramework.Parse(f))
+                                .Where(f => f.IsSpecificFramework && !f.IsPCL)
+                                .Select(f => f.GetShortFolderName())
+                                .ToList();
         }
     }
 }
