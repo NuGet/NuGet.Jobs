@@ -145,8 +145,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.False(lastRequest.ShowDebug);
                 Assert.Null(lastRequest.PackageType);
-                Assert.Null(lastRequest.Frameworks);
-                Assert.Null(lastRequest.Tfms);
+                Assert.Equal(new List<string>(), lastRequest.Frameworks);
+                Assert.Equal(new List<string>(), lastRequest.Tfms);
             }
 
             [Fact]
@@ -185,8 +185,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.False(lastRequest.ShowDebug);
                 Assert.Null(lastRequest.PackageType);
-                Assert.Null(lastRequest.Frameworks);
-                Assert.Null(lastRequest.Tfms);
+                Assert.Equal(new List<string>(), lastRequest.Frameworks);
+                Assert.Equal(new List<string>(), lastRequest.Tfms);
             }
 
             [Fact]
@@ -225,11 +225,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.True(lastRequest.ShowDebug);
                 Assert.Equal("dotnettool", lastRequest.PackageType);
-                Assert.Equal(1, lastRequest.Frameworks.Count);
-                Assert.Contains("netcoreapp", lastRequest.Frameworks);
-                Assert.Equal(2, lastRequest.Tfms.Count);
-                Assert.Contains("net5.0", lastRequest.Tfms);
-                Assert.Contains("netstandard2.1", lastRequest.Tfms);
+                Assert.Equal(new List<string> {"netcoreapp"}, lastRequest.Frameworks);
+                Assert.Equal(new List<string> {"net5.0", "netstandard2.1"}, lastRequest.Tfms);
             }
 
             [Theory]
@@ -275,6 +272,28 @@ namespace NuGet.Services.SearchService.Controllers
                 _searchService.Verify(
                     x => x.V2SearchAsync(It.Is<V2SearchRequest>(r => r.IncludeSemVer2 == includeSemVer2)),
                     Times.Once);
+            }
+
+            [Theory]
+            [MemberData(nameof(FrameworkAndTfmQueryParams))]
+            public async Task ParsesFrameworksAndTfms(string frameworks, string tfms, List<string> expectedFrameworks, List<string> expectedTfms)
+            {
+                // arrange
+                V2SearchRequest lastRequest = null;
+                _searchService
+                    .Setup(x => x.V2SearchAsync(It.IsAny<V2SearchRequest>()))
+                    .ReturnsAsync(() => _v2SearchResponse)
+                    .Callback<V2SearchRequest>(x => lastRequest = x);
+
+                // act
+                await _target.V2SearchAsync(frameworks: frameworks, tfms: tfms);
+
+                // assert
+                _searchService.Verify(x => x.V2SearchAsync(It.IsAny<V2SearchRequest>()), Times.Once);
+
+                Assert.NotNull(lastRequest);
+                Assert.Equal(expectedFrameworks, lastRequest.Frameworks);
+                Assert.Equal(expectedTfms, lastRequest.Tfms);
             }
         }
 
@@ -569,6 +588,28 @@ namespace NuGet.Services.SearchService.Controllers
                 new object[] { "  2.0.0  ", true },
                 new object[] { "3", true },
                 new object[] { "3.0.0-beta", true },
+            };
+
+            public static IEnumerable<object[]> FrameworkAndTfmQueryParams => new[]
+            {
+                new object[] { "netstandard", "net472", new List<string> {"netstandard"}, new List<string> {"net472"} },
+                new object[] { "netcoreapp", "", new List<string> {"netcoreapp"}, new List<string>() },
+                new object[] { "", "net5.0", new List<string>(), new List<string> {"net5.0"} },
+                new object[] { "netcoreapp", null, new List<string> {"netcoreapp"}, new List<string>() },
+                new object[] { null, "net5.0", new List<string>(), new List<string> {"net5.0"} },
+                new object[] { "net,netstandard", "netcoreapp3.1",
+                    new List<string> {"net", "netstandard"}, new List<string> {"netcoreapp3.1"} },
+                new object[] { "netframework", "netstandard2.1,netstandard2.0",
+                    new List<string> {"netframework"}, new List<string> {"netstandard2.1", "netstandard2.0"} },
+                // unexpected inputs
+                new object[] { "foo", "net40-client", new List<string>(), new List<string> {"net40-client"} },
+                new object[] { "netframework", "foo", new List<string> {"netframework"}, new List<string>() },
+                new object[] { null, "portable-net45+sl5,tizen40,net",
+                    new List<string>(), new List<string> {"tizen40", "net"} },
+                new object[] { "NETFRAMEWORK, net", "net4.5 ,bestTfm2.6",
+                    new List<string> { "netframework", "net" }, new List<string> { "net45"} },
+                new object[] { "windows,,nETsTANDARD", "  NET45 ,  net6.0-windows ",
+                    new List<string> { "netstandard"}, new List<string> { "net45", "net6.0-windows"} },
             };
 
             public BaseFacts()

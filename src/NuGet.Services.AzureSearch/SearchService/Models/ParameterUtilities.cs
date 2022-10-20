@@ -1,9 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using NuGet.Versioning;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using NuGet.Services.Entities;
+using NuGet.Versioning;
+using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.SearchService
 {
@@ -23,6 +26,11 @@ namespace NuGet.Services.AzureSearch.SearchService
             { "totalDownloads-asc", V2SortBy.TotalDownloadsAsc },
             { "totalDownloads-desc", V2SortBy.TotalDownloadsDesc },
         };
+
+        private static readonly HashSet<string> FrameworkGenerationIdentifiers = new HashSet<string> { AssetFrameworkHelper.FrameworkGenerationIdentifiers.Net,
+                                                                                                       AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetFramework,
+                                                                                                       AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetCoreApp,
+                                                                                                       AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetStandard };
 
         public static V2SortBy ParseV2SortBy(string sortBy)
         {
@@ -44,6 +52,28 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 return semVerLevelVersion >= SemVer2Level;
             }
+        }
+
+        public static IReadOnlyList<string> ParseFrameworks(string frameworks)
+        {
+            return frameworks == null ? new List<string>() : frameworks
+                                                                .Split(',')
+                                                                .Select(f => f.ToLowerInvariant().Trim())
+                                                                .Where(f => f != String.Empty)
+                                                                .Where(f => FrameworkGenerationIdentifiers.Contains(f))
+                                                                .ToList();
+        }
+
+        public static IReadOnlyList<string> ParseTfms(string tfms)
+        {
+            return tfms == null ? new List<string>() : tfms
+                                                        .Split(',')
+                                                        .Select(f => f.ToLowerInvariant().Trim())
+                                                        .Where(f => f != String.Empty)
+                                                        .Select(f => new PackageFramework() { TargetFramework = f })
+                                                        .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
+                                                        .Select(f => f.FrameworkName.GetShortFolderName())
+                                                        .ToList();
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Linq;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using NuGet.Packaging;
-using NuGet.Services.Entities;
 using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.SearchService
@@ -101,7 +100,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             searchParameters.OrderBy.AddRange(ScoreDesc);
 
             ApplyPaging(searchParameters, request);
-            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType);
+            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, new List<string>(), new List<string>());
 
             return searchParameters;
         }
@@ -115,7 +114,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             };
             searchParameters.OrderBy.AddRange(ScoreDesc);
 
-            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType);
+            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, new List<string>(), new List<string>());
 
             switch (request.Type)
             {
@@ -150,8 +149,8 @@ namespace NuGet.Services.AzureSearch.SearchService
             SearchRequest request,
             bool isDefaultSearch,
             string packageType,
-            IReadOnlyList<string> frameworks = default,
-            IReadOnlyList<string> tfms = default)
+            IReadOnlyList<string> frameworks,
+            IReadOnlyList<string> tfms)
         {
             var searchFilters = GetSearchFilters(request);
 
@@ -169,12 +168,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                 filterString += $" and {IndexFields.Search.FilterablePackageTypes}/any(p: p eq '{packageType.ToLowerInvariant()}')";
             }
 
-            if (frameworks != default)
+            if (frameworks != null)
             {
                 filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Frameworks, frameworks);
             }
-
-            if (tfms != default)
+            
+            if (tfms != null)
             {
                 filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Tfms, tfms);
             }
@@ -241,40 +240,15 @@ namespace NuGet.Services.AzureSearch.SearchService
         // Constructs filter strings for both Frameworks and Tfms.
         // indexField: Determines which field you are targeting
         //             i.e. IndexFields.Search.Frameworks or IndexFields.Search.Tfms
-        // frameworks: Comma-separated list of a user's selected Frameworks or Tfms
+        // frameworks: List of a user's selected Frameworks or Tfms (validated and normalized)
         private string GetFrameworksOrTfmsFilterString(string indexField, IReadOnlyList<string> frameworks)
         {
             var filterStrings = frameworks
-                                    .Where(f => IsValidFrameworkOrTfm(indexField, f))
-                                    .Select(f => $"{indexField}/any(f: f eq '{f.ToLowerInvariant()}')");
+                                    .Select(f => $"{indexField}/any(f: f eq '{f}')");
 
             return filterStrings.Count() == 0
                                 ? String.Empty
                                 : " and (" + String.Join(" and ", filterStrings) + ")";
-        }
-
-        private bool IsValidFrameworkOrTfm(string indexField, string framework)
-        {
-            if (indexField == IndexFields.Search.Frameworks)
-            {
-                if (framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.Net ||
-                    framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetFramework ||
-                    framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetCoreApp ||
-                    framework == AssetFrameworkHelper.FrameworkGenerationIdentifiers.NetStandard)
-                {
-                    return true;
-                }
-            }
-            else if (indexField == IndexFields.Search.Tfms)
-            {
-                var tfm = new PackageFramework() { TargetFramework = framework };
-                if (tfm.FrameworkName.IsSpecificFramework && !tfm.FrameworkName.IsPCL)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }
