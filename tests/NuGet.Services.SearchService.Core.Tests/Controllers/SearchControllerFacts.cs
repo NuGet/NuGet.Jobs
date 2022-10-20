@@ -145,8 +145,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.False(lastRequest.ShowDebug);
                 Assert.Null(lastRequest.PackageType);
-                Assert.Equal(new List<string>(), lastRequest.Frameworks);
-                Assert.Equal(new List<string>(), lastRequest.Tfms);
+                Assert.Empty(lastRequest.Frameworks);
+                Assert.Empty(lastRequest.Tfms);
             }
 
             [Fact]
@@ -185,8 +185,8 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.True(lastRequest.LuceneQuery);
                 Assert.False(lastRequest.ShowDebug);
                 Assert.Null(lastRequest.PackageType);
-                Assert.Equal(new List<string>(), lastRequest.Frameworks);
-                Assert.Equal(new List<string>(), lastRequest.Tfms);
+                Assert.Empty(lastRequest.Frameworks);
+                Assert.Empty(lastRequest.Tfms);
             }
 
             [Fact]

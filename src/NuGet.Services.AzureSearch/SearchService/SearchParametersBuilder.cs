@@ -237,10 +237,12 @@ namespace NuGet.Services.AzureSearch.SearchService
             return orderBy;
         }
 
-        // Constructs filter strings for both Frameworks and Tfms.
-        // indexField: Determines which field you are targeting
-        //             i.e. IndexFields.Search.Frameworks or IndexFields.Search.Tfms
-        // frameworks: List of a user's selected Frameworks or Tfms (validated and normalized)
+        /// <summary>
+        /// Constructs filter strings for both Frameworks and Tfms.
+        /// </summary>
+        /// <param name="indexField">Determines which field you are targeting
+        ///                          i.e. IndexFields.Search.Frameworks or IndexFields.Search.Tfms</param>
+        /// <param name="frameworks">List of a user's selected Frameworks or Tfms (validated and normalized)</param>
         private string GetFrameworksOrTfmsFilterString(string indexField, IReadOnlyList<string> frameworks)
         {
             var filterStrings = frameworks
