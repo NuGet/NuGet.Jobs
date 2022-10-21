@@ -295,6 +295,15 @@ namespace NuGet.Services.SearchService.Controllers
                 Assert.Equal(expectedFrameworks, lastRequest.Frameworks);
                 Assert.Equal(expectedTfms, lastRequest.Tfms);
             }
+
+            [Theory]
+            [MemberData(nameof(InvalidFrameworksAndTfms))]
+            public async Task ThrowsInvalidFrameworksAndTfms(string frameworks, string tfms, string expectedException)
+            {
+                var exception = await Assert.ThrowsAsync<ArgumentException>(() => _target.V2SearchAsync(frameworks: frameworks, tfms: tfms));
+
+                Assert.Equal(expectedException, exception.Message);
+            }
         }
 
         public class V3SearchAsync : BaseFacts
@@ -601,15 +610,26 @@ namespace NuGet.Services.SearchService.Controllers
                     new List<string> {"net", "netstandard"}, new List<string> {"netcoreapp3.1"} },
                 new object[] { "netframework", "netstandard2.1,netstandard2.0",
                     new List<string> {"netframework"}, new List<string> {"netstandard2.1", "netstandard2.0"} },
-                // unexpected inputs
-                new object[] { "foo", "net40-client", new List<string>(), new List<string> {"net40-client"} },
-                new object[] { "netframework", "foo", new List<string> {"netframework"}, new List<string>() },
+                new object[] { "", "net40-client,tizen40,net", new List<string>(), new List<string> {"net40-client", "tizen40", "net"} },
+                // non-standard inputs
+                new object[] { "NETFRAMEWORK, net", "net4.5 ,nEt6.0",
+                    new List<string> {"netframework", "net"}, new List<string> {"net45", "net6.0"} },
+                new object[] { ",nET,,nETsTANDARD", "  NET45 ,  net6.0-windows ,,",
+                    new List<string> {"net", "netstandard"}, new List<string> {"net45", "net6.0-windows"} },
+            };
+
+            public static IEnumerable<object[]> InvalidFrameworksAndTfms => new[]
+            {
+                new object[] { "foo", "net40-client",
+                    "The provided Framework is not supported. (Parameter 'foo')" },
+                new object[] { "netframework", "foo",
+                    "The provided TFM is not supported. (Parameter 'foo')" },
                 new object[] { null, "portable-net45+sl5,tizen40,net",
-                    new List<string>(), new List<string> {"tizen40", "net"} },
-                new object[] { "NETFRAMEWORK, net", "net4.5 ,bestTfm2.6",
-                    new List<string> { "netframework", "net" }, new List<string> { "net45"} },
+                    "The provided TFM is not supported. (Parameter 'portable-net45+sl5')" },
+                new object[] { "NETFRAMEWORK, net", "net4.5 ,bestTfm2.6,,",
+                    "The provided TFM is not supported. (Parameter 'bestTfm2.6')" },
                 new object[] { "windows,,nETsTANDARD", "  NET45 ,  net6.0-windows ",
-                    new List<string> { "netstandard"}, new List<string> { "net45", "net6.0-windows"} },
+                    "The provided Framework is not supported. (Parameter 'windows')" },
             };
 
             public BaseFacts()

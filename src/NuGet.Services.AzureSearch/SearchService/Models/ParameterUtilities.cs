@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NuGet.Frameworks;
+using NuGet.Jobs;
 using NuGet.Versioning;
 using NuGetGallery;
 
@@ -58,28 +59,53 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         public static IReadOnlyList<string> ParseFrameworks(string frameworks)
         {
-            return frameworks == null
+            var frameworkList = frameworks == null
                                     ? (IReadOnlyList<string>)Array.Empty<string>()
                                     : frameworks
                                         .Split(',')
                                         .Select(f => f.ToLowerInvariant().Trim())
-                                        .Where(f => f != String.Empty)
-                                        .Where(f => FrameworkGenerationIdentifiers.Contains(f))
-                                        .ToList();
+                                        .Where(f => f != String.Empty);
+
+            var result = new List<string>();
+            foreach (var framework in frameworkList)
+            {
+                if (FrameworkGenerationIdentifiers.Contains(framework))
+                {
+                    result.Add(framework);
+                }
+                else
+                {
+                    throw new ArgumentException(Strings.V2Search_InvalidFrameworkParameter, framework);
+                }
+            }
+
+            return result.ToList();
         }
 
         public static IReadOnlyList<string> ParseTfms(string tfms)
         {
-            return tfms == null
+            var tfmList = tfms == null
                             ? (IReadOnlyList<string>)Array.Empty<string>()
                             : tfms
                                 .Split(',')
                                 .Select(f => f.Trim())
-                                .Where(f => f != String.Empty)
-                                .Select(f => NuGetFramework.Parse(f))
-                                .Where(f => f.IsSpecificFramework && !f.IsPCL)
-                                .Select(f => f.GetShortFolderName())
-                                .ToList();
+                                .Where(f => f != String.Empty);
+
+            var result = new List<string>();
+            foreach (var tfm in tfmList)
+            {
+                var f = NuGetFramework.Parse(tfm);
+                if (f.IsSpecificFramework && !f.IsPCL)
+                {
+                    result.Add(f.GetShortFolderName());
+                }
+                else
+                {
+                    throw new ArgumentException(Strings.V2Search_InvalidTFMParameter, tfm);
+                }
+            }
+
+            return result.ToList();
         }
     }
 }
