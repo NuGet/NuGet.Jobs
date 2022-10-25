@@ -611,6 +611,8 @@ namespace NuGet.Services.SearchService.Controllers
                 new object[] { "netframework", "netstandard2.1,netstandard2.0",
                     new List<string> {"netframework"}, new List<string> {"netstandard2.1", "netstandard2.0"} },
                 new object[] { "", "net40-client,tizen40,net", new List<string>(), new List<string> {"net40-client", "tizen40", "net"} },
+                // duplicates
+                new object[] { "net,net", "net6.0,net472,net472", new List<string> {"net"}, new List<string> {"net6.0", "net472"} },
                 // non-standard inputs
                 new object[] { "NETFRAMEWORK, net", "net4.5 ,nEt6.0",
                     new List<string> {"netframework", "net"}, new List<string> {"net45", "net6.0"} },

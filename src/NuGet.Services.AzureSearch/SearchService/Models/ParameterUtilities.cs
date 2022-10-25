@@ -79,7 +79,9 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
             }
 
-            return result.ToList();
+            return result
+                    .Distinct()
+                    .ToList();
         }
 
         public static IReadOnlyList<string> ParseTfms(string tfms)
@@ -105,7 +107,9 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
             }
 
-            return result.ToList();
+            return result
+                    .Distinct()
+                    .ToList();
         }
     }
 }
