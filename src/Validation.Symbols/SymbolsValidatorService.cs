@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Threading;
@@ -14,7 +15,6 @@ using NuGet.Jobs.Validation;
 using NuGet.Jobs.Validation.Symbols.Core;
 using NuGet.Services.Validation;
 using NuGet.Services.Validation.Issues;
-using System.Reflection.Metadata;
 
 namespace Validation.Symbols
 {
@@ -193,89 +193,83 @@ namespace Validation.Symbols
                 // This checks if portable PDB is associated with the PE file and opens it for reading. 
                 // It also validates that it matches the PE file.
                 // It does not validate that the checksum matches, so we need to do that in the following block.
-                if (!TryOpenReadPortablePdb(peReader, peFilePath, out var pdbReaderProvider, out var pdbPath))
+                bool readSuccess;
+                string pdbPath;
+                MetadataReaderProvider pdbReaderProvider;
+
+                try
                 {
-                    _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingAssemblyNotFound), assemblyName: Path.GetFileName(peFilePath));
+                    readSuccess = peReader.TryOpenAssociatedPortablePdb(peFilePath, File.OpenRead, out pdbReaderProvider, out pdbPath) &&
+                        // No need to validate embedded PDB (pdbPath == null for embedded)
+                        pdbPath != null;
+                }
+                catch (BadImageFormatException ex)
+                {
+                    _logger.LogWarning(ex, "Cannot open PDB file for {FilePath}", peFilePath);
+
+                    _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.Unknown), assemblyName: Path.GetFileName(peFilePath));
                     validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.Unknown);
-
                     return false;
                 }
 
-                // No need to validate embedded PDB (pdbPath == null for embedded)
-                if (pdbPath == null)
+                if (readSuccess)
                 {
-                    _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingAssemblyNotFound), assemblyName: Path.GetFileName(peFilePath));
-                    validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingAssemblyNotFound);
-                    return false;
-                }
+                    // Get all checksum entries. There can be more than one. At least one must match the PDB.
+                    var checksumRecords = peReader.ReadDebugDirectory().Where(entry => entry.Type == DebugDirectoryEntryType.PdbChecksum)
+                        .Select(e => peReader.ReadPdbChecksumDebugDirectoryData(e))
+                        .ToArray();
 
-                // Get all checksum entries. There can be more than one. At least one must match the PDB.
-                var checksumRecords = peReader.ReadDebugDirectory().Where(entry => entry.Type == DebugDirectoryEntryType.PdbChecksum)
-                    .Select(e => peReader.ReadPdbChecksumDebugDirectoryData(e))
-                    .ToArray();
-
-                if (checksumRecords.Length == 0)
-                {
-                    _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
-                    validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
-                    return false;
-                }
-
-                var pdbBytes = File.ReadAllBytes(pdbPath);
-                var hashes = new Dictionary<string, byte[]>();
-
-                using (pdbReaderProvider)
-                {
-                    var pdbReader = pdbReaderProvider.GetMetadataReader();
-                    int idOffset = pdbReader.DebugMetadataHeader.IdStartOffset;
-
-                    foreach (var checksumRecord in checksumRecords)
+                    if (checksumRecords.Length == 0)
                     {
-                        if (!hashes.TryGetValue(checksumRecord.AlgorithmName, out var hash))
-                        {
-                            HashAlgorithmName han = new HashAlgorithmName(checksumRecord.AlgorithmName);
-                            using (var hashAlg = IncrementalHash.CreateHash(han))
-                            {
-                                hashAlg.AppendData(pdbBytes, 0, idOffset);
-                                hashAlg.AppendData(new byte[20]);
-                                int offset = idOffset + 20;
-                                int count = pdbBytes.Length - offset;
-                                hashAlg.AppendData(pdbBytes, offset, count);
-                                hash = hashAlg.GetHashAndReset();
-                            }
-                            hashes.Add(checksumRecord.AlgorithmName, hash);
-                        }
-                        if (checksumRecord.Checksum.ToArray().SequenceEqual(hash))
-                        {
-                            // found the right checksum
-                            _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Succeeded, issue: "", assemblyName: Path.GetFileName(peFilePath));
-                            return true;
-                        }
+                        _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
+                        validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
+                        return false;
                     }
 
-                    // Not found any checksum record that matches the PDB.
-                    _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
-                    validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
-                    return false;
+                    var pdbBytes = File.ReadAllBytes(pdbPath);
+                    var hashes = new Dictionary<string, byte[]>();
+
+                    using (pdbReaderProvider)
+                    {
+                        var pdbReader = pdbReaderProvider.GetMetadataReader();
+                        int idOffset = pdbReader.DebugMetadataHeader.IdStartOffset;
+
+                        foreach (var checksumRecord in checksumRecords)
+                        {
+                            if (!hashes.TryGetValue(checksumRecord.AlgorithmName, out var hash))
+                            {
+                                HashAlgorithmName han = new HashAlgorithmName(checksumRecord.AlgorithmName);
+                                using (var hashAlg = IncrementalHash.CreateHash(han))
+                                {
+                                    hashAlg.AppendData(pdbBytes, 0, idOffset);
+                                    hashAlg.AppendData(new byte[20]);
+                                    int offset = idOffset + 20;
+                                    int count = pdbBytes.Length - offset;
+                                    hashAlg.AppendData(pdbBytes, offset, count);
+                                    hash = hashAlg.GetHashAndReset();
+                                }
+                                hashes.Add(checksumRecord.AlgorithmName, hash);
+                            }
+                            if (checksumRecord.Checksum.ToArray().SequenceEqual(hash))
+                            {
+                                // found the right checksum
+                                _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Succeeded, issue: "", assemblyName: Path.GetFileName(peFilePath));
+                                return true;
+                            }
+                        }
+
+                        // Not found any checksum record that matches the PDB.
+                        _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch), assemblyName: Path.GetFileName(peFilePath));
+                        validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.SymbolErrorCode_ChecksumDoesNotMatch);
+                        return false;
+                    }
                 }
             }
-        }
-
-        private bool TryOpenReadPortablePdb(PEReader peReader, string peFilePath, out MetadataReaderProvider pdbReaderProvider, out string pdbPath)
-        {
-            try
-            {
-                return peReader.TryOpenAssociatedPortablePdb(peFilePath, File.OpenRead, out pdbReaderProvider, out pdbPath);
-            }
-            catch (BadImageFormatException ex)
-            {
-                _logger.LogDebug(ex,"Cannot open PDB file for {FilePath}", peFilePath);
-            }
-
-            pdbReaderProvider = null;
-            pdbPath = null;
+            _telemetryService.TrackSymbolsAssemblyValidationResultEvent(packageId, packageNormalizedVersion, ValidationStatus.Failed, nameof(ValidationIssue.SymbolErrorCode_MatchingAssemblyNotFound), assemblyName: Path.GetFileName(peFilePath));
+            validationResponse = NuGetValidationResponse.FailedWithIssues(ValidationIssue.SymbolErrorCode_MatchingAssemblyNotFound);
             return false;
         }
+
         /// <summary>
         /// Verifies if the pdb is portable.
         /// </summary>
