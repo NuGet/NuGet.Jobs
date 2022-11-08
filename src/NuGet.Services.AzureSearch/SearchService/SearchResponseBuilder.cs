@@ -400,8 +400,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                         };
                     })
                     .ToList(),
-                DeprecationInfo = result.DeprecationInfo.Message != null ? result.DeprecationInfo : null,
-                Vulnerabilities = result.Vulnerabilities.Count > 0 ? result.Vulnerabilities : new List<Vulnerability>(),
+                DeprecationInfo = (result.DeprecationInfo != null && result.DeprecationInfo.Message != null) ? result.DeprecationInfo : null,
+                Vulnerabilities = (result.Vulnerabilities != null && result.Vulnerabilities.Count > 0) ? result.Vulnerabilities : new List<Vulnerability>(),
             };
 
             if (_featureFlagService.IsV3OwnersPropertyEnabled())

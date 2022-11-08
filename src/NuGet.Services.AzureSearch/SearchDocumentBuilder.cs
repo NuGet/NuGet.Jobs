@@ -361,15 +361,17 @@ namespace NuGet.Services.AzureSearch
             document.IsExcludedByDefault = isExcludedByDefault;
         }
 
+        //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
         private static void PopulateDeprecationInfo(
             SearchDocument.Full document,
             Package package)
             {
                 document.DeprecationInfo = new Deprecation();
-                document.DeprecationInfo.AlternatePkg = new AlternatePackage();
+                document.DeprecationInfo.AlternatePackageInfo = new AlternatePackage();
                 document.DeprecationInfo.Reasons = Array.Empty<string>();
             }
 
+        //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
         private static void PopulateVulnerabilities(
             SearchDocument.Full document,
             Package package)
