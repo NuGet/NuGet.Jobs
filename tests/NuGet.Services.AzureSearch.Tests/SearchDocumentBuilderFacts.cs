@@ -702,7 +702,7 @@ namespace NuGet.Services.AzureSearch
       ""downloadScore"": 0.14381174563233068,
       ""isExcludedByDefault"": false,
       ""deprecationInfo"": {
-        ""alternatePkg"": {
+        ""alternatePackageInfo"": {
           ""id"": null,
           ""range"": null
         },
