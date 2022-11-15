@@ -701,8 +701,8 @@ namespace NuGet.Services.AzureSearch
       ""totalDownloadCount"": 1001,
       ""downloadScore"": 0.14381174563233068,
       ""isExcludedByDefault"": false,
-      ""deprecationInfo"": {
-        ""alternatePackageInfo"": {
+      ""deprecation"": {
+        ""alternatePackage"": {
           ""id"": null,
           ""range"": null
         },

@@ -69,9 +69,9 @@ namespace NuGet.Services.AzureSearch.SearchService
         public object Debug { get; set; }
 
         [JsonPropertyName("deprecation")]
-        public Deprecation DeprecationInfo { get; set; }
+        public V3SearchDeprecation Deprecation { get; set; }
 
         [JsonPropertyName("vulnerabilities")]
-        public List<Vulnerability> Vulnerabilities { get; set; }
+        public List<V3SearchVulnerability> Vulnerabilities { get; set; }
     }
 }

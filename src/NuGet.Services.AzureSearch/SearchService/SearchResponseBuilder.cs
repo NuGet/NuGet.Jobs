@@ -400,8 +400,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                         };
                     })
                     .ToList(),
-                DeprecationInfo = (result.DeprecationInfo != null && result.DeprecationInfo.Message != null) ? result.DeprecationInfo : null,
-                Vulnerabilities = (result.Vulnerabilities != null && result.Vulnerabilities.Count > 0) ? result.Vulnerabilities : new List<Vulnerability>(),
+                Deprecation = GetV3SearchDeprecation(result),
+                Vulnerabilities = GetV3SearchVulnerabilities(result),
             };
 
             if (_featureFlagService.IsV3OwnersPropertyEnabled())
@@ -439,6 +439,26 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             return document.IconUrl;
+        }
+
+        private V3SearchDeprecation GetV3SearchDeprecation(SearchDocument.Full document)
+        {
+            if (document.Deprecation != null)
+            {
+                //TODO: add implementation
+            }
+
+            return null;
+        }
+
+        private List<V3SearchVulnerability> GetV3SearchVulnerabilities(SearchDocument.Full document)
+        {
+            if (document.Vulnerabilities != null && document.Vulnerabilities.Count > 0)
+            {
+                //TODO: add implementation
+            }
+
+            return new List<V3SearchVulnerability>();
         }
 
         private V2SearchPackage ToV2SearchPackage(SearchDocument.Full result)

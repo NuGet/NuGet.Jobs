@@ -229,7 +229,7 @@ namespace NuGet.Services.AzureSearch
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
             PopulateIsExcludedByDefault(document, isExcludedByDefault);
-            PopulateDeprecationInfo(document, package);
+            PopulateDeprecation(document, package);
             PopulateVulnerabilities(document, package);
 
             return document;
@@ -361,22 +361,21 @@ namespace NuGet.Services.AzureSearch
             document.IsExcludedByDefault = isExcludedByDefault;
         }
 
-        //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
-        private static void PopulateDeprecationInfo(
+        private static void PopulateDeprecation(
             SearchDocument.Full document,
             Package package)
             {
-                document.DeprecationInfo = new Deprecation();
-                document.DeprecationInfo.AlternatePackageInfo = new AlternatePackage();
-                document.DeprecationInfo.Reasons = Array.Empty<string>();
+                //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
+                document.Deprecation = new Deprecation();
+                document.Deprecation.AlternatePackage = new AlternatePackage();
+                document.Deprecation.Reasons = Array.Empty<string>();
             }
 
-        //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
         private static void PopulateVulnerabilities(
             SearchDocument.Full document,
             Package package)
             {
-                document.Vulnerabilities = new List<Vulnerability>();
+                document.Vulnerabilities = new List<Vulnerability>(); //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
             }
     }
 }
