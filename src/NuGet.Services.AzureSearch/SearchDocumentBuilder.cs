@@ -367,8 +367,8 @@ namespace NuGet.Services.AzureSearch
             {
                 //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
                 document.Deprecation = new Deprecation();
-                document.Deprecation.AlternatePackage = new AlternatePackage();
-                document.Deprecation.Reasons = Array.Empty<string>();
+                //document.Deprecation.AlternatePackage = new AlternatePackage();
+                //document.Deprecation.Reasons = Array.Empty<string>();
             }
 
         private static void PopulateVulnerabilities(

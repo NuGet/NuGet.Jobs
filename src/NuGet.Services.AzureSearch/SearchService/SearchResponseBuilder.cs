@@ -445,7 +445,17 @@ namespace NuGet.Services.AzureSearch.SearchService
         {
             if (document.Deprecation != null)
             {
-                //TODO: add implementation
+                var alternatepackage = new V3SearchAlternatePackage{};
+                var deprecation = new V3SearchDeprecation();  
+
+                alternatepackage.Id = document.Deprecation.AlternatePackage.Id;
+                alternatepackage.Range = document.Deprecation.AlternatePackage.Range;
+
+                deprecation.AlternatePackage = alternatepackage;
+                deprecation.Message = document.Deprecation.Message;
+                deprecation.Reasons = document.Deprecation.Reasons;
+
+                return deprecation;
             }
 
             return null;
@@ -453,12 +463,22 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         private List<V3SearchVulnerability> GetV3SearchVulnerabilities(SearchDocument.Full document)
         {
-            if (document.Vulnerabilities != null && document.Vulnerabilities.Count > 0)
+            var vulnerabilities = new List<V3SearchVulnerability>();
+
+            if (document.Vulnerabilities != null)
             {
-                //TODO: add implementation
+                foreach (var vulnerability in document.Vulnerabilities)
+                {
+                    vulnerabilities.Add(new V3SearchVulnerability 
+                    {
+                        AdvisoryURL = vulnerability.AdvisoryURL,
+                        Severity = vulnerability.Severity
+                    }
+                    );
+                }
             }
 
-            return new List<V3SearchVulnerability>();
+            return vulnerabilities;
         }
 
         private V2SearchPackage ToV2SearchPackage(SearchDocument.Full result)
