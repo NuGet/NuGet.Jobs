@@ -7,7 +7,6 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public class V3SearchDeprecation
     {
-
         [JsonPropertyName("alternatePackage")]
         public V3SearchAlternatePackage AlternatePackage { get; set; }
 
@@ -26,5 +25,4 @@ namespace NuGet.Services.AzureSearch.SearchService
         [JsonPropertyName("range")]
         public string Range { get; set; }
     }
-
 }

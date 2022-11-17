@@ -445,11 +445,18 @@ namespace NuGet.Services.AzureSearch.SearchService
         {
             if (document.Deprecation != null)
             {
-                var alternatepackage = new V3SearchAlternatePackage{};
                 var deprecation = new V3SearchDeprecation();  
+                var alternatepackage = new V3SearchAlternatePackage{};
 
-                alternatepackage.Id = document.Deprecation.AlternatePackage.Id;
-                alternatepackage.Range = document.Deprecation.AlternatePackage.Range;
+                if (document.Deprecation.AlternatePackage != null)
+                {
+                    alternatepackage.Id = document.Deprecation.AlternatePackage.Id;
+                    alternatepackage.Range = document.Deprecation.AlternatePackage.Range;
+                } 
+                else 
+                {
+                    alternatepackage = null;
+                }
 
                 deprecation.AlternatePackage = alternatepackage;
                 deprecation.Message = document.Deprecation.Message;
@@ -473,8 +480,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     {
                         AdvisoryURL = vulnerability.AdvisoryURL,
                         Severity = vulnerability.Severity
-                    }
-                    );
+                    });
                 }
             }
 
