@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   
   <Import Project="..\..\SdkProjects.props" />
 
@@ -16,6 +16,7 @@
     hosting machine.
     -->
     <PackageReference Include="Microsoft.AspNetCore.Http" />
+    <PackageReference Include="System.Drawing.Common" />
   </ItemGroup>
 
   <ItemGroup>
