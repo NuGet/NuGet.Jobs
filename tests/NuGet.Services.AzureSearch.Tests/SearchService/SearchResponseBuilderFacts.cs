@@ -1020,6 +1020,38 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Fact]
+            public void ProducesExpectedDeprecation()
+            {
+                var doc = _searchResult.Values[0].Document;
+
+                doc.Deprecation = new Deprecation();
+                doc.Deprecation.Message = "this package has been deprecated";
+                doc.Deprecation.Reasons = new string[] { "not maintained" };
+                doc.Deprecation.AlternatePackage = new AlternatePackage();
+                doc.Deprecation.AlternatePackage.Id = "Microsoft.Data.OData";
+                doc.Deprecation.AlternatePackage.Range = "[5.6.4, )";
+
+                //expected result
+                var deprecation = new V3SearchDeprecation();
+                deprecation.Message = "this package has been deprecated";
+                deprecation.Reasons = new string[] { "not maintained" };
+                deprecation.AlternatePackage = new V3SearchAlternatePackage();
+                deprecation.AlternatePackage.Id = "Microsoft.Data.OData";
+                deprecation.AlternatePackage.Range = "[5.6.4, )";
+
+                var response = Target.V3FromSearchDocument(
+                    _v3Request,
+                    doc.Key,
+                    doc,
+                    _duration);
+
+                Assert.Equal(deprecation.Message, response.Data[0].Deprecation.Message);
+                Assert.Equal(deprecation.Reasons, response.Data[0].Deprecation.Reasons);
+                Assert.Equal(deprecation.AlternatePackage.Id, response.Data[0].Deprecation.AlternatePackage.Id);
+                Assert.Equal(deprecation.AlternatePackage.Range, response.Data[0].Deprecation.AlternatePackage.Range);
+            }
+
+            [Fact]
             public void CheckEmptyVulnerabilities()
             {
                 var doc = _searchResult.Values[0].Document;
@@ -1034,6 +1066,35 @@ namespace NuGet.Services.AzureSearch.SearchService
                     _duration);
 
                 Assert.Equal(vulnerabilities, response.Data[0].Vulnerabilities);
+            }
+
+            [Fact]
+            public void ProducesExpectedVulnerabilities()
+            {
+                var doc = _searchResult.Values[0].Document;
+                doc.Vulnerabilities = new List<Vulnerability>();
+                doc.Vulnerabilities.Add(new Vulnerability() { AdvisoryURL = "advisoryURL1", Severity = 1 });
+                doc.Vulnerabilities.Add(new Vulnerability() { AdvisoryURL = "advisoryURL2", Severity = 2 });
+                doc.Vulnerabilities.Add(new Vulnerability() { AdvisoryURL = "advisoryURL3", Severity = 3 });
+
+                //expected result
+                var vulnerabilities = new List<V3SearchVulnerability>();
+                vulnerabilities.Add(new V3SearchVulnerability() { AdvisoryURL = "advisoryURL1", Severity = 1 });
+                vulnerabilities.Add(new V3SearchVulnerability() { AdvisoryURL = "advisoryURL2", Severity = 2 });
+                vulnerabilities.Add(new V3SearchVulnerability() { AdvisoryURL = "advisoryURL3", Severity = 3 });
+
+                var response = Target.V3FromSearchDocument(
+                    _v3Request,
+                    doc.Key,
+                    doc,
+                    _duration);
+
+                for (int i = 0; i < vulnerabilities.Count; i++)
+                {
+                    Assert.Equal(vulnerabilities[i].AdvisoryURL, response.Data[0].Vulnerabilities[i].AdvisoryURL);
+                    Assert.Equal(vulnerabilities[i].Severity, response.Data[0].Vulnerabilities[i].Severity);
+                }
+
             }
         }
 
