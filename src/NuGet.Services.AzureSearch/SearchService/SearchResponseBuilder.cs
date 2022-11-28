@@ -443,22 +443,18 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         private V3SearchDeprecation GetV3SearchDeprecation(SearchDocument.Full document)
         {
-            if (document.Deprecation != null)
-            {
-                var deprecation = new V3SearchDeprecation();  
-                var alternatepackage = new V3SearchAlternatePackage{};
+            if (document.Deprecation != null && document.Deprecation.Reasons != null && document.Deprecation.Reasons.Length > 0)
+            //according to nuget api, reasons array is required and cannot be empty
+            {   
+                var deprecation = new V3SearchDeprecation();
+                deprecation.AlternatePackage = new V3SearchAlternatePackage{}; 
 
                 if (document.Deprecation.AlternatePackage != null)
                 {
-                    alternatepackage.Id = document.Deprecation.AlternatePackage.Id;
-                    alternatepackage.Range = document.Deprecation.AlternatePackage.Range;
+                    deprecation.AlternatePackage.Id = document.Deprecation.AlternatePackage.Id;
+                    deprecation.AlternatePackage.Range = document.Deprecation.AlternatePackage.Range;
                 } 
-                else 
-                {
-                    alternatepackage = null;
-                }
 
-                deprecation.AlternatePackage = alternatepackage;
                 deprecation.Message = document.Deprecation.Message;
                 deprecation.Reasons = document.Deprecation.Reasons;
 

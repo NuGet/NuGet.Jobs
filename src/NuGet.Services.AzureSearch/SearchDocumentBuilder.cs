@@ -365,7 +365,7 @@ namespace NuGet.Services.AzureSearch
             SearchDocument.Full document,
             Package package)
             {
-                document.Deprecation = null; //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
+                document.Deprecation = new Deprecation(); //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
             }
 
         private static void PopulateVulnerabilities(
