@@ -364,15 +364,40 @@ namespace NuGet.Services.AzureSearch
         private static void PopulateDeprecation(
             SearchDocument.Full document,
             Package package)
+        {
+            document.Deprecation = new Deprecation();
+            document.Deprecation.Reasons = Array.Empty<string>(); //db2azuresearch job cannot process if null
+
+            if (package.Deprecations != null && package.Deprecations.Count > 0)
             {
-                document.Deprecation = new Deprecation(); //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
+                document.Deprecation.Message = package.Deprecations.ElementAt(0).CustomMessage;
+                document.Deprecation.Reasons = package.Deprecations.ElementAt(0).Status.ToString().Replace(" ", "").Split(',');
+
+                if (document.Deprecation.AlternatePackage != null)
+                {
+                        document.Deprecation.AlternatePackage = new AlternatePackage();
+                        document.Deprecation.AlternatePackage.Id = package.Deprecations.ElementAt(0).AlternatePackage.Id;
+                        document.Deprecation.AlternatePackage.Range = "[" + package.Deprecations.ElementAt(0).AlternatePackage.Version + ", )";
+                }
             }
+        }
 
         private static void PopulateVulnerabilities(
             SearchDocument.Full document,
             Package package)
+        {
+            document.Vulnerabilities = new List<Vulnerability>(); //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
+
+            foreach (VulnerablePackageVersionRange v in package.VulnerablePackageRanges)
             {
-                document.Vulnerabilities = new List<Vulnerability>(); //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
+                var vulnerability = new Vulnerability();
+                if (v.Vulnerability != null)
+                {
+                    vulnerability.AdvisoryURL = v.Vulnerability.AdvisoryUrl;
+                    vulnerability.Severity = (int)v.Vulnerability.Severity;
+                    document.Vulnerabilities.Add(vulnerability);
+                }
             }
+        }
     }
 }
