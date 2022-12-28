@@ -2,12 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 using Octokit;
 
 namespace NuGet.Jobs.GitHubIndexer
@@ -15,10 +15,12 @@ namespace NuGet.Jobs.GitHubIndexer
     public class GitHubSearchWrapper : IGitHubSearchWrapper
     {
         private readonly IGitHubClient _client;
+        private readonly IOptionsSnapshot<GitHubIndexerConfiguration> _options;
 
-        public GitHubSearchWrapper(IGitHubClient client)
+        public GitHubSearchWrapper(IGitHubClient client, IOptionsSnapshot<GitHubIndexerConfiguration> options)
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public int? GetRemainingRequestCount()
@@ -29,7 +31,13 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public async Task<GitHubSearchApiResponse> GetResponse(SearchRepositoriesRequest request)
         {
-            var apiResponse = await _client.Connection.Get<SearchRepositoryResult>(ApiUrls.SearchRepositories(), request.Parameters, null);
+            var apiResponse = await ExecuteWithTimeoutAsync(
+                token => _client.Connection.Get<SearchRepositoryResult>(
+                    ApiUrls.SearchRepositories(),
+                    request.Parameters,
+                    accepts: null,
+                    cancellationToken: token),
+                timeout: TimeSpan.FromTicks(_options.Value.GitHubRequestTimeout.Ticks * 2));
 
             // According to RFC 2616, Http headers are case-insensitive. We should treat them as such.
             var caseInsensitiveHeaders = apiResponse.HttpResponse.Headers
@@ -60,6 +68,30 @@ namespace NuGet.Jobs.GitHubIndexer
                     .ToList(),
                 ghTime,
                 DateTimeOffset.FromUnixTimeSeconds(ghResetTime));
+        }
+
+        private static async Task<T> ExecuteWithTimeoutAsync<T>(Func<CancellationToken, Task<T>> getTask, TimeSpan timeout)
+        {
+            // Source:
+            // https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md#using-a-timeout
+            using (var cts = new CancellationTokenSource())
+            {
+                var delayTask = Task.Delay(timeout, cts.Token);
+                var mainTask = getTask(cts.Token);
+                var resultTask = await Task.WhenAny(mainTask, delayTask);
+                if (resultTask == delayTask)
+                {
+                    // Operation cancelled
+                    throw new OperationCanceledException("The operation was forcibly canceled.");
+                }
+                else
+                {
+                    // Cancel the timer task so that it does not fire
+                    cts.Cancel();
+                }
+
+                return await mainTask;
+            }
         }
     }
 }
