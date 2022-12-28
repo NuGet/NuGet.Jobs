@@ -31,6 +31,12 @@ namespace NuGet.Jobs.GitHubIndexer
 
         public async Task<GitHubSearchApiResponse> GetResponse(SearchRepositoriesRequest request)
         {
+            // We execute this with a forcible timeout because we've seen this method hang in the past, despite having
+            // the timeout that is built-in on IGitHubClient connection. The forcible timeout duration is set to twice
+            // the timeout applied to IGitHubClient (and by extension HttpClient) to allow the built-in timeout to work,
+            // if possible. If the built-in timeout does not work, this will essentially abandon the HTTP task
+            // and throw an OperationCanceledException, with a custom message. If the built-in timeout does work, a
+            // TaskCanceledException will be thrown.
             var apiResponse = await ExecuteWithTimeoutAsync(
                 token => _client.Connection.Get<SearchRepositoryResult>(
                     ApiUrls.SearchRepositories(),
