@@ -30,6 +30,10 @@ namespace Tests.Stats.LogInterpretation
         [InlineData("xunit.1", "2.4.1", "https://api.nuget.org/v3-flatcontainer/xunit.1/2.4.1/xunit.1.2.4.1.nupkg")]
         //[InlineData("ImisComplexIpart20.2.1.235-EA", "20.2.1.235-EA", "http://localhost/packages/ImisComplexIpart20.2.1.235-EA.20.2.1.235-EA.nupkg")]
         //[InlineData("runtime.tizen.4.0.0-armel.Microsoft.NETCore.App", "2.0.0-preview1-002111-00", "http://localhost/packages/runtime.tizen.4.0.0-armel.Microsoft.NETCore.App.2.0.0-preview1-002111-00.nupkg")]
+        [InlineData("client/nuget.exe", "5.9.1", "https://localhost/artifacts/win-x86-commandline/v5.9.1/nuget.exe")]
+        [InlineData("client/nuget.exe", "5.8.0-preview.2", "https://localhost/artifacts/win-x86-commandline/v5.8.0-preview.2/nuget.exe")]
+        [InlineData("client/nuget.exe", "3.5.0-beta2", "https://localhost/artifacts/win-x86-commandline/v3.5.0-beta2/nuget.exe")]
+        [InlineData("client/nuget.exe", "latest", "https://localhost/artifacts/win-x86-commandline/latest/nuget.exe")]
         public void ExtractsPackageIdAndVersionFromRequestUrl(string expectedPackageId, string expectedPackageVersion, string requestUrl)
         {
             var packageDefinitions = PackageDefinition.FromRequestUrl(requestUrl);
@@ -38,10 +42,14 @@ namespace Tests.Stats.LogInterpretation
             Assert.Equal(expectedPackageVersion, packageDefinition.PackageVersion);
         }
 
-        [Fact]
-        public void ReturnsNullWhenInvalidPackageRequestUrl()
+        [Theory]
+        [InlineData("http://localhost/api/v3/index.json")]
+        [InlineData("http://localhost/downloads/nuget.exe")]
+        [InlineData("http://localhost/artifacts/win-x86-commandline/3.5.0/nuget.exe")]
+        [InlineData("http://localhost/artifacts/win-x86-commandline/vlatest/nuget.exe")]
+        public void ReturnsNullWhenInvalidPackageRequestUrl(string requestUrl)
         {
-            var packageDefinition = PackageDefinition.FromRequestUrl("http://localhost/api/v3/index.json");
+            var packageDefinition = PackageDefinition.FromRequestUrl(requestUrl);
             Assert.Null(packageDefinition);
         }
 
