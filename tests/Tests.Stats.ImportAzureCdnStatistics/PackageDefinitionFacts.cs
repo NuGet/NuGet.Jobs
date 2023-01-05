@@ -58,9 +58,13 @@ namespace Tests.Stats.LogInterpretation
         }
 
         [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
         [InlineData("http://localhost/downloads/nuget.exe")]
         [InlineData("http://localhost/artifacts/win-x86-commandline/3.5.0/nuget.exe")]
         [InlineData("http://localhost/artifacts/win-x86-commandline/vlatest/nuget.exe")]
+        [InlineData("http://localhost/artifacts/win-x86-commandline/v3.5.0/get.exe")]
         public void FromNuGetExeUrlReturnsNullWhenInvalidUrl(string requestUrl)
         {
             var packageDefinition = PackageDefinition.FromNuGetExeUrl(requestUrl);
