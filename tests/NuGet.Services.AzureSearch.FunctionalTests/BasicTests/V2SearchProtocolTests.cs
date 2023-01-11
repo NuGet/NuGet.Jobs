@@ -404,14 +404,14 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         {
             var searchBuilder = new V2SearchBuilder
             {
-                Query = $"packageid:{Constants.TestPackageId_Template}",
+                Query = $"packageid:{Constants.TestPackageId_NoAssetFrameworks}",
             };
 
             var results = await V2SearchAsync(searchBuilder);
 
             var package = Assert.Single(results.Data);
-            Assert.Equal(Constants.TestPackageId_Template, package.PackageRegistration.Id);
-            Assert.Equal(Constants.TestPackageVersion_Template, package.Version);
+            Assert.Equal(Constants.TestPackageId_NoAssetFrameworks, package.PackageRegistration.Id);
+            Assert.Equal(Constants.TestPackageVersion_NoAssetFrameworks, package.Version);
             Assert.Empty(package.Frameworks);
             Assert.Empty(package.Tfms);
         }
