@@ -577,29 +577,33 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         }
 
         [Fact]
-        public async Task ReturnsNothingWhenTheFrameworkDoesNotExist()
+        public async Task ReturnsErrorWhenTheFrameworkDoesNotExist()
         {
             var searchBuilder = new V2SearchBuilder
             {
                 Frameworks = "NotARealFramework",
             };
 
-            var results = await V2SearchAsync(searchBuilder);
+            var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => {
+                var results = await V2SearchAsync(searchBuilder);
+            });
 
-            Assert.Empty(results.Data);
+            Assert.Equal("Response status code does not indicate success: 400 (Bad Request).", ex.Message);
         }
 
         [Fact]
-        public async Task ReturnsNothingWhenTheTfmDoesNotExist()
+        public async Task ReturnsErrorWhenTheTfmDoesNotExist()
         {
             var searchBuilder = new V2SearchBuilder
             {
                 Tfms = "NotARealTfm",
             };
 
-            var results = await V2SearchAsync(searchBuilder);
+            var ex = await Assert.ThrowsAsync<HttpRequestException>(async () => {
+                var results = await V2SearchAsync(searchBuilder);
+            });
 
-            Assert.Empty(results.Data);
+            Assert.Equal("Response status code does not indicate success: 400 (Bad Request).", ex.Message);
         }
 
         [Fact]
