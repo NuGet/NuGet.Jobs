@@ -704,7 +704,7 @@ namespace NuGet.Services.AzureSearch
       ""deprecation"": {
         ""alternatePackage"": null,
         ""message"": null,
-        ""reasons"": null
+        ""reasons"": []
       },
       ""vulnerabilities"": [],
       ""owners"": [
@@ -864,6 +864,285 @@ namespace NuGet.Services.AzureSearch
 
                 Assert.Equal(Data.GalleryLicenseUrl, document.LicenseUrl);
             }
+
+            [Fact]
+            public void CheckNullDeprecation()
+            {
+                var package = Data.PackageEntity;
+                package.Deprecations = null; 
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.Null(document.Deprecation.Message);
+                Assert.Null(document.Deprecation.AlternatePackage);
+                Assert.Empty(document.Deprecation.Reasons);
+            }
+
+            [Fact]
+            public void CheckEmptyDeprecation()
+            {
+                var package = Data.PackageEntity;
+                package.Deprecations = new List<PackageDeprecation>(); 
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.Null(document.Deprecation.Message);
+                Assert.Null(document.Deprecation.AlternatePackage);
+                Assert.Empty(document.Deprecation.Reasons);
+            }
+
+            [Fact]
+            public void CheckNotDeprecated()
+            {
+                var package = Data.PackageEntity;
+                package.Deprecations = new List<PackageDeprecation>(); 
+                var deprecation = new PackageDeprecation() {Status = 0};
+                package.Deprecations.Add(deprecation);
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.Null(document.Deprecation.Message);
+                Assert.Null(document.Deprecation.AlternatePackage);
+                Assert.Empty(document.Deprecation.Reasons);
+            }
+
+            [Theory]
+            [InlineData(0, new string[] {})]
+            [InlineData(1, new string[] {"Other"})]
+            [InlineData(2, new string[] {"Legacy"})]
+            [InlineData(3, new string[] {"Other", "Legacy"})]
+            [InlineData(4, new string[] {"CriticalBugs"})]
+            [InlineData(5, new string[] {"Other", "CriticalBugs"})]
+            [InlineData(6, new string[] {"Legacy", "CriticalBugs"})]
+            [InlineData(7, new string[] {"Other", "Legacy", "CriticalBugs"})]
+            public void CheckExpectedDeprecationStatus(PackageDeprecationStatus status, string[] expected)
+            {
+                var package = Data.PackageEntity;
+                package.Deprecations = new List<PackageDeprecation>(); 
+                var deprecation = new PackageDeprecation() {Status = status};
+                package.Deprecations.Add(deprecation);
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+                
+                Assert.Equal(expected, document.Deprecation.Reasons);
+            }
+
+            [Fact]
+            public void CheckNullAlternatePackage()
+            {
+                var package = Data.PackageEntity;
+                package.Deprecations = new List<PackageDeprecation>(); 
+                var deprecation = new PackageDeprecation() {Status = PackageDeprecationStatus.Other};
+                package.Deprecations.Add(deprecation);
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.Null(document.Deprecation.AlternatePackage);
+            }
+
+            [Theory]
+            [InlineData(null, null, null, "[, )")]
+            [InlineData("", "", "", "[, )")]
+            [InlineData("testMessage", "testId", "1.0.0-test", "[1.0.0-test, )")]
+            public void CheckExpectedDeprecation(string message, string id, string version, string expectedRange)
+            {
+                var package = Data.PackageEntity;
+                package.Deprecations = new List<PackageDeprecation>(); 
+                
+                var alternatepackage = Data.PackageEntity;
+                alternatepackage.Version = version;
+                alternatepackage.Id = id;
+
+                var deprecation = new PackageDeprecation() 
+                {
+                    Status = PackageDeprecationStatus.Other, 
+                    AlternatePackage = alternatepackage, 
+                    CustomMessage = message 
+                };
+                package.Deprecations.Add(deprecation);
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.NotNull(document.Deprecation.AlternatePackage);
+                Assert.Equal(expectedRange, document.Deprecation.AlternatePackage.Range);
+                Assert.Equal(id, document.Deprecation.AlternatePackage.Id);
+                Assert.Equal(message, document.Deprecation.Message);
+            }
+
+            [Fact]
+            public void CheckNullAndEmptyVulnerabilities()
+            {
+                //list is null
+                var package = Data.PackageEntity;
+                package.VulnerablePackageRanges = null;
+
+                var document = _target.FullFromDb(
+                        Data.PackageId,
+                        Data.SearchFilters,
+                        Data.Versions,
+                        isLatestStable: false,
+                        isLatest: true,
+                        fullVersion: Data.FullVersion,
+                        package: package,
+                        owners: Data.Owners,
+                        totalDownloadCount: Data.TotalDownloadCount,
+                        isExcludedByDefault: false);
+
+                Assert.Empty(document.Vulnerabilities);
+
+                //list is empty
+                package.VulnerablePackageRanges = new List<VulnerablePackageVersionRange>();
+
+                document = _target.FullFromDb(
+                        Data.PackageId,
+                        Data.SearchFilters,
+                        Data.Versions,
+                        isLatestStable: false,
+                        isLatest: true,
+                        fullVersion: Data.FullVersion,
+                        package: package,
+                        owners: Data.Owners,
+                        totalDownloadCount: Data.TotalDownloadCount,
+                        isExcludedByDefault: false);
+
+                Assert.Empty(document.Vulnerabilities);
+
+                //list contains null elements
+                package.VulnerablePackageRanges = new List<VulnerablePackageVersionRange>();
+                package.VulnerablePackageRanges.Add(null);
+
+                document = _target.FullFromDb(
+                        Data.PackageId,
+                        Data.SearchFilters,
+                        Data.Versions,
+                        isLatestStable: false,
+                        isLatest: true,
+                        fullVersion: Data.FullVersion,
+                        package: package,
+                        owners: Data.Owners,
+                        totalDownloadCount: Data.TotalDownloadCount,
+                        isExcludedByDefault: false);
+
+                Assert.Empty(document.Vulnerabilities);
+
+                //PackageVulnerability is null
+                package.VulnerablePackageRanges = new List<VulnerablePackageVersionRange>();
+                var range = new VulnerablePackageVersionRange() { Vulnerability = null, PackageId = "testId", PackageVersionRange = "testRange" };
+                package.VulnerablePackageRanges.Add(range);
+
+                document = _target.FullFromDb(
+                        Data.PackageId,
+                        Data.SearchFilters,
+                        Data.Versions,
+                        isLatestStable: false,
+                        isLatest: true,
+                        fullVersion: Data.FullVersion,
+                        package: package,
+                        owners: Data.Owners,
+                        totalDownloadCount: Data.TotalDownloadCount,
+                        isExcludedByDefault: false);
+
+                Assert.Empty(document.Vulnerabilities);
+            }
+
+            [Theory]
+            [InlineData(0)]
+            [InlineData(1)]
+            [InlineData(2)]
+            [InlineData(3)]
+            public void CheckExpectedVulnerabilties(int count)
+            {
+                var package = Data.PackageEntity;
+                package.VulnerablePackageRanges = new List<VulnerablePackageVersionRange>();
+                string expectedAdvisoryUrl = "testAdvisoryUrl";
+
+                for (var v = 0; v <= count; v++)
+                {
+                    var vulnerability = new PackageVulnerability() { AdvisoryUrl = expectedAdvisoryUrl, Severity = (PackageVulnerabilitySeverity)v };
+                    var range = new VulnerablePackageVersionRange() { Vulnerability = vulnerability, PackageId = "testId", PackageVersionRange = "testRange" };
+                    package.VulnerablePackageRanges.Add(range);
+                }
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.Equal(package.VulnerablePackageRanges.Count, document.Vulnerabilities.Count);
+                for (var v = 0; v <= count; v++)
+                {
+                    Assert.Equal(expectedAdvisoryUrl, document.Vulnerabilities.ElementAt(v).AdvisoryURL);
+                    Assert.Equal(v, document.Vulnerabilities.ElementAt(v).Severity);
+                }
+            }
+
         }
 
         public abstract class BaseFacts

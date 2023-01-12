@@ -368,16 +368,17 @@ namespace NuGet.Services.AzureSearch
             document.Deprecation = new Deprecation();
             document.Deprecation.Reasons = Array.Empty<string>(); //db2azuresearch job cannot process if null
 
-            if (package.Deprecations != null && package.Deprecations.Count > 0)
+            if (package.Deprecations != null && package.Deprecations.Count > 0 && package.Deprecations.ElementAt(0).Status != PackageDeprecationStatus.NotDeprecated)
             {
                 document.Deprecation.Message = package.Deprecations.ElementAt(0).CustomMessage;
                 document.Deprecation.Reasons = package.Deprecations.ElementAt(0).Status.ToString().Replace(" ", "").Split(',');
 
-                if (document.Deprecation.AlternatePackage != null)
+                if (package.Deprecations.ElementAt(0).AlternatePackage != null)
                 {
-                        document.Deprecation.AlternatePackage = new AlternatePackage();
-                        document.Deprecation.AlternatePackage.Id = package.Deprecations.ElementAt(0).AlternatePackage.Id;
-                        document.Deprecation.AlternatePackage.Range = "[" + package.Deprecations.ElementAt(0).AlternatePackage.Version + ", )";
+                    document.Deprecation.AlternatePackage = new AlternatePackage();
+                    document.Deprecation.AlternatePackage.Id = package.Deprecations.ElementAt(0).AlternatePackage.Id;
+                    var version = package.Deprecations.ElementAt(0).AlternatePackage.Version ?? "";
+                    document.Deprecation.AlternatePackage.Range = "[" + version + ", )";
                 }
             }
         }
@@ -386,16 +387,18 @@ namespace NuGet.Services.AzureSearch
             SearchDocument.Full document,
             Package package)
         {
-            document.Vulnerabilities = new List<Vulnerability>(); //TODO: https://github.com/NuGet/NuGetGallery/issues/7297
-
-            foreach (VulnerablePackageVersionRange v in package.VulnerablePackageRanges)
+            document.Vulnerabilities = new List<Vulnerability>();
+            if (package.VulnerablePackageRanges != null)
             {
-                var vulnerability = new Vulnerability();
-                if (v.Vulnerability != null)
+                foreach (VulnerablePackageVersionRange v in package.VulnerablePackageRanges)
                 {
-                    vulnerability.AdvisoryURL = v.Vulnerability.AdvisoryUrl;
-                    vulnerability.Severity = (int)v.Vulnerability.Severity;
-                    document.Vulnerabilities.Add(vulnerability);
+                    if (v != null && v.Vulnerability != null)
+                    {
+                        var vulnerability = new Vulnerability();
+                        vulnerability.AdvisoryURL = v.Vulnerability.AdvisoryUrl;
+                        vulnerability.Severity = (int)v.Vulnerability.Severity;
+                        document.Vulnerabilities.Add(vulnerability);
+                    }
                 }
             }
         }
