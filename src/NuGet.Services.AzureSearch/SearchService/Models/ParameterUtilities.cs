@@ -75,7 +75,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
                 else
                 {
-                    throw new ArgumentException(Strings.V2Search_InvalidFrameworkParameter, framework);
+                    throw new InvalidSearchRequestException($"The provided Framework is not supported. (Parameter '{framework}')");
                 }
             }
 
@@ -103,7 +103,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
                 else
                 {
-                    throw new ArgumentException(Strings.V2Search_InvalidTFMParameter, tfm);
+                    throw new InvalidSearchRequestException($"The provided TFM is not supported. (Parameter '{tfm}')");
                 }
             }
 

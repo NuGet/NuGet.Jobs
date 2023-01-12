@@ -300,7 +300,7 @@ namespace NuGet.Services.SearchService.Controllers
             [MemberData(nameof(InvalidFrameworksAndTfms))]
             public async Task ThrowsInvalidFrameworksAndTfms(string frameworks, string tfms, string expectedException)
             {
-                var exception = await Assert.ThrowsAsync<ArgumentException>(() => _target.V2SearchAsync(frameworks: frameworks, tfms: tfms));
+                var exception = await Assert.ThrowsAsync<InvalidSearchRequestException>(() => _target.V2SearchAsync(frameworks: frameworks, tfms: tfms));
 
                 Assert.Equal(expectedException, exception.Message);
             }
