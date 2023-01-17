@@ -189,6 +189,8 @@ namespace NuGet.Services.AzureSearch
                 owners: owners,
                 packageTypes: packageTypes);
             _baseDocumentBuilder.PopulateMetadata(document, normalizedVersion, leaf);
+            PopulateDeprecationFromCatalog(document, leaf);
+            PopulateVulnerabilitiesFromCatalog(document, leaf);
 
             return document;
         }
@@ -229,8 +231,8 @@ namespace NuGet.Services.AzureSearch
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
             PopulateIsExcludedByDefault(document, isExcludedByDefault);
-            PopulateDeprecation(document, package);
-            PopulateVulnerabilities(document, package);
+            PopulateDeprecationFromDb(document, package);
+            PopulateVulnerabilitiesFromDb(document, package);
 
             return document;
         }
@@ -361,34 +363,55 @@ namespace NuGet.Services.AzureSearch
             document.IsExcludedByDefault = isExcludedByDefault;
         }
 
-        private static void PopulateDeprecation(
+        private static void PopulateDeprecationFromDb(
             SearchDocument.Full document,
             Package package)
         {
-            document.Deprecation = new Deprecation();
-            document.Deprecation.Reasons = Array.Empty<string>(); //db2azuresearch job cannot process if null
-
-            if (package.Deprecations != null && package.Deprecations.Count > 0 && package.Deprecations.ElementAt(0).Status != PackageDeprecationStatus.NotDeprecated)
+            if (package.Deprecations != null && package.Deprecations.Count == 1 && package.Deprecations.ElementAt(0).Status != PackageDeprecationStatus.NotDeprecated)
             {
-                document.Deprecation.Message = package.Deprecations.ElementAt(0).CustomMessage;
-                document.Deprecation.Reasons = package.Deprecations.ElementAt(0).Status.ToString().Replace(" ", "").Split(',');
+                document.Deprecation = new Deprecation();
+
+                var packagedeprecation = package.Deprecations.ElementAt(0);
+                document.Deprecation.Message = packagedeprecation.CustomMessage;
+                document.Deprecation.Reasons = packagedeprecation.Status.ToString().Replace(" ", "").Split(',');
 
                 if (package.Deprecations.ElementAt(0).AlternatePackage != null)
                 {
                     document.Deprecation.AlternatePackage = new AlternatePackage();
-                    document.Deprecation.AlternatePackage.Id = package.Deprecations.ElementAt(0).AlternatePackage.Id;
-                    var version = package.Deprecations.ElementAt(0).AlternatePackage.Version ?? "";
+                    document.Deprecation.AlternatePackage.Id = packagedeprecation.AlternatePackage.Id;
+                    var version = packagedeprecation.AlternatePackage.Version ?? "";
                     document.Deprecation.AlternatePackage.Range = "[" + version + ", )";
                 }
             }
         }
 
-        private static void PopulateVulnerabilities(
+       private static void PopulateDeprecationFromCatalog(
+            SearchDocument.UpdateLatest document,
+            PackageDetailsCatalogLeaf leaf)
+        {
+            if (leaf.Deprecation != null && leaf.Deprecation.Reasons != null && leaf.Deprecation.Reasons.Count > 0)
+            {
+                document.Deprecation = new Deprecation();
+                document.Deprecation.Reasons = new string[leaf.Deprecation.Reasons.Count];
+
+                document.Deprecation.Message = leaf.Deprecation.Message;
+                leaf.Deprecation.Reasons.CopyTo(document.Deprecation.Reasons);
+
+                if (leaf.Deprecation.AlternatePackage != null)
+                {
+                    document.Deprecation.AlternatePackage = new AlternatePackage();
+                    document.Deprecation.AlternatePackage.Id = leaf.Deprecation.AlternatePackage.Id;
+                    document.Deprecation.AlternatePackage.Range = leaf.Deprecation.AlternatePackage.Range;
+                }
+            }
+        }
+
+        private static void PopulateVulnerabilitiesFromDb(
             SearchDocument.Full document,
             Package package)
         {
             document.Vulnerabilities = new List<Vulnerability>();
-            if (package.VulnerablePackageRanges != null)
+            if (package.VulnerablePackageRanges != null && package.VulnerablePackageRanges.Count > 0)
             {
                 foreach (VulnerablePackageVersionRange v in package.VulnerablePackageRanges)
                 {
@@ -397,6 +420,32 @@ namespace NuGet.Services.AzureSearch
                         var vulnerability = new Vulnerability();
                         vulnerability.AdvisoryURL = v.Vulnerability.AdvisoryUrl;
                         vulnerability.Severity = (int)v.Vulnerability.Severity;
+                        document.Vulnerabilities.Add(vulnerability);
+                    }
+                }
+            }
+        }
+
+        private static void PopulateVulnerabilitiesFromCatalog(
+            SearchDocument.UpdateLatest document,
+            PackageDetailsCatalogLeaf leaf)
+        {
+            document.Vulnerabilities = new List<Vulnerability>();
+            if (leaf.Vulnerabilities != null && leaf.Vulnerabilities.Count > 0)
+            {
+                foreach (Protocol.Catalog.PackageVulnerability v in leaf.Vulnerabilities)
+                {
+                    if (v != null)
+                    {
+                        var vulnerability = new Vulnerability();
+                        vulnerability.AdvisoryURL = v.AdvisoryUrl;
+
+                        PackageVulnerabilitySeverity severity;
+                        if (Enum.TryParse<PackageVulnerabilitySeverity>(v.Severity, out severity))
+                        {
+                            vulnerability.Severity = (int)severity;
+                        }
+    
                         document.Vulnerabilities.Add(vulnerability);
                     }
                 }
