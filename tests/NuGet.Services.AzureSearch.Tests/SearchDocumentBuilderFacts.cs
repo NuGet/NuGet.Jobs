@@ -1137,11 +1137,11 @@ namespace NuGet.Services.AzureSearch
             [InlineData(5, new string[] {"Other", "CriticalBugs"})]
             [InlineData(6, new string[] {"Legacy", "CriticalBugs"})]
             [InlineData(7, new string[] {"Other", "Legacy", "CriticalBugs"})]
-            public void CheckExpectedDeprecationStatus(PackageDeprecationStatus status, string[] expected)
+            public void CheckExpectedDeprecationStatus(int status, string[] expected)
             {
                 var package = Data.PackageEntity;
                 package.Deprecations = new List<PackageDeprecation>(); 
-                var deprecation = new PackageDeprecation() {Status = status};
+                var deprecation = new PackageDeprecation() {Status = (PackageDeprecationStatus)status};
                 package.Deprecations.Add(deprecation);
 
                 var document = _target.FullFromDb(
