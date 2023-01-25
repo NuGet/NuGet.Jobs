@@ -370,18 +370,17 @@ namespace NuGet.Services.AzureSearch
             if (package?.Deprecations?.FirstOrDefault()?.Status > PackageDeprecationStatus.NotDeprecated) {
             
                 var packageDeprecation = package.Deprecations.ElementAt(0);
-
                 document.Deprecation = new Deprecation();
                 document.Deprecation.Message = packageDeprecation.CustomMessage;
                 document.Deprecation.Reasons = packageDeprecation.Status.ToString().Replace(" ", "").Split(',');
 
-                if (packageDeprecation.AlternatePackage is null) { return; }
-
-                var version = packageDeprecation.AlternatePackage.Version ?? "";
-
-                document.Deprecation.AlternatePackage = new AlternatePackage();
-                document.Deprecation.AlternatePackage.Id = packageDeprecation.AlternatePackage.Id;
-                document.Deprecation.AlternatePackage.Range = $"[{version}, )";
+                if (packageDeprecation.AlternatePackage != null)
+                {
+                    var version = packageDeprecation.AlternatePackage.Version ?? "";
+                    document.Deprecation.AlternatePackage = new AlternatePackage();
+                    document.Deprecation.AlternatePackage.Id = packageDeprecation.AlternatePackage.Id;
+                    document.Deprecation.AlternatePackage.Range = $"[{version}, )";
+                }
             }
         }
 
@@ -393,15 +392,15 @@ namespace NuGet.Services.AzureSearch
             {
                 document.Deprecation = new Deprecation();
                 document.Deprecation.Reasons = new string[leaf.Deprecation.Reasons.Count];
-
                 document.Deprecation.Message = leaf.Deprecation.Message;
                 leaf.Deprecation.Reasons.CopyTo(document.Deprecation.Reasons);
 
-                if (leaf.Deprecation.AlternatePackage is null) { return; }
-
-                document.Deprecation.AlternatePackage = new AlternatePackage();
-                document.Deprecation.AlternatePackage.Id = leaf.Deprecation.AlternatePackage.Id;
-                document.Deprecation.AlternatePackage.Range = leaf.Deprecation.AlternatePackage.Range;
+                if (leaf.Deprecation.AlternatePackage != null)
+                {
+                    document.Deprecation.AlternatePackage = new AlternatePackage();
+                    document.Deprecation.AlternatePackage.Id = leaf.Deprecation.AlternatePackage.Id;
+                    document.Deprecation.AlternatePackage.Range = leaf.Deprecation.AlternatePackage.Range;
+                }
             }
         }
 
@@ -411,14 +410,15 @@ namespace NuGet.Services.AzureSearch
         {
             document.Vulnerabilities = new List<Vulnerability>();
 
-            if (package.VulnerablePackageRanges is null) { return; }
-
-            foreach (var v in package.VulnerablePackageRanges.Where( x => x != null && x.Vulnerability != null))
+            if (package.VulnerablePackageRanges != null)
             {
-                var vulnerability = new Vulnerability();
-                vulnerability.AdvisoryURL = v.Vulnerability.AdvisoryUrl;
-                vulnerability.Severity = (int)v.Vulnerability.Severity;
-                document.Vulnerabilities.Add(vulnerability);
+                foreach (var range in package.VulnerablePackageRanges.Where( x => x != null && x.Vulnerability != null ))
+                {
+                    var vulnerability = new Vulnerability();
+                    vulnerability.AdvisoryURL = range.Vulnerability.AdvisoryUrl;
+                    vulnerability.Severity = (int)range.Vulnerability.Severity;
+                    document.Vulnerabilities.Add(vulnerability);
+                }
             }
         }
 
@@ -428,19 +428,20 @@ namespace NuGet.Services.AzureSearch
         {
             document.Vulnerabilities = new List<Vulnerability>();
 
-            if (leaf.Vulnerabilities is null) { return; }
-
-            foreach (var v in leaf.Vulnerabilities.Where( x => x != null))
+            if (leaf.Vulnerabilities != null)
             {
-                var vulnerability = new Vulnerability();
-                vulnerability.AdvisoryURL = v.AdvisoryUrl;
-
-                if (Enum.TryParse<PackageVulnerabilitySeverity>(v.Severity, out PackageVulnerabilitySeverity severity))
+                foreach (var leafVulnerability in leaf.Vulnerabilities.Where( x => x != null ))
                 {
-                    vulnerability.Severity = (int)severity; 
-                } //if the parse fails, defaults to null
+                    var vulnerability = new Vulnerability();
+                    vulnerability.AdvisoryURL = leafVulnerability.AdvisoryUrl;
+
+                    if (Enum.TryParse<PackageVulnerabilitySeverity>(leafVulnerability.Severity, out PackageVulnerabilitySeverity severity))
+                    {
+                        vulnerability.Severity = (int)severity; 
+                    } //if the parse fails, defaults to null
     
-                document.Vulnerabilities.Add(vulnerability);
+                    document.Vulnerabilities.Add(vulnerability);
+                }
             }
         }
     }
