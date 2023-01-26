@@ -367,7 +367,7 @@ namespace NuGet.Services.AzureSearch
             SearchDocument.Full document,
             Package package)
         {
-            if ((int)package.Deprecations?.FirstOrDefault()?.Status > (int)PackageDeprecationStatus.NotDeprecated)
+            if (package.Deprecations?.FirstOrDefault()?.Status > PackageDeprecationStatus.NotDeprecated)
             {
                 var packageDeprecation = package.Deprecations.ElementAt(0);
                 document.Deprecation = new Deprecation();
