@@ -367,7 +367,6 @@ namespace NuGet.Services.AzureSearch
             SearchDocument.Full document,
             Package package)
         {
-
             Entities.PackageDeprecation packageDeprecation;
             try
             {
@@ -422,7 +421,6 @@ namespace NuGet.Services.AzureSearch
             Package package)
         {
             document.Vulnerabilities = new List<Vulnerability>();
-
             if (package.VulnerablePackageRanges == null)
             {
                 return;
@@ -444,7 +442,6 @@ namespace NuGet.Services.AzureSearch
             PackageDetailsCatalogLeaf leaf)
         {
             document.Vulnerabilities = new List<Vulnerability>();
-
             if (leaf.Vulnerabilities == null)
             {
                 return;
