@@ -367,41 +367,54 @@ namespace NuGet.Services.AzureSearch
             SearchDocument.Full document,
             Package package)
         {
-            if (package.Deprecations?.FirstOrDefault()?.Status > PackageDeprecationStatus.NotDeprecated)
-            {
-                var packageDeprecation = package.Deprecations.ElementAt(0);
-                document.Deprecation = new Deprecation();
-                document.Deprecation.Message = packageDeprecation.CustomMessage;
-                document.Deprecation.Reasons = packageDeprecation.Status.ToString().Replace(" ", "").Split(',');
 
-                if (packageDeprecation.AlternatePackage != null)
-                {
-                    var version = packageDeprecation.AlternatePackage.Version ?? "";
-                    document.Deprecation.AlternatePackage = new AlternatePackage();
-                    document.Deprecation.AlternatePackage.Id = packageDeprecation.AlternatePackage.Id;
-                    document.Deprecation.AlternatePackage.Range = $"[{version}, )";
-                }
+            Entities.PackageDeprecation packageDeprecation;
+            try
+            {
+                packageDeprecation = package.Deprecations?.SingleOrDefault();
             }
+            catch (InvalidOperationException)
+            {
+                packageDeprecation = null;
+            }
+
+            if (packageDeprecation == null || packageDeprecation.Status == PackageDeprecationStatus.NotDeprecated)
+            {
+                return;
+            }
+
+            var version = packageDeprecation.AlternatePackage?.Version ?? "";
+            document.Deprecation = new Deprecation
+            {
+                Message = packageDeprecation.CustomMessage,
+                Reasons = packageDeprecation.Status.ToString().Replace(" ", "").Split(','),
+                AlternatePackage = packageDeprecation.AlternatePackage == null ? null : new AlternatePackage
+                {
+                    Id = packageDeprecation.AlternatePackage.Id,
+                    Range = $"[{version}, )"
+                }
+            };
         }
 
         private static void PopulateDeprecationFromCatalog(
             SearchDocument.UpdateLatest document,
             PackageDetailsCatalogLeaf leaf)
         {
-            if (leaf?.Deprecation?.Reasons?.Count > 0)
+            if (leaf.Deprecation?.Reasons == null || !leaf.Deprecation.Reasons.Any())
             {
-                document.Deprecation = new Deprecation();
-                document.Deprecation.Reasons = new string[leaf.Deprecation.Reasons.Count];
-                document.Deprecation.Message = leaf.Deprecation.Message;
-                leaf.Deprecation.Reasons.CopyTo(document.Deprecation.Reasons);
-
-                if (leaf.Deprecation.AlternatePackage != null)
-                {
-                    document.Deprecation.AlternatePackage = new AlternatePackage();
-                    document.Deprecation.AlternatePackage.Id = leaf.Deprecation.AlternatePackage.Id;
-                    document.Deprecation.AlternatePackage.Range = leaf.Deprecation.AlternatePackage.Range;
-                }
+                return;
             }
+
+            document.Deprecation = new Deprecation
+            {
+                Reasons = leaf.Deprecation.Reasons.ToArray<string>(),
+                Message = leaf.Deprecation.Message,
+                AlternatePackage = leaf.Deprecation.AlternatePackage == null ? null : new AlternatePackage
+                {
+                    Id = leaf.Deprecation.AlternatePackage.Id,
+                    Range = leaf.Deprecation.AlternatePackage.Range
+                }
+            };
         }
 
         private static void PopulateVulnerabilitiesFromDb(
@@ -410,15 +423,19 @@ namespace NuGet.Services.AzureSearch
         {
             document.Vulnerabilities = new List<Vulnerability>();
 
-            if (package.VulnerablePackageRanges != null)
+            if (package.VulnerablePackageRanges == null)
             {
-                foreach (var range in package.VulnerablePackageRanges.Where( x => x != null && x.Vulnerability != null ))
-                {
-                    var vulnerability = new Vulnerability();
-                    vulnerability.AdvisoryURL = range.Vulnerability.AdvisoryUrl;
-                    vulnerability.Severity = (int)range.Vulnerability.Severity;
-                    document.Vulnerabilities.Add(vulnerability);
-                }
+                return;
+            }
+
+            foreach (var range in package.VulnerablePackageRanges.Where( x => x?.Vulnerability != null ))
+            {
+
+                document.Vulnerabilities.Add(new Vulnerability 
+                {  
+                    AdvisoryURL = range.Vulnerability.AdvisoryUrl,
+                    Severity = (int)range.Vulnerability.Severity
+                });
             }
         }
 
@@ -428,20 +445,18 @@ namespace NuGet.Services.AzureSearch
         {
             document.Vulnerabilities = new List<Vulnerability>();
 
-            if (leaf.Vulnerabilities != null)
+            if (leaf.Vulnerabilities == null)
             {
-                foreach (var leafVulnerability in leaf.Vulnerabilities.Where( x => x != null ))
-                {
-                    var vulnerability = new Vulnerability();
-                    vulnerability.AdvisoryURL = leafVulnerability.AdvisoryUrl;
+                return;
+            }
 
-                    if (Enum.TryParse<PackageVulnerabilitySeverity>(leafVulnerability.Severity, out PackageVulnerabilitySeverity severity))
-                    {
-                        vulnerability.Severity = (int)severity; 
-                    } //if the parse fails, defaults to null
-    
-                    document.Vulnerabilities.Add(vulnerability);
-                }
+            foreach (var leafVulnerability in leaf.Vulnerabilities.Where( x => x != null ))
+            {
+                document.Vulnerabilities.Add(new Vulnerability
+                {
+                    AdvisoryURL = leafVulnerability.AdvisoryUrl,
+                    Severity = (int)Enum.Parse(typeof(PackageVulnerabilitySeverity), leafVulnerability.Severity)
+                });
             }
         }
     }
