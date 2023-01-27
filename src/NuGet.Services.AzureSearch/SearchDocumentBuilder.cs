@@ -367,27 +367,23 @@ namespace NuGet.Services.AzureSearch
             SearchDocument.Full document,
             Package package)
         {
-            Entities.PackageDeprecation packageDeprecation;
-            try
+            if (package.Deprecations?.Count != 1)
             {
-                packageDeprecation = package.Deprecations?.SingleOrDefault();
-            }
-            catch (InvalidOperationException)
-            {
-                packageDeprecation = null;
+                return;
             }
 
+            var packageDeprecation = package.Deprecations?.ElementAt(0);
             if (packageDeprecation == null || packageDeprecation.Status == PackageDeprecationStatus.NotDeprecated)
             {
                 return;
             }
 
             var version = packageDeprecation.AlternatePackage?.Version ?? "";
-            document.Deprecation = new Deprecation
+            document.Deprecation = new Deprecation()
             {
                 Message = packageDeprecation.CustomMessage,
                 Reasons = packageDeprecation.Status.ToString().Replace(" ", "").Split(','),
-                AlternatePackage = packageDeprecation.AlternatePackage == null ? null : new AlternatePackage
+                AlternatePackage = packageDeprecation.AlternatePackage == null ? null : new AlternatePackage()
                 {
                     Id = packageDeprecation.AlternatePackage.Id,
                     Range = $"[{version}, )"
@@ -404,11 +400,11 @@ namespace NuGet.Services.AzureSearch
                 return;
             }
 
-            document.Deprecation = new Deprecation
+            document.Deprecation = new Deprecation()
             {
                 Reasons = leaf.Deprecation.Reasons.ToArray<string>(),
                 Message = leaf.Deprecation.Message,
-                AlternatePackage = leaf.Deprecation.AlternatePackage == null ? null : new AlternatePackage
+                AlternatePackage = leaf.Deprecation.AlternatePackage == null ? null : new AlternatePackage()
                 {
                     Id = leaf.Deprecation.AlternatePackage.Id,
                     Range = leaf.Deprecation.AlternatePackage.Range
@@ -429,7 +425,7 @@ namespace NuGet.Services.AzureSearch
             foreach (var range in package.VulnerablePackageRanges.Where( x => x?.Vulnerability != null ))
             {
 
-                document.Vulnerabilities.Add(new Vulnerability 
+                document.Vulnerabilities.Add(new Vulnerability() 
                 {  
                     AdvisoryURL = range.Vulnerability.AdvisoryUrl,
                     Severity = (int)range.Vulnerability.Severity
@@ -449,7 +445,7 @@ namespace NuGet.Services.AzureSearch
 
             foreach (var leafVulnerability in leaf.Vulnerabilities.Where( x => x != null ))
             {
-                document.Vulnerabilities.Add(new Vulnerability
+                document.Vulnerabilities.Add(new Vulnerability()
                 {
                     AdvisoryURL = leafVulnerability.AdvisoryUrl,
                     Severity = (int)Enum.Parse(typeof(PackageVulnerabilitySeverity), leafVulnerability.Severity)
