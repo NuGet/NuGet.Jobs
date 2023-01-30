@@ -372,7 +372,7 @@ namespace NuGet.Services.AzureSearch
                 return;
             }
 
-            var packageDeprecation = package.Deprecations?.ElementAt(0);
+            var packageDeprecation = package.Deprecations?.ElementAt(0) as Entities.PackageDeprecation;
             if (packageDeprecation == null || packageDeprecation.Status == PackageDeprecationStatus.NotDeprecated)
             {
                 return;
