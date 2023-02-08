@@ -378,7 +378,6 @@ namespace NuGet.Services.AzureSearch
                 return;
             }
 
-            var version = packageDeprecation.AlternatePackage?.Version ?? "";
             document.Deprecation = new Deprecation()
             {
                 Message = packageDeprecation.CustomMessage,
@@ -386,7 +385,7 @@ namespace NuGet.Services.AzureSearch
                 AlternatePackage = packageDeprecation.AlternatePackage == null ? null : new AlternatePackage()
                 {
                     Id = packageDeprecation.AlternatePackage.Id,
-                    Range = $"[{version}, )"
+                    Range = string.IsNullOrWhiteSpace(packageDeprecation.AlternatePackage.Version) ? "*" : $"[{packageDeprecation.AlternatePackage.Version}, )"
                 }
             };
         }

@@ -152,12 +152,12 @@ namespace NuGet.Services
                 new Protocol.Catalog.PackageVulnerability
                 {
                     AdvisoryUrl = "test AdvisoryUrl for Low Severity",
-                    Severity = "Low"
+                    Severity = "0"
                 },
                 new Protocol.Catalog.PackageVulnerability
                 {
                     AdvisoryUrl = "test AdvisoryUrl for Moderate Severity",
-                    Severity = "Moderate"
+                    Severity = "1"
                 }
             }
         };

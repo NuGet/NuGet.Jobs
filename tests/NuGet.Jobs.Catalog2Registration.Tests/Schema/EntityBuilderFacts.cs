@@ -253,11 +253,11 @@ namespace NuGet.Jobs.Catalog2Registration
     ""vulnerabilities"": [
       {
         ""advisoryUrl"": ""test AdvisoryUrl for Low Severity"",
-        ""severity"": ""Low""
+        ""severity"": ""0""
       },
       {
         ""advisoryUrl"": ""test AdvisoryUrl for Moderate Severity"",
-        ""severity"": ""Moderate""
+        ""severity"": ""1""
       }
     ]
   },

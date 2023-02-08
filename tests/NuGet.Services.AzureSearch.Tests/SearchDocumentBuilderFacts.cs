@@ -1184,8 +1184,8 @@ namespace NuGet.Services.AzureSearch
             }
 
             [Theory]
-            [InlineData(null, "[, )")]
-            [InlineData("", "[, )")]
+            [InlineData(null, "*")]
+            [InlineData("", "*")]
             [InlineData("1.0.0-test", "[1.0.0-test, )")]
             public void CheckExpectedRange(string version, string expectedRange)
             {
