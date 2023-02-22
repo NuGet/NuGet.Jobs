@@ -177,9 +177,21 @@
   - regex: '(vsts-task-installer)/(\d+)\.(\d+)\.?(\d+)?'
     family_replacement: 'vsts-task-installer'
 
-  # Checkmarx
-  - regex: '(Checkmarx)'
-    family_replacement: 'Checkmarx'
+  # Checkmarx 1
+  - regex: '(Checkmarx-NugetSourceCodePriorityCollector)'
+    family_replacement: 'Checkmarx NugetSourceCodePriorityCollector'
+
+  # Checkmarx 2
+  - regex: '(Checkmarx-NugetShaCollector)'
+    family_replacement: 'Checkmarx NugetShaCollector'
+
+  # Checkmarx 3
+  - regex: '(Checkmarx-NugetDllShaCollector)'
+    family_replacement: 'Checkmarx NugetDllShaCollector'
+
+  # Checkmarx 4
+  - regex: '(Checkmarx-SourceCodeDownloader)'
+    family_replacement: 'Checkmarx SourceCodeDownloader'
 
   # Azure artifacts
   - regex: '(AzureArtifacts)/(\d+)\.(\d+)\.?(\d+)?'
