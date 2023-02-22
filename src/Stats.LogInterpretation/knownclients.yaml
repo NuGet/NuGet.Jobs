@@ -170,7 +170,7 @@
     family_replacement: 'NuGet VS VSIX'
 
   # Xamarin Updater
-  - regex: '(Xamarin Updater).*?\(Version: (\d+)\.(\d+)\.?(\d+)?\)'
+  - regex: '(Xamarin Updater).*?\(Version: (\d+)\.(\d+)\.?(\d+)?'
     family_replacement: 'Xamarin Updater'
 
   # vsts-task-installer
