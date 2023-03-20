@@ -3,15 +3,102 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Moq;
+using NuGet.Services;
 using NuGet.Services.Metadata.Catalog;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace CatalogTests
 {
     public class RetryWithExponentialBackoffTests
     {
+        public class TheSendAsyncMethod
+        {
+            [Fact]
+            public async Task ForcesATimeoutAtTwiceTheHttpClientTimeout()
+            {
+                var testHandler = new Mock<TestHttpMessageHandler> { CallBase = true };
+                testHandler
+                    .Setup(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                    .Returns<HttpRequestMessage, CancellationToken>(async (r, t) =>
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(30)); // This ignores the provided token to make HttpClient's built-in timeout not work.
+                        return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                    });
+                var exceptions = new List<(Exception Exception, TimeSpan Elapsed)>();
+                var stopwatch = Stopwatch.StartNew();
+                using (var httpClient = new HttpClient(testHandler.Object))
+                {
+                    httpClient.Timeout = TimeSpan.FromMilliseconds(100);
+                    var target = new RetryWithExponentialBackoff(
+                        maximumRetries: 1,
+                        delay: TimeSpan.Zero,
+                        maximumDelay: TimeSpan.FromSeconds(30),
+                        e =>
+                        {
+                            exceptions.Add((e, stopwatch.Elapsed));
+                            stopwatch.Restart();
+                        });
+
+                    var ex = await Assert.ThrowsAsync<TimeoutException>(() => target.SendAsync(
+                        httpClient,
+                        new Uri("https://example/v3/index.json"),
+                        CancellationToken.None));
+                    Assert.Equal("The operation was forcibly canceled.", ex.Message);
+                    var singleEx = Assert.Single(exceptions);
+                    Assert.Same(ex, singleEx.Exception);
+                    Assert.True(singleEx.Elapsed < TimeSpan.FromSeconds(30));
+                    testHandler.Verify(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Once);
+                }
+            }
+
+            [Fact]
+            public async Task UsesHttpClientBuiltInTimeoutWhenPossible()
+            {
+                var testHandler = new Mock<TestHttpMessageHandler> { CallBase = true };
+                testHandler
+                    .Setup(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                    .Returns<HttpRequestMessage, CancellationToken>(async (r, t) =>
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(30), t);
+                        return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                    });
+                var exceptions = new List<(Exception Exception, TimeSpan Elapsed)>();
+                var stopwatch = Stopwatch.StartNew();
+                using (var httpClient = new HttpClient(testHandler.Object))
+                {
+                    httpClient.Timeout = TimeSpan.FromMilliseconds(100);
+                    var target = new RetryWithExponentialBackoff(
+                        maximumRetries: 1,
+                        delay: TimeSpan.Zero,
+                        maximumDelay: TimeSpan.FromSeconds(30),
+                        e =>
+                        {
+                            exceptions.Add((e, stopwatch.Elapsed));
+                            stopwatch.Restart();
+                        });
+
+                    var ex = await Assert.ThrowsAsync<TimeoutException>(() => target.SendAsync(
+                        httpClient,
+                        new Uri("https://example/v3/index.json"),
+                        CancellationToken.None));
+                    Assert.Equal("Maximum retry attempts exhausted.", ex.Message);
+                    Assert.Equal(2, exceptions.Count);
+                    Assert.All(exceptions, e => Assert.IsType<TaskCanceledException>(e.Exception));
+                    Assert.All(exceptions, e => Assert.Equal("A task was canceled.", e.Exception.Message));
+                    Assert.All(exceptions, e => Assert.True(e.Elapsed < TimeSpan.FromSeconds(30)));
+                    testHandler.Verify(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                }
+            }
+        }
+
         public class TheIsTransientErrorMethod
         {
             [Fact]
@@ -50,7 +137,6 @@ namespace CatalogTests
             public static IEnumerable<HttpStatusCode> NonTransientStatusCodes => new[]
             {
                 HttpStatusCode.Accepted,
-                HttpStatusCode.BadRequest,
                 HttpStatusCode.Conflict,
                 HttpStatusCode.NotFound,
                 HttpStatusCode.OK,
@@ -85,6 +171,7 @@ namespace CatalogTests
 
             public static IEnumerable<HttpStatusCode> TransientStatusCodes => new[]
             {
+                HttpStatusCode.BadRequest,
                 HttpStatusCode.InternalServerError,
                 HttpStatusCode.BadGateway,
                 HttpStatusCode.ServiceUnavailable,

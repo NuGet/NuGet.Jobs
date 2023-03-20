@@ -15,6 +15,19 @@ namespace NuGet.Services.Metadata.Catalog
         private readonly ushort _maximumRetries;
         private readonly TimeSpan _delay;
         private readonly TimeSpan _maximumDelay;
+        private readonly Action<Exception> _onException;
+
+        internal RetryWithExponentialBackoff(
+            ushort maximumRetries,
+            TimeSpan delay,
+            TimeSpan maximumDelay,
+            Action<Exception> onException)
+        {
+            _maximumRetries = maximumRetries;
+            _delay = delay;
+            _maximumDelay = maximumDelay;
+            _onException = onException;
+        }
 
         internal RetryWithExponentialBackoff()
         {
@@ -33,7 +46,7 @@ namespace NuGet.Services.Metadata.Catalog
 
                 try
                 {
-                    httpResponse = await client.GetAsync(address, cancellationToken);
+                    httpResponse = await SendWithForcedTimeoutAsync(client, address, cancellationToken);
 
                     httpResponse.EnsureSuccessStatusCode();
 
@@ -41,6 +54,7 @@ namespace NuGet.Services.Metadata.Catalog
                 }
                 catch (Exception e)
                 {
+                    _onException?.Invoke(e);
                     httpResponse?.Dispose();
                     if (IsTransientError(e, httpResponse))
                     {
@@ -54,6 +68,41 @@ namespace NuGet.Services.Metadata.Catalog
             }
         }
 
+        private async Task<HttpResponseMessage> SendWithForcedTimeoutAsync(HttpClient client, Uri address, CancellationToken cancellationToken)
+        {
+            if (client.Timeout == TimeSpan.Zero
+                || client.Timeout == Timeout.InfiniteTimeSpan
+                || client.Timeout == TimeSpan.MaxValue)
+            {
+                return await client.GetAsync(address, cancellationToken);
+            }
+
+            // Use a forced timeout which is twice the HTTP client's time. This is to allow ample time for the built-in
+            // timeout to work.
+            var timeout = TimeSpan.FromTicks(client.Timeout.Ticks * 2);
+
+            // Source:
+            // https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md#using-a-timeout
+            using (var cts = new CancellationTokenSource())
+            using (var linked = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
+            {
+                var delayTask = Task.Delay(timeout, cts.Token);
+                var mainTask = client.GetAsync(address, cancellationToken);
+                var resultTask = await Task.WhenAny(mainTask, delayTask);
+                if (resultTask == delayTask)
+                {
+                    throw new TimeoutException("The operation was forcibly canceled.");
+                }
+                else
+                {
+                    // Cancel the timer task so that it does not fire
+                    cts.Cancel();
+                }
+
+                return await mainTask;
+            }
+        }
+
         public static bool IsTransientError(Exception e, HttpResponseMessage response)
         {
             if (!(e is HttpRequestException || e is OperationCanceledException))
@@ -64,7 +113,8 @@ namespace NuGet.Services.Metadata.Catalog
             return response == null
                 || ((int)response.StatusCode >= 500 &&
                     response.StatusCode != HttpStatusCode.NotImplemented &&
-                    response.StatusCode != HttpStatusCode.HttpVersionNotSupported);
+                    response.StatusCode != HttpStatusCode.HttpVersionNotSupported)
+                || (response.StatusCode == HttpStatusCode.BadRequest); // We've seen transient HTTP 400s
         }
 
         private sealed class ExponentialBackoff
