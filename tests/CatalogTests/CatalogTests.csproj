@@ -111,6 +111,7 @@
     <Compile Include="Helpers\RegistrationIndependentPackage.cs" />
     <Compile Include="Helpers\RegistrationPackageDetails.cs" />
     <Compile Include="Helpers\UtilsTests.cs" />
+    <Compile Include="HungStream.cs" />
     <Compile Include="Icons\CatalogLeafDataProcessorFacts.cs" />
     <Compile Include="Icons\IconCopyResultCacheFacts.cs" />
     <Compile Include="Icons\IconProcessorFacts.cs" />

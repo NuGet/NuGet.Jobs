@@ -15,17 +15,20 @@ namespace NuGet.Services.Metadata.Catalog
         private readonly ushort _maximumRetries;
         private readonly TimeSpan _delay;
         private readonly TimeSpan _maximumDelay;
+        private readonly HttpCompletionOption _httpCompletionOption;
         private readonly Action<Exception> _onException;
 
         internal RetryWithExponentialBackoff(
             ushort maximumRetries,
             TimeSpan delay,
             TimeSpan maximumDelay,
+            HttpCompletionOption httpCompletionOption,
             Action<Exception> onException)
         {
             _maximumRetries = maximumRetries;
             _delay = delay;
             _maximumDelay = maximumDelay;
+            _httpCompletionOption = httpCompletionOption;
             _onException = onException;
         }
 
@@ -34,6 +37,7 @@ namespace NuGet.Services.Metadata.Catalog
             _maximumRetries = 3;
             _delay = TimeSpan.FromSeconds(1);
             _maximumDelay = TimeSpan.FromSeconds(10);
+            _httpCompletionOption = HttpCompletionOption.ResponseContentRead;
         }
 
         public async Task<HttpResponseMessage> SendAsync(HttpClient client, Uri address, CancellationToken cancellationToken)
@@ -79,7 +83,7 @@ namespace NuGet.Services.Metadata.Catalog
             using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 var delayTask = Task.Delay(timeout, cts.Token);
-                var mainTask = client.GetAsync(address, cancellationToken);
+                var mainTask = client.GetAsync(address, _httpCompletionOption, cancellationToken);
                 var resultTask = await Task.WhenAny(mainTask, delayTask);
                 if (resultTask == delayTask)
                 {
