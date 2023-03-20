@@ -70,28 +70,27 @@ namespace NuGet.Services.Metadata.Catalog
 
         private async Task<HttpResponseMessage> SendWithForcedTimeoutAsync(HttpClient client, Uri address, CancellationToken cancellationToken)
         {
-            if (client.Timeout == TimeSpan.Zero
-                || client.Timeout == Timeout.InfiniteTimeSpan
-                || client.Timeout == TimeSpan.MaxValue)
-            {
-                return await client.GetAsync(address, cancellationToken);
-            }
-
             // Use a forced timeout which is twice the HTTP client's time. This is to allow ample time for the built-in
             // timeout to work.
             var timeout = TimeSpan.FromTicks(client.Timeout.Ticks * 2);
 
             // Source:
             // https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md#using-a-timeout
-            using (var cts = new CancellationTokenSource())
-            using (var linked = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken))
+            using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 var delayTask = Task.Delay(timeout, cts.Token);
                 var mainTask = client.GetAsync(address, cancellationToken);
                 var resultTask = await Task.WhenAny(mainTask, delayTask);
                 if (resultTask == delayTask)
                 {
-                    throw new TimeoutException("The operation was forcibly canceled.");
+                    if (resultTask.IsCanceled)
+                    {
+                        await resultTask;
+                    }
+                    else
+                    {
+                        throw new TimeoutException("The operation was forcibly canceled.");
+                    }
                 }
                 else
                 {

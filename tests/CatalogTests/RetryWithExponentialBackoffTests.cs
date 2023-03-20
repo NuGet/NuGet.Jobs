@@ -97,6 +97,50 @@ namespace CatalogTests
                     testHandler.Verify(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
                 }
             }
+
+            [Fact]
+            public async Task AllowsCancellation()
+            {
+                var testHandler = new Mock<TestHttpMessageHandler> { CallBase = true };
+                testHandler
+                    .Setup(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                    .Returns<HttpRequestMessage, CancellationToken>(async (r, t) =>
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(30), t);
+                        return new HttpResponseMessage(HttpStatusCode.InternalServerError);
+                    });
+                var exceptions = new List<(Exception Exception, TimeSpan Elapsed)>();
+                var stopwatch = Stopwatch.StartNew();
+                using (var httpClient = new HttpClient(testHandler.Object))
+                using (var cts = new CancellationTokenSource())
+                {
+                    httpClient.Timeout = TimeSpan.FromSeconds(10);
+                    var target = new RetryWithExponentialBackoff(
+                        maximumRetries: 1,
+                        delay: TimeSpan.Zero,
+                        maximumDelay: TimeSpan.FromSeconds(30),
+                        e =>
+                        {
+                            exceptions.Add((e, stopwatch.Elapsed));
+                            stopwatch.Restart();
+                        });
+                    
+                    var exTask = Assert.ThrowsAsync<TimeoutException>(() => target.SendAsync(
+                        httpClient,
+                        new Uri("https://example/v3/index.json"),
+                        cts.Token));
+                    await Task.Delay(TimeSpan.FromMilliseconds(100));
+                    cts.Cancel();
+                    var ex = await exTask;
+
+                    Assert.Equal("Maximum retry attempts exhausted.", ex.Message);
+                    Assert.Equal(2, exceptions.Count);
+                    Assert.All(exceptions, e => Assert.IsType<TaskCanceledException>(e.Exception));
+                    Assert.All(exceptions, e => Assert.Equal("A task was canceled.", e.Exception.Message));
+                    Assert.All(exceptions, e => Assert.True(e.Elapsed < TimeSpan.FromSeconds(30)));
+                    testHandler.Verify(x => x.OnSendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                }
+            }
         }
 
         public class TheIsTransientErrorMethod

@@ -102,7 +102,9 @@ namespace NuGet.Services.Metadata.Catalog
             {
                 using (var httpResponse = await _retryStrategy.SendAsync(this, address, token))
                 {
-                    return await httpResponse.Content.ReadAsStringAsync();
+                    return await NuGet.Jobs.TaskExtensions.ExecuteWithTimeoutAsync(
+                        _ => httpResponse.Content.ReadAsStringAsync(),
+                        timeout: this.Timeout);
                 }
             }
             catch (Exception e)
