@@ -130,9 +130,9 @@ namespace NuGet.Services.Validation.Orchestrator
                     // "ProcessValidationSet" type message polling the validation set status (meaning dropping this
                     // message will not result in a stuck validation).
                     //
-                    // This case typically entity was hard deleted (the record with the matching key was totally removed
-                    // from the DB). A "CheckValidator" type message can only be enqueued if the entity with this key
-                    // existed at one point but now no longer exists.
+                    // This case typically happens when the entity was hard deleted (the record with the matching key
+                    // was totally removed from the DB). A "CheckValidator" type message can only be enqueued if the
+                    // entity with this key existed at one point but now no longer exists.
                     _logger.LogWarning(
                         "Could not find {ValidatingType} {PackageId} {PackageVersion} {Key} for validation set {ValidationSetId}. " +
                         "The entity was most likely hard deleted. Dropping message.",
