@@ -83,12 +83,14 @@ namespace NuGet.Services.Metadata.Catalog
             using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 var delayTask = Task.Delay(timeout, cts.Token);
-                var mainTask = client.GetAsync(address, _httpCompletionOption, cancellationToken);
+                var mainTask = client.GetAsync(address, _httpCompletionOption, cts.Token);
                 var resultTask = await Task.WhenAny(mainTask, delayTask);
                 if (resultTask == delayTask)
                 {
                     if (resultTask.IsCanceled)
                     {
+                        // This will throw an OperationCanceledException exception. In this case, the delay task was
+                        // canceled by the cancellation token passed into this method.
                         await resultTask;
                     }
                     else
