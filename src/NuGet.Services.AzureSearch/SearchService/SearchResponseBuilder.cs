@@ -493,6 +493,8 @@ namespace NuGet.Services.AzureSearch.SearchService
             package.Listed = true;
             package.IsLatestStable = result.IsLatestStable.Value;
             package.IsLatest = result.IsLatest.Value;
+            package.Deprecation = result.Deprecation;
+            package.Vulnerabilities = result.Vulnerabilities?.ToArray();
 
             return package;
         }

@@ -604,7 +604,28 @@ namespace NuGet.Services.AzureSearch.SearchService
       ""HashAlgorithm"": ""SHA512"",
       ""PackageFileSize"": 3039254,
       ""LicenseUrl"": ""http://go.microsoft.com/fwlink/?LinkId=331471"",
-      ""RequiresLicenseAcceptance"": true
+      ""RequiresLicenseAcceptance"": true,
+      ""Deprecation"": {
+        ""AlternatePackage"": {
+          ""Id"": ""test.alternatepackage"",
+          ""Range"": ""[1.0.0, )""
+        },
+        ""Message"": ""test message for test.alternatepackage-1.0.0"",
+        ""Reasons"": [
+          ""Other"",
+          ""Legacy""
+        ]
+      },
+      ""Vulnerabilities"": [
+        {
+          ""AdvisoryURL"": ""test AdvisoryUrl for Low Severity"",
+          ""Severity"": 0
+        },
+        {
+          ""AdvisoryURL"": ""test AdvisoryUrl for Moderate Severity"",
+          ""Severity"": 1
+        }
+      ]
     }
   ]
 }", actualJson);
@@ -627,6 +648,22 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             [Fact]
             public void LeavesNullIconUrlWithFlatContainerIconsButNullOriginalIconUrl()
+            {
+                _config.AllIconsInFlatContainer = true;
+                _searchResult.Values[0].Document.IconUrl = null;
+
+                var response = Target.V2FromSearch(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].IconUrl);
+            }
+
+            [Fact]
+            public void NullIconUrlWithFlatContainerIconsButNullOriginalIconUrl()
             {
                 _config.AllIconsInFlatContainer = true;
                 _searchResult.Values[0].Document.IconUrl = null;
