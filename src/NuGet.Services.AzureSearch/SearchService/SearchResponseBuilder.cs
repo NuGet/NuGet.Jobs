@@ -444,7 +444,6 @@ namespace NuGet.Services.AzureSearch.SearchService
         private V3SearchDeprecation GetV3SearchDeprecation(SearchDocument.Full document)
         {
             if (HasValidDeprecation(document.Deprecation))
-            //according to nuget api, reasons array is required and cannot be empty
             {   
                 var deprecation = new V3SearchDeprecation();
                 deprecation.AlternatePackage = new V3SearchAlternatePackage{}; 
@@ -494,13 +493,14 @@ namespace NuGet.Services.AzureSearch.SearchService
             package.IsLatestStable = result.IsLatestStable.Value;
             package.IsLatest = result.IsLatest.Value;
             package.Deprecation = HasValidDeprecation(result.Deprecation) ? result.Deprecation : null;
-            package.Vulnerabilities = result.Vulnerabilities?.ToArray();
+            package.Vulnerabilities = result.Vulnerabilities != null ? result.Vulnerabilities.ToArray() : Array.Empty<Vulnerability>();
 
             return package;
         }
 
         private bool HasValidDeprecation(Deprecation deprecation)
         {
+            //according to nuget api, reasons array is required and cannot be empty
             return deprecation != null && deprecation.Reasons != null && deprecation.Reasons.Length > 0;
         }
 
