@@ -443,7 +443,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         private V3SearchDeprecation GetV3SearchDeprecation(SearchDocument.Full document)
         {
-            if (document.Deprecation != null && document.Deprecation.Reasons != null && document.Deprecation.Reasons.Length > 0)
+            if (HasValidDeprecation(document.Deprecation))
             //according to nuget api, reasons array is required and cannot be empty
             {   
                 var deprecation = new V3SearchDeprecation();
@@ -493,10 +493,15 @@ namespace NuGet.Services.AzureSearch.SearchService
             package.Listed = true;
             package.IsLatestStable = result.IsLatestStable.Value;
             package.IsLatest = result.IsLatest.Value;
-            package.Deprecation = result.Deprecation;
+            package.Deprecation = HasValidDeprecation(result.Deprecation) ? result.Deprecation : null;
             package.Vulnerabilities = result.Vulnerabilities?.ToArray();
 
             return package;
+        }
+
+        private bool HasValidDeprecation(Deprecation deprecation)
+        {
+            return deprecation != null && deprecation.Reasons != null && deprecation.Reasons.Length > 0;
         }
 
         private V2SearchPackage ToV2SearchPackage(HijackDocument.Full result, bool semVer2)

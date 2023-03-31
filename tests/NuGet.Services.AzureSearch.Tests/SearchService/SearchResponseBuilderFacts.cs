@@ -632,6 +632,55 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Fact]
+            public void CheckNullDeprecation()
+            {
+                var doc = _searchResult.Values[0].Document;
+                doc.Deprecation = null;
+
+                var response = Target.V2FromSearch(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].Deprecation);
+            }
+
+            [Fact]
+            public void CheckNullDeprecationReasons()
+            {
+                var doc = _searchResult.Values[0].Document;
+                doc.Deprecation = new Deprecation();
+
+                var response = Target.V2FromSearch(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].Deprecation);
+            }
+
+            [Fact]
+            public void CheckEmptyDeprecationReasons()
+            {
+                var doc = _searchResult.Values[0].Document;
+                doc.Deprecation = new Deprecation();
+                doc.Deprecation.Reasons = Array.Empty<string>();
+
+                var response = Target.V2FromSearch(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].Deprecation);
+            }
+
+            [Fact]
             public void UsesFlatContainerUrlWhenConfigured()
             {
                 _config.AllIconsInFlatContainer = true;
