@@ -618,11 +618,11 @@ namespace NuGet.Services.AzureSearch.SearchService
       },
       ""Vulnerabilities"": [
         {
-          ""AdvisoryURL"": ""test AdvisoryUrl for Low Severity"",
+          ""AdvisoryUrl"": ""test AdvisoryUrl for Low Severity"",
           ""Severity"": 0
         },
         {
-          ""AdvisoryURL"": ""test AdvisoryUrl for Moderate Severity"",
+          ""AdvisoryUrl"": ""test AdvisoryUrl for Moderate Severity"",
           ""Severity"": 1
         }
       ]
@@ -707,7 +707,6 @@ namespace NuGet.Services.AzureSearch.SearchService
                     _searchResult,
                     _duration);
 
-                Assert.Same(deprecation, response.Data[0].Deprecation);
                 Assert.Equal(message, response.Data[0].Deprecation.Message);
                 Assert.Equal(reason, response.Data[0].Deprecation.Reasons[0]);
                 Assert.Equal(id, response.Data[0].Deprecation.AlternatePackage.Id);
@@ -766,7 +765,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Equal(vulnerabilities.Count, response.Data[0].Vulnerabilities.Length);
                 for (int i = 0; i < vulnerabilities.Count; i++)
                 {
-                    Assert.Equal(vulnerabilities[i].AdvisoryURL, response.Data[0].Vulnerabilities[i].AdvisoryURL);
+                    Assert.Equal(vulnerabilities[i].AdvisoryURL, response.Data[0].Vulnerabilities[i].AdvisoryUrl);
                     Assert.Equal(vulnerabilities[i].Severity, response.Data[0].Vulnerabilities[i].Severity);
                 }
 
