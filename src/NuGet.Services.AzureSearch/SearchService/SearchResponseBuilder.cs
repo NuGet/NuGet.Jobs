@@ -446,7 +446,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             if (HasValidDeprecation(document.Deprecation))
             {   
                 var deprecation = new V3SearchDeprecation();
-                deprecation.AlternatePackage = new V3SearchAlternatePackage{}; 
+                deprecation.AlternatePackage = new V3SearchAlternatePackage(); 
 
                 if (document.Deprecation.AlternatePackage != null)
                 {
@@ -509,7 +509,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             if (HasValidDeprecation(document.Deprecation))
             {
                 var deprecation = new V2SearchDeprecation();
-                deprecation.AlternatePackage = new V2SearchAlternatePackage { };
+                deprecation.AlternatePackage = new V2SearchAlternatePackage();
 
                 if (document.Deprecation.AlternatePackage != null)
                 {
