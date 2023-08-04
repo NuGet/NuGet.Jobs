@@ -27,5 +27,14 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
         Task<string> LoadStringAsync(Uri resourceUri, CancellationToken cancellationToken);
         Uri ResolveUri(string relativeUri);
         Task SaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Updates the cache control header on the provided resource URI (blob). This method throws an exception if
+        /// the resource does not exist. If the Cache-Control is already set to the provided value, no update is made.
+        /// </summary>
+        /// <param name="resourceUri">The resource URI, this corresponds to a blob name.</param>
+        /// <param name="cacheControl">The Cache-Control header to set on the resource.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken);
     }
 }

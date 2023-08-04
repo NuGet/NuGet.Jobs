@@ -182,6 +182,29 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return files.Select(GetStorageListItem).AsEnumerable();
         }
 
+        public override async Task UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
+        {
+            string blobName = GetName(resourceUri);
+            CloudBlockBlob blob = GetBlockBlobReference(blobName);
+
+            await blob.FetchAttributesAsync(
+                accessCondition: null,
+                options: null,
+                operationContext: null,
+                cancellationToken: cancellationToken);
+
+            if (blob.Properties.CacheControl != cacheControl)
+            {
+                blob.Properties.CacheControl = cacheControl;
+
+                await blob.SetPropertiesAsync(
+                    accessCondition: AccessCondition.GenerateIfMatchCondition(blob.Properties.ETag),
+                    options: null,
+                    operationContext: null,
+                    cancellationToken);
+            }
+        }
+
         private StorageListItem GetStorageListItem(IListBlobItem listBlobItem)
         {
             var lastModified = (listBlobItem as CloudBlockBlob)?.Properties.LastModified?.UtcDateTime;

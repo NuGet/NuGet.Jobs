@@ -19,12 +19,11 @@ namespace NuGet.Services.Metadata.Catalog
         protected List<CatalogItem> _batch;
         protected bool _open;
 
-        public CatalogWriterBase(IStorage storage, ICatalogGraphPersistence graphPersistence = null, CatalogContext context = null)
+        public CatalogWriterBase(IStorage storage, CatalogContext context = null)
         {
             Options.InternUris = false;
 
             Storage = storage;
-            GraphPersistence = graphPersistence;
             Context = context ?? new CatalogContext();
 
             _batch = new List<CatalogItem>();
@@ -41,8 +40,6 @@ namespace NuGet.Services.Metadata.Catalog
 
         public IStorage Storage { get; private set; }
 
-        public ICatalogGraphPersistence GraphPersistence { get; private set; }
-
         public Uri RootUri { get; private set; }
 
         public CatalogContext Context { get; private set; }
@@ -58,6 +55,7 @@ namespace NuGet.Services.Metadata.Catalog
 
             _batch.Add(item);
         }
+
         public Task<IEnumerable<Uri>> Commit(IGraph commitMetadata, CancellationToken cancellationToken)
         {
             return Commit(DateTime.UtcNow, commitMetadata, cancellationToken);
@@ -85,11 +83,24 @@ namespace NuGet.Services.Metadata.Catalog
 
             //  save index pages - this is abstract as the derived class determines the index pagination
 
-            IDictionary<string, CatalogItemSummary> pageEntries = await SavePages(commitId, commitTimeStamp, newItemEntries, cancellationToken);
+            var savePagesResult = await SavePages(commitId, commitTimeStamp, newItemEntries, cancellationToken);
 
             //  save index root
 
-            await SaveRoot(commitId, commitTimeStamp, pageEntries, commitMetadata, cancellationToken);
+            await SaveRoot(commitId, commitTimeStamp, savePagesResult.PageEntries, commitMetadata, cancellationToken);
+
+            // Only update the page cache control on the previous (finished) page after the root (index) has been saved.
+            // This prevents us from setting an aggressive, caching Cache-Control value on newly finished last page
+            // before the next page is actually committed to index. If saving the index fails and halts operation, we
+            // don't want that last page to have caching problems while this job retries another attempt at starting the
+            // next page.
+            if (savePagesResult.PreviousPageUri != null)
+            {
+                await Storage.UpdateCacheControlAsync(
+                    savePagesResult.PreviousPageUri,
+                    Context.FinishedPageCacheControl,
+                    cancellationToken);
+            }
 
             _batch.Clear();
 
@@ -172,7 +183,7 @@ namespace NuGet.Services.Metadata.Catalog
             return null;
         }
 
-        protected abstract Task<IDictionary<string, CatalogItemSummary>> SavePages(Guid commitId, DateTime commitTimeStamp, IDictionary<string, CatalogItemSummary> itemEntries, CancellationToken cancellationToken);
+        protected abstract Task<SavePagesResult> SavePages(Guid commitId, DateTime commitTimeStamp, IDictionary<string, CatalogItemSummary> itemEntries, CancellationToken cancellationToken);
 
         protected virtual StorageContent CreateIndexContent(IGraph graph, Uri type)
         {
@@ -322,38 +333,17 @@ namespace NuGet.Services.Metadata.Catalog
 
         private async Task SaveGraph(Uri resourceUri, IGraph graph, Uri typeUri, CancellationToken cancellationToken)
         {
-            if (GraphPersistence != null)
-            {
-                await GraphPersistence.SaveGraph(resourceUri, graph, typeUri, cancellationToken);
-            }
-            else
-            {
-                await Storage.SaveAsync(resourceUri, CreateIndexContent(graph, typeUri), cancellationToken);
-            }
+            await Storage.SaveAsync(resourceUri, CreateIndexContent(graph, typeUri), cancellationToken);
         }
 
         private async Task<IGraph> LoadGraph(Uri resourceUri, CancellationToken cancellationToken)
         {
-            if (GraphPersistence != null)
-            {
-                return await GraphPersistence.LoadGraph(resourceUri, cancellationToken);
-            }
-            else
-            {
-                return Utils.CreateGraph(resourceUri, await Storage.LoadStringAsync(resourceUri, cancellationToken));
-            }
+            return Utils.CreateGraph(resourceUri, await Storage.LoadStringAsync(resourceUri, cancellationToken));
         }
 
         protected Uri CreatePageUri(Uri baseAddress, string relativeAddress)
         {
-            if (GraphPersistence != null)
-            {
-                return GraphPersistence.CreatePageUri(baseAddress, relativeAddress);
-            }
-            else
-            {
-                return new Uri(baseAddress, relativeAddress + ".json");
-            }
+            return new Uri(baseAddress, relativeAddress + ".json");
         }
 
         private void CheckScheme(Uri resourceUri, IGraph graph)

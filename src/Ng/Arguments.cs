@@ -72,6 +72,8 @@ namespace Ng
 
         public const string SkipCreatedPackagesProcessing = "skipCreatedPackagesProcessing";
         public const string MaxPageSize = "maxPageSize";
+        public const string ItemCacheControl = "itemCacheControl";
+        public const string FinishedPageCacheControl = "finishedPageCacheControl";
         #endregion
 
         #region Monitoring

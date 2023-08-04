@@ -10,12 +10,19 @@ namespace NuGet.Services.Metadata.Catalog
 {
     public class CatalogContext
     {
-        ConcurrentDictionary<string, JObject> _jsonLdContext;
+        public const string NoStoreCacheControl = "no-store";
+
+        private readonly ConcurrentDictionary<string, JObject> _jsonLdContext;
 
         public CatalogContext()
         {
             _jsonLdContext = new ConcurrentDictionary<string, JObject>();
         }
+
+        public bool Append { get; set; } = true;
+        public int MaxPageSize { get; set; } = 1000;
+        public string ItemCacheControl { get; set; } = NoStoreCacheControl;
+        public string FinishedPageCacheControl { get; set; } = NoStoreCacheControl;
 
         public JObject GetJsonLdContext(string name, Uri type)
         {
