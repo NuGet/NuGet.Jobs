@@ -34,7 +34,6 @@ namespace NgTests
         private bool _isDisposed;
         private DateTime _feedLastCreated;
         private DateTime _feedLastEdited;
-        private DateTimeOffset _timestamp;
         private bool _hasFirstRunOnceAsyncBeenCalledBefore;
         private int _lastFeedEntriesCount;
         private readonly List<PackageOperation> _packageOperations;
