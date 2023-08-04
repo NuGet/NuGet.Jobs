@@ -166,9 +166,9 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         public abstract Task<IEnumerable<StorageListItem>> ListAsync(CancellationToken cancellationToken);
 
-        public virtual Task UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
+        public virtual Task<bool> UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(false);
         }
 
         public abstract bool Exists(string fileName);

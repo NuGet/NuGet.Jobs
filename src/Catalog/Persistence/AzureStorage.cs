@@ -182,7 +182,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return files.Select(GetStorageListItem).AsEnumerable();
         }
 
-        public override async Task UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
+        public override async Task<bool> UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
         {
             string blobName = GetName(resourceUri);
             CloudBlockBlob blob = GetBlockBlobReference(blobName);
@@ -202,6 +202,11 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     options: null,
                     operationContext: null,
                     cancellationToken);
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

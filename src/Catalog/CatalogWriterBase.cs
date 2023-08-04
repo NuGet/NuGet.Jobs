@@ -16,16 +16,18 @@ namespace NuGet.Services.Metadata.Catalog
 {
     public abstract class CatalogWriterBase : IDisposable
     {
+        protected readonly ITelemetryService _telemetryService;
         protected List<CatalogItem> _batch;
         protected bool _open;
 
-        public CatalogWriterBase(IStorage storage, CatalogContext context = null)
+        public CatalogWriterBase(IStorage storage, ITelemetryService telemetryService, CatalogContext context = null)
         {
             Options.InternUris = false;
 
             Storage = storage;
             Context = context ?? new CatalogContext();
 
+            _telemetryService = telemetryService;
             _batch = new List<CatalogItem>();
             _open = true;
 
@@ -96,10 +98,11 @@ namespace NuGet.Services.Metadata.Catalog
             // next page.
             if (savePagesResult.PreviousPageUri != null)
             {
-                await Storage.UpdateCacheControlAsync(
+                var updated = await Storage.UpdateCacheControlAsync(
                     savePagesResult.PreviousPageUri,
                     Context.FinishedPageCacheControl,
                     cancellationToken);
+                _telemetryService.TrackCacheControlUpdate(savePagesResult.PreviousPageUri, Context.FinishedPageCacheControl, updated);
             }
 
             _batch.Clear();

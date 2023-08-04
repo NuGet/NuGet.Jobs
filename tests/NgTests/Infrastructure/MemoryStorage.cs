@@ -147,18 +147,24 @@ namespace NgTests.Infrastructure
                 ListMock.ContainsKey(x) ? ListMock[x] : new StorageListItem(x, DateTime.UtcNow)));
         }
 
-        public override Task UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
+        public override Task<bool> UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken)
         {
             if (Content.TryGetValue(resourceUri, out StorageContent content))
             {
-                content.CacheControl = cacheControl;
+                if (content.CacheControl != cacheControl)
+                {
+                    content.CacheControl = cacheControl;
+                    return Task.FromResult(true);
+                }
+                else
+                {
+                    return Task.FromResult(false);
+                }
             }
             else
             {
                 throw new InvalidOperationException("Resource does not exist.");
             }
-
-            return Task.CompletedTask;
         }
 
         private void AssertAccessCondition(Uri resourceUri, AccessCondition accessCondition)

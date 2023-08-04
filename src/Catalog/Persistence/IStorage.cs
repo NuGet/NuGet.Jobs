@@ -35,6 +35,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
         /// <param name="resourceUri">The resource URI, this corresponds to a blob name.</param>
         /// <param name="cacheControl">The Cache-Control header to set on the resource.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        Task UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken);
+        /// <returns>True if the Cache-Control changes, false if the Cache-Control already matched the provided value.</returns>
+        Task<bool> UpdateCacheControlAsync(Uri resourceUri, string cacheControl, CancellationToken cancellationToken);
     }
 }

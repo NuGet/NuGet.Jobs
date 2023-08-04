@@ -13,16 +13,14 @@ namespace NuGet.Services.Metadata.Catalog
 {
     public class AppendOnlyCatalogWriter : CatalogWriterBase
     {
-        private readonly ITelemetryService _telemetryService;
         private bool _first;
 
         public AppendOnlyCatalogWriter(
             IStorage storage,
             ITelemetryService telemetryService,
             CatalogContext context = null)
-            : base(storage, context)
+            : base(storage, telemetryService, context)
         {
-            _telemetryService = telemetryService;
             _first = true;
         }
 
