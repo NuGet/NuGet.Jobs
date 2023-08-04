@@ -96,8 +96,8 @@ namespace Ng.Jobs
             Top = arguments.GetOrDefault(Arguments.CursorSize, 20);
             MaxPageSize = arguments.GetOrDefault(Arguments.MaxPageSize, Constants.MaxPageSize);
             SkipCreatedPackagesProcessing = arguments.GetOrDefault(Arguments.SkipCreatedPackagesProcessing, false);
-            ItemCacheControl = arguments.GetOrDefault<string>(Arguments.ItemCacheControl, CatalogContext.NoStoreCacheControl);
-            FinishedPageCacheControl = arguments.GetOrDefault<string>(Arguments.FinishedPageCacheControl, CatalogContext.NoStoreCacheControl);
+            ItemCacheControl = arguments.GetOrDefault<string>(Arguments.ItemCacheControl, Constants.NoStoreCacheControl);
+            FinishedPageCacheControl = arguments.GetOrDefault<string>(Arguments.FinishedPageCacheControl, Constants.NoStoreCacheControl);
 
             StorageFactory preferredPackageSourceStorageFactory = null;
 

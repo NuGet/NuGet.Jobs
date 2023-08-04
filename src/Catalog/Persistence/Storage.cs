@@ -70,7 +70,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             TraceExecutionTime(nameof(CopyAsync), sourceUri, stopwatch.ElapsedMilliseconds);
         }
 
-        public async Task SaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken)
+        public async virtual Task SaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken)
         {
             TraceMethod(nameof(SaveAsync), resourceUri);
 
