@@ -196,7 +196,7 @@ namespace Ng.Jobs
 
                     try
                     {
-                        if (lastDeleted > Constants.DateTimeMinValueUtc && false)
+                        if (lastDeleted > Constants.DateTimeMinValueUtc)
                         {
                             using (TelemetryService.TrackDuration(TelemetryConstants.DeletedPackagesSeconds))
                             {
