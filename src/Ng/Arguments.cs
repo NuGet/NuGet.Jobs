@@ -53,6 +53,7 @@ namespace Ng
         public const string PreferAlternatePackageSourceStorage = "preferAlternatePackageSourceStorage";
 
         public const string StorageUseServerSideCopy = "storageUseServerSideCopy";
+        public const string StorageInitializeContainer = "storageInitializeContainer";
 
         #endregion
 
@@ -152,6 +153,7 @@ namespace Ng
 
         public const string CertificateThumbprint = "certificateThumbprint";
         public const string ValidateCertificate = "validateCertificate";
+        public const string SendX5c = "sendX5c";
 
         public const string RefreshIntervalSec = "refreshIntervalSec";
         #endregion
