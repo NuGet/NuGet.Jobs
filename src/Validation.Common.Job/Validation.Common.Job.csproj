@@ -32,6 +32,7 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <PackageReference Include="NuGet.Services.ServiceBus" />
     <PackageReference Include="NuGet.Services.Storage" />
+    <PackageReference Include="NuGet.Services.Validation" />
   </ItemGroup>
 
   <ItemGroup>

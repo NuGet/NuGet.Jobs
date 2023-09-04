@@ -6,7 +6,7 @@
   <ItemGroup>
     <PackageVersion Include="Autofac" Version="4.9.1" />
     <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="4.4.0" />
-    <PackageVersion Include="Azure.Identity" Version="1.5.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.8.0" />
     <PackageVersion Include="Azure.Search.Documents" Version="11.4.0-beta.6" />
     <PackageVersion Include="Dapper.StrongName" Version="1.50.2" />
     <PackageVersion Include="dotNetRDF" Version="1.0.8.3533" />
@@ -53,6 +53,7 @@
     <PackageVersion Include="NuGet.Services.Status.Table" Version="$(ServerCommonPackageVersion)" />
     <PackageVersion Include="NuGet.Services.Storage" Version="$(ServerCommonPackageVersion)" />
     <PackageVersion Include="NuGet.Services.Testing.Entities" Version="$(ServerCommonPackageVersion)" />
+    <PackageVersion Include="NuGet.Services.Validation" Version="$(ServerCommonPackageVersion)" />
     <PackageVersion Include="NuGet.StrongName.Octokit" Version="0.32.0" />
     <PackageVersion Include="NuGet.StrongName.json-ld.net" Version="1.0.6" />
     <PackageVersion Include="NuGet.Versioning" Version="$(NuGetClientPackageVersion)" />
