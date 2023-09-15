@@ -373,6 +373,10 @@ The `ApplicationInsights_InstrumentationKey` setting is optional and can be remo
     "SemVer2RegistrationsBaseUrl": "https://apidev.nugettest.org/v3/registration5-gz-semver2/",
     "StorageConnectionString": "PLACEHOLDER",
     "StorageContainer": "v3-azuresearch-XXX"
+  },
+
+  "FeatureFlags": {
+    "ConnectionString": "PLACEHOLDER"
   }
 }
 ```
