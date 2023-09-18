@@ -1,0 +1,89 @@
+{
+  "@id": "http://example/data/2017.01.04.08.15.00/repositoryallattributes.0.1.0.json",
+  "@type": [
+    "PackageDetails",
+    "catalog:Permalink"
+  ],
+  "authors": "RepositoryAllAttributes",
+  "catalog:commitId": "4aee0ef4-a039-4460-bd5f-98f944e33289",
+  "catalog:commitTimeStamp": "2017-01-04T08:15:00Z",
+  "created": "2017-01-01T08:15:00Z",
+  "description": "RepositoryAllAttributes",
+  "id": "RepositoryAllAttributes",
+  "isPrerelease": false,
+  "lastEdited": "2017-01-02T08:15:00Z",
+  "listed": true,
+  "packageHash": "NXqTHnCuASnetyBmJ4RSKWPscxIA/OjPUlXuktd71K6x2HX+HrrbLr1raR47tezrwoekYj8Or19jtpfT8zz3OA==",
+  "packageHashAlgorithm": "SHA512",
+  "packageSize": 496,
+  "published": "2017-01-03T08:15:00Z",
+  "repository": {
+    "@id": "http://example/data/2017.01.04.08.15.00/repositoryallattributes.0.1.0.json#repository",
+    "@type": "Repository",
+    "branch": "main",
+    "commit": "5e425c7c3dbc8fbfcbafebdc0638babfa449f69f",
+    "type": "git",
+    "url": "https://github.com/NuGet/NuGet.Jobs"
+  },
+  "title": "RepositoryAllAttributes",
+  "verbatimVersion": "0.1.0",
+  "version": "0.1.0",
+  "packageEntries": [
+    {
+      "@id": "http://example/data/2017.01.04.08.15.00/repositoryallattributes.0.1.0.json#RepositoryAllAttributes.nuspec",
+      "@type": "PackageEntry",
+      "compressedLength": 302,
+      "fullName": "RepositoryAllAttributes.nuspec",
+      "length": 529,
+      "name": "RepositoryAllAttributes.nuspec"
+    }
+  ],
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "catalog": "http://schema.nuget.org/catalog#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dependencies": {
+      "@id": "dependency",
+      "@container": "@set"
+    },
+    "dependencyGroups": {
+      "@id": "dependencyGroup",
+      "@container": "@set"
+    },
+    "packageEntries": {
+      "@id": "packageEntry",
+      "@container": "@set"
+    },
+    "packageTypes": {
+      "@id": "packageType",
+      "@container": "@set"
+    },
+    "supportedFrameworks": {
+      "@id": "supportedFramework",
+      "@container": "@set"
+    },
+    "tags": {
+      "@id": "tag",
+      "@container": "@set"
+    },
+    "vulnerabilities": {
+      "@id": "vulnerability",
+      "@container": "@set"
+    },
+    "published": {
+      "@type": "xsd:dateTime"
+    },
+    "created": {
+      "@type": "xsd:dateTime"
+    },
+    "lastEdited": {
+      "@type": "xsd:dateTime"
+    },
+    "catalog:commitTimeStamp": {
+      "@type": "xsd:dateTime"
+    },
+    "reasons": {
+      "@container": "@set"
+    }
+  }
+}
