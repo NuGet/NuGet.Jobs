@@ -196,6 +196,7 @@ namespace NuGet.Services.AzureSearch
                 frameworks: frameworks,
                 tfms: tfms);
             _baseDocumentBuilder.PopulateMetadata(document, normalizedVersion, leaf);
+            PopulateRepositoryFromCatalog(document, leaf);
             PopulateDeprecationFromCatalog(document, leaf);
             PopulateVulnerabilitiesFromCatalog(document, leaf);
 
@@ -247,6 +248,7 @@ namespace NuGet.Services.AzureSearch
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
             PopulateIsExcludedByDefault(document, isExcludedByDefault);
+            PopulateRepositoryFromDb(document, package);
             PopulateDeprecationFromDb(document, package);
             PopulateVulnerabilitiesFromDb(document, package);
 
@@ -465,6 +467,23 @@ namespace NuGet.Services.AzureSearch
                             .ToList();
         }
 
+        private void PopulateRepositoryFromDb(SearchDocument.Full document, Package package)
+        {
+            if (package.RepositoryType == null
+                && package.RepositoryUrl == null)
+            {
+                return;
+            }
+
+            document.Repository = new RepositoryMetadata
+            {
+                Type = package.RepositoryType,
+                Url = package.RepositoryUrl,
+                Branch = null, // TODO: add to DB schema
+                Commit = null
+            };
+        }
+
         private static void PopulateDeprecationFromDb(
             SearchDocument.Full document,
             Package package)
@@ -489,6 +508,22 @@ namespace NuGet.Services.AzureSearch
                     Id = packageDeprecation.AlternatePackage.Id,
                     Range = string.IsNullOrWhiteSpace(packageDeprecation.AlternatePackage.Version) ? "*" : $"[{packageDeprecation.AlternatePackage.Version}, )"
                 }
+            };
+        }
+
+        private void PopulateRepositoryFromCatalog(SearchDocument.UpdateLatest document, PackageDetailsCatalogLeaf leaf)
+        {
+            if (leaf.Repository == null)
+            {
+                return;
+            }
+
+            document.Repository = new RepositoryMetadata
+            {
+                Type = leaf.Repository.Type,
+                Url = leaf.Repository.Url,
+                Branch = leaf.Repository.Branch,
+                Commit = leaf.Repository.Commit,
             };
         }
 

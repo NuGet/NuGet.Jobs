@@ -58,11 +58,17 @@ namespace NuGet.Protocol.Registration
         [JsonProperty("packageContent")]
         public string PackageContent { get; set; }
 
+        [JsonProperty("packageTypes")]
+        public List<PackageType> PackageTypes { get; set; }
+
         [JsonProperty("projectUrl")]
         public string ProjectUrl { get; set; }
 
         [JsonProperty("published")]
         public DateTimeOffset? Published { get; set; }
+
+        [JsonProperty("repository")]
+        public RepositoryMetadata Repository { get; set; }
 
         [JsonProperty("requireLicenseAcceptance")]
         public bool RequireLicenseAcceptance { get; set; }

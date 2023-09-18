@@ -164,21 +164,16 @@ namespace NuGet.Jobs.Catalog2Registration
             }
 
             [Fact]
-            public void PopulatesDeprecationProperties()
+            public void PopulatesRepositoryProperties()
             {
                 Hive = HiveType.SemVer2;
                 var leaf = V3Data.Leaf;
-                leaf.Deprecation = new PackageDeprecation
+                leaf.Repository = new RepositoryMetadata
                 {
-                    Message = "Don't use this for real.",
-                    Reasons = new List<string> { "Other", "Legacy" },
-                    Url = "https://catalog/#deprecation",
-                    AlternatePackage = new AlternatePackage
-                    {
-                        Id = "NuGet.Core",
-                        Range = "[2.8.6, )",
-                        Url = "https://catalog/#alternative"
-                    }
+                    Type = "git",
+                    Url = "https://github.com/NuGet/NuGet.Jobs",
+                    Branch = "main",
+                    Commit = "5e425c7c3dbc8fbfcbafebdc0638babfa449f69f"
                 };
 
                 Target.UpdateLeafItem(LeafItem, Hive, Id, leaf);
@@ -210,15 +205,13 @@ namespace NuGet.Jobs.Catalog2Registration
       }
     ],
     ""deprecation"": {
-      ""@id"": ""https://catalog/#deprecation"",
       ""@type"": ""deprecation"",
       ""alternatePackage"": {
-        ""@id"": ""https://catalog/#alternative"",
         ""@type"": ""alternatePackage"",
-        ""id"": ""NuGet.Core"",
-        ""range"": ""[2.8.6, )""
+        ""id"": ""test.alternatepackage"",
+        ""range"": ""[1.0.0, )""
       },
-      ""message"": ""Don't use this for real."",
+      ""message"": ""test message for test.alternatepackage-1.0.0"",
       ""reasons"": [
         ""Other"",
         ""Legacy""
@@ -235,6 +228,12 @@ namespace NuGet.Jobs.Catalog2Registration
     ""packageContent"": ""https://example/fc/windowsazure.storage/7.1.2-alpha/windowsazure.storage.7.1.2-alpha.nupkg"",
     ""projectUrl"": ""https://github.com/Azure/azure-storage-net"",
     ""published"": ""2017-01-03T00:00:00+00:00"",
+    ""repository"": {
+      ""type"": ""git"",
+      ""url"": ""https://github.com/NuGet/NuGet.Jobs"",
+      ""branch"": ""main"",
+      ""commit"": ""5e425c7c3dbc8fbfcbafebdc0638babfa449f69f""
+    },
     ""requireLicenseAcceptance"": true,
     ""summary"": ""Summary."",
     ""tags"": [
@@ -334,6 +333,12 @@ namespace NuGet.Jobs.Catalog2Registration
     ""packageContent"": ""https://example/fc/windowsazure.storage/7.1.2-alpha/windowsazure.storage.7.1.2-alpha.nupkg"",
     ""projectUrl"": ""https://github.com/Azure/azure-storage-net"",
     ""published"": ""2017-01-03T00:00:00+00:00"",
+    ""repository"": {
+      ""type"": ""git"",
+      ""url"": ""https://github.com/NuGet/NuGet.Jobs"",
+      ""branch"": ""main"",
+      ""commit"": ""5e425c7c3dbc8fbfcbafebdc0638babfa449f69f""
+    },
     ""requireLicenseAcceptance"": true,
     ""summary"": ""Summary."",
     ""tags"": [
@@ -654,6 +659,7 @@ namespace NuGet.Jobs.Catalog2Registration
                     "items[0].items[0].catalogEntry.licenseUrl",
                     "items[0].items[0].catalogEntry.packageContent",
                     "items[0].items[0].catalogEntry.projectUrl",
+                    "items[0].items[0].catalogEntry.repository.url",
                     "items[0].items[0].packageContent",
                 }.OrderBy(x => x).ToArray();
 
@@ -748,6 +754,7 @@ namespace NuGet.Jobs.Catalog2Registration
                     "items[0].catalogEntry.licenseUrl",
                     "items[0].catalogEntry.packageContent",
                     "items[0].catalogEntry.projectUrl",
+                    "items[0].catalogEntry.repository.url",
                     "items[0].packageContent",
                 }.OrderBy(x => x).ToArray();
 

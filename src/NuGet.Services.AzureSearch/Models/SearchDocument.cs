@@ -68,6 +68,7 @@ namespace NuGet.Services.AzureSearch
             public bool? IsLatestStable { get; set; }
             public bool? IsLatest { get; set; }
 
+            public RepositoryMetadata Repository { get; set; }
             public Deprecation Deprecation { get; set; }
             public List<Vulnerability> Vulnerabilities { get; set; }
         }
@@ -168,6 +169,14 @@ namespace NuGet.Services.AzureSearch
             public bool IsLatestStable { get; }
             public bool IsLatest { get; }
         }
+    }
+
+    public class RepositoryMetadata
+    {
+        public string Type { get; set; }
+        public string Url { get; set; }
+        public string Branch { get; set; }
+        public string Commit { get; set; }
     }
 
     public class Deprecation

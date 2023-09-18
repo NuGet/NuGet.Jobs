@@ -73,6 +73,9 @@ namespace NuGet.Protocol.Catalog
         [JsonProperty("releaseNotes")]
         public string ReleaseNotes { get; set; }
 
+        [JsonProperty("repository")]
+        public RepositoryMetadata Repository { get; set; }
+
         [JsonProperty("requireLicenseAcceptance")]
         public bool? RequireLicenseAcceptance { get; set; }
 

@@ -57,6 +57,8 @@ namespace NuGet.Services
             Tags = "Microsoft Azure Storage Table Blob File Queue Scalable windowsazureofficial",
             Title = "Windows Azure Storage",
             Version = "7.1.2.0-alpha+git",
+            RepositoryType = "git",
+            RepositoryUrl = "https://github.com/NuGet/NuGet.Jobs",
             Deprecations = new List<PackageDeprecation>
             {
                 new PackageDeprecation 
@@ -142,6 +144,13 @@ namespace NuGet.Services
             ProjectUrl = "https://github.com/Azure/azure-storage-net",
             Published = new DateTimeOffset(new DateTime(2017, 1, 3), TimeSpan.Zero),
             ReleaseNotes = "Release notes.",
+            Repository = new RepositoryMetadata
+            {
+                Type = "git",
+                Url = "https://github.com/NuGet/NuGet.Jobs",
+                Branch = "main",
+                Commit = "5e425c7c3dbc8fbfcbafebdc0638babfa449f69f"
+            },
             RequireLicenseAcceptance = true,
             Summary = "Summary.",
             Tags = new List<string> { "Microsoft", "Azure", "Storage", "Table", "Blob", "File", "Queue", "Scalable", "windowsazureofficial" },

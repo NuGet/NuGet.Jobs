@@ -400,6 +400,12 @@ namespace NuGet.Services.AzureSearch
       ],
       ""isLatestStable"": false,
       ""isLatest"": true,
+      ""repository"": {
+        ""type"": ""git"",
+        ""url"": ""https://github.com/NuGet/NuGet.Jobs"",
+        ""branch"": ""main"",
+        ""commit"": ""5e425c7c3dbc8fbfcbafebdc0638babfa449f69f""
+      },
       ""deprecation"": {
         ""alternatePackage"": {
           ""id"": ""test.alternatepackage"",
@@ -665,6 +671,25 @@ namespace NuGet.Services.AzureSearch
                 {
                     Assert.Contains(item, document.Frameworks);
                 }
+            }
+
+            [Fact]
+            public void CheckNullRepository()
+            {
+                var leaf = Data.Leaf;
+                leaf.Repository = null;
+
+                var document = _target.UpdateLatestFromCatalog(
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    normalizedVersion: Data.NormalizedVersion,
+                    fullVersion: Data.FullVersion,
+                    leaf: leaf,
+                    owners: Data.Owners);
+
+                Assert.Null(document.Repository);
             }
 
             [Fact]
@@ -971,6 +996,12 @@ namespace NuGet.Services.AzureSearch
       ],
       ""isLatestStable"": false,
       ""isLatest"": true,
+      ""repository"": {
+        ""type"": ""git"",
+        ""url"": ""https://github.com/NuGet/NuGet.Jobs"",
+        ""branch"": null,
+        ""commit"": null
+      },
       ""deprecation"": {
         ""alternatePackage"": {
           ""id"": ""test.alternatepackage"",
@@ -1176,6 +1207,28 @@ namespace NuGet.Services.AzureSearch
                 {
                     Assert.Contains(item, document.Frameworks);
                 }
+            }
+
+            [Fact]
+            public void CheckNullRepository()
+            {
+                var package = Data.PackageEntity;
+                package.RepositoryType = null;
+                package.RepositoryUrl = null;
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                Assert.Null(document.Repository);
             }
 
             [Fact]
