@@ -43,6 +43,40 @@
                 <xsl:with-param name="parent_fragment" select="'#packageTypes'" />
               </xsl:apply-templates>
             </xsl:when>
+			  
+            <xsl:when test="self::nuget:repository">
+              <ng:repository>
+                <ng:Repository>
+		          <xsl:attribute name="rdf:about">
+		            <xsl:value-of select="obj:LowerCase(concat($base, $path, $extension, '#repository'))" />
+		          </xsl:attribute>
+				  
+                  <xsl:if test="@type">
+                    <ng:type>
+                      <xsl:value-of select="normalize-space(@type)"/>
+                    </ng:type>
+                  </xsl:if>
+				  
+                  <xsl:if test="@url">
+                    <ng:url>
+                      <xsl:value-of select="normalize-space(@url)" />
+                    </ng:url>
+                  </xsl:if>
+				  
+                  <xsl:if test="@branch">
+                    <ng:branch>
+                      <xsl:value-of select="normalize-space(@branch)" />
+                    </ng:branch>
+                  </xsl:if>
+				  
+                  <xsl:if test="@commit">
+                    <ng:commit>
+                      <xsl:value-of select="normalize-space(@commit)" />
+                    </ng:commit>
+                  </xsl:if>
+				</ng:Repository>
+              </ng:repository>
+            </xsl:when>
 
             <xsl:when test="self::nuget:dependencies">
 

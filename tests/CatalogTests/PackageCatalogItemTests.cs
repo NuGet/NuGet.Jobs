@@ -39,6 +39,7 @@ namespace CatalogTests.Helpers
         [InlineData("PackageTypeWhiteSpaceVersion")]
         [InlineData("PackageWithReadmeOnlyNoType")]
         [InlineData("TestPackageReadmeFileWithFileType")]
+        [InlineData("RepositoryAllAttributes")]
         public void CreateContent_ProducesExpectedJson(string packageName)
         {
             // Arrange
