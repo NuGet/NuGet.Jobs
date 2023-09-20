@@ -1,12 +1,4 @@
 <Project>
-
-  <!-- NuGet dependencies shared across projects -->
-  <PropertyGroup>
-    <ServerCommonPackageVersion>2.112.0-jver-sb-8416075</ServerCommonPackageVersion>
-    <NuGetClientPackageVersion>6.6.1</NuGetClientPackageVersion>
-    <NuGetGalleryPackageVersion>4.4.5-jver-sb-8416138</NuGetGalleryPackageVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
