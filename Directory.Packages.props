@@ -2,9 +2,9 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <EnablePackageVersionOverride>false</EnablePackageVersionOverride>
-    <ServerCommonPackageVersion>2.113.0-jver-msal-8428984</ServerCommonPackageVersion>
+    <ServerCommonPackageVersion>2.113.0</ServerCommonPackageVersion>
     <NuGetClientPackageVersion>6.6.1</NuGetClientPackageVersion>
-    <NuGetGalleryPackageVersion>4.4.5-jver-msal-8429154</NuGetGalleryPackageVersion>
+    <NuGetGalleryPackageVersion>4.4.5-dev-8445918</NuGetGalleryPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Autofac" Version="4.9.1" />
