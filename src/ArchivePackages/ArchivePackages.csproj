@@ -4,7 +4,6 @@
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <OutputType>Exe</OutputType>
-    <AssemblyName>ArchivePackages</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="Scripts\*" />
