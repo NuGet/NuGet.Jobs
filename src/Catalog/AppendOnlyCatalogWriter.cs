@@ -81,11 +81,8 @@ namespace NuGet.Services.Metadata.Catalog
 
         private Uri GetPageUri(IDictionary<string, CatalogItemSummary> currentPageEntries, int newItemCount, out bool isExistingPage, out Uri previousPageUri)
         {
-            Tuple<int, Uri, int> latest = ExtractLatest(currentPageEntries);
-            int maxPageNumber = latest.Item1;
+            (var maxPageNumber, var latestUri, var latestCount) = ExtractLatest(currentPageEntries);
             int nextPageNumber = maxPageNumber + 1;
-            Uri latestUri = latest.Item2;
-            int latestCount = latest.Item3;
 
             isExistingPage = false;
             previousPageUri = null;

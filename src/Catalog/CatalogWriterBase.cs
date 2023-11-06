@@ -27,7 +27,7 @@ namespace NuGet.Services.Metadata.Catalog
             Storage = storage;
             Context = context ?? new CatalogContext();
 
-            _telemetryService = telemetryService;
+            _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _batch = new List<CatalogItem>();
             _open = true;
 

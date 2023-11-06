@@ -191,7 +191,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 accessCondition: null,
                 options: null,
                 operationContext: null,
-                cancellationToken: cancellationToken);
+                cancellationToken);
 
             if (blob.Properties.CacheControl != cacheControl)
             {
@@ -204,10 +204,8 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     cancellationToken);
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         private StorageListItem GetStorageListItem(IListBlobItem listBlobItem)
@@ -304,7 +302,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                         accessCondition, 
                         options: null, 
                         operationContext: null,
-                        cancellationToken: cancellationToken);
+                        cancellationToken);
 
                     Trace.WriteLine(string.Format("Saved compressed blob {0} to container {1}", blob.Uri.ToString(), _directory.Container.Name));
                 }
@@ -318,7 +316,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                         accessCondition: null,
                         options: null,
                         operationContext: null,
-                        cancellationToken: cancellationToken);
+                        cancellationToken);
                 }
 
                 Trace.WriteLine(string.Format("Saved uncompressed blob {0} to container {1}", blob.Uri.ToString(), _directory.Container.Name));
@@ -387,7 +385,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                         accessCondition: null,
                         options: null,
                         operationContext: null,
-                        cancellationToken: cancellationToken);
+                        cancellationToken);
 
                     originalStream.Seek(0, SeekOrigin.Begin);
 
@@ -435,10 +433,10 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
             CloudBlockBlob blob = GetBlockBlobReference(name);
             await blob.DeleteAsync(deleteSnapshotsOption: DeleteSnapshotsOption.IncludeSnapshots,
-                                   accessCondition: accessCondition,
+                                   accessCondition,
                                    options: null,
                                    operationContext: null,
-                                   cancellationToken: cancellationToken);
+                                   cancellationToken);
         }
 
         /// <summary>

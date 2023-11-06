@@ -94,10 +94,12 @@ namespace Ng
                 KeyVaultConfiguration keyVaultConfig;
                 if (useManagedIdentity)
                 {
-                    keyVaultConfig = new KeyVaultConfiguration(vaultName);
+                    var clientId = arguments.GetOrDefault<string>(Arguments.ClientId);
+                    keyVaultConfig = new KeyVaultConfiguration(vaultName, clientId);
                 }
                 else
                 {
+                    var tenantId = arguments.GetOrThrow<string>(Arguments.TenantId);
                     var clientId = arguments.GetOrThrow<string>(Arguments.ClientId);
                     var certificateThumbprint = arguments.GetOrThrow<string>(Arguments.CertificateThumbprint);
                     var storeName = arguments.GetOrDefault(Arguments.StoreName, StoreName.My);
@@ -106,7 +108,12 @@ namespace Ng
                     var sendX5c = arguments.GetOrDefault(Arguments.SendX5c, defaultValue: false);
 
                     var keyVaultCertificate = CertificateUtility.FindCertificateByThumbprint(storeName, storeLocation, certificateThumbprint, shouldValidateCert);
-                    keyVaultConfig = new KeyVaultConfiguration(vaultName, clientId, keyVaultCertificate, sendX5c);
+                    keyVaultConfig = new KeyVaultConfiguration(
+                        vaultName,
+                        tenantId,
+                        clientId, 
+                        keyVaultCertificate,
+                        sendX5c);
                 }
 
                 secretReader = new CachingSecretReader(new KeyVaultReader(keyVaultConfig),
