@@ -154,7 +154,7 @@ namespace Ng.Jobs
             {
                 _catalogStorage = catalogStorage;
                 _itemCacheControl = itemCacheControl;
-                this._logger = logger;
+                _logger = logger;
             }
 
             protected override async Task<bool> OnProcessBatchAsync(
