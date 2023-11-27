@@ -129,7 +129,8 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch.Integration
             _fixUpEvaluator = new DocumentFixUpEvaluator(
                 _versionListDataClient,
                 _leafFetcher,
-                output.GetLogger<DocumentFixUpEvaluator>());
+                output.GetLogger<DocumentFixUpEvaluator>(),
+                _hijackIndex);
 
             _commitCollectorUtility = new CommitCollectorUtility(
                 _catalogClient,
