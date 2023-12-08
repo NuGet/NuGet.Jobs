@@ -93,26 +93,14 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 }
             }
 
-            /*            if (!failedIdsForSearch.Any() && !failedIdsForHijack.Any())
-                        {
-                            _logger.LogInformation("No failed Merge operations against the Search index and Hijack index were found.");
-                            return DocumentFixUp.IsNotApplicable();
-                        } else if (failedIdsForSearch.Any()) {
 
-                            _logger.LogInformation(
-                                "{Count} package(s) had a Merge operation fail with 404 Not Found against the Search index.",
-                                failedIdsForSearch.Count);
-                            return await DocumentFixUpForSearchIndex(itemList, failedIdsForSearch);
-                        } else if (failedIdsForHijack.Any()) { 
+            if (!failedIdsForSearch.Any() && !failedIdsForHijack.Any())
+            {
+                _logger.LogInformation("No failed Merge operations against the Search index and Hijack index were found.");
+                return DocumentFixUp.IsNotApplicable();
+            }
 
-                            _logger.LogInformation(
-                                "{Count} package(s) had a Merge operation fail with 404 Not Found against the Hijack index.",
-                                failedIdsForHijack.Count);
-                            return await DocumentFixUpForHijackIndex(itemList, failedIdsForHijack);
-                        } else { 
-                            return DocumentFixUp.IsNotApplicable();
-                        }*/
-            var newItemList = new List<CatalogCommitItem>();
+                var newItemList = new List<CatalogCommitItem>();
             if (failedIdsForSearch.Any()) { 
 
                 _logger.LogInformation(
