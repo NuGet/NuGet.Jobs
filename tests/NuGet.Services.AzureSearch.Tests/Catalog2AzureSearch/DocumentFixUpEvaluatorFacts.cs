@@ -263,6 +263,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 VersionListClient = new Mock<IVersionListDataClient>();
                 LeafFetcher = new Mock<ICatalogLeafFetcher>();
                 Logger = output.GetLogger<DocumentFixUpEvaluator>();
+                HijackIndexClient = new Mock<ISearchClientWrapper>();
 
                 ItemList = new List<CatalogCommitItem>();
                 AllIndexActions = new ConcurrentBag<IdAndValue<IndexActions>>();
@@ -271,12 +272,14 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 Target = new DocumentFixUpEvaluator(
                     VersionListClient.Object,
                     LeafFetcher.Object,
-                    Logger);
+                    Logger,
+                    HijackIndexClient.Object);
             }
 
             public Mock<IVersionListDataClient> VersionListClient { get; }
             public Mock<ICatalogLeafFetcher> LeafFetcher { get; }
             public RecordingLogger<DocumentFixUpEvaluator> Logger { get; }
+            public Mock<ISearchClientWrapper> HijackIndexClient { get; }
             public List<CatalogCommitItem> ItemList { get; }
             public ConcurrentBag<IdAndValue<IndexActions>> AllIndexActions { get; }
             public List<IndexingResult> IndexingResults { get; }
