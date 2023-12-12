@@ -153,6 +153,10 @@
     <PackageReference Include="Autofac" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="NuGet.Build.Tasks.Pack">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="NuGet.Services.Incidents" />
     <PackageReference Include="NuGet.Services.Status" />
     <PackageReference Include="NuGet.Services.Status.Table" />
