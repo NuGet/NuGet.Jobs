@@ -142,9 +142,6 @@ Invoke-BuildStep 'Signing the binaries' {
     -ev +BuildErrors
 
 Invoke-BuildStep 'Creating artifacts' {
-        # We need a few projects to be published for sharing the common bits with other repos.
-        # We need symbols published for those, too. All other packages are deployment ones and
-        # don't need to be shared, hence no need for symbols for them
         $CsprojProjects =
             "src\Catalog\NuGet.Services.Metadata.Catalog.csproj",
             "src\Microsoft.PackageManagement.Search.Web\Microsoft.PackageManagement.Search.Web.csproj",
@@ -157,16 +154,32 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\Validation.Common.Job\Validation.Common.Job.csproj",
             "src\Validation.ScanAndSign.Core\Validation.ScanAndSign.Core.csproj",
             "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj",
-            "src\Validation.ContentScan.Core\Validation.ContentScan.Core.csproj"
+            "src\Validation.ContentScan.Core\Validation.ContentScan.Core.csproj",
+            "src\ArchivePackages\ArchivePackages.csproj",
+            "src\CopyAzureContainer\CopyAzureContainer.csproj",
+            "src\Gallery.CredentialExpiration\Gallery.CredentialExpiration.csproj",
+            "src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.csproj",
+            "src\NuGet.SupportRequests.Notifications\NuGet.SupportRequests.Notifications.csproj",
+            "src\PackageLagMonitor\Monitoring.PackageLag.csproj",
+            "src\Stats.AggregateCdnDownloadsInGallery\Stats.AggregateCdnDownloadsInGallery.csproj",
+            "src\Stats.CDNLogsSanitizer\Stats.CDNLogsSanitizer.csproj",
+            "src\Stats.CollectAzureCdnLogs\Stats.CollectAzureCdnLogs.csproj",
+            "src\Stats.CollectAzureChinaCDNLogs\Stats.CollectAzureChinaCDNLogs.csproj",
+            "src\Stats.CreateAzureCdnWarehouseReports\Stats.CreateAzureCdnWarehouseReports.csproj",
+            "src\Stats.ImportAzureCdnStatistics\Stats.ImportAzureCdnStatistics.csproj",
+            "src\Stats.RollUpDownloadFacts\Stats.RollUpDownloadFacts.csproj",
+            "src\StatusAggregator\StatusAggregator.csproj",
+            "src\Validation.PackageSigning.ProcessSignature\Validation.PackageSigning.ProcessSignature.csproj",
+            "src\Validation.PackageSigning.RevalidateCertificate\Validation.PackageSigning.RevalidateCertificate.csproj",
+            "src\Validation.PackageSigning.ValidateCertificate\Validation.PackageSigning.ValidateCertificate.csproj",
+            "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj",
+            "src\Validation.Symbols\Validation.Symbols.Job.csproj"
 
         $CsprojProjects | ForEach-Object {
             New-ProjectPackage (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch -Symbols
         }
 
         $NuspecProjects = `
-            "src\ArchivePackages\ArchivePackages.csproj", `
-            "src\CopyAzureContainer\CopyAzureContainer.csproj", `
-            "src\Gallery.CredentialExpiration\Gallery.CredentialExpiration.csproj", `
             "src\Gallery.Maintenance\Gallery.Maintenance.nuspec", `
             "src\Ng\Catalog2Dnx.nuspec", `
             "src\Ng\Catalog2icon.nuspec", `
@@ -181,26 +194,10 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\NuGet.Jobs.Catalog2Registration\NuGet.Jobs.Catalog2Registration.nuspec", `
             "src\NuGet.Jobs.Db2AzureSearch\NuGet.Jobs.Db2AzureSearch.nuspec", `
             "src\NuGet.Jobs.GitHubIndexer\NuGet.Jobs.GitHubIndexer.nuspec", `
-            "src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.csproj", `
             "src\NuGet.Services.Validation.Orchestrator\Validation.Orchestrator.nuspec", `
             "src\NuGet.Services.Validation.Orchestrator\Validation.SymbolsOrchestrator.nuspec", `
-            "src\NuGet.SupportRequests.Notifications\NuGet.SupportRequests.Notifications.csproj", `
-            "src\PackageLagMonitor\Monitoring.PackageLag.csproj", `
             "src\SplitLargeFiles\SplitLargeFiles.nuspec", `
-            "src\Stats.AggregateCdnDownloadsInGallery\Stats.AggregateCdnDownloadsInGallery.csproj", `
-            "src\Stats.CDNLogsSanitizer\Stats.CDNLogsSanitizer.csproj", `
-            "src\Stats.CollectAzureCdnLogs\Stats.CollectAzureCdnLogs.csproj", `
-            "src\Stats.CollectAzureChinaCDNLogs\Stats.CollectAzureChinaCDNLogs.csproj", `
-            "src\Stats.CreateAzureCdnWarehouseReports\Stats.CreateAzureCdnWarehouseReports.csproj", `
-            "src\Stats.ImportAzureCdnStatistics\Stats.ImportAzureCdnStatistics.csproj", `
-            "src\Stats.PostProcessReports\Stats.PostProcessReports.nuspec", `
-            "src\Stats.RollUpDownloadFacts\Stats.RollUpDownloadFacts.csproj", `
-            "src\StatusAggregator\StatusAggregator.csproj", `
-            "src\Validation.PackageSigning.ProcessSignature\Validation.PackageSigning.ProcessSignature.csproj", `
-            "src\Validation.PackageSigning.RevalidateCertificate\Validation.PackageSigning.RevalidateCertificate.csproj", `
-            "src\Validation.PackageSigning.ValidateCertificate\Validation.PackageSigning.ValidateCertificate.csproj", `
-            "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj", `
-            "src\Validation.Symbols\Validation.Symbols.Job.csproj"
+            "src\Stats.PostProcessReports\Stats.PostProcessReports.nuspec"
 
         Foreach ($Project in $NuspecProjects) {
             New-Package (Join-Path $PSScriptRoot "$Project") -Configuration $Configuration -BuildNumber $BuildNumber -Version $SemanticVersion -Branch $Branch
