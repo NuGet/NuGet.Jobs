@@ -8,6 +8,7 @@ using NuGet.Frameworks;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.Entities;
 using NuGetGallery;
+using NuGetGallery.Frameworks;
 
 namespace NuGet.Services.AzureSearch
 {
@@ -180,6 +181,9 @@ namespace NuGet.Services.AzureSearch
             var frameworks = GetFrameworksFromCatalogLeaf(leaf);
             var tfms = GetTfmsFromCatalogLeaf(leaf);
 
+            var computedFrameworks = GetComputedFrameworksFromCatalogLeaf(leaf);
+            var computedTfms = GetComputedTfmsFromCatalogLeaf(leaf);
+
             PopulateUpdateLatest(
                 document,
                 leaf.PackageId,
@@ -194,7 +198,9 @@ namespace NuGet.Services.AzureSearch
                 owners: owners,
                 packageTypes: packageTypes,
                 frameworks: frameworks,
-                tfms: tfms);
+                tfms: tfms,
+                computedFrameworks: computedFrameworks,
+                computedTfms: computedTfms);
             _baseDocumentBuilder.PopulateMetadata(document, normalizedVersion, leaf);
             PopulateDeprecationFromCatalog(document, leaf);
             PopulateVulnerabilitiesFromCatalog(document, leaf);
@@ -229,6 +235,13 @@ namespace NuGet.Services.AzureSearch
                                                 ? Array.Empty<string>()
                                                 : GetTfmsFromPackage(package.SupportedFrameworks);
 
+            var computedFrameworks = package.SupportedFrameworks == null
+                                                ? Array.Empty<string>()
+                                                : GetComputedFrameworksFromPackage(package.SupportedFrameworks);
+            var computedTfms = package.SupportedFrameworks == null
+                                                ? Array.Empty<string>()
+                                                : GetComputedTfmsFromPackage(package.SupportedFrameworks);
+
             PopulateUpdateLatest(
                 document,
                 packageId,
@@ -243,7 +256,9 @@ namespace NuGet.Services.AzureSearch
                 owners: owners,
                 packageTypes: packageTypes,
                 frameworks: frameworks,
-                tfms: tfms);
+                tfms: tfms,
+                computedFrameworks: computedFrameworks,
+                computedTfms: computedTfms);
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
             PopulateIsExcludedByDefault(document, isExcludedByDefault);
@@ -294,7 +309,9 @@ namespace NuGet.Services.AzureSearch
             string[] owners,
             string[] packageTypes,
             string[] frameworks,
-            string[] tfms)
+            string[] tfms,
+            string[] computedFrameworks,
+            string[] computedTfms)
         {
             PopulateVersions(
                 document,
@@ -310,6 +327,8 @@ namespace NuGet.Services.AzureSearch
             document.FullVersion = fullVersion;
             document.Frameworks = frameworks;
             document.Tfms = tfms;
+            document.ComputedFrameworks = computedFrameworks;
+            document.ComputedTfms = computedTfms;
 
             // If the package has explicit types, we will set them here.
             // Otherwise, we will treat the package as a "Depedency" type and fill in the explicit type.
@@ -386,8 +405,8 @@ namespace NuGet.Services.AzureSearch
         private static string[] GetFrameworksFromPackage(ICollection<PackageFramework> supportedFrameworks)
         {
             var tfms = supportedFrameworks
-                            .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
                             .Select(f => f.FrameworkName)
+                            .Where(f => f.IsSpecificFramework && !f.IsPCL)
                             .ToArray();
 
             return ParseFrameworkGenerations(tfms);
@@ -396,9 +415,37 @@ namespace NuGet.Services.AzureSearch
         private static string[] GetTfmsFromPackage(ICollection<PackageFramework> supportedFrameworks)
         {
             return supportedFrameworks
-                            .Where(f => f.FrameworkName.IsSpecificFramework && !f.FrameworkName.IsPCL)
-                            .Select(f => f.FrameworkName.GetShortFolderName())
+                            .Select(f => f.FrameworkName)
+                            .Where(f => f.IsSpecificFramework && !f.IsPCL)
+                            .Select(f => NormalizePlatformVersion(f))
+                            .Select(f => f.GetShortFolderName())
                             .ToArray();
+        }
+
+        private static string[] GetComputedFrameworksFromPackage(IEnumerable<PackageFramework> supportedFrameworks)
+        {
+            var assetTfms = supportedFrameworks
+                                .Select(f => f.FrameworkName);
+
+            var computedTfms = assetTfms
+                                    .Union(FrameworkCompatibilityService.GetCompatibleFrameworks(assetTfms)) // add computed TFMs
+                                    .Where(f => f.IsSpecificFramework && !f.IsPCL)
+                                    .ToArray();
+
+            return ParseFrameworkGenerations(computedTfms);
+        }
+
+        private static string[] GetComputedTfmsFromPackage(IEnumerable<PackageFramework> supportedFrameworks)
+        {
+            var assetTfms = supportedFrameworks
+                                .Select(f => f.FrameworkName)
+                                .Select(f => NormalizePlatformVersion(f));
+
+            return assetTfms
+                        .Union(FrameworkCompatibilityService.GetCompatibleFrameworks(assetTfms)) // add computed TFMs
+                        .Where(f => f.IsSpecificFramework && !f.IsPCL)
+                        .Select(f => f.GetShortFolderName())
+                        .ToArray();
         }
 
         private static string[] GetFrameworksFromCatalogLeaf(PackageDetailsCatalogLeaf leaf)
@@ -412,9 +459,35 @@ namespace NuGet.Services.AzureSearch
         private static string[] GetTfmsFromCatalogLeaf(PackageDetailsCatalogLeaf leaf)
         {
             return GetSupportedFrameworks(leaf)
+                            .Select(f => NormalizePlatformVersion(f))
                             .Select(f => f.GetShortFolderName())
                             .Where(f => f != null)
                             .ToArray();
+        }
+
+        private static string[] GetComputedFrameworksFromCatalogLeaf(PackageDetailsCatalogLeaf leaf)
+        {
+            var assetTfms = GetSupportedFrameworks(leaf);
+
+            var computedTfms = assetTfms
+                                    .Union(FrameworkCompatibilityService.GetCompatibleFrameworks(assetTfms)) // add computed TFMs
+                                    .Where(f => f.IsSpecificFramework && !f.IsPCL)
+                                    .ToArray();
+
+            return ParseFrameworkGenerations(computedTfms);
+        }
+
+        private static string[] GetComputedTfmsFromCatalogLeaf(PackageDetailsCatalogLeaf leaf)
+        {
+            var assetTfms = GetSupportedFrameworks(leaf)
+                                    .Select(f => NormalizePlatformVersion(f));
+
+            return assetTfms
+                        .Union(FrameworkCompatibilityService.GetCompatibleFrameworks(assetTfms)) // add computed TFMs
+                        .Where(f => f.IsSpecificFramework && !f.IsPCL)
+                        .Select(f => f.GetShortFolderName())
+                        .Where(f => f != null)
+                        .ToArray();
         }
 
         private static string[] ParseFrameworkGenerations(ICollection<NuGetFramework> tfms)
@@ -452,6 +525,17 @@ namespace NuGet.Services.AzureSearch
 
             return AssetFrameworkHelper.GetAssetFrameworks(leaf.PackageId, packageTypes, files)
                                                 .Where(f => f.IsSpecificFramework && !f.IsPCL);
+        }
+
+        // Any TFM with a target platform version, like 'net6.0-android31.0', will be normalized to 'net6.0-android' in the search index to provide greater coverage with filters.
+        private static NuGetFramework NormalizePlatformVersion(NuGetFramework framework)
+        {
+            if (!string.IsNullOrEmpty(framework.Platform) && (framework.PlatformVersion != FrameworkConstants.EmptyVersion))
+            {
+                framework = new NuGetFramework(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
+            }
+
+            return framework;
         }
 
         private static List<Packaging.Core.PackageType> GetPackageTypes(PackageDetailsCatalogLeaf leaf)
