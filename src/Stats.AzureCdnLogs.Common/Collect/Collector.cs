@@ -171,15 +171,15 @@ namespace Stats.AzureCdnLogs.Common.Collect
                     };
 
                     processingTime.Stop();
-                    var totalSeconds = processingTime.Elapsed.TotalSeconds;
+                    var totalSeconds = Math.Max(processingTime.Elapsed.TotalSeconds, 0.01);
                     var bytesRead = sourceStream.Position - sourceStartPosition;
                     var bytesWritten = targetStream.Position - targetStartPosition;
                     _logger.LogInformation("ProcessLogStream: Finished writing to the destination stream ({Filename}). " +
                         "{ReadLineCount} lines read ({ReadLinesPerSecond} lines/sec), {WriteLineCount} lines written ({WriteLinesPerSecond} lines/sec) in {TotalTime}. " +
                         "{BytesRead} bytes read ({BytesReadPreSecond} bytes/sec), {BytesWritten} bytes written ({BytesWrittenPerSecond} bytes/sec). ",
                         filename,
-                        rawLineNumber, (int)(rawLineNumber / totalSeconds), targetLineNumber, (int)(targetLineNumber / totalSeconds), processingTime.Elapsed,
-                        bytesRead, (int)(bytesRead / totalSeconds), bytesWritten, (int)(bytesWritten / totalSeconds));
+                        rawLineNumber, (long)(rawLineNumber / totalSeconds), targetLineNumber, (long)(targetLineNumber / totalSeconds), processingTime.Elapsed,
+                        bytesRead, (long)(bytesRead / totalSeconds), bytesWritten, (long)(bytesWritten / totalSeconds));
                 }
             }
             catch (Exception ex)
