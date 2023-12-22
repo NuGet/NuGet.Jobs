@@ -84,7 +84,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
-                ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, request.Frameworks, request.Tfms);
+                ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, request.Frameworks, request.Tfms, request.IncludeComputedFrameworks, request.FrameworkFilterMode);
             }
 
             return searchParameters;
@@ -100,7 +100,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             searchParameters.OrderBy.AddRange(ScoreDesc);
 
             ApplyPaging(searchParameters, request);
-            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, new List<string>(), new List<string>());
+            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, frameworks: new List<string>(), tfms: new List<string>());
 
             return searchParameters;
         }
@@ -114,7 +114,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             };
             searchParameters.OrderBy.AddRange(ScoreDesc);
 
-            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, new List<string>(), new List<string>());
+            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch, request.PackageType, frameworks: new List<string>(), tfms: new List<string>());
 
             switch (request.Type)
             {
@@ -150,7 +150,9 @@ namespace NuGet.Services.AzureSearch.SearchService
             bool isDefaultSearch,
             string packageType,
             IReadOnlyList<string> frameworks,
-            IReadOnlyList<string> tfms)
+            IReadOnlyList<string> tfms,
+            bool includeComputedFrameworks = true,
+            V2FrameworkFilterMode frameworkFilterMode = V2FrameworkFilterMode.All)
         {
             var searchFilters = GetSearchFilters(request);
 
@@ -168,15 +170,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 filterString += $" and {IndexFields.Search.FilterablePackageTypes}/any(p: p eq '{packageType.ToLowerInvariant()}')";
             }
 
-            if (frameworks != null)
-            {
-                filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Frameworks, frameworks);
-            }
-            
-            if (tfms != null)
-            {
-                filterString += GetFrameworksOrTfmsFilterString(IndexFields.Search.Tfms, tfms);
-            }
+            filterString += GetFrameworksAndTfmsFilterString(frameworks, tfms, includeComputedFrameworks, frameworkFilterMode);
 
             searchParameters.Filter = filterString;
         }
@@ -238,19 +232,59 @@ namespace NuGet.Services.AzureSearch.SearchService
         }
 
         /// <summary>
-        /// Constructs filter strings for both Frameworks and Tfms.
+        /// Constructs the filter string for Frameworks and Tfms.
         /// </summary>
-        /// <param name="indexField">Determines which field you are targeting
-        ///                          i.e. IndexFields.Search.Frameworks or IndexFields.Search.Tfms</param>
-        /// <param name="frameworks">List of a user's selected Frameworks or Tfms (validated and normalized)</param>
-        private string GetFrameworksOrTfmsFilterString(string indexField, IReadOnlyList<string> frameworks)
+        private string GetFrameworksAndTfmsFilterString(
+            IReadOnlyList<string> frameworks,
+            IReadOnlyList<string> tfms,
+            bool includeComputedFrameworks,
+            V2FrameworkFilterMode frameworkFilterMode)
         {
-            var filterStrings = frameworks
-                                    .Select(f => $"{indexField}/any(f: f eq '{f}')");
+            string filterString = " and (";
 
-            return filterStrings.Count() == 0
-                                ? String.Empty
-                                : " and (" + String.Join(" and ", filterStrings) + ")";
+            string andOr = (frameworkFilterMode == V2FrameworkFilterMode.All) ? "and" : "or";
+            bool isFilterEmpty = true;
+
+            if (frameworks != null)
+            {
+                string indexField = includeComputedFrameworks
+                                            ? IndexFields.Search.ComputedFrameworks
+                                            : IndexFields.Search.Frameworks;
+
+                IEnumerable<string> frameworkFilters = frameworks
+                                                            .Select(f => $"{indexField}/any(f: f eq '{f}')");
+
+                if (frameworkFilters.Any())
+                {
+                    filterString += "(" + String.Join($" {andOr} ", frameworkFilters) + ")";
+                    isFilterEmpty = false;
+                }
+            }
+
+            if (tfms != null)
+            {
+                string indexField = includeComputedFrameworks
+                                            ? IndexFields.Search.ComputedTfms
+                                            : IndexFields.Search.Tfms;
+
+                IEnumerable<string> tfmFilters = tfms
+                                                    .Select(f => $"{indexField}/any(f: f eq '{f}')");
+
+                if (tfmFilters.Any())
+                {
+                    if (!isFilterEmpty)
+                    {
+                        filterString += $" {andOr} ";
+                    }
+
+                    filterString += "(" + String.Join($" {andOr} ", tfmFilters) + ")";
+                    isFilterEmpty = false;
+                }
+            }
+
+            return isFilterEmpty
+                        ? String.Empty
+                        : filterString + ")";
         }
     }
 }
