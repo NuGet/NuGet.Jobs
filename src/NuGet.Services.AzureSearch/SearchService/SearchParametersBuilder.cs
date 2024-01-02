@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using NuGet.Packaging;
@@ -240,7 +241,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             bool includeComputedFrameworks,
             V2FrameworkFilterMode frameworkFilterMode)
         {
-            string filterString = " and (";
+            var filterString = new StringBuilder(" and (");
 
             string andOr = (frameworkFilterMode == V2FrameworkFilterMode.All) ? "and" : "or";
             bool isFilterEmpty = true;
@@ -256,7 +257,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 if (frameworkFilters.Any())
                 {
-                    filterString += "(" + String.Join($" {andOr} ", frameworkFilters) + ")";
+                    filterString.Append("(" + String.Join($" {andOr} ", frameworkFilters) + ")");
                     isFilterEmpty = false;
                 }
             }
@@ -274,17 +275,19 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     if (!isFilterEmpty)
                     {
-                        filterString += $" {andOr} ";
+                        filterString.Append($" {andOr} ");
                     }
 
-                    filterString += "(" + String.Join($" {andOr} ", tfmFilters) + ")";
+                    filterString.Append("(" + String.Join($" {andOr} ", tfmFilters) + ")");
                     isFilterEmpty = false;
                 }
             }
 
+            filterString.Append(")");
+
             return isFilterEmpty
                         ? String.Empty
-                        : filterString + ")";
+                        : filterString.ToString();
         }
     }
 }
