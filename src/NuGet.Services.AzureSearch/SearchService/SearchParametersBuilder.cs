@@ -243,7 +243,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         {
             var filterString = new StringBuilder(" and (");
 
-            string andOr = (frameworkFilterMode == V2FrameworkFilterMode.All) ? "and" : "or";
+            string andOr = (frameworkFilterMode == V2FrameworkFilterMode.All) ? " and " : " or ";
             bool isFilterEmpty = true;
 
             if (frameworks != null)
@@ -259,7 +259,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     filterString
                         .Append("(")
-                        .Append(string.Join($" {andOr} ", frameworkFilters))
+                        .Append(string.Join(andOr, frameworkFilters))
                         .Append(")");
 
                     isFilterEmpty = false;
@@ -279,12 +279,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     if (!isFilterEmpty)
                     {
-                        filterString.Append($" {andOr} ");
+                        filterString.Append(andOr);
                     }
 
                     filterString
                         .Append("(")
-                        .Append(string.Join($" {andOr} ", tfmFilters))
+                        .Append(string.Join(andOr, tfmFilters))
                         .Append(")");
 
                     isFilterEmpty = false;
@@ -294,7 +294,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             filterString.Append(")");
 
             return isFilterEmpty
-                        ? String.Empty
+                        ? string.Empty
                         : filterString.ToString();
         }
     }
