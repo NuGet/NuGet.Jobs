@@ -253,27 +253,9 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Theory]
-            [MemberData(nameof(FrameworkAndTfmFilters))]
-            public void FrameworkAndTfmFiltering(List<string> frameworks, List<string> tfms, string expectedFilterString, bool includeComputedFrameworks = false)
-            {
-                // arrange
-                var request = new V2SearchRequest
-                {
-                    Frameworks = frameworks,
-                    Tfms = tfms,
-                    IncludeComputedFrameworks = includeComputedFrameworks,
-                };
-
-                // act
-                var output = _target.V2Search(request, isDefaultSearch: false);
-
-                // assert
-                Assert.Equal($"searchFilters eq 'Default' and {expectedFilterString}", output.Filter);
-            }
-
-            [Theory]
+            [MemberData(nameof(FrameworkAndTfmCases))]
             [MemberData(nameof(ComputedFrameworkCases))]
-            public void ComputedFrameworkAndTfmFilters(List<string> frameworks, List<string> tfms, bool includeComputedFrameworks, string expectedFilterString)
+            public void FrameworkAndTfmFiltering(List<string> frameworks, List<string> tfms, string expectedFilterString, bool includeComputedFrameworks = false)
             {
                 // arrange
                 var request = new V2SearchRequest
@@ -628,7 +610,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 new object[] { "PackageType_With_Underscores" },
             };
 
-            public static IEnumerable<object[]> FrameworkAndTfmFilters => new[]
+            public static IEnumerable<object[]> FrameworkAndTfmCases => new[]
             {
                 new object[] {  new List<string> {"netstandard"},
                                 new List<string> {"net472"},
@@ -659,20 +641,20 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 new object[] {  new List<string> {"net", "netstandard"},
                                 new List<string> {"netcoreapp3.1"},
-                                true,
-                                "((computedFrameworks/any(f: f eq 'net') and computedFrameworks/any(f: f eq 'netstandard')) and (computedTfms/any(f: f eq 'netcoreapp3.1')))" },
+                                "((computedFrameworks/any(f: f eq 'net') and computedFrameworks/any(f: f eq 'netstandard')) and (computedTfms/any(f: f eq 'netcoreapp3.1')))",
+                                true },
                 new object[] {  new List<string> {"net", "netstandard"},
                                 new List<string> {"netcoreapp3.1"},
-                                false,
-                                "((frameworks/any(f: f eq 'net') and frameworks/any(f: f eq 'netstandard')) and (tfms/any(f: f eq 'netcoreapp3.1')))" },
+                                "((frameworks/any(f: f eq 'net') and frameworks/any(f: f eq 'netstandard')) and (tfms/any(f: f eq 'netcoreapp3.1')))",
+                                false },
                 new object[] {  new List<string> {"netframework"},
                                 new List<string> {"netstandard2.1", "net462"},
-                                true,
-                                "((computedFrameworks/any(f: f eq 'netframework')) and (computedTfms/any(f: f eq 'netstandard2.1') and computedTfms/any(f: f eq 'net462')))" },
+                                "((computedFrameworks/any(f: f eq 'netframework')) and (computedTfms/any(f: f eq 'netstandard2.1') and computedTfms/any(f: f eq 'net462')))",
+                                true },
                 new object[] {  new List<string> {"netframework"},
                                 new List<string> {"netstandard2.1", "net462"},
-                                false,
-                                "((frameworks/any(f: f eq 'netframework')) and (tfms/any(f: f eq 'netstandard2.1') and tfms/any(f: f eq 'net462')))" },
+                                "((frameworks/any(f: f eq 'netframework')) and (tfms/any(f: f eq 'netstandard2.1') and tfms/any(f: f eq 'net462')))",
+                                false },
             };
 
             public static IEnumerable<object[]> FrameworkFilterModeCases => new[]
