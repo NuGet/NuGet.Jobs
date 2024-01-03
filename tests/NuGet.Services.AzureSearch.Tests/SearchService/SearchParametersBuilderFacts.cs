@@ -265,7 +265,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 };
 
                 // act
-                var output = _target.V2Search(request, isDefaultSearch: It.IsAny<bool>());
+                var output = _target.V2Search(request, isDefaultSearch: false);
 
                 // assert
                 Assert.Equal($"searchFilters eq 'Default' and {expectedFilterString}", output.Filter);
@@ -284,7 +284,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 };
 
                 // act
-                var output = _target.V2Search(request, isDefaultSearch: It.IsAny<bool>());
+                var output = _target.V2Search(request, isDefaultSearch: false);
 
                 // assert
                 Assert.Equal($"searchFilters eq 'Default' and {expectedFilterString}", output.Filter);
@@ -304,7 +304,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 };
 
                 // act
-                var output = _target.V2Search(request, isDefaultSearch: It.IsAny<bool>());
+                var output = _target.V2Search(request, isDefaultSearch: false);
 
                 // assert
                 Assert.Equal($"searchFilters eq 'Default' and {expectedFilterString}", output.Filter);

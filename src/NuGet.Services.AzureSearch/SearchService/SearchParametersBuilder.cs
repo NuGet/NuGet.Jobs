@@ -257,7 +257,11 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 if (frameworkFilters.Any())
                 {
-                    filterString.Append("(" + String.Join($" {andOr} ", frameworkFilters) + ")");
+                    filterString
+                        .Append("(")
+                        .Append(string.Join($" {andOr} ", frameworkFilters))
+                        .Append(")");
+
                     isFilterEmpty = false;
                 }
             }
@@ -278,7 +282,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                         filterString.Append($" {andOr} ");
                     }
 
-                    filterString.Append("(" + String.Join($" {andOr} ", tfmFilters) + ")");
+                    filterString
+                        .Append("(")
+                        .Append(string.Join($" {andOr} ", tfmFilters))
+                        .Append(")");
+
                     isFilterEmpty = false;
                 }
             }
