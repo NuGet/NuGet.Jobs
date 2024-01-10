@@ -74,7 +74,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                     .Where(a => a.ActionType == IndexActionType.Merge)
                     .Where(a => notFoundKeys.Contains(a.Document.Key));
 
-                var failedMessagesHijack = pair
+                var failedMergedHijack = pair
                     .Value
                     .Hijack
                     .Where(a => a.ActionType == IndexActionType.Merge)
@@ -87,7 +87,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                     _logger.LogWarning("Package {PackageId} had a Merge operation fail with 404 Not Found.", pair.Id);
                 }
 
-                if (failedMessagesHijack.Any() && failedIdsForSearch.Add(pair.Id))
+                if (failedMergedHijack.Any() && failedIdsForSearch.Add(pair.Id))
                 {
                     _logger.LogWarning("Package {PackageId} had a Merge operation fail with 404 Not Found.", pair.Id);
                 }
@@ -100,7 +100,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 return DocumentFixUp.IsNotApplicable();
             }
 
-                var newItemList = new List<CatalogCommitItem>();
+            var newItemList = new List<CatalogCommitItem>();
             if (failedIdsForSearch.Any()) { 
 
                 _logger.LogInformation(
@@ -114,8 +114,8 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 _logger.LogInformation(
                     "{Count} package(s) had a Merge operation fail with 404 Not Found against the Hijack index.",
                     failedIdsForHijack.Count);
-                var hijackItemList = await DocumentFixUpForHijackIndex(itemList, failedIdsForSearch);
-                newItemList.AddRange(hijackItemList);
+                //var hijackItemList = await DocumentFixUpForHijackIndex(itemList, failedIdsForSearch);
+               // newItemList.AddRange(hijackItemList);
             }
 
             return DocumentFixUp.IsApplicable(newItemList);
