@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <EnablePackageVersionOverride>false</EnablePackageVersionOverride>
     <ServerCommonPackageVersion>2.115.0</ServerCommonPackageVersion>
-    <NuGetClientPackageVersion>6.6.1</NuGetClientPackageVersion>
+    <NuGetClientPackageVersion>6.9.1</NuGetClientPackageVersion>
     <NuGetGalleryPackageVersion>4.4.5-dev-8970351</NuGetGalleryPackageVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -76,7 +76,7 @@
     <PackageVersion Include="System.Text.Encodings.Web" Version="5.0.1" />
     <PackageVersion Include="System.Text.Json" Version="4.7.2" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-    <PackageVersion Include="Test.Utility" Version="6.4.2-rc.25" />
+    <PackageVersion Include="Test.Utility" Version="6.9.1-rc.3" />
     <PackageVersion Include="UAParser" Version="3.1.44" />
     <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
     <PackageVersion Include="xunit" Version="2.4.1" />
