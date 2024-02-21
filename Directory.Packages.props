@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <EnablePackageVersionOverride>false</EnablePackageVersionOverride>
-    <ServerCommonPackageVersion>2.115.0</ServerCommonPackageVersion>
+    <ServerCommonPackageVersion>2.117.0</ServerCommonPackageVersion>
     <NuGetClientPackageVersion>6.9.1</NuGetClientPackageVersion>
     <NuGetGalleryPackageVersion>4.4.5-dev-9113701</NuGetGalleryPackageVersion>
   </PropertyGroup>
