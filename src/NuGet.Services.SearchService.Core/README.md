@@ -145,7 +145,7 @@ includeComputedFrameworks | boolean | `true` to filter packages based on their e
 frameworkFilterMode       | string  | Values of `all` or `any` determining whether to show packages matching all of the specified frameworks and tfms filters, or any one of them
 luceneQuery               | bool    | `true` to treat a `q` starting with `id:` like `packageid:` (yes, it's silly, see [#7366](https://github.com/NuGet/NuGetGallery/issues/7366))
 testData                  | bool    | `true` to include packages owned by nuget.org test accounts
-debug                     | bool    | `true` to shows the raw Azure Search document and other diagnostic information
+debug                     | bool    | `true` to show the raw Azure Search document and other diagnostic information
 
 If no `q` is provided, all packages should be returned, within the boundaries imposed by skip and take.
 
