@@ -154,7 +154,7 @@ namespace Validation.PackageSigning.ValidateCertificate
             // determined to be invalid here.
             if (OnlyEndCertificateRevokedInInvalidChain(chain))
             {
-                _logger.LogInformation("Certificate is revoked.");
+                _logger.LogWarning("Certificate is revoked.");
                 return EndCertificateStatus.Revoked;
             }
 
