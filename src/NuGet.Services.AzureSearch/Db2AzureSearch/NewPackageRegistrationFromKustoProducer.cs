@@ -475,7 +475,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
     Identity,
     Created,
     IsListed,
-    IsSemVer2
+    IsSemVer2,
+    Published,
+    LastEdited
 | join kind=inner (
     {manifestsTable}
     | project
@@ -547,45 +549,53 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             {
                 while (dataSet.Read())
                 {
-                    var package = new Package();
-
-                    package.Created = dataSet.GetDateTime(dataSet.GetOrdinal("Created"));
-                    package.Listed = dataSet.GetBoolean(dataSet.GetOrdinal("IsListed"));
-                    package.SemVerLevelKey = dataSet.GetBoolean(dataSet.GetOrdinal("IsSemVer2")) ? SemVerLevelKey.SemVer2 : SemVerLevelKey.Unknown;
-                    // package.Published = dataSet.GetDateTime(dataSet.GetOrdinal("Published"));
-                    // package.LastEdited = dataSet.IsDBNull(dataSet.GetOrdinal("LastEdited")) ? (DateTime?)null : dataSet.GetDateTime(dataSet.GetOrdinal("LastEdited"));
-                    package.FlattenedAuthors = dataSet.GetString(dataSet.GetOrdinal("Authors"));
-                    package.Copyright = dataSet.GetString(dataSet.GetOrdinal("Copyright"));
-                    SetFlattenedDependencies(package, (JValue)dataSet[dataSet.GetOrdinal("DependencyGroups")]);
-                    package.Description = dataSet.GetString(dataSet.GetOrdinal("Description"));
-                    package.HasEmbeddedIcon = !string.IsNullOrEmpty(dataSet.GetString(dataSet.GetOrdinal("Icon")));
-                    package.IconUrl = dataSet.GetString(dataSet.GetOrdinal("IconUrl"));
-                    package.Id = dataSet.GetString(dataSet.GetOrdinal("Id"));
-                    package.Language = dataSet.GetString(dataSet.GetOrdinal("Language"));
-                    SetLicenseMetadata(package, (JValue)dataSet[dataSet.GetOrdinal("LicenseMetadata")]);
-                    package.LicenseUrl = dataSet.GetString(dataSet.GetOrdinal("LicenseUrl"));
-                    package.MinClientVersion = dataSet.GetString(dataSet.GetOrdinal("MinClientVersion"));
-                    var version = NuGetVersion.Parse(dataSet.GetString(dataSet.GetOrdinal("OriginalVersion")));
-                    package.Version = version.OriginalVersion;
-                    package.NormalizedVersion = version.ToNormalizedString();
-                    package.IsPrerelease = version.IsPrerelease;
-                    SetPackageTypes(package, (JValue)dataSet[dataSet.GetOrdinal("PackageTypes")]);
-                    package.ProjectUrl = dataSet.GetString(dataSet.GetOrdinal("ProjectUrl"));
-                    package.ReleaseNotes = dataSet.GetString(dataSet.GetOrdinal("ReleaseNotes"));
-                    package.RequiresLicenseAcceptance = dataSet.GetBoolean(dataSet.GetOrdinal("RequireLicenseAcceptance"));
-                    package.Summary = dataSet.GetString(dataSet.GetOrdinal("Summary"));
-                    package.Tags = dataSet.GetString(dataSet.GetOrdinal("Tags"));
-                    package.Title = dataSet.GetString(dataSet.GetOrdinal("Title"));
-                    SetSupportedFrameworks(package, (JValue)dataSet[dataSet.GetOrdinal("SupportedFrameworks")]);
-                    SetVulnerabilities(package, (JValue)dataSet[dataSet.GetOrdinal("Vulnerabilities")]);
-                    SetDeprecations(package, (JValue)dataSet[dataSet.GetOrdinal("Deprecations")]);
-                    package.PackageFileSize = dataSet.GetInt64(dataSet.GetOrdinal("Size"));
-                    package.Hash = dataSet.GetString(dataSet.GetOrdinal("SHA512"));
-                    package.HashAlgorithm = "SHA512";
-
-                    packages.Add(package);
-
                     lastIdentity = dataSet.GetString(dataSet.GetOrdinal("Identity"));
+
+                    try
+                    {
+                        var package = new Package();
+
+                        package.Created = dataSet.GetDateTime(dataSet.GetOrdinal("Created"));
+                        package.Listed = dataSet.GetBoolean(dataSet.GetOrdinal("IsListed"));
+                        package.SemVerLevelKey = dataSet.GetBoolean(dataSet.GetOrdinal("IsSemVer2")) ? SemVerLevelKey.SemVer2 : SemVerLevelKey.Unknown;
+                        package.Published = dataSet.GetDateTime(dataSet.GetOrdinal("Published"));
+                        package.LastEdited = dataSet.IsDBNull(dataSet.GetOrdinal("LastEdited")) ? (DateTime?)null : dataSet.GetDateTime(dataSet.GetOrdinal("LastEdited"));
+                        package.FlattenedAuthors = dataSet.GetString(dataSet.GetOrdinal("Authors"));
+                        package.Copyright = dataSet.GetString(dataSet.GetOrdinal("Copyright"));
+                        SetFlattenedDependencies(package, (JValue)dataSet[dataSet.GetOrdinal("DependencyGroups")]);
+                        package.Description = dataSet.GetString(dataSet.GetOrdinal("Description"));
+                        package.HasEmbeddedIcon = !string.IsNullOrEmpty(dataSet.GetString(dataSet.GetOrdinal("Icon")));
+                        package.IconUrl = dataSet.GetString(dataSet.GetOrdinal("IconUrl"));
+                        package.Id = dataSet.GetString(dataSet.GetOrdinal("Id"));
+                        package.Language = dataSet.GetString(dataSet.GetOrdinal("Language"));
+                        SetLicenseMetadata(package, (JValue)dataSet[dataSet.GetOrdinal("LicenseMetadata")]);
+                        package.LicenseUrl = dataSet.GetString(dataSet.GetOrdinal("LicenseUrl"));
+                        package.MinClientVersion = dataSet.GetString(dataSet.GetOrdinal("MinClientVersion"));
+                        var version = NuGetVersion.Parse(dataSet.GetString(dataSet.GetOrdinal("OriginalVersion")));
+                        package.Version = version.OriginalVersion;
+                        package.NormalizedVersion = version.ToNormalizedString();
+                        package.IsPrerelease = version.IsPrerelease;
+                        SetPackageTypes(package, (JValue)dataSet[dataSet.GetOrdinal("PackageTypes")]);
+                        package.ProjectUrl = dataSet.GetString(dataSet.GetOrdinal("ProjectUrl"));
+                        package.ReleaseNotes = dataSet.GetString(dataSet.GetOrdinal("ReleaseNotes"));
+                        package.RequiresLicenseAcceptance = dataSet.GetBoolean(dataSet.GetOrdinal("RequireLicenseAcceptance"));
+                        package.Summary = dataSet.GetString(dataSet.GetOrdinal("Summary"));
+                        package.Tags = dataSet.GetString(dataSet.GetOrdinal("Tags"));
+                        package.Title = dataSet.GetString(dataSet.GetOrdinal("Title"));
+                        SetSupportedFrameworks(package, (JValue)dataSet[dataSet.GetOrdinal("SupportedFrameworks")]);
+                        SetVulnerabilities(package, (JValue)dataSet[dataSet.GetOrdinal("Vulnerabilities")]);
+                        SetDeprecations(package, (JValue)dataSet[dataSet.GetOrdinal("Deprecations")]);
+                        package.PackageFileSize = dataSet.GetInt64(dataSet.GetOrdinal("Size"));
+                        package.Hash = dataSet.GetString(dataSet.GetOrdinal("SHA512"));
+                        package.HashAlgorithm = "SHA512";
+
+                        packages.Add(package);
+                    }
+                    catch
+                    {
+                        _logger.LogError("Failed to map Kusto data for {Identity} to a package entity. Kusto query: {Query}", lastIdentity, query);
+                        throw;
+                    }
                 }
             }
 
