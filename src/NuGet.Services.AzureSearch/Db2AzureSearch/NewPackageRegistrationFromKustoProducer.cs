@@ -168,9 +168,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 popularityTransfers);
         }
 
-        private static void EmitNewPackageRegistration(ConcurrentBag<NewPackageRegistration> allWork, HashSet<string> excludedPackages, Dictionary<string, long> transferredDownloads, SortedDictionary<string, SortedSet<string>> allOwners, string currentId, List<Package> currentPackages)
+        private void EmitNewPackageRegistration(ConcurrentBag<NewPackageRegistration> allWork, HashSet<string> excludedPackages, Dictionary<string, long> transferredDownloads, SortedDictionary<string, SortedSet<string>> allOwners, string currentId, List<Package> currentPackages)
         {
-            if (currentId is null)
+            if (currentId is null || ShouldSkipPackageRegistration(currentId))
             {
                 return;
             }
@@ -825,7 +825,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             return result;
         }
 
-        private bool ShouldSkipPackageRegistration(PackageRegistration packageRegistration)
+        private bool ShouldSkipPackageRegistration(string packageId)
         {
             // Capture the skip list to avoid reload issues.
             var skipPrefixes = _developmentOptions.Value.SkipPackagePrefixes;
@@ -836,7 +836,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
             foreach (var skipPrefix in skipPrefixes)
             {
-                if (packageRegistration.Id.StartsWith(skipPrefix, StringComparison.OrdinalIgnoreCase))
+                if (packageId.StartsWith(skipPrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
