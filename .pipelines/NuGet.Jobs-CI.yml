@@ -36,7 +36,7 @@ variables:
 - name: ArtifactsFolder
   value: $(NuGetJobsPath)\artifacts
 - name: NuGetJobsBranch
-  value: ${{ Build.SourceBranchName }}
+  value: $(Build.SourceBranchName)
 
 resources:
   repositories:
