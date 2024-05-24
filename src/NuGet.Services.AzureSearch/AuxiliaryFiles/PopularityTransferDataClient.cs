@@ -93,15 +93,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 var blobName = GetLatestIndexedBlobName();
                 _logger.LogInformation("Replacing the latest indexed popularity transfers from {BlobName}.", blobName);
 
-                var mappedAccessCondition = new AccessCondition
-                {
-                    IfNoneMatchETag = accessCondition.IfNoneMatchETag,
-                    IfMatchETag = accessCondition.IfMatchETag,
-                };
-
                 var blobReference = Container.GetBlobReference(blobName);
 
-                using (var stream = await blobReference.OpenWriteAsync(mappedAccessCondition))
+                using (var stream = await blobReference.OpenWriteAsync(accessCondition))
                 using (var streamWriter = new StreamWriter(stream))
                 using (var jsonTextWriter = new JsonTextWriter(streamWriter))
                 {

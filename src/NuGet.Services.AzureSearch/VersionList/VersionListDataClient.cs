@@ -53,7 +53,7 @@ namespace NuGet.Services.AzureSearch
             IAccessCondition accessCondition;
             try
             {
-                using (var stream = await blobReference.OpenReadAsync(AccessCondition.GenerateEmptyCondition()))
+                using (var stream = await blobReference.OpenReadAsync(AccessConditionWrapper.GenerateEmptyCondition()))
                 using (var streamReader = new StreamReader(stream))
                 using (var jsonTextReader = new JsonTextReader(streamReader))
                 {
@@ -89,12 +89,6 @@ namespace NuGet.Services.AzureSearch
 
                 _logger.LogInformation("Replacing the version list for package ID {PackageId}.", id);
 
-                var mappedAccessCondition = new AccessCondition
-                {
-                    IfNoneMatchETag = accessCondition.IfNoneMatchETag,
-                    IfMatchETag = accessCondition.IfMatchETag,
-                };
-
                 var blobReference = Container.GetBlobReference(GetFileName(id));
                 blobReference.Properties.ContentType = "application/json";
 
@@ -102,7 +96,7 @@ namespace NuGet.Services.AzureSearch
                 {
                     await blobReference.UploadFromStreamAsync(
                         stream,
-                        mappedAccessCondition);
+                        accessCondition);
                     return true;
                 }
                 catch (StorageException ex) when (ex.IsPreconditionFailedException())

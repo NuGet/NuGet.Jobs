@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage;
 using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.AuxiliaryFiles
@@ -12,21 +11,12 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
     {
         public static async Task<Stream> OpenReadAsync(this ISimpleCloudBlob blob, IAccessCondition accessCondition)
         {
-            return await blob.OpenReadAsync(MapAccessCondition(accessCondition));
+            return await blob.OpenReadAsync(accessCondition);
         }
 
         public static async Task<Stream> OpenWriteAsync(this ISimpleCloudBlob blob, IAccessCondition accessCondition)
         {
-            return await blob.OpenWriteAsync(MapAccessCondition(accessCondition));
-        }
-
-        private static AccessCondition MapAccessCondition(IAccessCondition accessCondition)
-        {
-            return new AccessCondition
-            {
-                IfNoneMatchETag = accessCondition.IfNoneMatchETag,
-                IfMatchETag = accessCondition.IfMatchETag,
-            };
+            return await blob.OpenWriteAsync(accessCondition);
         }
     }
 }

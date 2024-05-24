@@ -54,7 +54,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             IAccessCondition accessCondition;
             try
             {
-                using (var stream = await blobReference.OpenReadAsync(AccessCondition.GenerateEmptyCondition()))
+                using (var stream = await blobReference.OpenReadAsync(AccessConditionWrapper.GenerateEmptyCondition()))
                 {
                     accessCondition = AccessConditionWrapper.GenerateIfMatchCondition(blobReference.ETag);
                     ReadStream(stream, builder.Add);
@@ -91,7 +91,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                 var blobReference = Container.GetBlobReference(blobName);
 
-                using (var stream = await blobReference.OpenWriteAsync(AccessCondition.GenerateIfNotExistsCondition()))
+                using (var stream = await blobReference.OpenWriteAsync(AccessConditionWrapper.GenerateIfNotExistsCondition()))
                 using (var streamWriter = new StreamWriter(stream))
                 using (var jsonTextWriter = new JsonTextWriter(streamWriter))
                 {
@@ -110,15 +110,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 var blobName = GetLatestIndexedBlobName();
                 _logger.LogInformation("Replacing the latest indexed owners from {BlobName}.", blobName);
 
-                var mappedAccessCondition = new AccessCondition
-                {
-                    IfNoneMatchETag = accessCondition.IfNoneMatchETag,
-                    IfMatchETag = accessCondition.IfMatchETag,
-                };
-
                 var blobReference = Container.GetBlobReference(blobName);
 
-                using (var stream = await blobReference.OpenWriteAsync(mappedAccessCondition))
+                using (var stream = await blobReference.OpenWriteAsync(accessCondition))
                 using (var streamWriter = new StreamWriter(stream))
                 using (var jsonTextWriter = new JsonTextWriter(streamWriter))
                 {

@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Moq;
 using NuGetGallery;
 
 namespace NuGet.Services
@@ -31,9 +31,9 @@ namespace NuGet.Services
             _etag = Interlocked.Increment(ref _nextETag).ToString();
         }
 
-        public BlobProperties Properties { get; } = new CloudBlockBlob(new Uri("https://example/blob")).Properties;
+        public ICloudBlobProperties Properties { get; } = Mock.Of<ICloudBlobProperties>();
         public IDictionary<string, string> Metadata => throw new NotImplementedException();
-        public CopyState CopyState => throw new NotImplementedException();
+        public ICloudBlobCopyState CopyState => throw new NotImplementedException();
         public Uri Uri => throw new NotImplementedException();
         public string Name => throw new NotImplementedException();
         public DateTime LastModifiedUtc { get; private set; } = DateTime.UtcNow;
@@ -85,7 +85,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public Task DownloadToStreamAsync(Stream target, AccessCondition accessCondition)
+        public Task DownloadToStreamAsync(Stream target, IAccessCondition accessCondition)
         {
             throw new NotImplementedException();
         }
@@ -108,12 +108,12 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public string GetSharedAccessSignature(SharedAccessBlobPermissions permissions, DateTimeOffset? endOfAccess)
+        public string GetSharedAccessSignature(FileUriPermissions permissions, DateTimeOffset? endOfAccess)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<Stream> OpenReadAsync(AccessCondition accessCondition)
+        public async Task<Stream> OpenReadAsync(IAccessCondition accessCondition)
         {
             if (accessCondition.IfMatchETag != null || accessCondition.IfNoneMatchETag != null)
             {
@@ -149,7 +149,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public async Task<Stream> OpenWriteAsync(AccessCondition accessCondition)
+        public async Task<Stream> OpenWriteAsync(IAccessCondition accessCondition)
         {
             await Task.Yield();
 
@@ -159,7 +159,7 @@ namespace NuGet.Services
             });
         }
 
-        public Task SetMetadataAsync(AccessCondition accessCondition)
+        public Task SetMetadataAsync(IAccessCondition accessCondition)
         {
             throw new NotImplementedException();
         }
@@ -169,7 +169,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public Task SetPropertiesAsync(AccessCondition accessCondition)
+        public Task SetPropertiesAsync(IAccessCondition accessCondition)
         {
             throw new NotImplementedException();
         }
@@ -179,7 +179,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public Task StartCopyAsync(ISimpleCloudBlob source, AccessCondition sourceAccessCondition, AccessCondition destAccessCondition)
+        public Task StartCopyAsync(ISimpleCloudBlob source, IAccessCondition sourceAccessCondition, IAccessCondition destAccessCondition)
         {
             throw new NotImplementedException();
         }
@@ -189,7 +189,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public async Task UploadFromStreamAsync(Stream source, AccessCondition accessCondition)
+        public async Task UploadFromStreamAsync(Stream source, IAccessCondition accessCondition)
         {
             if (accessCondition.IfMatchETag != null && accessCondition.IfNoneMatchETag != null)
             {
@@ -210,7 +210,7 @@ namespace NuGet.Services
             UploadFromBytes(newBytes, accessCondition);
         }
 
-        private void UploadFromBytes(byte[] newBytes, AccessCondition accessCondition)
+        private void UploadFromBytes(byte[] newBytes, IAccessCondition accessCondition)
         {
             var newETag = Interlocked.Increment(ref _nextETag).ToString();
 

@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
 using NuGetGallery;
 using Xunit;
@@ -75,7 +74,7 @@ namespace NuGet.Services.AzureSearch
                     .Setup(x => x.ETag)
                     .Returns(etag);
                 _cloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(versionList));
 
                 var output = await _target.ReadAsync(_id);
@@ -107,7 +106,7 @@ namespace NuGet.Services.AzureSearch
             {
                 var expected = new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.InternalServerError }, "Fail.", null);
                 _cloudBlob
-                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()))
+                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()))
                     .ThrowsAsync(expected);
 
                 var actual = await Assert.ThrowsAsync<StorageException>(() => _target.TryReplaceAsync(_id, _versionList, _accessCondition.Object));
@@ -119,7 +118,7 @@ namespace NuGet.Services.AzureSearch
             public async Task ReturnsFalseForPreconditionFailed()
             {
                 _cloudBlob
-                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()))
+                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()))
                     .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.PreconditionFailed }, "Fail.", null));
 
                 var success = await _target.TryReplaceAsync(_id, _versionList, _accessCondition.Object);
@@ -145,7 +144,7 @@ namespace NuGet.Services.AzureSearch
                 _cloudBlob.Verify(
                     x => x.UploadFromStreamAsync(
                         It.IsAny<Stream>(),
-                        It.IsAny<AccessCondition>()),
+                        It.IsAny<IAccessCondition>()),
                     Times.Once);
             }
 
@@ -268,9 +267,9 @@ namespace NuGet.Services.AzureSearch
                     .Setup(x => x.GetBlobReference(It.IsAny<string>()))
                     .Returns(() => _cloudBlob.Object);
                 _cloudBlob
-                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()))
+                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()))
                     .Returns(Task.CompletedTask)
-                    .Callback<Stream, AccessCondition>((s, _) =>
+                    .Callback<Stream, IAccessCondition>((s, _) =>
                     {
                         using (s)
                         using (var buffer = new MemoryStream())
@@ -282,7 +281,7 @@ namespace NuGet.Services.AzureSearch
                         }
                     });
                 _cloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ThrowsAsync(new StorageException(
                         new RequestResult
                         {
@@ -292,7 +291,7 @@ namespace NuGet.Services.AzureSearch
                         inner: null));
                 _cloudBlob
                     .Setup(x => x.Properties)
-                    .Returns(new CloudBlockBlob(new Uri("https://example/blob")).Properties);
+                    .Returns(Mock.Of<ICloudBlobProperties>());
 
                 _target = new VersionListDataClient(
                     _cloudBlobClient.Object,

@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
 using Newtonsoft.Json;
 using NuGet.Protocol;
@@ -38,7 +37,7 @@ namespace NuGet.Jobs.Catalog2Registration
             public async Task ReturnsNullFor404()
             {
                 LegacyBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .Throws(new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.NotFound }, "Missing.", inner: null));
 
                 var index = await Target.ReadIndexOrNullAsync(HiveType.Legacy, "NuGet.Versioning");
@@ -79,8 +78,8 @@ namespace NuGet.Jobs.Catalog2Registration
                 container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
                 container.Verify(x => x.GetBlobReference("nuget.versioning/index.json"), Times.Once);
                 var blob = GetBlob(hive);
-                blob.Verify(x => x.OpenReadAsync(It.IsAny<AccessCondition>()), Times.Once);
-                blob.Verify(x => x.OpenReadAsync(It.Is<AccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
+                blob.Verify(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()), Times.Once);
+                blob.Verify(x => x.OpenReadAsync(It.Is<IAccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
                 Assert.Equal(blob.Object.Uri.AbsoluteUri, index.Url);
             }
         }
@@ -98,7 +97,7 @@ namespace NuGet.Jobs.Catalog2Registration
                     new RequestResult { HttpStatusCode = (int)HttpStatusCode.NotFound },
                     "Missing.",
                     inner: null);
-                LegacyBlob.Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>())).Throws(expected);
+                LegacyBlob.Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>())).Throws(expected);
                 var url = "https://example/reg/nuget.versioning/0.0.1/0.0.2.json";
 
                 var actual = await Assert.ThrowsAsync<StorageException>(
@@ -150,8 +149,8 @@ namespace NuGet.Jobs.Catalog2Registration
                 container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
                 container.Verify(x => x.GetBlobReference("nuget.versioning/0.0.1/0.0.2.json"), Times.Once);
                 var blob = GetBlob(hive);
-                blob.Verify(x => x.OpenReadAsync(It.IsAny<AccessCondition>()), Times.Once);
-                blob.Verify(x => x.OpenReadAsync(It.Is<AccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
+                blob.Verify(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()), Times.Once);
+                blob.Verify(x => x.OpenReadAsync(It.Is<IAccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
                 Assert.Equal(blob.Object.Uri.AbsoluteUri, index.Url);
             }
         }
@@ -174,8 +173,8 @@ namespace NuGet.Jobs.Catalog2Registration
                 Assert.Equal("{\"commitTimeStamp\":\"0001-01-01T00:00:00+00:00\",\"count\":0}", json);
                 LegacyContainer.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
                 LegacyContainer.Verify(x => x.GetBlobReference("nuget.versioning/index.json"), Times.Once);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.Is<AccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.Is<IAccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
                 GzippedContainer.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Never);
                 SemVer2Container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Never);
             }
@@ -187,9 +186,9 @@ namespace NuGet.Jobs.Catalog2Registration
                 ReplicaHives.Add(HiveType.SemVer2);
 
                 await Target.WriteIndexAsync(Hive, ReplicaHives, Id, Index);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                GzippedBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                SemVer2Blob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                GzippedBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                SemVer2Blob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
                 EntityBuilder.Verify(x => x.UpdateIndexUrls(It.IsAny<RegistrationIndex>(), It.IsAny<HiveType>(), It.IsAny<HiveType>()), Times.Exactly(3));
                 EntityBuilder.Verify(x => x.UpdateIndexUrls(Index, HiveType.Legacy, HiveType.Gzipped), Times.Once);
                 EntityBuilder.Verify(x => x.UpdateIndexUrls(Index, HiveType.Gzipped, HiveType.SemVer2), Times.Once);
@@ -242,12 +241,12 @@ namespace NuGet.Jobs.Catalog2Registration
                 LegacySegment.Setup(x => x.Results).Returns(() => new[] { LegacyBlob.Object });
 
                 await Target.WriteIndexAsync(Hive, ReplicaHives, Id, Index);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
                 LegacyContainer.Verify(
                     x => x.ListBlobsSegmentedAsync(
                         "nuget.versioning/index.json",
                         true,
-                        BlobListingDetails.Snapshots,
+                        ListingDetails.Snapshots,
                         2,
                         null,
                         null,
@@ -264,12 +263,12 @@ namespace NuGet.Jobs.Catalog2Registration
                 LegacySegment.Setup(x => x.Results).Returns(() => new[] { LegacyBlob.Object, LegacyBlob.Object });
 
                 await Target.WriteIndexAsync(Hive, ReplicaHives, Id, Index);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
                 LegacyContainer.Verify(
                     x => x.ListBlobsSegmentedAsync(
                         "nuget.versioning/index.json",
                         true,
-                        BlobListingDetails.Snapshots,
+                        ListingDetails.Snapshots,
                         2,
                         null,
                         null,
@@ -285,16 +284,16 @@ namespace NuGet.Jobs.Catalog2Registration
                 Config.EnsureSingleSnapshot = false;
 
                 await Target.WriteIndexAsync(Hive, ReplicaHives, Id, Index);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
                 LegacyContainer.Verify(
                     x => x.ListBlobsSegmentedAsync(
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<BlobListingDetails>(),
+                        It.IsAny<ListingDetails>(),
                         It.IsAny<int?>(),
-                        It.IsAny<BlobContinuationToken>(),
-                        It.IsAny<BlobRequestOptions>(),
-                        It.IsAny<OperationContext>(),
+                        It.IsAny<IBlobListContinuationToken>(),
+                        It.IsAny<TimeSpan?>(),
+                        It.IsAny<CloudBlobLocationMode?>(),
                         It.IsAny<CancellationToken>()),
                     Times.Never);
                 LegacyBlob.Verify(x => x.SnapshotAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -324,8 +323,8 @@ namespace NuGet.Jobs.Catalog2Registration
                 Assert.Equal("{\"commitTimeStamp\":\"0001-01-01T00:00:00+00:00\",\"count\":0}", json);
                 LegacyContainer.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
                 LegacyContainer.Verify(x => x.GetBlobReference("nuget.versioning/page/1.0.0/2.0.0.json"), Times.Once);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.Is<AccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.Is<IAccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
                 GzippedContainer.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Never);
                 SemVer2Container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Never);
             }
@@ -337,9 +336,9 @@ namespace NuGet.Jobs.Catalog2Registration
                 ReplicaHives.Add(HiveType.SemVer2);
 
                 await Target.WritePageAsync(Hive, ReplicaHives, Id, Lower, Upper, Page);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                GzippedBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                SemVer2Blob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                GzippedBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                SemVer2Blob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
                 EntityBuilder.Verify(x => x.UpdatePageUrls(It.IsAny<RegistrationPage>(), It.IsAny<HiveType>(), It.IsAny<HiveType>()), Times.Exactly(3));
                 EntityBuilder.Verify(x => x.UpdatePageUrls(Page, HiveType.Legacy, HiveType.Gzipped), Times.Once);
                 EntityBuilder.Verify(x => x.UpdatePageUrls(Page, HiveType.Gzipped, HiveType.SemVer2), Times.Once);
@@ -368,8 +367,8 @@ namespace NuGet.Jobs.Catalog2Registration
                 Assert.Equal("{}", json);
                 LegacyContainer.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
                 LegacyContainer.Verify(x => x.GetBlobReference("nuget.versioning/1.0.0.json"), Times.Once);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.Is<AccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.Is<IAccessCondition>(a => a.IfMatchETag == null && a.IfNoneMatchETag == null)), Times.Once);
                 GzippedContainer.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Never);
                 SemVer2Container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Never);
             }
@@ -382,9 +381,9 @@ namespace NuGet.Jobs.Catalog2Registration
 
                 await Target.WriteLeafAsync(Hive, ReplicaHives, Id, Version, Leaf);
 
-                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                GzippedBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
-                SemVer2Blob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()), Times.Once);
+                LegacyBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                GzippedBlob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
+                SemVer2Blob.Verify(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()), Times.Once);
                 EntityBuilder.Verify(x => x.UpdateLeafUrls(It.IsAny<RegistrationLeaf>(), It.IsAny<HiveType>(), It.IsAny<HiveType>()), Times.Exactly(3));
                 EntityBuilder.Verify(x => x.UpdateLeafUrls(Leaf, HiveType.Legacy, HiveType.Gzipped), Times.Once);
                 EntityBuilder.Verify(x => x.UpdateLeafUrls(Leaf, HiveType.Gzipped, HiveType.SemVer2), Times.Once);
@@ -516,41 +515,41 @@ namespace NuGet.Jobs.Catalog2Registration
                 LegacyContainer.Setup(x => x.GetBlobReference(It.IsAny<string>())).Returns(() => LegacyBlob.Object);
                 GzippedContainer.Setup(x => x.GetBlobReference(It.IsAny<string>())).Returns(() => GzippedBlob.Object);
                 SemVer2Container.Setup(x => x.GetBlobReference(It.IsAny<string>())).Returns(() => SemVer2Blob.Object);
-                LegacyBlob.Setup(x => x.Properties).Returns(new BlobProperties());
-                LegacyBlob.Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>())).ReturnsAsync(() => LegacyStream);
+                LegacyBlob.Setup(x => x.Properties).Returns(Mock.Of<ICloudBlobProperties>());
+                LegacyBlob.Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>())).ReturnsAsync(() => LegacyStream);
                 LegacyBlob.Setup(x => x.Uri).Returns(new Uri("https://example/reg/something.json"));
                 LegacyBlob
-                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()))
+                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()))
                     .Returns(Task.CompletedTask)
-                    .Callback<Stream, AccessCondition>((s, _) => s.CopyTo(LegacyStream));
+                    .Callback<Stream, IAccessCondition>((s, _) => s.CopyTo(LegacyStream));
                 LegacyBlob.Setup(x => x.ExistsAsync()).ReturnsAsync(true);
                 LegacyContainer
                     .Setup(x => x.ListBlobsSegmentedAsync(
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<BlobListingDetails>(),
+                        It.IsAny<ListingDetails>(),
                         It.IsAny<int?>(),
-                        It.IsAny<BlobContinuationToken>(),
-                        It.IsAny<BlobRequestOptions>(),
-                        It.IsAny<OperationContext>(),
+                        It.IsAny<IBlobListContinuationToken>(),
+                        It.IsAny<TimeSpan?>(),
+                        It.IsAny<CloudBlobLocationMode?>(),
                         It.IsAny<CancellationToken>()))
                     .Returns(() => Task.FromResult(LegacySegment.Object));
                 LegacySegment.Setup(x => x.Results).Returns(new List<ISimpleCloudBlob>());
-                GzippedBlob.Setup(x => x.Properties).Returns(new BlobProperties());
-                GzippedBlob.Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>())).ReturnsAsync(() => GzippedStream);
+                GzippedBlob.Setup(x => x.Properties).Returns(Mock.Of<ICloudBlobProperties>());
+                GzippedBlob.Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>())).ReturnsAsync(() => GzippedStream);
                 GzippedBlob.Setup(x => x.Uri).Returns(new Uri("https://example/reg-gz/something.json"));
                 GzippedBlob
-                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()))
+                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()))
                     .Returns(Task.CompletedTask)
-                    .Callback<Stream, AccessCondition>((s, _) => s.CopyTo(GzippedStream));
+                    .Callback<Stream, IAccessCondition>((s, _) => s.CopyTo(GzippedStream));
                 GzippedBlob.Setup(x => x.ExistsAsync()).ReturnsAsync(true);
-                SemVer2Blob.Setup(x => x.Properties).Returns(new BlobProperties());
-                SemVer2Blob.Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>())).ReturnsAsync(() => SemVer2Stream);
+                SemVer2Blob.Setup(x => x.Properties).Returns(Mock.Of<ICloudBlobProperties>());
+                SemVer2Blob.Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>())).ReturnsAsync(() => SemVer2Stream);
                 SemVer2Blob.Setup(x => x.Uri).Returns(new Uri("https://example/reg-gz-semver2/something.json"));
                 SemVer2Blob
-                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<AccessCondition>()))
+                    .Setup(x => x.UploadFromStreamAsync(It.IsAny<Stream>(), It.IsAny<IAccessCondition>()))
                     .Returns(Task.CompletedTask)
-                    .Callback<Stream, AccessCondition>((s, _) => s.CopyTo(SemVer2Stream));
+                    .Callback<Stream, IAccessCondition>((s, _) => s.CopyTo(SemVer2Stream));
                 SemVer2Blob.Setup(x => x.ExistsAsync()).ReturnsAsync(true);
 
                 SerializeToStream(LegacyStream, new Dictionary<string, string> { { "@id", LegacyBlob.Object.Uri.AbsoluteUri } });

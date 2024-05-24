@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch
@@ -62,8 +61,7 @@ namespace NuGet.Services.AzureSearch
             {
                 try
                 {
-                    var permissions = new BlobContainerPermissions { PublicAccess = BlobContainerPublicAccessType.Blob };
-                    await Container.CreateAsync(permissions);
+                    await Container.CreateAsync(enablePublicAccess: true);
                     containerCreated = true;
                 }
                 catch (StorageException ex) when (retryOnConflict && ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.Conflict)
@@ -86,7 +84,7 @@ namespace NuGet.Services.AzureSearch
 
         public async Task CreateIfNotExistsAsync()
         {
-            if (await Container.ExistsAsync(null, null))
+            if (await Container.ExistsAsync(null))
             {
                 _logger.LogInformation("Skipping creation of blob container {ContainerName} since it already exists.", _options.Value.StorageContainer);
             }

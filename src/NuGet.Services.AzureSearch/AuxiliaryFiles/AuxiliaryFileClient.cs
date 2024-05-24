@@ -66,7 +66,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                     var stopwatch = Stopwatch.StartNew();
                     var blob = Container.GetBlobReference(blobName);
-                    using (var stream = await blob.OpenReadAsync(AccessCondition.GenerateEmptyCondition()))
+                    using (var stream = await blob.OpenReadAsync(AccessConditionWrapper.GenerateEmptyCondition()))
                     using (var textReader = new StreamReader(stream))
                     using (var jsonReader = new JsonTextReader(textReader))
                     {

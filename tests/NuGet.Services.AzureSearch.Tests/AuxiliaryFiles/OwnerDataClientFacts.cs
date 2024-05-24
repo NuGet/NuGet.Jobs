@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -34,7 +33,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 var json = JsonConvert.SerializeObject(new Dictionary<string, string[]>());
                 CloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
 
                 var output = await Target.ReadLatestIndexedAsync();
@@ -53,7 +52,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             public async Task AllowsMissingBlob()
             {
                 CloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ThrowsAsync(new StorageException(
                         new RequestResult
                         {
@@ -91,7 +90,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     }
                 });
                 CloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
 
                 var ex = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -128,7 +127,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     },
                 });
                 CloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
 
                 var output = await Target.ReadLatestIndexedAsync();
@@ -170,7 +169,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     },
                 });
                 CloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
 
                 var output = await Target.ReadLatestIndexedAsync();
@@ -199,7 +198,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
   ""nuget.core"": [ ""microsoft"" ]
 }";
                 CloudBlob
-                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
 
                 var output = await Target.ReadLatestIndexedAsync();
@@ -447,7 +446,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     .Setup(x => x.ETag)
                     .Returns(ETag);
                 CloudBlob
-                    .Setup(x => x.OpenWriteAsync(It.IsAny<AccessCondition>()))
+                    .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>()))
                     .ReturnsAsync(() => new RecordingStream(bytes =>
                     {
                         SavedBytes.Add(bytes);
@@ -455,7 +454,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     }));
                 CloudBlob
                     .Setup(x => x.Properties)
-                    .Returns(new CloudBlockBlob(new Uri("https://example/blob")).Properties);
+                    .Returns(Mock.Of<ICloudBlobProperties>());
 
                 TelemetryService
                     .Setup(x => x.TrackReplaceLatestIndexedOwners(It.IsAny<int>()))
