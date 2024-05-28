@@ -5,12 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Search.Documents.Indexes.Models;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGet.Services.AzureSearch.ScoringProfiles;
 using NuGet.Services.AzureSearch.SearchService;
@@ -60,7 +58,7 @@ namespace NuGet.Services.AzureSearch
             {
                 EnableConflict();
 
-                await Assert.ThrowsAsync<StorageException>(() => _target.CreateAsync(retryOnConflict: false));
+                await Assert.ThrowsAsync<CloudBlobConflictException>(() => _target.CreateAsync(retryOnConflict: false));
             }
         }
 
@@ -100,7 +98,7 @@ namespace NuGet.Services.AzureSearch
                 EnableConflict();
                 _cloudBlobContainer.Setup(x => x.ExistsAsync(null)).ReturnsAsync(false);
 
-                await Assert.ThrowsAsync<StorageException>(() => _target.CreateIfNotExistsAsync());
+                await Assert.ThrowsAsync<CloudBlobConflictException>(() => _target.CreateIfNotExistsAsync());
             }
         }
 
@@ -162,13 +160,7 @@ namespace NuGet.Services.AzureSearch
             {
                 _cloudBlobContainer
                     .SetupSequence(x => x.CreateAsync(It.IsAny<bool>()))
-                    .Throws(new StorageException(
-                        new RequestResult
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.Conflict,
-                        },
-                        "Conflict.",
-                        inner: null))
+                    .Throws(new CloudBlobConflictException(null))
                     .Returns(Task.CompletedTask);
             }
 

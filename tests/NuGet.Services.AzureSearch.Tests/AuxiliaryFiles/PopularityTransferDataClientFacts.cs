@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -53,13 +51,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 CloudBlob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
-                    .ThrowsAsync(new StorageException(
-                        new RequestResult
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.NotModified,
-                        },
-                        message: "Not modified.",
-                        inner: null));
+                    .ThrowsAsync(new CloudBlobNotModifiedException(null));
 
                 var output = await Target.ReadLatestIndexedAsync(AccessCondition.Object, StringCache);
 
@@ -73,18 +65,10 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 CloudBlob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
-                    .ThrowsAsync(new StorageException(
-                        new RequestResult
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.NotFound,
-                        },
-                        message: "Not found.",
-                        inner: null));
+                    .ThrowsAsync(new CloudBlobNotFoundException(null));
 
-                var ex = await Assert.ThrowsAsync<StorageException>(
+                var ex = await Assert.ThrowsAsync<CloudBlobNotFoundException>(
                     () => Target.ReadLatestIndexedAsync(AccessCondition.Object, StringCache));
-
-                Assert.Equal((int)HttpStatusCode.NotFound, ex.RequestInformation.HttpStatusCode);
             }
 
             [Fact]

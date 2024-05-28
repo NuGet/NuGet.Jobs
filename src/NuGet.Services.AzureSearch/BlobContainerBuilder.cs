@@ -3,11 +3,9 @@
 
 using System;
 using System.Diagnostics;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch
@@ -64,7 +62,7 @@ namespace NuGet.Services.AzureSearch
                     await Container.CreateAsync(enablePublicAccess: true);
                     containerCreated = true;
                 }
-                catch (StorageException ex) when (retryOnConflict && ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.Conflict)
+                catch (CloudBlobConflictException) when (retryOnConflict)
                 {
                     if (waitStopwatch.Elapsed < TimeSpan.FromMinutes(5))
                     {

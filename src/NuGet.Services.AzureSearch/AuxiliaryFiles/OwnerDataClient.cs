@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGetGallery;
 
@@ -60,7 +58,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     ReadStream(stream, builder.Add);
                 }
             }
-            catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
+            catch (CloudBlobNotFoundException)
             {
                 accessCondition = AccessConditionWrapper.GenerateIfNotExistsCondition();
                 _logger.LogInformation("The blob {BlobName} does not exist.", blobName);

@@ -4,11 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGetGallery;
 
@@ -67,7 +65,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                         etag: blobReference.ETag);
                 }
             }
-            catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotModified)
+            catch (CloudBlobNotModifiedException)
             {
                 _logger.LogInformation("The blob {BlobName} has not changed.", blobName);
                 modified = false;

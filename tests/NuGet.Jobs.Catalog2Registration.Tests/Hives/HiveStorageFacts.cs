@@ -6,12 +6,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json;
 using NuGet.Protocol;
@@ -38,7 +36,7 @@ namespace NuGet.Jobs.Catalog2Registration
             {
                 LegacyBlob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
-                    .Throws(new StorageException(new RequestResult { HttpStatusCode = (int)HttpStatusCode.NotFound }, "Missing.", inner: null));
+                    .Throws(new CloudBlobNotFoundException(null));
 
                 var index = await Target.ReadIndexOrNullAsync(HiveType.Legacy, "NuGet.Versioning");
 
@@ -93,14 +91,11 @@ namespace NuGet.Jobs.Catalog2Registration
             [Fact]
             public async Task ThrowsFor404()
             {
-                var expected = new StorageException(
-                    new RequestResult { HttpStatusCode = (int)HttpStatusCode.NotFound },
-                    "Missing.",
-                    inner: null);
+                var expected = new CloudBlobNotFoundException(null);
                 LegacyBlob.Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>())).Throws(expected);
                 var url = "https://example/reg/nuget.versioning/0.0.1/0.0.2.json";
 
-                var actual = await Assert.ThrowsAsync<StorageException>(
+                var actual = await Assert.ThrowsAsync<CloudBlobNotFoundException>(
                     () => Target.ReadPageAsync(HiveType.Legacy, url));
                 Assert.Same(expected, actual);
             }

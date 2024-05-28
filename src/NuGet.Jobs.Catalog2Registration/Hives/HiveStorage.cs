@@ -158,7 +158,7 @@ namespace NuGet.Jobs.Catalog2Registration
 
                 return result;
             }
-            catch (StorageException ex) when (ex.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound)
+            catch (CloudBlobNotFoundException)
             {
                 _logger.LogInformation(
                     "No blob in container {Container} at path {Path} exists.",

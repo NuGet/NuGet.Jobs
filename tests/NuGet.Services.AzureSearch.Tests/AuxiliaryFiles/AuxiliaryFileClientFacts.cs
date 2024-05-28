@@ -2,11 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGet.Services.AzureSearch.Db2AzureSearch;
 using NuGetGallery;
@@ -55,16 +53,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 _blob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
-                    .ThrowsAsync(new StorageException(
-                        res: new RequestResult()
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.NotFound,
-                        },
-                        message: "Not so fast, buddy!",
-                        inner: null));
+                    .ThrowsAsync(new CloudBlobNotFoundException(null));
 
-                var exception = await Assert.ThrowsAsync<StorageException>(async () => await _target.LoadExcludedPackagesAsync());
-                Assert.True(exception.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound);
+                var exception = await Assert.ThrowsAsync<CloudBlobNotFoundException>(async () => await _target.LoadExcludedPackagesAsync());
             }
         }
 

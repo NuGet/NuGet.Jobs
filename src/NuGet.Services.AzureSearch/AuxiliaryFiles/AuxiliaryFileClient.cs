@@ -8,7 +8,6 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGetGallery;
@@ -80,7 +79,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                             stopwatch.Elapsed);
                     };
                 },
-                ex => ex is StorageException se && se.IsPreconditionFailedException(),
+                ex => ex is CloudBlobPreconditionFailedException,
                 maxRetries: 5,
                 initialWaitInterval: TimeSpan.Zero,
                 waitIncrement: TimeSpan.FromSeconds(10));

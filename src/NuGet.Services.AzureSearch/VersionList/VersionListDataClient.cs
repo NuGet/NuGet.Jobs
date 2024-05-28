@@ -4,12 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGetGallery;
 
@@ -62,7 +60,7 @@ namespace NuGet.Services.AzureSearch
 
                 accessCondition = AccessConditionWrapper.GenerateIfMatchCondition(blobReference.ETag);
             }
-            catch (StorageException ex) when (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.NotFound)
+            catch (CloudBlobGenericNotFoundException ex)
             {
                 data = new VersionListData(new Dictionary<string, VersionPropertiesData>());
                 accessCondition = AccessConditionWrapper.GenerateIfNotExistsCondition();
@@ -99,7 +97,7 @@ namespace NuGet.Services.AzureSearch
                         accessCondition);
                     return true;
                 }
-                catch (StorageException ex) when (ex.IsPreconditionFailedException())
+                catch (CloudBlobPreconditionFailedException ex)
                 {
                     _logger.LogWarning(ex, "Replacing the version list for {Id} failed due to access condition.", id);
                     return false;

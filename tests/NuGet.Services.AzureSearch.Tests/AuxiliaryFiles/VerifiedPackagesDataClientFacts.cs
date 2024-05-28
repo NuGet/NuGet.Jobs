@@ -5,11 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json;
 using NuGetGallery;
@@ -46,13 +44,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 CloudBlob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
-                    .ThrowsAsync(new StorageException(
-                        new RequestResult
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.NotModified,
-                        },
-                        message: "Not modified.",
-                        inner: null));
+                    .ThrowsAsync(new CloudBlobNotModifiedException(null));
 
                 var output = await Target.ReadLatestAsync(IAccessCondition.Object, StringCache);
 
@@ -64,18 +56,12 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             [Fact]
             public async Task RejectsMissingBlob()
             {
-                var expected = new StorageException(
-                    new RequestResult
-                    {
-                        HttpStatusCode = (int)HttpStatusCode.NotFound,
-                    },
-                    message: "Not found.",
-                    inner: null);
+                var expected = new CloudBlobNotFoundException(null);
                 CloudBlob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
                     .ThrowsAsync(expected);
 
-                var actual = await Assert.ThrowsAsync<StorageException>(
+                var actual = await Assert.ThrowsAsync<CloudBlobNotFoundException>(
                     () => Target.ReadLatestAsync(IAccessCondition.Object, StringCache));
                 Assert.Same(actual, expected);
             }

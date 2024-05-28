@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGetGallery;
 
@@ -126,13 +124,7 @@ namespace NuGet.Services
             {
                 if (!Exists)
                 {
-                    throw new StorageException(
-                        new RequestResult
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.NotFound,
-                        },
-                        "Not found.",
-                        inner: null);
+                    throw new CloudBlobNotFoundException(null);
                 }
 
                 return new MemoryStream(Bytes);

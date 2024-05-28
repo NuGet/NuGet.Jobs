@@ -6,11 +6,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -53,13 +51,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 CloudBlob
                     .Setup(x => x.OpenReadAsync(It.IsAny<IAccessCondition>()))
-                    .ThrowsAsync(new StorageException(
-                        new RequestResult
-                        {
-                            HttpStatusCode = (int)HttpStatusCode.NotFound,
-                        },
-                        message: "Not found.",
-                        inner: null));
+                    .ThrowsAsync(new CloudBlobNotFoundException(null));
 
                 var output = await Target.ReadLatestIndexedAsync();
 
