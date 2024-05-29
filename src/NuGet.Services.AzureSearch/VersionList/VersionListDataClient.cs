@@ -60,7 +60,7 @@ namespace NuGet.Services.AzureSearch
 
                 accessCondition = AccessConditionWrapper.GenerateIfMatchCondition(blobReference.ETag);
             }
-            catch (CloudBlobGenericNotFoundException ex)
+            catch (CloudBlobGenericNotFoundException)
             {
                 data = new VersionListData(new Dictionary<string, VersionPropertiesData>());
                 accessCondition = AccessConditionWrapper.GenerateIfNotExistsCondition();
