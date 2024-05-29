@@ -58,7 +58,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     ReadStream(stream, builder.Add);
                 }
             }
-            catch (CloudBlobNotFoundException)
+            catch (CloudBlobGenericNotFoundException)
             {
                 accessCondition = AccessConditionWrapper.GenerateIfNotExistsCondition();
                 _logger.LogInformation("The blob {BlobName} does not exist.", blobName);

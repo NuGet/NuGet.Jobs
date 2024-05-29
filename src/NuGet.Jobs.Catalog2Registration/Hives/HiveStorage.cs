@@ -6,13 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGet.Protocol;
 using NuGet.Protocol.Catalog;
@@ -158,7 +156,7 @@ namespace NuGet.Jobs.Catalog2Registration
 
                 return result;
             }
-            catch (CloudBlobNotFoundException)
+            catch (CloudBlobGenericNotFoundException)
             {
                 _logger.LogInformation(
                     "No blob in container {Container} at path {Path} exists.",
