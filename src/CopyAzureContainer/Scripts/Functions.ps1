@@ -9,7 +9,7 @@ Function Install-BackupV3Task
 
     #Action to run as
     $cmdexe = [system.environment]::getenvironmentvariable("ComSpec")
-    $STAction = New-ScheduledTaskAction -Execute $cmdexe -Argument "/c '$PSScriptRoot\backupv3storage.cmd'" -WorkingDirectory $PSScriptRoot
+    $STAction = New-ScheduledTaskAction -Execute $cmdexe -Argument "/c `"$PSScriptRoot\backupv3storage.cmd`"" -WorkingDirectory $PSScriptRoot
 
     #Configure when to stop the task and how long it can run for. In this example it does not stop on idle and uses the maximum possible duration by setting a timelimit of 0
     $STSettings = New-ScheduledTaskSettingsSet -DontStopOnIdleEnd -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
