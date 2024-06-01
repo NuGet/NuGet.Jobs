@@ -59,17 +59,24 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
 
             _logger.LogWarning("{Count} document action(s) failed with 404 Not Found.", notFoundKeys.Count);
 
-            // 2. Find all of the package IDs that were affected, only considering Merge operations against the Search
-            //    index. We ignore the the hijack index for now because we have only ever seen the problem in the Search
-            //    index.
+            // 2. Find all of the package IDs that were affected, considering Merge operations against the Search
+            //    and Hijack index.
             var failedIds = new HashSet<string>();
             foreach (var pair in allIndexActions.OrderBy(x => x.Id, StringComparer.OrdinalIgnoreCase))
             {
-                var failedMerges = pair
+                var failedMergesSearch = pair
                     .Value
                     .Search
                     .Where(a => a.ActionType == IndexActionType.Merge)
                     .Where(a => notFoundKeys.Contains(a.Document.Key));
+
+                var failedMessagesHijack = pair
+                    .Value
+                    .Hijack
+                    .Where(a => a.ActionType == IndexActionType.Merge)
+                    .Where(a => notFoundKeys.Contains(a.Document.Key)); 
+
+                var failedMerges = failedMergesSearch.Concat(failedMessagesHijack);
 
                 if (failedMerges.Any() && failedIds.Add(pair.Id))
                 {
@@ -79,7 +86,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
 
             if (!failedIds.Any())
             {
-                _logger.LogInformation("No failed Merge operations against the Search index were found.");
+                _logger.LogInformation("No failed Merge operations against the Search and Hijack index were found.");
                 return DocumentFixUp.IsNotApplicable();
             }
 
