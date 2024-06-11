@@ -106,7 +106,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public string GetSharedAccessSignature(FileUriPermissions permissions, DateTimeOffset? endOfAccess)
+        public Task<string> GetSharedAccessSignature(FileUriPermissions permissions, DateTimeOffset endOfAccess)
         {
             throw new NotImplementedException();
         }
@@ -136,7 +136,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public Task<Stream> OpenReadStreamAsync(TimeSpan serverTimeout, TimeSpan maxExecutionTime, CancellationToken cancellationToken)
+        public Task<Stream> OpenReadStreamAsync(TimeSpan serverTimeout, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
