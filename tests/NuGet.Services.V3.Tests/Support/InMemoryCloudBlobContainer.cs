@@ -55,7 +55,7 @@ namespace NuGet.Services
             bool useFlatBlobListing,
             ListingDetails blobListingDetails,
             int? maxResults,
-            IBlobListContinuationToken blobContinuationToken,
+            BlobListContinuationToken blobContinuationToken,
             TimeSpan? requestTimeout,
             CloudBlobLocationMode? cloudBlobLocationMode,
             CancellationToken cancellationToken)

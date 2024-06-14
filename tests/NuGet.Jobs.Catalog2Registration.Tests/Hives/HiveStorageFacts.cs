@@ -286,7 +286,7 @@ namespace NuGet.Jobs.Catalog2Registration
                         It.IsAny<bool>(),
                         It.IsAny<ListingDetails>(),
                         It.IsAny<int?>(),
-                        It.IsAny<IBlobListContinuationToken>(),
+                        It.IsAny<BlobListContinuationToken>(),
                         It.IsAny<TimeSpan?>(),
                         It.IsAny<CloudBlobLocationMode?>(),
                         It.IsAny<CancellationToken>()),
@@ -524,7 +524,7 @@ namespace NuGet.Jobs.Catalog2Registration
                         It.IsAny<bool>(),
                         It.IsAny<ListingDetails>(),
                         It.IsAny<int?>(),
-                        It.IsAny<IBlobListContinuationToken>(),
+                        It.IsAny<BlobListContinuationToken>(),
                         It.IsAny<TimeSpan?>(),
                         It.IsAny<CloudBlobLocationMode?>(),
                         It.IsAny<CancellationToken>()))
