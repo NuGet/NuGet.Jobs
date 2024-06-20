@@ -18,7 +18,7 @@ using NuGet.Protocol;
 
 namespace NuGet.Services.Metadata.Catalog.Persistence
 {
-    internal class AzureStorageMsi : Storage
+    public class AzureStorageMsi : Storage
     {
         private readonly bool _compressContent;
         private readonly BlobContainerClient _blobContainer;
