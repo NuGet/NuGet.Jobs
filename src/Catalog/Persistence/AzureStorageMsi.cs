@@ -25,18 +25,12 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
         private readonly IThrottle _throttle;
 
         public AzureStorageMsi(
-            BlobServiceClient blobService,
-            Uri baseAddress,
-            string containerName,
+            BlobContainerClient blobContainer,
             bool compressContent,
-            IThrottle throttle) : base(baseAddress)
+            IThrottle throttle) : base(blobContainer.Uri)
         {
+            _blobContainer = blobContainer ?? throw new ArgumentNullException(nameof(blobContainer));
             _compressContent = compressContent;
-            if (string.IsNullOrEmpty(containerName))
-            {
-                throw new ArgumentException($"{nameof(containerName)} should not be null or empty.");
-            }
-            _blobContainer = blobService.GetBlobContainerClient(containerName);
             _throttle = throttle ?? NullThrottle.Instance;
         }
 
@@ -68,7 +62,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             string name = GetName(resourceUri).TrimStart('/');
 
             var blob = _blobContainer.GetBlockBlobClient(name);
-            var properties = await blob.GetPropertiesAsync();
+            var properties = await blob.GetPropertiesAsync(cancellationToken: cancellationToken);
 
             await _throttle.WaitAsync();
             try
