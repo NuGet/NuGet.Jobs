@@ -1,0 +1,202 @@
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Azure;
+using Azure.Storage.Blobs.Specialized;
+using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs;
+using NuGet.Protocol;
+
+namespace NuGet.Services.Metadata.Catalog.Persistence
+{
+    internal class AzureStorageMsi : Storage
+    {
+        private readonly bool _compressContent;
+        private readonly BlobContainerClient _blobContainer;
+        private readonly IThrottle _throttle;
+
+        public AzureStorageMsi(
+            BlobServiceClient blobService,
+            Uri baseAddress,
+            string containerName,
+            bool compressContent,
+            IThrottle throttle) : base(baseAddress)
+        {
+            _compressContent = compressContent;
+            if (string.IsNullOrEmpty(containerName))
+            {
+                throw new ArgumentException($"{nameof(containerName)} should not be null or empty.");
+            }
+            _blobContainer = blobService.GetBlobContainerClient(containerName);
+            _throttle = throttle ?? NullThrottle.Instance;
+        }
+
+        public override bool Exists(string fileName)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<IEnumerable<StorageListItem>> ListAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task OnCopyAsync(Uri sourceUri, IStorage destinationStorage, Uri destinationUri, IReadOnlyDictionary<string, string> destinationProperties, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task OnDeleteAsync(Uri resourceUri, DeleteRequestOptions deleteRequestOptions, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override async Task<StorageContent> OnLoadAsync(Uri resourceUri, CancellationToken cancellationToken)
+        {
+            // the Azure SDK will treat a starting / as an absolute URL,
+            // while we may be working in a subdirectory of a storage container
+            // trim the starting slash to treat it as a relative path
+            string name = GetName(resourceUri).TrimStart('/');
+
+            var blob = _blobContainer.GetBlockBlobClient(name);
+            var properties = await blob.GetPropertiesAsync();
+
+            await _throttle.WaitAsync();
+            try
+            {
+                string content;
+
+                using (var originalStream = new MemoryStream())
+                {
+                    await blob.DownloadToAsync(originalStream, cancellationToken);
+
+                    originalStream.Seek(0, SeekOrigin.Begin);
+
+                    if (properties?.Value.ContentEncoding == "gzip")
+                    {
+                        using (var uncompressedStream = new GZipStream(originalStream, CompressionMode.Decompress))
+                        {
+                            using (var reader = new StreamReader(uncompressedStream))
+                            {
+                                content = await reader.ReadToEndAsync();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (var reader = new StreamReader(originalStream))
+                        {
+                            content = await reader.ReadToEndAsync();
+                        }
+                    }
+                }
+
+                return new StringStorageContentWithETag(content, properties?.Value.ETag.ToString());
+            }
+            catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
+            {
+                if (Verbose)
+                {
+                    Trace.WriteLine(string.Format("Can't load '{0}'. Blob doesn't exist", resourceUri));
+                }
+
+                return null;
+            }
+            finally
+            {
+                _throttle.Release();
+            }
+        }
+
+        protected override async Task OnSaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken)
+        {
+            string name = GetName(resourceUri);
+
+            var blob = _blobContainer.GetBlockBlobClient(name);
+            var properties = await blob.GetPropertiesAsync();
+            var headers = new BlobHttpHeaders
+            {
+                ContentType = content.ContentType,
+                CacheControl = content.CacheControl,
+                ContentDisposition = properties.Value.ContentDisposition,
+                ContentEncoding = properties.Value.ContentEncoding,
+                ContentHash = properties.Value.ContentHash
+            };
+
+            if (_compressContent)
+            {
+                headers.ContentEncoding = "gzip";
+
+                using (Stream stream = content.GetContentStream())
+                {
+                    var destinationStream = new MemoryStream();
+
+                    using (var compressionStream = new GZipStream(destinationStream, CompressionMode.Compress, true))
+                    {
+                        await stream.CopyToAsync(compressionStream);
+                    }
+
+                    destinationStream.Seek(0, SeekOrigin.Begin);
+                    await blob.SetHttpHeadersAsync(headers);
+                    await blob.UploadAsync(destinationStream, options: null, cancellationToken);
+
+                    Trace.WriteLine(string.Format("Saved compressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
+                }
+            }
+            else
+            {
+                using (var stream = content.GetContentStream())
+                {
+                    await blob.SetHttpHeadersAsync(headers);
+                    await blob.UploadAsync(stream, options: null, cancellationToken: cancellationToken);
+                }
+
+                Trace.WriteLine(string.Format("Saved uncompressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
+            }
+
+            await TryTakeBlobSnapshotAsync(blob);
+        }
+
+        private async Task<bool> TryTakeBlobSnapshotAsync(BlockBlobClient blob)
+        {
+            if (blob == null)
+            {
+                return false;
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                var blobs = _blobContainer.GetBlobs(
+                    BlobTraits.None,
+                    states: BlobStates.Snapshots,
+                    prefix: blob.Name);
+
+                //the above call will return at least one blob the original
+                if (blobs.Count() == 1)
+                {
+                    var response = await blob.CreateSnapshotAsync();
+                    stopwatch.Stop();
+                    Trace.WriteLine($"SnapshotCreated:milliseconds={stopwatch.ElapsedMilliseconds}:{blob.Uri.ToString()}:{response?.Value.Snapshot}");
+                }
+                return true;
+            }
+            catch (RequestFailedException e)
+            {
+                stopwatch.Stop();
+                Trace.WriteLine($"EXCEPTION:milliseconds={stopwatch.ElapsedMilliseconds}:CreateSnapshot: Failed to take the snapshot for blob {blob.Uri.ToString()}. Exception{e.ToString()}");
+                return false;
+            }
+        }
+    }
+}
