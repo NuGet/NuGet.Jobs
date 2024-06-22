@@ -74,6 +74,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         private readonly Uri _nupkgUri;
 
         private readonly Mock<ICorePackageService> _corePackageService;
+        private readonly UserCertificateValidator _userCertificateValidator;
         private readonly ProcessSignatureConfiguration _configuration;
         private readonly Mock<IOptionsSnapshot<ProcessSignatureConfiguration>> _optionsSnapshot;
         private readonly SignatureFormatValidator _formatValidator;
@@ -152,6 +153,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
             _corePackageService = new Mock<ICorePackageService>();
 
+            _userCertificateValidator = new UserCertificateValidator(
+                loggerFactory.CreateLogger<UserCertificateValidator>());
+
             _telemetryClient = new Mock<ITelemetryClient>();
             _telemetryService = new TelemetryService(_telemetryClient.Object);
 
@@ -184,6 +188,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _signaturePartsExtractor,
                 _packageFileService.Object,
                 _corePackageService.Object,
+                _userCertificateValidator,
                 _optionsSnapshot.Object,
                 _sasDefinitionConfigurationMock.Object,
                 _telemetryService,
@@ -2021,6 +2026,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _signaturePartsExtractor,
                 _packageFileService.Object,
                 _corePackageService.Object,
+                _userCertificateValidator,
                 _optionsSnapshot.Object,
                 _sasDefinitionConfigurationMock.Object,
                 _telemetryService,

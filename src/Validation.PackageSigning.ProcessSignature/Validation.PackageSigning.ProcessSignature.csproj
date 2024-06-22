@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
   <Import Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
   <Import Project="..\..\sign.thirdparty.props" />
@@ -49,6 +49,7 @@
     <Compile Include="ISignatureFormatValidator.cs" />
     <Compile Include="ISignaturePartsExtractor.cs" />
     <Compile Include="ISignatureValidator.cs" />
+    <Compile Include="IUserCertificateValidator.cs" />
     <Compile Include="MinimalSignatureVerificationProvider.cs" />
     <Compile Include="Configuration\ProcessSignatureConfiguration.cs" />
     <Compile Include="SignatureFormatValidator.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="SignatureValidatorResult.cs" />
     <Compile Include="Telemetry\ITelemetryService.cs" />
     <Compile Include="Telemetry\TelemetryService.cs" />
+    <Compile Include="UserCertificateValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

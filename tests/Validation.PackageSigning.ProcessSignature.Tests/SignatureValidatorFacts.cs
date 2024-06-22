@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -48,6 +50,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             private readonly Mock<IProcessorPackageFileService> _packageFileService;
             private readonly Uri _nupkgUri;
             private readonly SignatureValidator _target;
+            private readonly Mock<IUserCertificateValidator> _userCertificateValidator;
             private readonly Mock<IOptionsSnapshot<ProcessSignatureConfiguration>> _optionsSnapshot;
             private readonly Mock<IOptionsSnapshot<SasDefinitionConfiguration>> _sasDefinitionConfigurationMock;
             private readonly ProcessSignatureConfiguration _configuration;
@@ -99,6 +102,11 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     .Setup(x => x.GetReadAndDeleteUriAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>()))
                     .ReturnsAsync(() => _nupkgUri);
 
+                _userCertificateValidator = new Mock<IUserCertificateValidator>();
+                _userCertificateValidator
+                    .Setup(x => x.IsAcceptableSigningCertificate(It.IsAny<PackageRegistration>(), It.IsAny<X509Certificate2>()))
+                    .Returns<PackageRegistration, X509Certificate2>((pr, cert) => pr.Owners.Any(u => u.UserCertificates.Any(c => c.Certificate.Thumbprint == cert.ComputeSHA256Thumbprint())));
+
                 _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
                 _configuration = new ProcessSignatureConfiguration
                 {
@@ -112,7 +120,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _sasDefinitionConfigurationMock = new Mock<IOptionsSnapshot<SasDefinitionConfiguration>>();
                 _sasDefinitionConfigurationMock.Setup(x => x.Value).Returns(() => _sasDefinitionConfiguration);
 
-
                 _telemetryService = new Mock<ITelemetryService>();
 
                 _target = new SignatureValidator(
@@ -121,6 +128,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     _signaturePartsExtractor.Object,
                     _packageFileService.Object,
                     _corePackageService.Object,
+                    _userCertificateValidator.Object,
                     _optionsSnapshot.Object,
                     _sasDefinitionConfigurationMock.Object,
                     _telemetryService.Object,

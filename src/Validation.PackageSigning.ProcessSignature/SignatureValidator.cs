@@ -36,6 +36,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
         private readonly ISignaturePartsExtractor _signaturePartsExtractor;
         private readonly IProcessorPackageFileService _packageFileService;
         private readonly ICorePackageService _corePackageService;
+        private readonly IUserCertificateValidator _userCertificateValidator;
         private readonly IOptionsSnapshot<ProcessSignatureConfiguration> _configuration;
         private readonly SasDefinitionConfiguration _sasDefinitionConfiguration;
         private readonly ITelemetryService _telemetryService;
@@ -47,6 +48,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             ISignaturePartsExtractor signaturePartsExtractor,
             IProcessorPackageFileService packageFileService,
             ICorePackageService corePackageService,
+            IUserCertificateValidator userCertificateValidator,
             IOptionsSnapshot<ProcessSignatureConfiguration> configuration,
             IOptionsSnapshot<SasDefinitionConfiguration> sasDefinitionConfigurationAccessor,
             ITelemetryService telemetryService,
@@ -57,6 +59,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             _signaturePartsExtractor = signaturePartsExtractor ?? throw new ArgumentNullException(nameof(signaturePartsExtractor));
             _packageFileService = packageFileService ?? throw new ArgumentNullException(nameof(packageFileService));
             _corePackageService = corePackageService ?? throw new ArgumentNullException(nameof(corePackageService));
+            _userCertificateValidator = userCertificateValidator ?? throw new ArgumentNullException(nameof(userCertificateValidator));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _sasDefinitionConfiguration = (sasDefinitionConfigurationAccessor == null || sasDefinitionConfigurationAccessor.Value == null) ? new SasDefinitionConfiguration() : sasDefinitionConfigurationAccessor.Value;
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
@@ -638,18 +641,10 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             if (context.Signature?.Type == SignatureType.Author)
             {
                 var signingCertificate = context.Signature.SignerInfo.Certificate;
-                var signingFingerprint = signingCertificate.ComputeSHA256Thumbprint();
 
                 // Block packages with any unknown signing certificates.
-                if (!packageRegistration.IsAcceptableSigningCertificate(signingFingerprint))
+                if (!_userCertificateValidator.IsAcceptableSigningCertificate(packageRegistration, signingCertificate))
                 {
-                    _logger.LogWarning(
-                        "Signed package {PackageId} {PackageVersion} is blocked for validation {ValidationId} since it has an unknown certificate fingerprint: {UnknownFingerprint}",
-                        context.Message.PackageId,
-                        context.Message.PackageVersion,
-                        context.Message.ValidationId,
-                        signingFingerprint);
-
                     return await RejectAsync(
                         context,
                         new UnauthorizedCertificateFailure(signingCertificate.Thumbprint.ToLowerInvariant()));
