@@ -13,10 +13,12 @@ using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.Storage;
 using NuGet.Jobs.Validation.PackageSigning.Telemetry;
 using NuGet.Jobs.Validation.Storage;
+using NuGet.Services.Entities;
 using NuGet.Services.ServiceBus;
 using NuGet.Services.Storage;
 using NuGet.Services.Validation.PackageSigning.ProcessSignature;
 using NuGetGallery;
+using NuGetGallery.Diagnostics;
 using ProcessSignatureConfiguration = NuGet.Jobs.Validation.PackageSigning.Configuration.ProcessSignatureConfiguration;
 
 namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
@@ -72,6 +74,8 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             services.AddTransient<ISignatureValidator, SignatureValidator>();
         }
 
+        private const string UserCertificatesBindingKey = "user-certificates";
+
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder, IConfigurationRoot configurationRoot)
         {
             ConfigureDefaultSubscriptionProcessor(containerBuilder);
@@ -82,6 +86,27 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                     (pi, ctx) => pi.ParameterType == typeof(string),
                     (pi, ctx) => ValidatorName.PackageSignatureProcessor)
                 .As<IValidatorStateService>();
+
+            containerBuilder
+                .Register(c =>
+                {
+                    var options = c.Resolve<IOptionsSnapshot<ProcessSignatureConfiguration>>();
+                    return new CloudBlobClientWrapper(
+                        options.Value.UserCertificatesConnectionString,
+                        readAccessGeoRedundant: false);
+                })
+                .Keyed<ICloudBlobClient>(UserCertificatesBindingKey);
+            containerBuilder
+                .Register(c => new CloudBlobCoreFileStorageService(
+                    c.ResolveKeyed<ICloudBlobClient>(UserCertificatesBindingKey),
+                    c.Resolve<IDiagnosticsService>(),
+                    c.Resolve<ICloudBlobContainerInformationProvider>()))
+                .Keyed<ICoreFileStorageService>(UserCertificatesBindingKey);
+            containerBuilder
+                .Register(c => new CoreCertificateService(
+                    c.Resolve<IEntityRepository<Certificate>>(),
+                    c.ResolveKeyed<ICoreFileStorageService>(UserCertificatesBindingKey)))
+                .As<ICoreCertificateService>();
         }
     }
 }

@@ -49,6 +49,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             private readonly Mock<IProcessorPackageFileService> _packageFileService;
             private readonly Uri _nupkgUri;
             private readonly SignatureValidator _target;
+            private readonly Mock<ICoreCertificateService> _coreCertificateService;
             private readonly Mock<IUserCertificateValidator> _userCertificateValidator;
             private readonly Mock<IOptionsSnapshot<ProcessSignatureConfiguration>> _optionsSnapshot;
             private readonly Mock<IOptionsSnapshot<SasDefinitionConfiguration>> _sasDefinitionConfigurationMock;
@@ -101,6 +102,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     .Setup(x => x.GetReadAndDeleteUriAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>()))
                     .ReturnsAsync(() => _nupkgUri);
 
+                _coreCertificateService = new Mock<ICoreCertificateService>();
+
                 _userCertificateValidator = new Mock<IUserCertificateValidator>();
                 _userCertificateValidator
                     .Setup(x => x.ValidateCertificate(It.IsAny<PackageRegistration>(), It.IsAny<X509Certificate2>(), It.IsAny<X509Certificate2Collection>()))
@@ -135,6 +138,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     _signaturePartsExtractor.Object,
                     _packageFileService.Object,
                     _corePackageService.Object,
+                    _coreCertificateService.Object,
                     _userCertificateValidator.Object,
                     _optionsSnapshot.Object,
                     _sasDefinitionConfigurationMock.Object,
@@ -285,6 +289,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
             {
                 // Arrange
                 _packageStream = TestResources.GetResourceStream(TestResources.SignedPackageLeaf1);
+                var primarySignature = await TestResources.LoadPrimarySignatureAsync(TestResources.SignedPackageLeaf1);
                 TestUtility.RequireSignedPackage(
                     _corePackageService,
                     TestResources.SignedPackageLeafId,
@@ -306,6 +311,12 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // Assert
                 Validate(result, ValidationStatus.Succeeded, PackageSigningStatus.Valid);
                 Assert.Empty(result.Issues);
+                _coreCertificateService.Verify(x => x.AddCertificateAsync(
+                    It.Is<MemoryStream>(s => s.ToArray().SequenceEqual(primarySignature.SignerInfo.Certificate.RawData))), Times.Once);
+                _corePackageService.Verify(x => x.UpdatePackageSigningCertificateAsync(
+                    TestResources.SignedPackageLeafId,
+                    TestResources.SignedPackageLeaf1Version,
+                    TestResources.Leaf1Thumbprint), Times.Once);
             }
 
             [Fact]

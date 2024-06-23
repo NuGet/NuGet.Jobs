@@ -36,6 +36,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
         private readonly ISignaturePartsExtractor _signaturePartsExtractor;
         private readonly IProcessorPackageFileService _packageFileService;
         private readonly ICorePackageService _corePackageService;
+        private readonly ICoreCertificateService _coreCertificateService;
         private readonly IUserCertificateValidator _userCertificateValidator;
         private readonly IOptionsSnapshot<ProcessSignatureConfiguration> _configuration;
         private readonly SasDefinitionConfiguration _sasDefinitionConfiguration;
@@ -48,6 +49,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             ISignaturePartsExtractor signaturePartsExtractor,
             IProcessorPackageFileService packageFileService,
             ICorePackageService corePackageService,
+            ICoreCertificateService coreCertificateService,
             IUserCertificateValidator userCertificateValidator,
             IOptionsSnapshot<ProcessSignatureConfiguration> configuration,
             IOptionsSnapshot<SasDefinitionConfiguration> sasDefinitionConfigurationAccessor,
@@ -59,6 +61,7 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
             _signaturePartsExtractor = signaturePartsExtractor ?? throw new ArgumentNullException(nameof(signaturePartsExtractor));
             _packageFileService = packageFileService ?? throw new ArgumentNullException(nameof(packageFileService));
             _corePackageService = corePackageService ?? throw new ArgumentNullException(nameof(corePackageService));
+            _coreCertificateService = coreCertificateService ?? throw new ArgumentNullException(nameof(coreCertificateService));
             _userCertificateValidator = userCertificateValidator ?? throw new ArgumentNullException(nameof(userCertificateValidator));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _sasDefinitionConfiguration = (sasDefinitionConfigurationAccessor == null || sasDefinitionConfigurationAccessor.Value == null) ? new SasDefinitionConfiguration() : sasDefinitionConfigurationAccessor.Value;
@@ -594,6 +597,15 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
 
             if (context.Signature.Type == SignatureType.Author)
             {
+                // For certificate matching a pattern rather than a specific fingerprint, we need to introduce the
+                // certificate to the gallery database and blob storage. When the user is not using the certificate
+                // pattern feature, this method will be called when the .cer file is initially uploaded to the gallery
+                // prior to package upload and validation.
+                using (var certificateStream = new MemoryStream(signingCertificate.RawData))
+                {
+                    await _coreCertificateService.AddCertificateAsync(certificateStream);
+                }
+
                 await _corePackageService.UpdatePackageSigningCertificateAsync(
                     context.Message.PackageId,
                     context.Message.PackageVersion,

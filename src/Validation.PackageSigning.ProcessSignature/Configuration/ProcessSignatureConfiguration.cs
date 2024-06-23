@@ -41,5 +41,10 @@ namespace NuGet.Jobs.Validation.PackageSigning.Configuration
         /// such as description.
         /// </summary>
         public int MaxCertificateStringLength { get; set; } = 4000;
+
+        /// <summary>
+        /// The connection string for the user certificates blob storage, also used by the gallery.
+        /// </summary>
+        public string UserCertificatesConnectionString { get; set; }
     }
 }
