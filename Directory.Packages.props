@@ -63,7 +63,6 @@
     <PackageVersion Include="NuGet.Services.Storage" Version="$(ServerCommonPackageVersion)" />
     <PackageVersion Include="NuGet.Services.Testing.Entities" Version="$(ServerCommonPackageVersion)" />
     <PackageVersion Include="NuGet.Services.Validation" Version="$(ServerCommonPackageVersion)" />
-    <PackageVersion Include="NuGet.Services.Validation.Issues" Version="$(ServerCommonPackageVersion)" />
     <PackageVersion Include="NuGet.StrongName.json-ld.net" Version="1.0.6" />
     <PackageVersion Include="NuGet.StrongName.Octokit" Version="0.32.0" />
     <PackageVersion Include="NuGet.Versioning" Version="$(NuGetClientPackageVersion)" />
