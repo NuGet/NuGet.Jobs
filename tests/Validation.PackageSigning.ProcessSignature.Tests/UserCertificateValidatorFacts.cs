@@ -4,31 +4,43 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
-using Moq;
 using NuGet.Jobs.Validation.PackageSigning.ProcessSignature;
 using NuGet.Services.Entities;
+using NuGet.Services.Validation.Issues;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Validation.PackageSigning.ProcessSignature.Tests
 {
     public class UserCertificateValidatorFacts
     {
-        public class TheIsAcceptableSigningCertificateMethod
+        public class TheValidateCertificateMethod
         {
-            private readonly Package _package;
             private readonly PackageRegistration _packageRegistration;
             private readonly User _user;
             private readonly Certificate _certificate;
             private readonly X509Certificate2 _x509Certificate1;
             private readonly X509Certificate2 _x509Certificate2;
+            private readonly string _x509Certificate2Thumprint;
+            private readonly X509Certificate2Collection _collection;
             private readonly UserCertificateValidator _target;
+            private readonly X509Certificate2 _x509CertificateAzureTrustedSigning;
+            private readonly string _x509CertificateAzureTrustedSigningThumbprint;
+            private readonly X509Certificate2Collection _collectionAzureTrustedSigning;
 
-            public TheIsAcceptableSigningCertificateMethod()
+            public TheValidateCertificateMethod(ITestOutputHelper output)
             {
                 var signature1 = TestResources.LoadPrimarySignatureAsync(TestResources.SignedPackageLeaf1).Result;
                 var signature2 = TestResources.LoadPrimarySignatureAsync(TestResources.SignedPackageLeaf2).Result;
                 _x509Certificate1 = signature1.SignerInfo.Certificate;
                 _x509Certificate2 = signature2.SignerInfo.Certificate;
+                _x509Certificate2Thumprint = _x509Certificate2.ComputeSHA256Thumbprint();
+                _collection = new X509Certificate2Collection();
+
+                var azureTrustedSigningSignature = TestResources.LoadPrimarySignatureAsync(TestResources.AzureTrustedSigningSignedPackage).Result;
+                _x509CertificateAzureTrustedSigning = azureTrustedSigningSignature.SignerInfo.Certificate;
+                _x509CertificateAzureTrustedSigningThumbprint = _x509CertificateAzureTrustedSigning.ComputeSHA256Thumbprint();
+                _collectionAzureTrustedSigning = azureTrustedSigningSignature.SignedCms.Certificates;
 
                 _user = new User()
                 {
@@ -40,11 +52,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     Key = 2,
                     Id = "b"
                 };
-                _package = new Package()
-                {
-                    Key = 3,
-                    PackageRegistration = _packageRegistration
-                };
                 _certificate = new Certificate()
                 {
                     Key = 4,
@@ -53,50 +60,48 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _packageRegistration.Owners.Add(_user);
 
-                _target = new UserCertificateValidator(Mock.Of<ILogger<UserCertificateValidator>>());
+                var logger = new LoggerFactory()
+                    .AddXunit(output)
+                    .CreateLogger<UserCertificateValidator>();
+                _target = new UserCertificateValidator(logger);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WhenPackageRegistrationIsNull_Throws()
+            public void WhenPackageRegistrationIsNull_Throws()
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => _target.IsAcceptableSigningCertificate(packageRegistration: null, _x509Certificate1));
+                    () => _target.ValidateCertificate(packageRegistration: null, _x509Certificate1, _collection));
 
                 Assert.Equal("packageRegistration", exception.ParamName);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WhenThumbprintIsInvalid_Throws()
+            public void WhenCertificateIsNull_Throws()
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => _target.IsAcceptableSigningCertificate(_packageRegistration, certificate: null));
+                    () => _target.ValidateCertificate(_packageRegistration, certificate: null, _collection));
 
                 Assert.Equal("certificate", exception.ParamName);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithOneOwner_WhenRequiredSignerIsNullAndOwnerHasNoCertificate_ReturnsFalse()
+            public void WhenExtraStoreIsNull_Throws()
             {
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => _target.ValidateCertificate(_packageRegistration, _x509Certificate1, extraStore: null));
+
+                Assert.Equal("extraStore", exception.ParamName);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithOneOwner_WhenRequiredSignerIsNullAndOwnerHasNonMatchingCertificate_ReturnsFalse()
+            public void WithOneOwner_WhenRequiredSignerIsNullAndOwnerHasNoCertificate_ReturnsIssue()
             {
-                _user.UserCertificates.Add(new UserCertificate()
-                {
-                    Key = 5,
-                    User = _user,
-                    UserKey = _user.Key,
-                    Certificate = _certificate,
-                    CertificateKey = _certificate.Key
-                });
-
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+                Assert.NotNull(issue);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithOneOwner_WhenRequiredSignerIsNullAndOwnerHasMatchingCertificate_ReturnsTrue()
+            public void WithOneOwner_WhenRequiredSignerIsNullAndOwnerHasNonMatchingCertificate_ReturnsIssue()
             {
                 _user.UserCertificates.Add(new UserCertificate()
                 {
@@ -107,11 +112,128 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     CertificateKey = _certificate.Key
                 });
 
-                Assert.True(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOwnerHasNonMatchingCertificate_ReturnsFalse()
+            public void WithOneOwner_WhenRequiredSignerIsNullAndOwnerHasMatchingCertificate_ReturnsNoIssue()
+            {
+                _user.UserCertificates.Add(new UserCertificate()
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    Certificate = _certificate,
+                    CertificateKey = _certificate.Key
+                });
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.Null(issue);
+            }
+
+            [Fact]
+            public void WithOneOwner_WhenRequiredSignerIsNullAndCertificateIsMatchingAzureTrustedSigning_ReturnsNoIssue()
+            {
+                _user.UserCertificatePatterns.Add(new UserCertificatePattern
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    PatternType = CertificatePatternType.AzureTrustedSigning,
+                    Identifier = TestResources.AzureTrustedSigningIdentifierOid,
+                });
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509CertificateAzureTrustedSigning, _collectionAzureTrustedSigning);
+
+                Assert.Null(issue);
+            }
+
+            [Fact]
+            public void WithOneOwner_WhenRequiredSignerIsNullAndCertificateIsMatchingAzureTrustedSigningPublicTrustMarker_ReturnsIssue()
+            {
+                _user.UserCertificatePatterns.Add(new UserCertificatePattern
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    PatternType = CertificatePatternType.AzureTrustedSigning,
+                    Identifier = "1.3.6.1.4.1.311.97.1.0",
+                });
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509CertificateAzureTrustedSigning, _collectionAzureTrustedSigning);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedAzureTrustedSigningCertificateFailure>(issue);
+                Assert.Equal(_x509CertificateAzureTrustedSigningThumbprint, unauthorized.Sha256Thumbprint);
+                Assert.Equal(TestResources.AzureTrustedSigningIdentifierOid, unauthorized.EnhancedKeyUsageOid);
+            }
+
+            [Fact]
+            public void WithOneOwner_WhenRequiredSignerIsNullAndCertificateIsNonMatchingAzureTrustedSigning_ReturnsNoIssue()
+            {
+                _user.UserCertificatePatterns.Add(new UserCertificatePattern
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    PatternType = CertificatePatternType.AzureTrustedSigning,
+                    Identifier = TestResources.AzureTrustedSigningIdentifierOid + ".1",
+                });
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509CertificateAzureTrustedSigning, _collectionAzureTrustedSigning);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedAzureTrustedSigningCertificateFailure>(issue);
+                Assert.Equal(_x509CertificateAzureTrustedSigningThumbprint, unauthorized.Sha256Thumbprint);
+                Assert.Equal(TestResources.AzureTrustedSigningIdentifierOid, unauthorized.EnhancedKeyUsageOid);
+            }
+
+            [Fact]
+            public void WithOneOwner_WhenRequiredSignerIsNullAndFingerprintIsNotMatching_ReturnsIssue()
+            {
+                _user.UserCertificates.Add(new UserCertificate()
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    Certificate = _certificate,
+                    CertificateKey = _certificate.Key
+                });
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509CertificateAzureTrustedSigning, _collectionAzureTrustedSigning);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedAzureTrustedSigningCertificateFailure>(issue);
+                Assert.Equal(_x509CertificateAzureTrustedSigningThumbprint, unauthorized.Sha256Thumbprint);
+                Assert.Equal(TestResources.AzureTrustedSigningIdentifierOid, unauthorized.EnhancedKeyUsageOid);
+            }
+
+            [Fact]
+            public void WithOneOwner_WhenRequiredSignerIsNullAndFingerprintIsMatching_ReturnsNoIssue()
+            {
+                _certificate.Thumbprint = _x509CertificateAzureTrustedSigningThumbprint;
+
+                _user.UserCertificates.Add(new UserCertificate()
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    Certificate = _certificate,
+                    CertificateKey = _certificate.Key
+                });
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509CertificateAzureTrustedSigning, _collectionAzureTrustedSigning);
+
+                Assert.Null(issue);
+            }
+
+            [Fact]
+            public void WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOwnerHasNonMatchingCertificate_ReturnsIssue()
             {
                 var otherOwner = new User()
                 {
@@ -130,11 +252,15 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _packageRegistration.Owners.Add(otherOwner);
 
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOwnerHasMatchingCertificate_ReturnsTrue()
+            public void WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOwnerHasMatchingCertificate_ReturnsNoIssue()
             {
                 var otherOwner = new User()
                 {
@@ -153,11 +279,13 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _packageRegistration.Owners.Add(otherOwner);
 
-                Assert.True(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.Null(issue);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOtherOwnerHasNonMatchingCertificate_ReturnsFalse()
+            public void WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOtherOwnerHasNonMatchingCertificate_ReturnsIssue()
             {
                 var otherOwner = new User()
                 {
@@ -175,11 +303,15 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _packageRegistration.Owners.Add(otherOwner);
 
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOtherOwnerHasMatchingCertificate_ReturnsTrue()
+            public void WithTwoOwners_WhenRequiredSignerIsNullAndOnlyOtherOwnerHasMatchingCertificate_ReturnsNoIssue()
             {
                 var otherOwner = new User()
                 {
@@ -197,36 +329,23 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _packageRegistration.Owners.Add(otherOwner);
 
-                Assert.True(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.Null(issue);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithOneOwner_WhenRequiredSignerIsOwnerAndOwnerHasNoCertificate_ReturnsFalse()
+            public void WithOneOwner_WhenRequiredSignerIsOwnerAndOwnerHasNoCertificate_ReturnsIssue()
             {
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.NotNull(issue);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithOneOwner_WhenRequiredSignerIsOwnerAndOwnerHasNonMatchingCertificate_ReturnsFalse()
-            {
-                _user.UserCertificates.Add(new UserCertificate()
-                {
-                    Key = 5,
-                    User = _user,
-                    UserKey = _user.Key,
-                    Certificate = _certificate,
-                    CertificateKey = _certificate.Key
-                });
-
-                _packageRegistration.RequiredSigners.Add(_user);
-
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
-            }
-
-            [Fact]
-            public void IsAcceptableSigningCertificate_WithOneOwner_WhenRequiredSignerIsOwnerAndOwnerHasMatchingCertificate_ReturnsTrue()
+            public void WithOneOwner_WhenRequiredSignerIsOwnerAndOwnerHasNonMatchingCertificate_ReturnsIssue()
             {
                 _user.UserCertificates.Add(new UserCertificate()
                 {
@@ -239,11 +358,34 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.True(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOwnerHasNonMatchingCertificate_ReturnsFalse()
+            public void WithOneOwner_WhenRequiredSignerIsOwnerAndOwnerHasMatchingCertificate_ReturnsNoIssue()
+            {
+                _user.UserCertificates.Add(new UserCertificate()
+                {
+                    Key = 5,
+                    User = _user,
+                    UserKey = _user.Key,
+                    Certificate = _certificate,
+                    CertificateKey = _certificate.Key
+                });
+
+                _packageRegistration.RequiredSigners.Add(_user);
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.Null(issue);
+            }
+
+            [Fact]
+            public void WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOwnerHasNonMatchingCertificate_ReturnsIssue()
             {
                 var otherOwner = new User()
                 {
@@ -262,11 +404,15 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageRegistration.Owners.Add(otherOwner);
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOwnerHasMatchingCertificate_ReturnsTrue()
+            public void WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOwnerHasMatchingCertificate_ReturnsNoIssue()
             {
                 var otherOwner = new User()
                 {
@@ -285,34 +431,13 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageRegistration.Owners.Add(otherOwner);
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.True(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.Null(issue);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOtherOwnerHasNonMatchingCertificate_ReturnsFalse()
-            {
-                var otherOwner = new User()
-                {
-                    Key = 5,
-                    Username = "d"
-                };
-                otherOwner.UserCertificates.Add(new UserCertificate()
-                {
-                    Key = 6,
-                    User = otherOwner,
-                    UserKey = otherOwner.Key,
-                    Certificate = _certificate,
-                    CertificateKey = _certificate.Key
-                });
-
-                _packageRegistration.Owners.Add(otherOwner);
-                _packageRegistration.RequiredSigners.Add(_user);
-
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
-            }
-
-            [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOtherOwnerHasMatchingCertificate_ReturnsFalse()
+            public void WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOtherOwnerHasNonMatchingCertificate_ReturnsIssue()
             {
                 var otherOwner = new User()
                 {
@@ -331,11 +456,40 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageRegistration.Owners.Add(otherOwner);
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsOwnerAndAllOwnersHaveNonMatchingCertificate_ReturnsFalse()
+            public void WithTwoOwners_WhenRequiredSignerIsOwnerAndOnlyOtherOwnerHasMatchingCertificate_ReturnsIssue()
+            {
+                var otherOwner = new User()
+                {
+                    Key = 5,
+                    Username = "d"
+                };
+                otherOwner.UserCertificates.Add(new UserCertificate()
+                {
+                    Key = 6,
+                    User = otherOwner,
+                    UserKey = otherOwner.Key,
+                    Certificate = _certificate,
+                    CertificateKey = _certificate.Key
+                });
+
+                _packageRegistration.Owners.Add(otherOwner);
+                _packageRegistration.RequiredSigners.Add(_user);
+
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.NotNull(issue);
+            }
+
+            [Fact]
+            public void WithTwoOwners_WhenRequiredSignerIsOwnerAndAllOwnersHaveNonMatchingCertificate_ReturnsIssue()
             {
                 _user.UserCertificates.Add(new UserCertificate()
                 {
@@ -362,11 +516,15 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageRegistration.Owners.Add(otherOwner);
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.False(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate2));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate2, _collection);
+
+                Assert.NotNull(issue);
+                var unauthorized = Assert.IsType<UnauthorizedCertificateSha256Failure>(issue);
+                Assert.Equal(_x509Certificate2Thumprint, unauthorized.Sha256Thumbprint);
             }
 
             [Fact]
-            public void IsAcceptableSigningCertificate_WithTwoOwners_WhenRequiredSignerIsOwnerAndAllOwnersHaveMatchingCertificate_ReturnsTrue()
+            public void WithTwoOwners_WhenRequiredSignerIsOwnerAndAllOwnersHaveMatchingCertificate_ReturnsNoIssue()
             {
                 _user.UserCertificates.Add(new UserCertificate()
                 {
@@ -393,7 +551,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 _packageRegistration.Owners.Add(otherOwner);
                 _packageRegistration.RequiredSigners.Add(_user);
 
-                Assert.True(_target.IsAcceptableSigningCertificate(_packageRegistration, _x509Certificate1));
+                var issue = _target.ValidateCertificate(_packageRegistration, _x509Certificate1, _collection);
+
+                Assert.Null(issue);
             }
         }
     }

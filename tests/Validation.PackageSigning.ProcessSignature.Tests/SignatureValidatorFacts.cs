@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using NuGet.Common;
-using NuGet.Jobs.Validation.PackageSigning;
 using NuGet.Jobs.Validation.PackageSigning.Configuration;
 using NuGet.Jobs.Validation.PackageSigning.Messages;
 using NuGet.Jobs.Validation.PackageSigning.ProcessSignature;
@@ -104,8 +103,16 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 _userCertificateValidator = new Mock<IUserCertificateValidator>();
                 _userCertificateValidator
-                    .Setup(x => x.IsAcceptableSigningCertificate(It.IsAny<PackageRegistration>(), It.IsAny<X509Certificate2>()))
-                    .Returns<PackageRegistration, X509Certificate2>((pr, cert) => pr.Owners.Any(u => u.UserCertificates.Any(c => c.Certificate.Thumbprint == cert.ComputeSHA256Thumbprint())));
+                    .Setup(x => x.ValidateCertificate(It.IsAny<PackageRegistration>(), It.IsAny<X509Certificate2>(), It.IsAny<X509Certificate2Collection>()))
+                    .Returns<PackageRegistration, X509Certificate2, X509Certificate2Collection>((pr, cert, _) =>
+                    {
+                        if (pr.Owners.Any(u => u.UserCertificates.Any(c => c.Certificate.Thumbprint == cert.ComputeSHA256Thumbprint())))
+                        {
+                            return null;
+                        }
+
+                        return new UnauthorizedCertificateSha256Failure(cert.Thumbprint.ToLowerInvariant(), cert.ComputeSHA256Thumbprint());
+                    });
 
                 _optionsSnapshot = new Mock<IOptionsSnapshot<ProcessSignatureConfiguration>>();
                 _configuration = new ProcessSignatureConfiguration
@@ -485,9 +492,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // Assert
                 Validate(result, ValidationStatus.Failed, PackageSigningStatus.Invalid);
                 Assert.Single(result.Issues);
-                var issue = Assert.IsType<UnauthorizedCertificateFailure>(result.Issues[0]);
-                Assert.Equal(ValidationIssueCode.PackageIsSignedWithUnauthorizedCertificate, issue.IssueCode);
-                Assert.Equal(TestResources.Leaf2Sha1Thumbprint, issue.Sha1Thumbprint);
+                var issue = Assert.IsType<UnauthorizedCertificateSha256Failure>(result.Issues[0]);
+                Assert.Equal(ValidationIssueCode.PackageIsSignedWithUnauthorizedCertificateSha256, issue.IssueCode);
+                Assert.Equal(TestResources.Leaf1Thumbprint, issue.Sha256Thumbprint);
             }
 
             [Fact]
@@ -890,9 +897,9 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
 
                 Validate(result, ValidationStatus.Failed, PackageSigningStatus.Invalid);
                 Assert.Single(result.Issues);
-                var issue = Assert.IsType<UnauthorizedCertificateFailure>(result.Issues[0]);
-                Assert.Equal(ValidationIssueCode.PackageIsSignedWithUnauthorizedCertificate, issue.IssueCode);
-                Assert.Equal(TestResources.Leaf2Sha1Thumbprint, issue.Sha1Thumbprint);
+                var issue = Assert.IsType<UnauthorizedCertificateSha256Failure>(result.Issues[0]);
+                Assert.Equal(ValidationIssueCode.PackageIsSignedWithUnauthorizedCertificateSha256, issue.IssueCode);
+                Assert.Equal(TestResources.Leaf1Thumbprint, issue.Sha256Thumbprint);
             }
 
             [Fact]

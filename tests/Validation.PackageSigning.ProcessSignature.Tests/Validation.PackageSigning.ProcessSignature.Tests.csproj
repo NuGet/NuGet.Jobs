@@ -98,6 +98,7 @@
     <EmbeddedResource Include="TestData\Zip64Package.1.0.0.nupkg.testdata" />
     <EmbeddedResource Include="TestData\TestAuthorAndRepoSigned.leaf-1.1.0.0.nupkg.testdata" />
     <EmbeddedResource Include="TestData\TestRepoSigned.leaf-1.1.0.0.nupkg.testdata" />
+    <EmbeddedResource Include="TestData\AzureTrustedSigning-Knapcode.MiniZip.0.21.1.nupkg.testdata" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

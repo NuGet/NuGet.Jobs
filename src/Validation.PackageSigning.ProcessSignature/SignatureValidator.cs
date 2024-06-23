@@ -643,11 +643,13 @@ namespace NuGet.Jobs.Validation.PackageSigning.ProcessSignature
                 var signingCertificate = context.Signature.SignerInfo.Certificate;
 
                 // Block packages with any unknown signing certificates.
-                if (!_userCertificateValidator.IsAcceptableSigningCertificate(packageRegistration, signingCertificate))
+                var validationIssue = _userCertificateValidator.ValidateCertificate(
+                    packageRegistration,
+                    signingCertificate,
+                    context.Signature.SignedCms.Certificates);
+                if (validationIssue != null)
                 {
-                    return await RejectAsync(
-                        context,
-                        new UnauthorizedCertificateFailure(signingCertificate.Thumbprint.ToLowerInvariant()));
+                    return await RejectAsync(context, validationIssue);
                 }
             }
 

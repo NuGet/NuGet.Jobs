@@ -25,6 +25,8 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         public const string AuthorAndRepoSignedPackageLeafId = "TestAuthorAndRepoSigned.leaf";
         public const string AuthorAndRepoSignedPackageLeaf1 = "TestAuthorAndRepoSigned.leaf-1.1.0.0.nupkg.testdata";
         public const string AuthorAndRepoSignedPackageLeaf1Version = "1.1.0.0";
+        public const string AzureTrustedSigningSignedPackage = "AzureTrustedSigning-Knapcode.MiniZip.0.21.1.nupkg.testdata";
+        public const string AzureTrustedSigningIdentifierOid = "1.3.6.1.4.1.311.97.538536656.319519360.212728108.581335860";
 
         /// <summary>
         /// This is the SHA-256 thumbprint of the root CA certificate for the signing certificate of <see cref="SignedPackageLeaf1"/>.
@@ -40,11 +42,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         /// This is the SHA-256 thumbprint of the signing certificate in <see cref="SignedPackageLeaf2"/>.
         /// </summary>
         public const string Leaf2Thumbprint = "a8cc70dbbd8bc61410231805b690cca7c5a8d07553c1c49b299a6aabaeb7ff9a";
-
-        /// <summary>
-        /// This is the SHA-1 thumbprint of the signing certificate in <see cref="SignedPackageLeaf2"/>.
-        /// </summary>
-        public const string Leaf2Sha1Thumbprint = "8e1b5dadf388dee204bcfd27b53f00b585fdca07";
 
         /// <summary>
         /// This is the SHA-256 thumbprint of the timestamp certificate in <see cref="SignedPackageLeaf1"/>.
