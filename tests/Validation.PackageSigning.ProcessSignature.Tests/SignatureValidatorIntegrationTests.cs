@@ -1982,21 +1982,28 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                 // Create a temporary memory stream to hold the updated zip content
                 using (var tempStream = new MemoryStream())
                 {
+                    // Create a zip output stream for the temporary stream
                     using (var zipOutputStream = new ZipOutputStream(tempStream))
                     {
                         zipOutputStream.IsStreamOwner = false; // We will handle the stream
 
                         using (var zipFile = new ZipFile(packageStream))
                         {
-                            // Set the stream owner to false so the stream isn't closed when the zipFile is disposed
                             zipFile.IsStreamOwner = false;
 
-                            // Copy existing entries from the original zip to the new zip
+                            // Copy existing entries to the new zip file, except the signature file
                             foreach (ZipEntry entry in zipFile)
                             {
                                 if (entry.Name != SigningSpecifications.V1.SignaturePath)
                                 {
-                                    zipOutputStream.PutNextEntry(entry);
+                                    zipOutputStream.PutNextEntry(new ZipEntry(entry.Name)
+                                    {
+                                        DateTime = entry.DateTime,
+                                        Size = entry.Size,
+                                        CompressedSize = entry.CompressedSize,
+                                        Crc = entry.Crc,
+                                        CompressionMethod = entry.CompressionMethod
+                                    });
 
                                     using (var entryStream = zipFile.GetInputStream(entry))
                                     {
@@ -2012,9 +2019,10 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         var newEntry = new ZipEntry(SigningSpecifications.V1.SignaturePath)
                         {
                             DateTime = DateTime.Now,
-                            Size = fileContent.Length,
-                            CompressionMethod = CompressionMethod.Stored
+                            CompressionMethod = CompressionMethod.Stored,
+                            Size = fileContent.Length
                         };
+
                         zipOutputStream.PutNextEntry(newEntry);
                         zipOutputStream.Write(fileContent, 0, fileContent.Length);
                         zipOutputStream.CloseEntry();
