@@ -2020,7 +2020,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                         {
                             DateTime = DateTime.Now,
                             CompressionMethod = CompressionMethod.Stored,
-                            Size = fileContent.Length
                         };
 
                         zipOutputStream.PutNextEntry(newEntry);
