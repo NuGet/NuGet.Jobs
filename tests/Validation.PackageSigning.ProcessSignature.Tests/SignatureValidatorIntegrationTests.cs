@@ -1985,6 +1985,7 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                     // Create a zip output stream for the temporary stream
                     using (var zipOutputStream = new ZipOutputStream(tempStream))
                     {
+                        zipOutputStream.SetLevel(9); // Set the compression level
                         zipOutputStream.IsStreamOwner = false; // We will handle the stream
 
                         using (var zipFile = new ZipFile(packageStream))
@@ -1996,20 +1997,17 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                             {
                                 if (entry.Name != SigningSpecifications.V1.SignaturePath)
                                 {
-                                    zipOutputStream.PutNextEntry(new ZipEntry(entry.Name)
-                                    {
-                                        DateTime = entry.DateTime,
-                                        Size = entry.Size,
-                                        Crc = entry.Crc,
-                                        CompressionMethod = entry.CompressionMethod
-                                    });
-
                                     using (var entryStream = zipFile.GetInputStream(entry))
                                     {
-                                        entryStream.CopyTo(zipOutputStream);
+                                        var buffer = new byte[4096];
+                                        zipOutputStream.PutNextEntry(new ZipEntry(entry.Name));
+                                        int bytesRead;
+                                        while ((bytesRead = entryStream.Read(buffer, 0, buffer.Length)) > 0)
+                                        {
+                                            zipOutputStream.Write(buffer, 0, bytesRead);
+                                        }
+                                        zipOutputStream.CloseEntry();
                                     }
-
-                                    zipOutputStream.CloseEntry();
                                 }
                             }
                         }
