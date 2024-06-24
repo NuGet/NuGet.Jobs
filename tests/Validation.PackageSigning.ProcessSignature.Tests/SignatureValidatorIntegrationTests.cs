@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Zip;
+//using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -1978,26 +1979,61 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
         {
             try
             {
-                using (var zipFile = new ICSharpCode.SharpZipLib.Zip.ZipFile(packageStream))
+                // Create a temporary memory stream to hold the updated zip content
+                using (var tempStream = new MemoryStream())
                 {
-                    zipFile.IsStreamOwner = false;
+                    using (var zipOutputStream = new ZipOutputStream(tempStream))
+                    {
+                        zipOutputStream.IsStreamOwner = false; // We will handle the stream
 
-                    zipFile.BeginUpdate();
+                        using (var zipFile = new ZipFile(packageStream))
+                        {
+                            // Set the stream owner to false so the stream isn't closed when the zipFile is disposed
+                            zipFile.IsStreamOwner = false;
 
-                    if (zipFile.FindEntry(SigningSpecifications.V1.SignaturePath, true) >= 0){
-                        zipFile.Delete(SigningSpecifications.V1.SignaturePath);
+                            // Copy existing entries from the original zip to the new zip
+                            foreach (ZipEntry entry in zipFile)
+                            {
+                                if (entry.Name != SigningSpecifications.V1.SignaturePath)
+                                {
+                                    zipOutputStream.PutNextEntry(entry);
+
+                                    using (var entryStream = zipFile.GetInputStream(entry))
+                                    {
+                                        entryStream.CopyTo(zipOutputStream);
+                                    }
+
+                                    zipOutputStream.CloseEntry();
+                                }
+                            }
+                        }
+
+                        // Add the new signature file content
+                        var newEntry = new ZipEntry(SigningSpecifications.V1.SignaturePath)
+                        {
+                            DateTime = DateTime.Now,
+                            Size = fileContent.Length,
+                            CompressionMethod = CompressionMethod.Stored
+                        };
+                        zipOutputStream.PutNextEntry(newEntry);
+                        zipOutputStream.Write(fileContent, 0, fileContent.Length);
+                        zipOutputStream.CloseEntry();
+
+                        // Finish the update process
+                        zipOutputStream.Finish();
                     }
 
-                    zipFile.Add(
-                        new StreamDataSource(new MemoryStream(fileContent)),
-                        SigningSpecifications.V1.SignaturePath,
-                        CompressionMethod.Stored);
-                    zipFile.CommitUpdate();
+                    // Reset the position of the temporary stream
+                    tempStream.Position = 0;
+
+                    // Copy the updated content back to the original package stream
+                    packageStream.SetLength(0);
+                    tempStream.CopyTo(packageStream);
+                    packageStream.Position = 0;
+
+                    // Update the class-level stream
+                    _packageStream = packageStream;
                 }
-
-                packageStream.Position = 0;
-
-                _packageStream = packageStream;
             }
             catch
             {
