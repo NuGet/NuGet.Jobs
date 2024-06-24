@@ -2000,7 +2000,6 @@ namespace Validation.PackageSigning.ProcessSignature.Tests
                                     {
                                         DateTime = entry.DateTime,
                                         Size = entry.Size,
-                                        CompressedSize = entry.CompressedSize,
                                         Crc = entry.Crc,
                                         CompressionMethod = entry.CompressionMethod
                                     });
