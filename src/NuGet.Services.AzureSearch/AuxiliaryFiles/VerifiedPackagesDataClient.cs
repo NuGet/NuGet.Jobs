@@ -94,7 +94,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                 var blobReference = Container.GetBlobReference(blobName);
 
-                using (var stream = await blobReference.OpenWriteAsync(accessCondition))
+                using (var stream = await blobReference.OpenWriteAsync(accessCondition, "application/json"))
                 using (var streamWriter = new StreamWriter(stream))
                 using (var jsonTextWriter = new JsonTextWriter(streamWriter))
                 {

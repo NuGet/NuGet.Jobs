@@ -89,11 +89,10 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                 var blobReference = Container.GetBlobReference(blobName);
 
-                using (var stream = await blobReference.OpenWriteAsync(AccessConditionWrapper.GenerateIfNotExistsCondition()))
+                using (var stream = await blobReference.OpenWriteAsync(AccessConditionWrapper.GenerateIfNotExistsCondition(), "application/json"))
                 using (var streamWriter = new StreamWriter(stream))
                 using (var jsonTextWriter = new JsonTextWriter(streamWriter))
                 {
-                    blobReference.Properties.ContentType = "application/json";
                     Serializer.Serialize(jsonTextWriter, packageIds);
                 }
             }
@@ -110,11 +109,10 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                 var blobReference = Container.GetBlobReference(blobName);
 
-                using (var stream = await blobReference.OpenWriteAsync(accessCondition))
+                using (var stream = await blobReference.OpenWriteAsync(accessCondition, "application/json"))
                 using (var streamWriter = new StreamWriter(stream))
                 using (var jsonTextWriter = new JsonTextWriter(streamWriter))
                 {
-                    blobReference.Properties.ContentType = "application/json";
                     Serializer.Serialize(jsonTextWriter, newData);
                 }
             }

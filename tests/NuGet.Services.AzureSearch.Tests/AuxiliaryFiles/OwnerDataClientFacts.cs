@@ -234,7 +234,8 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                 await Target.ReplaceLatestIndexedAsync(newData, AccessCondition.Object);
 
-                Assert.Equal("application/json", CloudBlob.Object.Properties.ContentType);
+                CloudBlob
+                    .Verify(cb => cb.OpenWriteAsync(It.IsAny<IAccessCondition>(), "application/json"), Times.Once);
             }
 
             [Fact]
@@ -338,7 +339,8 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 await Target.UploadChangeHistoryAsync(new[] { "nuget" });
 
-                Assert.Equal("application/json", CloudBlob.Object.Properties.ContentType);
+                CloudBlob
+                    .Verify(cb => cb.OpenWriteAsync(It.IsAny<IAccessCondition>(), "application/json"), Times.Once);
             }
 
             [Fact]
@@ -438,7 +440,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     .Setup(x => x.ETag)
                     .Returns(ETag);
                 CloudBlob
-                    .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>()))
+                    .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>(), It.IsAny<string>()))
                     .ReturnsAsync(() => new RecordingStream(bytes =>
                     {
                         SavedBytes.Add(bytes);

@@ -340,7 +340,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     .Setup(x => x.ETag)
                     .Returns(ETag);
                 CloudBlob
-                    .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>()))
+                    .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>(), It.IsAny<string>()))
                     .ReturnsAsync(() => new RecordingStream(bytes =>
                     {
                         SavedBytes.Add(bytes);

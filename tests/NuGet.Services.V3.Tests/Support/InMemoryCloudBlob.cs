@@ -141,7 +141,7 @@ namespace NuGet.Services
             throw new NotImplementedException();
         }
 
-        public async Task<Stream> OpenWriteAsync(IAccessCondition accessCondition)
+        public async Task<Stream> OpenWriteAsync(IAccessCondition accessCondition, string contentType)
         {
             await Task.Yield();
 

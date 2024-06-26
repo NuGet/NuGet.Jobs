@@ -95,7 +95,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
             .Setup(x => x.Properties)
             .Returns(Mock.Of<ICloudBlobProperties>());
             mockBlob
-                .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>()))
+                .Setup(x => x.OpenWriteAsync(It.IsAny<IAccessCondition>(), It.IsAny<string>()))
                 .ReturnsAsync(() => new RecordingStream(bytes =>
                     {
                         onDisposeHandler?.Invoke(Encoding.UTF8.GetString(bytes));
