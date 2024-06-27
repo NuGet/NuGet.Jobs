@@ -121,9 +121,6 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             {
                 ContentType = content.ContentType,
                 CacheControl = content.CacheControl,
-                ContentDisposition = properties.Value.ContentDisposition,
-                ContentEncoding = properties.Value.ContentEncoding,
-                ContentHash = properties.Value.ContentHash
             };
 
             if (_compressContent)
@@ -140,8 +137,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     }
 
                     destinationStream.Seek(0, SeekOrigin.Begin);
-                    await blob.SetHttpHeadersAsync(headers);
-                    await blob.UploadAsync(destinationStream, options: null, cancellationToken);
+                    await blob.UploadAsync(destinationStream, options: new BlobUploadOptions() { HttpHeaders = headers }, cancellationToken);
 
                     Trace.WriteLine(string.Format("Saved compressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
                 }
@@ -150,8 +146,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             {
                 using (var stream = content.GetContentStream())
                 {
-                    await blob.SetHttpHeadersAsync(headers);
-                    await blob.UploadAsync(stream, options: null, cancellationToken: cancellationToken);
+                    await blob.UploadAsync(stream, options: new BlobUploadOptions() { HttpHeaders = headers }, cancellationToken: cancellationToken);
                 }
 
                 Trace.WriteLine(string.Format("Saved uncompressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
