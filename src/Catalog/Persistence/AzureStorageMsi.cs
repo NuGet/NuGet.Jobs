@@ -56,9 +56,6 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         protected override async Task<StorageContent> OnLoadAsync(Uri resourceUri, CancellationToken cancellationToken)
         {
-            // the Azure SDK will treat a starting / as an absolute URL,
-            // while we may be working in a subdirectory of a storage container
-            // trim the starting slash to treat it as a relative path
             string name = GetName(resourceUri).TrimStart('/');
 
             var blob = _blobContainer.GetBlockBlobClient(name);
@@ -75,7 +72,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
                     originalStream.Seek(0, SeekOrigin.Begin);
 
-                    if (properties?.Value.ContentEncoding == "gzip")
+                    if (properties.Value.ContentEncoding == "gzip")
                     {
                         using (var uncompressedStream = new GZipStream(originalStream, CompressionMode.Decompress))
                         {
@@ -94,7 +91,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     }
                 }
 
-                return new StringStorageContentWithETag(content, properties?.Value.ETag.ToString());
+                return new StringStorageContentWithETag(content, properties.Value.ETag.ToString());
             }
             catch (RequestFailedException ex) when (ex.Status == (int)HttpStatusCode.NotFound)
             {
@@ -146,7 +143,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             {
                 using (var stream = content.GetContentStream())
                 {
-                    await blob.UploadAsync(stream, options: new BlobUploadOptions() { HttpHeaders = headers }, cancellationToken: cancellationToken);
+                    await blob.UploadAsync(stream, options: new BlobUploadOptions() { HttpHeaders = headers }, cancellationToken);
                 }
 
                 Trace.WriteLine(string.Format("Saved uncompressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
