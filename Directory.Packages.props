@@ -9,8 +9,9 @@
   <ItemGroup>
     <PackageVersion Include="Autofac" Version="4.9.1" />
     <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="4.4.0" />
+    <PackageVersion Include="Azure.AI.OpenAI" Version="1.0.0-beta.15" />
     <PackageVersion Include="Azure.Identity" Version="1.10.4" />
-    <PackageVersion Include="Azure.Search.Documents" Version="11.4.0-beta.6" />
+    <PackageVersion Include="Azure.Search.Documents" Version="11.5.1" />
     <PackageVersion Include="Dapper.StrongName" Version="1.50.2" />
     <PackageVersion Include="dotNetRDF" Version="1.0.8.3533" />
     <PackageVersion Include="FluentAssertions" Version="5.5.0" />
@@ -36,6 +37,7 @@
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Primitives" Version="2.2.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.7.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.0.0" />
     <PackageVersion Include="Microsoft.Rest.ClientRuntime" Version="2.3.24" />
     <PackageVersion Include="Microsoft.WindowsAzure.ConfigurationManager" Version="3.2.3" />
@@ -78,6 +80,7 @@
     <PackageVersion Include="System.Text.Json" Version="8.0.2" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <PackageVersion Include="Test.Utility" Version="6.4.2-rc.25" />
+    <PackageVersion Include="Tiktoken" Version="1.2.0" />
     <PackageVersion Include="UAParser" Version="3.1.44" />
     <PackageVersion Include="WindowsAzure.Storage" Version="9.3.3" />
     <PackageVersion Include="xunit" Version="2.4.1" />

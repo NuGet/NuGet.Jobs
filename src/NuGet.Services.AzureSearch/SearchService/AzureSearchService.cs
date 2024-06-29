@@ -13,6 +13,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     {
         private readonly IIndexOperationBuilder _operationBuilder;
         private readonly ISearchClientWrapper _searchIndex;
+        private readonly ISearchClientWrapper _searchChunkIndex;
         private readonly ISearchClientWrapper _hijackIndex;
         private readonly ISearchResponseBuilder _responseBuilder;
         private readonly IAzureSearchTelemetryService _telemetryService;
@@ -20,12 +21,14 @@ namespace NuGet.Services.AzureSearch.SearchService
         public AzureSearchService(
             IIndexOperationBuilder operationBuilder,
             ISearchClientWrapper searchIndex,
+            ISearchClientWrapper searchChunkIndex,
             ISearchClientWrapper hijackIndex,
             ISearchResponseBuilder responseBuilder,
             IAzureSearchTelemetryService telemetryService)
         {
             _operationBuilder = operationBuilder ?? throw new ArgumentNullException(nameof(operationBuilder));
             _searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+            _searchChunkIndex = searchChunkIndex ?? throw new ArgumentNullException(nameof(searchChunkIndex));
             _hijackIndex = hijackIndex ?? throw new ArgumentNullException(nameof(hijackIndex));
             _responseBuilder = responseBuilder ?? throw new ArgumentNullException(nameof(responseBuilder));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));

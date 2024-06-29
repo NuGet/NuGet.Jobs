@@ -222,6 +222,35 @@ namespace NuGet.Services.AzureSearch
         {
             var document = new SearchDocument.Full();
 
+            FullFromDb(
+                document,
+                packageId,
+                searchFilters,
+                versions,
+                isLatestStable,
+                isLatest,
+                fullVersion,
+                package,
+                owners,
+                totalDownloadCount,
+                isExcludedByDefault);
+
+            return document;
+        }
+
+        public void FullFromDb(
+            SearchDocument.Full document,
+            string packageId,
+            SearchFilters searchFilters,
+            string[] versions,
+            bool isLatestStable,
+            bool isLatest,
+            string fullVersion,
+            Package package,
+            string[] owners,
+            long totalDownloadCount,
+            bool isExcludedByDefault)
+        {
             // Determine if we have packageTypes to forward.
             // Otherwise, we need to let the system know that there were no explicit package types
             string[] packageTypes = package.PackageTypes != null && package.PackageTypes.Count > 0
@@ -264,8 +293,6 @@ namespace NuGet.Services.AzureSearch
             PopulateIsExcludedByDefault(document, isExcludedByDefault);
             PopulateDeprecationFromDb(document, package);
             PopulateVulnerabilitiesFromDb(document, package);
-
-            return document;
         }
 
         private void PopulateVersions<T>(

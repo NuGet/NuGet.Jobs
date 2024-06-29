@@ -17,6 +17,7 @@ namespace NuGet.Services.AzureSearch.SearchService
     public class SearchStatusService : ISearchStatusService
     {
         private readonly ISearchClientWrapper _searchIndex;
+        private readonly ISearchClientWrapper _searchChunkIndex;
         private readonly ISearchClientWrapper _hijackIndex;
         private readonly ISearchParametersBuilder _parametersBuilder;
         private readonly IAuxiliaryDataCache _auxiliaryDataCache;
@@ -27,6 +28,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         public SearchStatusService(
             ISearchClientWrapper searchIndex,
+            ISearchClientWrapper searchChunkIndex,
             ISearchClientWrapper hijackIndex,
             ISearchParametersBuilder parametersBuilder,
             IAuxiliaryDataCache auxiliaryDataCache,
@@ -36,6 +38,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             ILogger<SearchStatusService> logger)
         {
             _searchIndex = searchIndex ?? throw new ArgumentNullException(nameof(searchIndex));
+            _searchChunkIndex = searchChunkIndex ?? throw new ArgumentNullException(nameof(searchChunkIndex));
             _hijackIndex = hijackIndex ?? throw new ArgumentNullException(nameof(hijackIndex));
             _parametersBuilder = parametersBuilder ?? throw new ArgumentNullException(nameof(parametersBuilder));
             _auxiliaryDataCache = auxiliaryDataCache ?? throw new ArgumentNullException(nameof(auxiliaryDataCache));
@@ -72,6 +75,16 @@ namespace NuGet.Services.AzureSearch.SearchService
                     },
                     response,
                     "warming the search index"),
+                TryAsync(
+                    async () =>
+                    {
+                        if (options.HasFlag(SearchStatusOptions.AzureSearch))
+                        {
+                            response.SearchChunkIndex = await GetIndexStatusAsync(_searchChunkIndex);
+                        }
+                    },
+                    response,
+                    "warming the search chunk index"),
                 TryAsync(
                     async () =>
                     {

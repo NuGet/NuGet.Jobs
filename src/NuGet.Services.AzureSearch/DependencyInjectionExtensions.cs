@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using Autofac;
 using Azure;
+using Azure.AI.OpenAI;
 using Azure.Core.Pipeline;
 using Azure.Identity;
 using Azure.Search.Documents;
@@ -37,6 +38,7 @@ namespace NuGet.Services.AzureSearch
     public static class DependencyInjectionExtensions
     {
         public static readonly string SearchIndexKey = "SearchIndex";
+        public static readonly string SearchChunkIndexKey = "SearchChunkIndex";
         public static readonly string HijackIndexKey = "HijackIndex";
 
         public static ContainerBuilder AddAzureSearch(this ContainerBuilder containerBuilder)
@@ -46,7 +48,7 @@ namespace NuGet.Services.AzureSearch
             /// Here, we register services that depend on an interface that there are multiple implementations.
 
             /// There are multiple implementations of <see cref="ISearchServiceClientWrapper"/>.
-            RegisterIndexServices(containerBuilder, SearchIndexKey, HijackIndexKey);
+            RegisterIndexServices(containerBuilder, SearchIndexKey, SearchChunkIndexKey, HijackIndexKey);
 
             /// There are multiple implementations of storage, in particular <see cref="ICloudBlobClient"/>.
             RegisterAzureSearchStorageServices(containerBuilder, "AzureSearchStorage");
@@ -55,7 +57,7 @@ namespace NuGet.Services.AzureSearch
             return containerBuilder;
         }
 
-        private static void RegisterIndexServices(ContainerBuilder containerBuilder, string searchIndexKey, string hijackIndexKey)
+        private static void RegisterIndexServices(ContainerBuilder containerBuilder, string searchIndexKey, string searchChunkIndexKey, string hijackIndexKey)
         {
             containerBuilder
                 .Register(c =>
@@ -72,6 +74,16 @@ namespace NuGet.Services.AzureSearch
                 {
                     var serviceClient = c.Resolve<ISearchIndexClientWrapper>();
                     var options = c.Resolve<IOptionsSnapshot<AzureSearchConfiguration>>();
+                    return serviceClient.GetSearchClient(options.Value.SearchChunkIndexName);
+                })
+                .SingleInstance()
+                .Keyed<ISearchClientWrapper>(searchChunkIndexKey);
+
+            containerBuilder
+                .Register(c =>
+                {
+                    var serviceClient = c.Resolve<ISearchIndexClientWrapper>();
+                    var options = c.Resolve<IOptionsSnapshot<AzureSearchConfiguration>>();
                     return serviceClient.GetSearchClient(options.Value.HijackIndexName);
                 })
                 .SingleInstance()
@@ -80,6 +92,7 @@ namespace NuGet.Services.AzureSearch
             containerBuilder
                 .Register<IBatchPusher>(c => new BatchPusher(
                     c.ResolveKeyed<ISearchClientWrapper>(searchIndexKey),
+                    c.ResolveKeyed<ISearchClientWrapper>(searchChunkIndexKey),
                     c.ResolveKeyed<ISearchClientWrapper>(hijackIndexKey),
                     c.Resolve<IVersionListDataClient>(),
                     c.Resolve<IOptionsSnapshot<AzureSearchJobConfiguration>>(),
@@ -91,6 +104,7 @@ namespace NuGet.Services.AzureSearch
                 .Register<ISearchService>(c => new AzureSearchService(
                     c.Resolve<IIndexOperationBuilder>(),
                     c.ResolveKeyed<ISearchClientWrapper>(searchIndexKey),
+                    c.ResolveKeyed<ISearchClientWrapper>(searchChunkIndexKey),
                     c.ResolveKeyed<ISearchClientWrapper>(hijackIndexKey),
                     c.Resolve<ISearchResponseBuilder>(),
                     c.Resolve<IAzureSearchTelemetryService>()));
@@ -98,6 +112,7 @@ namespace NuGet.Services.AzureSearch
             containerBuilder
                 .Register<ISearchStatusService>(c => new SearchStatusService(
                     c.ResolveKeyed<ISearchClientWrapper>(searchIndexKey),
+                    c.ResolveKeyed<ISearchClientWrapper>(searchChunkIndexKey),
                     c.ResolveKeyed<ISearchClientWrapper>(hijackIndexKey),
                     c.Resolve<ISearchParametersBuilder>(),
                     c.Resolve<IAuxiliaryDataCache>(),
@@ -366,12 +381,17 @@ namespace NuGet.Services.AzureSearch
 
             services.AddTransient<IPackageEntityIndexActionBuilder, PackageEntityIndexActionBuilder>();
             services.AddTransient<ISearchDocumentBuilder, SearchDocumentBuilder>();
+            services.AddTransient<ISearchChunkDocumentBuilder, SearchChunkDocumentBuilder>();
             services.AddTransient<ISearchIndexActionBuilder, SearchIndexActionBuilder>();
             services.AddTransient<ISearchParametersBuilder, SearchParametersBuilder>();
             services.AddTransient<ISearchResponseBuilder, SearchResponseBuilder>();
             services.AddTransient<ISearchTextBuilder, SearchTextBuilder>();
             services.AddTransient<IServiceClientTracingInterceptor, ServiceClientTracingLogger>();
             services.AddTransient<ISystemTime, SystemTime>();
+            services.AddSingleton<OpenAIClient>(p =>
+            {
+                return new OpenAIClient(new Uri("https://jver-openai.openai.azure.com/"), new DefaultAzureCredential());
+            });
 
             return services;
         }

@@ -11,7 +11,10 @@ namespace NuGet.Services.AzureSearch
         Task CreateHijackIndexIfNotExistsAsync();
         Task CreateSearchIndexAsync();
         Task CreateSearchIndexIfNotExistsAsync();
+        Task CreateSearchChunkIndexAsync();
+        Task CreateSearchChunkIndexIfNotExistsAsync();
         Task DeleteHijackIndexIfExistsAsync();
         Task DeleteSearchIndexIfExistsAsync();
+        Task DeleteSearchChunkIndexIfExistsAsync();
     }
 }

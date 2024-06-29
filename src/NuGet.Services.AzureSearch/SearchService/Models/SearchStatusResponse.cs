@@ -16,6 +16,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         public TimeSpan? Duration { get; set; }
         public ServerStatus Server { get; set; }
         public IndexStatus SearchIndex { get; set; }
+        public IndexStatus SearchChunkIndex { get; set; }
         public IndexStatus HijackIndex { get; set; }
         public AuxiliaryFilesMetadata AuxiliaryFiles { get; set; }
     }

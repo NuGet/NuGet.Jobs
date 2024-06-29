@@ -37,6 +37,11 @@ namespace NuGet.Services.AzureSearch
             await CreateIndexAsync(InitializeSearchIndex());
         }
 
+        public async Task CreateSearchChunkIndexAsync()
+        {
+            await CreateIndexAsync(InitializeSearchChunkIndex());
+        }
+
         public async Task CreateHijackIndexAsync()
         {
             await CreateIndexAsync(InitializeHijackIndex());
@@ -47,6 +52,11 @@ namespace NuGet.Services.AzureSearch
             await CreateIndexIfNotExistsAsync(InitializeSearchIndex());
         }
 
+        public async Task CreateSearchChunkIndexIfNotExistsAsync()
+        {
+            await CreateIndexIfNotExistsAsync(InitializeSearchChunkIndex());
+        }
+
         public async Task CreateHijackIndexIfNotExistsAsync()
         {
             await CreateIndexIfNotExistsAsync(InitializeHijackIndex());
@@ -55,6 +65,11 @@ namespace NuGet.Services.AzureSearch
         public async Task DeleteSearchIndexIfExistsAsync()
         {
             await DeleteIndexIfExistsAsync(_options.Value.SearchIndexName);
+        }
+
+        public async Task DeleteSearchChunkIndexIfExistsAsync()
+        {
+            await DeleteIndexIfExistsAsync(_options.Value.SearchChunkIndexName);
         }
 
         public async Task DeleteHijackIndexIfExistsAsync()
@@ -98,13 +113,19 @@ namespace NuGet.Services.AzureSearch
         private SearchIndex InitializeSearchIndex()
         {
             return InitializeIndex<SearchDocument.Full>(
-                _options.Value.SearchIndexName, addScoringProfile: true);
+                _options.Value.SearchIndexName, addScoringProfile: true, addVectorProfile: false);
+        }
+
+        private SearchIndex InitializeSearchChunkIndex()
+        {
+            return InitializeIndex<SearchChunkDocument.Full>(
+                _options.Value.SearchChunkIndexName, addScoringProfile: true, addVectorProfile: true);
         }
 
         private SearchIndex InitializeHijackIndex()
         {
             return InitializeIndex<HijackDocument.Full>(
-                _options.Value.HijackIndexName, addScoringProfile: false);
+                _options.Value.HijackIndexName, addScoringProfile: false, addVectorProfile: false);
         }
 
         private async Task<bool> IndexExistsAsync(string name)
@@ -129,7 +150,7 @@ namespace NuGet.Services.AzureSearch
             });
         }
 
-        private SearchIndex InitializeIndex<TDocument>(string name, bool addScoringProfile)
+        private SearchIndex InitializeIndex<TDocument>(string name, bool addScoringProfile, bool addVectorProfile)
         {
             var fieldBuilder = new FieldBuilder();
             fieldBuilder.Serializer = GetJsonSerializer();
@@ -161,6 +182,11 @@ namespace NuGet.Services.AzureSearch
 
                 index.ScoringProfiles.Add(scoringProfile);
                 index.DefaultScoringProfile = DefaultScoringProfile.Name;
+            }
+
+            if (addVectorProfile)
+            {
+                index.VectorSearch = DefaultVectorSearch.Create();
             }
 
             return index;

@@ -634,6 +634,7 @@ namespace NuGet.Services.AzureSearch
 
             protected readonly RecordingLogger<BatchPusher> _logger;
             protected readonly Mock<ISearchClientWrapper> _searchIndexWrapper;
+            protected readonly Mock<ISearchClientWrapper> _searchChunkIndexWrapper;
             protected readonly Mock<ISearchClientWrapper> _hijackIndexWrapper;
             protected readonly Mock<IVersionListDataClient> _versionListDataClient;
             protected readonly AzureSearchJobConfiguration _config;
@@ -655,12 +656,14 @@ namespace NuGet.Services.AzureSearch
             protected readonly IndexDocumentsAction<KeyedDocument> _hijackDocumentE;
             protected readonly List<IndexDocumentsAction<KeyedDocument>> _hijackDocuments;
             protected readonly List<IndexDocumentsBatch<KeyedDocument>> _searchBatches;
+            protected readonly List<IndexDocumentsBatch<KeyedDocument>> _searchChunkBatches;
             protected readonly List<IndexDocumentsBatch<KeyedDocument>> _hijackBatches;
 
             public BaseFacts(ITestOutputHelper output)
             {
                 _logger = output.GetLogger<BatchPusher>();
                 _searchIndexWrapper = new Mock<ISearchClientWrapper>();
+                _searchChunkIndexWrapper = new Mock<ISearchClientWrapper>();
                 _hijackIndexWrapper = new Mock<ISearchClientWrapper>();
                 _versionListDataClient = new Mock<IVersionListDataClient>();
                 _config = new AzureSearchJobConfiguration();
@@ -670,6 +673,7 @@ namespace NuGet.Services.AzureSearch
                 _telemetryService = new Mock<IAzureSearchTelemetryService>();
 
                 _searchIndexWrapper.Setup(x => x.IndexName).Returns("search");
+                _searchChunkIndexWrapper.Setup(x => x.IndexName).Returns("search-chunk");
                 _hijackIndexWrapper.Setup(x => x.IndexName).Returns("hijack");
                 _versionListDataClient
                     .Setup(x => x.TryReplaceAsync(It.IsAny<string>(), It.IsAny<VersionListData>(), It.IsAny<IAccessCondition>()))
@@ -678,12 +682,17 @@ namespace NuGet.Services.AzureSearch
                 _developmentOptions.Setup(x => x.Value).Returns(() => _developmentConfig);
 
                 _searchBatches = new List<IndexDocumentsBatch<KeyedDocument>>();
+                _searchChunkBatches = new List<IndexDocumentsBatch<KeyedDocument>>();
                 _hijackBatches = new List<IndexDocumentsBatch<KeyedDocument>>();
 
                 _searchIndexWrapper
                     .Setup(x => x.IndexAsync(It.IsAny<IndexDocumentsBatch<KeyedDocument>>()))
                     .ReturnsAsync(() => SearchModelFactory.IndexDocumentsResult(new IndexingResult[0]))
                     .Callback<IndexDocumentsBatch<KeyedDocument>>(b => _searchBatches.Add(b));
+                _searchChunkIndexWrapper
+                    .Setup(x => x.IndexAsync(It.IsAny<IndexDocumentsBatch<KeyedDocument>>()))
+                    .ReturnsAsync(() => SearchModelFactory.IndexDocumentsResult(new IndexingResult[0]))
+                    .Callback<IndexDocumentsBatch<KeyedDocument>>(b => _searchChunkBatches.Add(b));
                 _hijackIndexWrapper
                     .Setup(x => x.IndexAsync(It.IsAny<IndexDocumentsBatch<KeyedDocument>>()))
                     .ReturnsAsync(() => SearchModelFactory.IndexDocumentsResult(new IndexingResult[0]))
@@ -725,6 +734,7 @@ namespace NuGet.Services.AzureSearch
 
                 _target = new BatchPusher(
                     _searchIndexWrapper.Object,
+                    _searchChunkIndexWrapper.Object,
                     _hijackIndexWrapper.Object,
                     _versionListDataClient.Object,
                     _options.Object,

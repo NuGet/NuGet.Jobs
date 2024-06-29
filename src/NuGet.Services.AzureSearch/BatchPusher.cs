@@ -20,6 +20,7 @@ namespace NuGet.Services.AzureSearch
     public class BatchPusher : IBatchPusher
     {
         private readonly ISearchClientWrapper _searchIndex;
+        private readonly ISearchClientWrapper _searchChunkIndex;
         private readonly ISearchClientWrapper _hijackIndex;
         private readonly IVersionListDataClient _versionListDataClient;
         private readonly IOptionsSnapshot<AzureSearchJobConfiguration> _options;
@@ -28,11 +29,13 @@ namespace NuGet.Services.AzureSearch
         private readonly ILogger<BatchPusher> _logger;
         internal readonly Dictionary<string, int> _idReferenceCount;
         internal readonly Queue<IdAndValue<IndexDocumentsAction<KeyedDocument>>> _searchActions;
+        internal readonly Queue<IdAndValue<IndexDocumentsAction<KeyedDocument>>> _searchChunkActions;
         internal readonly Queue<IdAndValue<IndexDocumentsAction<KeyedDocument>>> _hijackActions;
         internal readonly Dictionary<string, ResultAndAccessCondition<VersionListData>> _versionListDataResults;
 
         public BatchPusher(
             ISearchClientWrapper searchIndexClient,
+            ISearchClientWrapper searchChunkIndexClient,
             ISearchClientWrapper hijackIndexClient,
             IVersionListDataClient versionListDataClient,
             IOptionsSnapshot<AzureSearchJobConfiguration> options,
@@ -41,6 +44,7 @@ namespace NuGet.Services.AzureSearch
             ILogger<BatchPusher> logger)
         {
             _searchIndex = searchIndexClient ?? throw new ArgumentNullException(nameof(searchIndexClient));
+            _searchChunkIndex = searchChunkIndexClient ?? throw new ArgumentNullException(nameof(searchChunkIndexClient));
             _hijackIndex = hijackIndexClient ?? throw new ArgumentNullException(nameof(hijackIndexClient));
             _versionListDataClient = versionListDataClient ?? throw new ArgumentNullException(nameof(versionListDataClient));
             _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -50,6 +54,7 @@ namespace NuGet.Services.AzureSearch
             _idReferenceCount = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             _searchActions = new Queue<IdAndValue<IndexDocumentsAction<KeyedDocument>>>();
+            _searchChunkActions = new Queue<IdAndValue<IndexDocumentsAction<KeyedDocument>>>();
             _hijackActions = new Queue<IdAndValue<IndexDocumentsAction<KeyedDocument>>>();
             _versionListDataResults = new Dictionary<string, ResultAndAccessCondition<VersionListData>>();
 
@@ -90,6 +95,11 @@ namespace NuGet.Services.AzureSearch
                 EnqueueAndIncrement(_searchActions, packageId, action);
             }
 
+            foreach (var action in indexActions.SearchChunks)
+            {
+                EnqueueAndIncrement(_searchChunkActions, packageId, action);
+            }
+
             _versionListDataResults.Add(packageId, indexActions.VersionListDataResult);
         }
 
@@ -108,6 +118,7 @@ namespace NuGet.Services.AzureSearch
             var failedPackageIds = new List<string>();
             failedPackageIds.AddRange(await PushBatchesAsync(_hijackIndex, _hijackActions, onlyFull));
             failedPackageIds.AddRange(await PushBatchesAsync(_searchIndex, _searchActions, onlyFull));
+            failedPackageIds.AddRange(await PushBatchesAsync(_searchChunkIndex, _searchChunkActions, onlyFull));
             return new BatchPusherResult(failedPackageIds);
         }
 

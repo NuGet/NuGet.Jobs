@@ -13,6 +13,7 @@ using Kusto.Data.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using NuGet.Packaging.Core;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
 using NuGet.Services.Entities;
 using NuGet.Versioning;
@@ -92,6 +93,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             var verifiedPackages = await LoadVerifiedPackages(cancellationToken);
 
             var packages = new List<Package>();
+            var idToVersionToReadme = new Dictionary<string, Dictionary<NuGetVersion, string>>(StringComparer.OrdinalIgnoreCase);
             var lastIdentity = string.Empty;
             string currentId = null;
             List<Package> currentPackages = null;
@@ -113,8 +115,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     try
                     {
-                        packages.Clear();
-                        lastIdentity = await PopulatePackageDataAsync(packages, pageSize, lastIdentity, cancellationToken);
+                        lastIdentity = await PopulatePackageDataAsync(packages, idToVersionToReadme, pageSize, lastIdentity, cancellationToken);
                         break;
                     }
                     catch (KustoException ex) when (
@@ -137,7 +138,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                             transferredDownloads,
                             allOwners,
                             currentId,
-                            currentPackages);
+                            currentPackages,
+                            idToVersionToReadme);
 
                         currentId = package.Id;
                         currentPackages = new List<Package>();
@@ -158,7 +160,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 transferredDownloads,
                 allOwners,
                 currentId,
-                currentPackages);
+                currentPackages,
+                idToVersionToReadme);
 
             return new InitialAuxiliaryData(
                 allOwners,
@@ -168,7 +171,14 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 popularityTransfers);
         }
 
-        private void EmitNewPackageRegistration(ConcurrentBag<NewPackageRegistration> allWork, HashSet<string> excludedPackages, Dictionary<string, long> transferredDownloads, SortedDictionary<string, SortedSet<string>> allOwners, string currentId, List<Package> currentPackages)
+        private void EmitNewPackageRegistration(
+            ConcurrentBag<NewPackageRegistration> allWork,
+            HashSet<string> excludedPackages,
+            Dictionary<string, long> transferredDownloads,
+            SortedDictionary<string, SortedSet<string>> allOwners,
+            string currentId,
+            List<Package> currentPackages,
+            Dictionary<string, Dictionary<NuGetVersion, string>> idToVersionToReadme)
         {
             if (currentId is null || ShouldSkipPackageRegistration(currentId))
             {
@@ -200,6 +210,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 packageDownloads,
                 owners,
                 uniquePackages,
+                idToVersionToReadme[currentId],
                 excludedPackages.Contains(currentId)));
         }
 
@@ -457,7 +468,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             return builder.GetResult();
         }
 
-        private async Task<string> PopulatePackageDataAsync(List<Package> packages, int pageSize, string lastIdentity, CancellationToken token)
+        private async Task<string> PopulatePackageDataAsync(
+            List<Package> packages,
+            Dictionary<string, Dictionary<NuGetVersion, string>> idToVersionToReadme,
+            int pageSize,
+            string lastIdentity,
+            CancellationToken token)
         {
             var versionsTable = string.Format(_developmentOptions.Value.KustoTableNameFormat, "PackageVersions");
             var manifestsTable = string.Format(_developmentOptions.Value.KustoTableNameFormat, "PackageManifests");
@@ -465,6 +481,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             var vulnerabilitiesTable = string.Format(_developmentOptions.Value.KustoTableNameFormat, "PackageVulnerabilities");
             var deprecationsTable = string.Format(_developmentOptions.Value.KustoTableNameFormat, "PackageDeprecations");
             var archivesTable = string.Format(_developmentOptions.Value.KustoTableNameFormat, "PackageArchives");
+            var readmesTable = string.Format(_developmentOptions.Value.KustoTableNameFormat, "PackageReadmes");
 
             var query = $@"{GetQueryPrefix(versionsTable)}
 | where ResultType == ""Available""{GetLatestFilter()}
@@ -536,6 +553,14 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         SHA512
 ) on Identity
 | project-away Identity1
+| join kind=leftouter (
+    {readmesTable}
+    | where ResultType == ""Legacy"" or ResultType == ""Embedded""
+    | project
+        Identity,
+        Readme = Content
+) on Identity
+| project-away Identity1
 | order by Identity asc
 ";
 
@@ -590,6 +615,18 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         package.HashAlgorithm = "SHA512";
 
                         packages.Add(package);
+
+                        if (!idToVersionToReadme.TryGetValue(package.Id, out var versionToReadme))
+                        {
+                            versionToReadme = new Dictionary<NuGetVersion, string>();
+                            idToVersionToReadme.Add(package.Id, versionToReadme);
+                        }
+
+                        var readme = dataSet.GetString(dataSet.GetOrdinal("Readme"));
+                        if (!string.IsNullOrEmpty(readme))
+                        {
+                            versionToReadme[version] = readme;
+                        }
                     }
                     catch
                     {

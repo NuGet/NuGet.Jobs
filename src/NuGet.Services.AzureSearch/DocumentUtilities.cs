@@ -28,6 +28,13 @@ namespace NuGet.Services.AzureSearch
             return $"{encodedId}-{GetSearchFilterString(searchFilters)}";
         }
 
+        public static string GetSearchChunkDocumentKey(string packageId, SearchFilters searchFilters, string chunkId)
+        {
+            var lowerId = packageId.ToLowerInvariant();
+            var encodedId = EncodeKey(lowerId);
+            return $"{encodedId}-{GetSearchFilterString(searchFilters)}-{chunkId}";
+        }
+
         public static string GetHijackDocumentKey(string packageId, string normalizedVersion)
         {
             var lowerId = packageId.ToLowerInvariant();

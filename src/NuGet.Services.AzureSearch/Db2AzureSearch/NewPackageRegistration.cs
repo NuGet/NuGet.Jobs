@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using NuGet.Services.Entities;
+using NuGet.Versioning;
 
 namespace NuGet.Services.AzureSearch.Db2AzureSearch
 {
@@ -18,12 +19,29 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             long totalDownloadCount,
             string[] owners,
             IReadOnlyList<Package> packages,
+            bool isExcludedByDefault) : this(
+                packageId,
+                totalDownloadCount,
+                owners,
+                packages,
+                versionToReadme: new Dictionary<NuGetVersion, string>(),
+                isExcludedByDefault: isExcludedByDefault)
+        {
+        }
+
+        public NewPackageRegistration(
+            string packageId,
+            long totalDownloadCount,
+            string[] owners,
+            IReadOnlyList<Package> packages,
+            IReadOnlyDictionary<NuGetVersion, string> versionToReadme,
             bool isExcludedByDefault)
         {
             PackageId = packageId ?? throw new ArgumentNullException(packageId);
             TotalDownloadCount = totalDownloadCount;
             Owners = owners ?? throw new ArgumentNullException(nameof(owners));
             Packages = packages ?? throw new ArgumentNullException(nameof(packages));
+            VersionToReadme = versionToReadme ?? throw new ArgumentNullException(nameof(versionToReadme));
             IsExcludedByDefault = isExcludedByDefault;
         }
 
@@ -31,6 +49,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         public long TotalDownloadCount { get; }
         public string[] Owners { get; }
         public IReadOnlyList<Package> Packages { get; }
+        public IReadOnlyDictionary<NuGetVersion, string> VersionToReadme { get; }
         public bool IsExcludedByDefault { get; }
     }
 }

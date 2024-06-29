@@ -120,11 +120,13 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             {
                 containerDeleted = await _blobContainerBuilder.DeleteIfExistsAsync();
                 await _indexBuilder.DeleteSearchIndexIfExistsAsync();
+                await _indexBuilder.DeleteSearchChunkIndexIfExistsAsync();
                 await _indexBuilder.DeleteHijackIndexIfExistsAsync();
             }
 
             await _blobContainerBuilder.CreateAsync(containerDeleted);
             await _indexBuilder.CreateSearchIndexAsync();
+            await _indexBuilder.CreateSearchChunkIndexAsync();
             await _indexBuilder.CreateHijackIndexAsync();
         }
 
@@ -224,7 +226,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         continue;
                     }
 
-                    var indexActions = _indexActionBuilder.AddNewPackageRegistration(work);
+                    var indexActions = await _indexActionBuilder.AddNewPackageRegistrationAsync(work);
 
                     // There can be an empty set of index actions if there were no packages associated with this
                     // package registration.

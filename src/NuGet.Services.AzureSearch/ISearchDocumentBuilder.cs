@@ -58,6 +58,19 @@ namespace NuGet.Services.AzureSearch
             long totalDownloadCount,
             bool isExcludedByDefault);
 
+        void FullFromDb(
+            SearchDocument.Full document,
+            string packageId,
+            SearchFilters searchFilters,
+            string[] versions,
+            bool isLatestStable,
+            bool isLatest,
+            string fullVersion,
+            Package package,
+            string[] owners,
+            long totalDownloadCount,
+            bool isExcludedByDefault);
+
         SearchDocument.UpdateLatest UpdateLatestFromCatalog(
             SearchFilters searchFilters,
             string[] versions,

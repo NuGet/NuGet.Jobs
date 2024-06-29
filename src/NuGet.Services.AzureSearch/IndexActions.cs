@@ -16,17 +16,31 @@ namespace NuGet.Services.AzureSearch
         public IndexActions(
             IReadOnlyList<IndexDocumentsAction<KeyedDocument>> search,
             IReadOnlyList<IndexDocumentsAction<KeyedDocument>> hijack,
+            ResultAndAccessCondition<VersionListData> versionListDataResult) : this(
+                search,
+                searchChunks: Array.Empty<IndexDocumentsAction<KeyedDocument>>(),
+                hijack,
+                versionListDataResult)
+        {
+        }
+
+        public IndexActions(
+            IReadOnlyList<IndexDocumentsAction<KeyedDocument>> search,
+            IReadOnlyList<IndexDocumentsAction<KeyedDocument>> searchChunks,
+            IReadOnlyList<IndexDocumentsAction<KeyedDocument>> hijack,
             ResultAndAccessCondition<VersionListData> versionListDataResult)
         {
             Search = search ?? throw new ArgumentNullException(nameof(search));
+            SearchChunks = searchChunks ?? throw new ArgumentNullException(nameof(searchChunks));
             Hijack = hijack ?? throw new ArgumentNullException(nameof(hijack));
             VersionListDataResult = versionListDataResult ?? throw new ArgumentNullException(nameof(versionListDataResult));
         }
 
         public IReadOnlyList<IndexDocumentsAction<KeyedDocument>> Search { get; }
+        public IReadOnlyList<IndexDocumentsAction<KeyedDocument>> SearchChunks { get; }
         public IReadOnlyList<IndexDocumentsAction<KeyedDocument>> Hijack { get; }
         public ResultAndAccessCondition<VersionListData> VersionListDataResult { get; }
 
-        public bool IsEmpty => Search.Count == 0 && Hijack.Count == 0;
+        public bool IsEmpty => Search.Count == 0 && Hijack.Count == 0 && SearchChunks.Count == 0;
     }
 }

@@ -84,6 +84,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
             _logger.LogInformation("Using cursor: {CursurUrl}", frontCursorUri.AbsoluteUri);
             _logger.LogInformation("Using search service: {SearchServiceName}", _options.Value.SearchServiceName);
             _logger.LogInformation("Using search index: {IndexName}", _options.Value.SearchIndexName);
+            _logger.LogInformation("Using search chunk index: {IndexName}", _options.Value.SearchChunkIndexName);
             _logger.LogInformation("Using hijack index: {IndexName}", _options.Value.HijackIndexName);
 
             // Optionally create the indexes.
@@ -91,6 +92,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
             {
                 await _blobContainerBuilder.CreateIfNotExistsAsync();
                 await _indexBuilder.CreateSearchIndexIfNotExistsAsync();
+                await _indexBuilder.CreateSearchChunkIndexIfNotExistsAsync();
                 await _indexBuilder.CreateHijackIndexIfNotExistsAsync();
             }
 

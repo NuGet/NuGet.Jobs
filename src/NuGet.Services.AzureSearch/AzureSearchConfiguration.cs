@@ -25,6 +25,7 @@ namespace NuGet.Services.AzureSearch
         public string SearchServiceManagedIdentityClientId { get; set; }
 
         public string SearchIndexName { get; set; }
+        public string SearchChunkIndexName { get; set; }
         public string HijackIndexName { get; set; }
         public string StorageConnectionString { get; set; }
         public string StorageContainer { get; set; }
