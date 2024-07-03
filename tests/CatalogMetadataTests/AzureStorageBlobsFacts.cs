@@ -37,12 +37,11 @@ namespace CatalogMetadataTests
             {
                 var responseMock = new Mock<Response>();
                 responseMock.SetupGet(r => r.Status).Returns((int)HttpStatusCode.NotFound);
-
                 _blockBlobMock
                     .Setup(bb => bb.DownloadToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                     .Throws(new RequestFailedException(responseMock.Object));
 
-                var content = (StringStorageContentWithETag)await _storage.LoadAsync(_blobUri, CancellationToken.None);
+                var content = (StringStorageContent)await _storage.LoadAsync(_blobUri, CancellationToken.None);
 
                 Assert.Null(content);
             }
@@ -54,7 +53,6 @@ namespace CatalogMetadataTests
             public async Task WhenCompressedUploadsBlobWithGzipContentEncoding()
             {
                 var headers = new BlobHttpHeaders();
-
                 _blockBlobMock.Setup(bb => bb.UploadAsync(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
                     .Callback<Stream, BlobUploadOptions, CancellationToken>((s, o, c) => headers = o.HttpHeaders);
 
@@ -71,7 +69,6 @@ namespace CatalogMetadataTests
             public async Task WhenUncompressedUploadsBlobWithNoContentEncoding()
             {
                 var headers = new BlobHttpHeaders();
-
                 _blockBlobMock.Setup(bb => bb.UploadAsync(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
                     .Callback<Stream, BlobUploadOptions, CancellationToken>((s, o, c) => headers = o.HttpHeaders);
 

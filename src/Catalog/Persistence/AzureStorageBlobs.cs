@@ -58,7 +58,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         protected override async Task<StorageContent> OnLoadAsync(Uri resourceUri, CancellationToken cancellationToken)
         {
-            string name = GetName(resourceUri).TrimStart('/');
+            var name = GetName(resourceUri).TrimStart('/');
 
             var blob = _blobContainer.GetBlockBlobClient(name);
             var properties = await blob.GetPropertiesAsync(cancellationToken: cancellationToken);
@@ -71,7 +71,6 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 using (var originalStream = new MemoryStream())
                 {
                     await blob.DownloadToAsync(originalStream, cancellationToken);
-
                     originalStream.Seek(0, SeekOrigin.Begin);
 
                     if (properties.Value.ContentEncoding == "gzip")
@@ -112,7 +111,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         protected override async Task OnSaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken)
         {
-            string name = GetName(resourceUri);
+            var name = GetName(resourceUri);
 
             var blob = _blobContainer.GetBlockBlobClient(name);
             var headers = new BlobHttpHeaders
@@ -125,7 +124,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             {
                 headers.ContentEncoding = "gzip";
 
-                using (Stream stream = content.GetContentStream())
+                using (var stream = content.GetContentStream())
                 {
                     var destinationStream = new MemoryStream();
 
