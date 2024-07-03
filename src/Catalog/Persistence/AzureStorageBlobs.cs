@@ -150,7 +150,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 Trace.WriteLine(string.Format("Saved uncompressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
             }
 
-            //await TryTakeBlobSnapshotAsync(blob);
+            await TryTakeBlobSnapshotAsync(blob);
         }
 
         private async Task<bool> TryTakeBlobSnapshotAsync(BlockBlobClient blob)
@@ -164,8 +164,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
             try
             {
-                //the above call will return at least one blob the original
-                if (_blobContainer.GetSnapshotCount(blob.Name) == 1)
+                if (_blobContainer.HasOnlyOriginalSnapshot(blob.Name))
                 {
                     var response = await blob.CreateSnapshotAsync();
                     stopwatch.Stop();

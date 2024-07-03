@@ -10,6 +10,6 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
     {
         BlockBlobClient GetBlockBlobClient(string blobName);
         Uri GetUri();
-        int GetSnapshotCount(string prefix = default);
+        bool HasOnlyOriginalSnapshot(string prefix);
     }
 }

@@ -28,14 +28,14 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return _client.Uri;
         }
 
-        public int GetSnapshotCount(string prefix)
+        public bool HasOnlyOriginalSnapshot(string prefix)
         {
             var blobs = _client.GetBlobs(
                     BlobTraits.None,
                     states: BlobStates.Snapshots,
                     prefix: prefix);
 
-            return blobs.Count();
+            return blobs.Count() == 1;
         }
     }
 }
