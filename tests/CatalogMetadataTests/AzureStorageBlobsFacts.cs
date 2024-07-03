@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
@@ -18,6 +21,32 @@ namespace CatalogMetadataTests
 {
     public class AzureStorageBlobsFacts
     {
+        public class OnLoadAsync : FactBase
+        {
+            [Fact]
+            public async Task ValidUriReturnsContent()
+            {
+                var content = (StringStorageContent)await _storage.LoadAsync(_blobUri, CancellationToken.None);
+
+                _blobContainerMock.Verify(bc => bc.GetBlockBlobClient(_fileName));
+                Assert.Equal(_contentString, content.Content);
+            }
+
+            [Fact]
+            public async Task InvalidUriReturnsNull()
+            {
+                var responseMock = new Mock<Response>();
+                responseMock.SetupGet(r => r.Status).Returns((int)HttpStatusCode.NotFound);
+
+                _blockBlobMock
+                    .Setup(bb => bb.DownloadToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                    .Throws(new RequestFailedException(responseMock.Object));
+
+                var content = (StringStorageContentWithETag)await _storage.LoadAsync(_blobUri, CancellationToken.None);
+
+                Assert.Null(content);
+            }
+        }
 
         public class OnSaveAsync : FactBase
         {
@@ -70,7 +99,7 @@ namespace CatalogMetadataTests
                 _blobContainerMock.Setup(bc => bc.HasOnlyOriginalSnapshot(_fileName)).Returns(false);
 
                 await _storage.SaveAsync(_blobUri, _content, CancellationToken.None);
-                
+
                 _blockBlobMock.Verify(bb => bb.CreateSnapshotAsync(It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>()), Times.Never);
             }
         }
@@ -85,6 +114,7 @@ namespace CatalogMetadataTests
             protected readonly string _fileName;
             protected readonly Uri _blobUri;
 
+            protected readonly string _contentString;
             protected readonly string _contentType;
             protected readonly string _cacheControl;
             protected readonly StringStorageContent _content;
@@ -96,13 +126,16 @@ namespace CatalogMetadataTests
                 _blobUri = new Uri(_baseAddress, _fileName);
                 _contentType = "application/json";
                 _cacheControl = "no-store";
-                _content = new StringStorageContent("1234", _contentType, _cacheControl);
+                _contentString = JsonSerializer.Serialize(new { value = "1234" });
+                var contentBytes = Encoding.Default.GetBytes(_contentString);
+                _content = new StringStorageContent(_contentString, _contentType, _cacheControl);
 
-                var properties = new BlobProperties();
-                var response = Response.FromValue(properties, Mock.Of<Response>());
-                _blockBlobMock.Setup(bb => bb.GetPropertiesAsync(It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
                 _blockBlobMock.Setup(bb => bb.Uri).Returns(_blobUri);
                 _blockBlobMock.Setup(bb => bb.Name).Returns(_fileName);
+                _blockBlobMock.Setup(bb => bb.DownloadToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                    .Callback<Stream, CancellationToken>((s, c) => s.Write(contentBytes, 0, contentBytes.Length));
+                var response = Response.FromValue(new BlobProperties(), Mock.Of<Response>());
+                _blockBlobMock.Setup(bb => bb.GetPropertiesAsync(It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
 
                 _blobContainerMock = new Mock<IBlobContainerClient>();
                 _blobContainerMock.Setup(bc => bc.GetUri()).Returns(_baseAddress);
