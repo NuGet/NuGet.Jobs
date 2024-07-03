@@ -6,28 +6,30 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage.Blobs.Models;
-using Azure.Storage.Blobs;
 using NuGet.Protocol;
 
 namespace NuGet.Services.Metadata.Catalog.Persistence
 {
-    public class AzureStorageMsi : Storage
+    /// <summary>
+    /// <see cref="Storage"/> implementation using v12 <see cref="Azure.Storage.Blobs"/> Sdk.
+    /// See <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/storage/Azure.Storage.Blobs/AzureStorageNetMigrationV12.md">Migration Guide: From Microsoft.Azure.Storage.Blob to Azure.Storage.Blobs</see>
+    /// </summary>
+    public class AzureStorageBlobs : Storage
     {
         private readonly bool _compressContent;
-        private readonly BlobContainerClient _blobContainer;
+        private readonly IBlobContainerClient _blobContainer;
         private readonly IThrottle _throttle;
 
-        public AzureStorageMsi(
-            BlobContainerClient blobContainer,
+        public AzureStorageBlobs(
+            IBlobContainerClient blobContainer,
             bool compressContent,
-            IThrottle throttle) : base(blobContainer.Uri)
+            IThrottle throttle) : base(blobContainer.GetUri())
         {
             _blobContainer = blobContainer ?? throw new ArgumentNullException(nameof(blobContainer));
             _compressContent = compressContent;
@@ -113,11 +115,10 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             string name = GetName(resourceUri);
 
             var blob = _blobContainer.GetBlockBlobClient(name);
-            var properties = await blob.GetPropertiesAsync();
             var headers = new BlobHttpHeaders
             {
                 ContentType = content.ContentType,
-                CacheControl = content.CacheControl,
+                CacheControl = content.CacheControl
             };
 
             if (_compressContent)
@@ -149,7 +150,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 Trace.WriteLine(string.Format("Saved uncompressed blob {0} to container {1}", blob.Uri.ToString(), blob.BlobContainerName));
             }
 
-            await TryTakeBlobSnapshotAsync(blob);
+            //await TryTakeBlobSnapshotAsync(blob);
         }
 
         private async Task<bool> TryTakeBlobSnapshotAsync(BlockBlobClient blob)
@@ -163,13 +164,8 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
             try
             {
-                var blobs = _blobContainer.GetBlobs(
-                    BlobTraits.None,
-                    states: BlobStates.Snapshots,
-                    prefix: blob.Name);
-
                 //the above call will return at least one blob the original
-                if (blobs.Count() == 1)
+                if (_blobContainer.GetSnapshotCount(blob.Name) == 1)
                 {
                     var response = await blob.CreateSnapshotAsync();
                     stopwatch.Stop();
