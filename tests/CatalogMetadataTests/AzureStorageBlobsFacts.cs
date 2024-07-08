@@ -104,7 +104,7 @@ namespace CatalogMetadataTests
         public class FactBase
         {
             protected readonly AzureStorageBlobs _storage;
-            protected readonly Mock<IBlobContainerClient> _blobContainerMock;
+            protected readonly Mock<IBlobContainerClientWrapper> _blobContainerMock;
             protected readonly Mock<BlockBlobClient> _blockBlobMock = new Mock<BlockBlobClient>();
 
             protected readonly Uri _baseAddress;
@@ -134,7 +134,7 @@ namespace CatalogMetadataTests
                 var response = Response.FromValue(new BlobProperties(), Mock.Of<Response>());
                 _blockBlobMock.Setup(bb => bb.GetPropertiesAsync(It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>())).ReturnsAsync(response);
 
-                _blobContainerMock = new Mock<IBlobContainerClient>();
+                _blobContainerMock = new Mock<IBlobContainerClientWrapper>();
                 _blobContainerMock.Setup(bc => bc.GetUri()).Returns(_baseAddress);
                 _blobContainerMock.Setup(bc => bc.GetBlockBlobClient(_fileName)).Returns(_blockBlobMock.Object);
 

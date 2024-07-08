@@ -23,11 +23,11 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
     public class AzureStorageBlobs : Storage
     {
         private readonly bool _compressContent;
-        private readonly IBlobContainerClient _blobContainer;
+        private readonly IBlobContainerClientWrapper _blobContainer;
         private readonly IThrottle _throttle;
 
         public AzureStorageBlobs(
-            IBlobContainerClient blobContainer,
+            IBlobContainerClientWrapper blobContainer,
             bool compressContent,
             IThrottle throttle) : base(blobContainer.GetUri())
         {
@@ -58,7 +58,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         protected override async Task<StorageContent> OnLoadAsync(Uri resourceUri, CancellationToken cancellationToken)
         {
-            var name = GetName(resourceUri).TrimStart('/');
+            string name = GetName(resourceUri).TrimStart('/');
 
             var blob = _blobContainer.GetBlockBlobClient(name);
             var properties = await blob.GetPropertiesAsync(cancellationToken: cancellationToken);
@@ -111,7 +111,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         protected override async Task OnSaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken)
         {
-            var name = GetName(resourceUri);
+            string name = GetName(resourceUri);
 
             var blob = _blobContainer.GetBlockBlobClient(name);
             var headers = new BlobHttpHeaders

@@ -6,7 +6,7 @@ using Azure.Storage.Blobs.Specialized;
 
 namespace NuGet.Services.Metadata.Catalog.Persistence
 {
-    public interface IBlobContainerClient
+    public interface IBlobContainerClientWrapper
     {
         BlockBlobClient GetBlockBlobClient(string blobName);
         Uri GetUri();
