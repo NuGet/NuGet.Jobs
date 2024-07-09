@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -26,7 +27,7 @@ namespace CatalogMetadataTests
             [Fact]
             public async Task ValidUriReturnsContent()
             {
-                var content = (StringStorageContent)await _storage.LoadAsync(_blobUri, CancellationToken.None);
+                var content = (StringStorageContent)await _uncompressedStorage.LoadAsync(_blobUri, CancellationToken.None);
 
                 _blobContainerMock.Verify(bc => bc.GetBlockBlobClient(_fileName));
                 Assert.Equal(_contentString, content.Content);
@@ -41,7 +42,7 @@ namespace CatalogMetadataTests
                     .Setup(bb => bb.DownloadToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                     .Throws(new RequestFailedException(responseMock.Object));
 
-                var content = (StringStorageContent)await _storage.LoadAsync(_blobUri, CancellationToken.None);
+                var content = (StringStorageContent)await _uncompressedStorage.LoadAsync(_blobUri, CancellationToken.None);
 
                 Assert.Null(content);
             }
@@ -53,31 +54,45 @@ namespace CatalogMetadataTests
             public async Task WhenCompressedUploadsBlobWithGzipContentEncoding()
             {
                 var headers = new BlobHttpHeaders();
+                var stream = new MemoryStream();
                 _blockBlobMock.Setup(bb => bb.UploadAsync(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
-                    .Callback<Stream, BlobUploadOptions, CancellationToken>((s, o, c) => headers = o.HttpHeaders);
+                    .Callback<Stream, BlobUploadOptions, CancellationToken>((s, o, c) =>
+                    {
+                        s.CopyTo(stream);
+                        headers = o.HttpHeaders;
+                    });
 
-                var storage = new AzureStorageBlobs(_blobContainerMock.Object, true, NullThrottle.Instance);
-                await storage.SaveAsync(_blobUri, _content, CancellationToken.None);
+                var compressedStorage = new AzureStorageBlobs(_blobContainerMock.Object, compressContent: true, throttle: NullThrottle.Instance);
+                await compressedStorage.SaveAsync(_blobUri, _content, CancellationToken.None);
 
+                var content = await LoadContentAsync(stream, isCompressed: true);
                 _blobContainerMock.Verify(bc => bc.GetBlockBlobClient(_fileName));
                 Assert.Equal(_contentType, headers.ContentType);
                 Assert.Equal(_cacheControl, headers.CacheControl);
                 Assert.Equal("gzip", headers.ContentEncoding);
+                Assert.Equal(_content.Content, content);
             }
 
             [Fact]
             public async Task WhenUncompressedUploadsBlobWithNoContentEncoding()
             {
                 var headers = new BlobHttpHeaders();
+                var stream = new MemoryStream();
                 _blockBlobMock.Setup(bb => bb.UploadAsync(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
-                    .Callback<Stream, BlobUploadOptions, CancellationToken>((s, o, c) => headers = o.HttpHeaders);
+                    .Callback<Stream, BlobUploadOptions, CancellationToken>((s, o, c) =>
+                    {
+                        s.CopyTo(stream);
+                        headers = o.HttpHeaders;
+                    });
 
-                await _storage.SaveAsync(_blobUri, _content, CancellationToken.None);
+                await _uncompressedStorage.SaveAsync(_blobUri, _content, CancellationToken.None);
 
+                var content = await LoadContentAsync(stream, isCompressed: false);
                 _blobContainerMock.Verify(bc => bc.GetBlockBlobClient(_fileName));
                 Assert.Equal(_contentType, headers.ContentType);
                 Assert.Equal(_cacheControl, headers.CacheControl);
                 Assert.Null(headers.ContentEncoding);
+                Assert.Equal(_content.Content, content);
             }
 
             [Fact]
@@ -85,7 +100,7 @@ namespace CatalogMetadataTests
             {
                 _blobContainerMock.Setup(bc => bc.HasOnlyOriginalSnapshot(_fileName)).Returns(true);
 
-                await _storage.SaveAsync(_blobUri, _content, CancellationToken.None);
+                await _uncompressedStorage.SaveAsync(_blobUri, _content, CancellationToken.None);
 
                 _blockBlobMock.Verify(bb => bb.CreateSnapshotAsync(It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>()));
             }
@@ -95,7 +110,7 @@ namespace CatalogMetadataTests
             {
                 _blobContainerMock.Setup(bc => bc.HasOnlyOriginalSnapshot(_fileName)).Returns(false);
 
-                await _storage.SaveAsync(_blobUri, _content, CancellationToken.None);
+                await _uncompressedStorage.SaveAsync(_blobUri, _content, CancellationToken.None);
 
                 _blockBlobMock.Verify(bb => bb.CreateSnapshotAsync(It.IsAny<IDictionary<string, string>>(), It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>()), Times.Never);
             }
@@ -103,7 +118,7 @@ namespace CatalogMetadataTests
 
         public class FactBase
         {
-            protected readonly AzureStorageBlobs _storage;
+            protected readonly AzureStorageBlobs _uncompressedStorage;
             protected readonly Mock<IBlobContainerClientWrapper> _blobContainerMock;
             protected readonly Mock<BlockBlobClient> _blockBlobMock = new Mock<BlockBlobClient>();
 
@@ -138,7 +153,34 @@ namespace CatalogMetadataTests
                 _blobContainerMock.Setup(bc => bc.GetUri()).Returns(_baseAddress);
                 _blobContainerMock.Setup(bc => bc.GetBlockBlobClient(_fileName)).Returns(_blockBlobMock.Object);
 
-                _storage = new AzureStorageBlobs(_blobContainerMock.Object, false, NullThrottle.Instance);
+                _uncompressedStorage = new AzureStorageBlobs(_blobContainerMock.Object, compressContent: false, throttle: NullThrottle.Instance);
+            }
+
+            public async Task<string> LoadContentAsync(Stream stream, bool isCompressed)
+            {
+                string content;
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                if (isCompressed)
+                {
+                    using (var uncompressedStream = new GZipStream(stream, CompressionMode.Decompress))
+                    {
+                        using (var reader = new StreamReader(uncompressedStream))
+                        {
+                            content = await reader.ReadToEndAsync();
+                        }
+                    }
+                }
+                else
+                {
+                    using (var reader = new StreamReader(stream))
+                    {
+                        content = await reader.ReadToEndAsync();
+                    }
+                }
+
+                return content;
             }
         }
     }
