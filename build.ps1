@@ -143,6 +143,9 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\Validation.ContentScan.Core\Validation.ContentScan.Core.csproj",
             "src\Validation.ScanAndSign.Core\Validation.ScanAndSign.Core.csproj",
             "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj"
+        $JobsProjects | ForEach-Object {
+            New-ProjectPackage (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $JobsPackageVersion -Branch $Branch -Symbols
+        }
 
         $JobsNuspecProjects =
             "src\ArchivePackages\ArchivePackages.csproj",
@@ -182,11 +185,6 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\Validation.PackageSigning.ValidateCertificate\Validation.PackageSigning.ValidateCertificate.csproj",
             "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj",
             "src\Validation.Symbols\Validation.Symbols.Job.csproj"
-
-        $JobsProjects | ForEach-Object {
-            New-ProjectPackage (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $JobsPackageVersion -Branch $Branch -Symbols
-        }
-
         $JobsNuspecProjects | ForEach-Object {
             New-Package (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $JobsPackageVersion -Branch $Branch
         }
