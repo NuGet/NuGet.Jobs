@@ -130,9 +130,6 @@ Invoke-BuildStep 'Signing the binaries' {
     -ev +BuildErrors
 
 Invoke-BuildStep 'Creating artifacts' {
-        # We need a few projects to be published for sharing the common bits with other repos.
-        # We need symbols published for those, too. All other packages are deployment ones and
-        # don't need to be shared, hence no need for symbols for them
         $JobsProjects =
             "src\Catalog\NuGet.Services.Metadata.Catalog.csproj",
             "src\Microsoft.PackageManagement.Search.Web\Microsoft.PackageManagement.Search.Web.csproj",
