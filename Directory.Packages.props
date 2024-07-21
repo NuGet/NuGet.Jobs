@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <EnablePackageVersionOverride>true</EnablePackageVersionOverride>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+    <EnablePackageVersionOverride>true</EnablePackageVersionOverride>
 
-    <ServerCommonPackageVersion>2.120.0</ServerCommonPackageVersion>
     <NuGetClientPackageVersion>6.9.1</NuGetClientPackageVersion>
+    <ServerCommonPackageVersion>2.120.0</ServerCommonPackageVersion>
     <NuGetGalleryPackageVersion>4.4.5-dev-9861622</NuGetGalleryPackageVersion>
   </PropertyGroup>
   <ItemGroup>
