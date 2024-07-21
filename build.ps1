@@ -7,9 +7,9 @@ param (
     [switch]$CleanCache,
     [string]$JobsAssemblyVersion = '4.3.0',
     [string]$JobsPackageVersion = '4.3.0-zlocal',
-    [string]$Branch = 'zlocal',
+    [string]$Branch,
     [string]$CommitSHA,
-    [string]$BuildBranchCommit = 'aa6149290d549a0b68f685cc88357f7a29959e38' #DevSkim: ignore DS173237. Not a secret/token. It is a commit hash.
+    [string]$BuildBranchCommit = '02f7e88bee3784bedfdebbabf2cc885feade095f' #DevSkim: ignore DS173237. Not a secret/token. It is a commit hash.
 )
 
 # For TeamCity - If any issue occurs, this script fails the build. - By default, TeamCity returns an exit code of 0 for all powershell scripts, even if they fail
