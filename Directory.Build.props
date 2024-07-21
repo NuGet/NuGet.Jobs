@@ -29,5 +29,5 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
-  <Import Condition="'$(NuGetCodeAnalyzerExtensions)' != '' And Exists('$(NuGetCodeAnalyzerExtensions)')" Project="$(NuGetCodeAnalyzerExtensions)" />
+  <Import Project="$(NuGetCodeAnalyzerExtensions)" Condition="'$(NuGetCodeAnalyzerExtensions)' != '' And Exists('$(NuGetCodeAnalyzerExtensions)')" />
 </Project>
