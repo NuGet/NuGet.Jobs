@@ -61,7 +61,7 @@ Function Invoke-Tests {
     
     $JobsTestProjects | ForEach-Object {
         $TestResultFile = Join-Path $PSScriptRoot "Results.$TestCount.xml"
-        dotnet test (Join-Path $PSScriptRoot $_) --configuration $Configuration "-l:trx;LogFileName=$TestResultFile"
+        dotnet test (Join-Path $PSScriptRoot $_) --no-restore --no-build --configuration $Configuration "-l:trx;LogFileName=$TestResultFile"
         if (-not (Test-Path $TestResultFile)) {
             Write-Error "The test run failed to produce a result file";
             exit 1;
