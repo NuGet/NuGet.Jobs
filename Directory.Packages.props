@@ -6,7 +6,7 @@
 
     <NuGetClientPackageVersion>6.9.1</NuGetClientPackageVersion>
     <ServerCommonPackageVersion>2.120.0</ServerCommonPackageVersion>
-    <NuGetGalleryPackageVersion>4.4.5-dev-9861622</NuGetGalleryPackageVersion>
+    <NuGetGalleryPackageVersion>4.4.5-main-9892284</NuGetGalleryPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="4.4.0" />
