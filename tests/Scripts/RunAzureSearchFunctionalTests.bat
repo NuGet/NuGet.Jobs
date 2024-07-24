@@ -25,7 +25,7 @@ if not exist nuget (
 
 echo "Restoring all solutions..."
 call %nuget% restore "%solutionPath%" -NonInteractive
-call %nuget% restore "..\packages.config" -PackagesDirectory "..\packages" -NonInteractive
+call %nuget% restore "..\packages.config" -PackagesDirectory "..\packages" -NonInteractive -ExcludeVersion
 if not "%errorlevel%"=="0" goto failure
 
 echo "Building solution..." %solutionPath%
