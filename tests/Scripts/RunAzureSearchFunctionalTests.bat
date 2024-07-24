@@ -10,7 +10,7 @@ set exitCode=0
 
 REM Required Tools
 set msbuild="%PROGRAMFILES(X86)%\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild"
-set xunit="..\packages\xunit.runner.console.2.1.0\tools\xunit.console.exe"
+set xunit="..\packages\xunit.runner.console\tools\net472\xunit.console.exe"
 set nuget="nuget.exe"
 
 REM Delete old test results
