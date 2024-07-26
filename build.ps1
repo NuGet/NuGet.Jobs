@@ -12,7 +12,6 @@ param (
     [string]$BuildBranchCommit = '00a01b766623fb5b714238c4e814e906a242e88e' #DevSkim: ignore DS173237. Not a secret/token. It is a commit hash.
 )
 
-# For TeamCity - If any issue occurs, this script fails the build. - By default, TeamCity returns an exit code of 0 for all powershell scripts, even if they fail
 trap {
     Write-Host "BUILD FAILED: $_" -ForegroundColor Red
     Write-Host "ERROR DETAILS:" -ForegroundColor Red
@@ -37,12 +36,35 @@ if (-not $BuildNumber) {
 }
 Trace-Log "Build #$BuildNumber started at $startTime"
 
+function Get-SolutionProjects($SolutionPath) {
+    $paths = dotnet sln $SolutionPath list | Where-Object { $_ -like "*.csproj" }
+    if (!$paths) {
+        throw "Failed to find .csproj files found in solution $SolutionPath."
+    }
+
+    $solutionDir = Split-Path (Resolve-Path $SolutionPath)
+
+    $projects = $paths | ForEach-Object {
+        $projectPath = Join-Path $solutionDir $_
+        $projectRelativeDir = Split-Path $_
+        $projectDir = Join-Path $solutionDir $projectRelativeDir
+        $isTestProject = $projectRelativeDir -like "test*";
+        return [PSCustomObject]@{
+            IsTest = $isTestProject;
+            Directory = $projectDir;
+            Path = $projectPath;
+        }
+    }
+
+    return $projects | Sort-Object -Property Path
+}
+
 $BuildErrors = @()
+$JobsSolution = Join-Path $PSScriptRoot "NuGet.Jobs.sln"
+$JobsProjects = Get-SolutionProjects $JobsSolution
+$JobsFunctionalTestsSolution = Join-Path $PSScriptRoot "NuGet.Jobs.FunctionalTests.sln"
 
 Invoke-BuildStep 'Getting private build tools' { Install-PrivateBuildTools } `
-    -ev +BuildErrors
-    
-Invoke-BuildStep 'Cleaning test results' { Clear-Tests } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Installing NuGet.exe' { Install-NuGet } `
@@ -55,77 +77,34 @@ Invoke-BuildStep 'Clearing package cache' { Clear-PackageCache } `
 Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' { `
-        $JobsAssemblyInfo =
-            "src\Catalog\Properties\AssemblyInfo.g.cs",
-            "src\CopyAzureContainer\Properties\AssemblyInfo.g.cs",
-            "src\Gallery.CredentialExpiration\Properties\AssemblyInfo.g.cs",
-            "src\Microsoft.PackageManagement.Search.Web\Properties\AssemblyInfo.g.cs",
-            "src\Ng\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.Auxiliary2AzureSearch\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.Catalog2AzureSearch\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.Catalog2Registration\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.Common\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.Db2AzureSearch\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Jobs.GitHubIndexer\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Protocol.Catalog\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Services.AzureSearch\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Services.Metadata.Catalog.Monitoring\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Services.Revalidate\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Services.SearchService.Core\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Services.V3\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.Services.Validation.Orchestrator\Properties\AssemblyInfo.g.cs",
-            "src\NuGet.SupportRequests.Notifications\Properties\AssemblyInfo.g.cs",
-            "src\NuGetCDNRedirect\Properties\AssemblyInfo.g.cs",
-            "src\PackageHash\Properties\AssemblyInfo.g.cs",
-            "src\PackageLagMonitor\Properties\AssemblyInfo.g.cs",
-            "src\SplitLargeFiles\Properties\AssemblyInfo.g.cs",
-            "src\Stats.AzureCdnLogs.Common\Properties\AssemblyInfo.g.cs",
-            "src\Stats.CDNLogsSanitizer\Properties\AssemblyInfo.g.cs",
-            "src\Stats.CollectAzureChinaCDNLogs\Properties\AssemblyInfo.g.cs",
-            "src\Stats.LogInterpretation\Properties\AssemblyInfo.g.cs",
-            "src\Stats.PostProcessReports\Properties\AssemblyInfo.g.cs",
-            "src\Stats.Warehouse\Properties\AssemblyInfo.g.cs",
-            "src\StatusAggregator\Properties\AssemblyInfo.g.cs",
-            "src\Validation.Common.Job\Properties\AssemblyInfo.g.cs",
-            "src\Validation.ContentScan.Core\Properties\AssemblyInfo.g.cs",
-            "src\Validation.PackageSigning.Core\Properties\AssemblyInfo.g.cs",
-            "src\Validation.PackageSigning.ProcessSignature\Properties\AssemblyInfo.g.cs",
-            "src\Validation.PackageSigning.RevalidateCertificate\Properties\AssemblyInfo.g.cs",
-            "src\Validation.PackageSigning.ValidateCertificate\Properties\AssemblyInfo.g.cs",
-            "src\Validation.ScanAndSign.Core\Properties\AssemblyInfo.g.cs",
-            "src\Validation.Symbols.Core\Properties\AssemblyInfo.g.cs",
-            "src\Validation.Symbols\Properties\AssemblyInfo.g.cs"
-            
-        $JobsAssemblyInfo | ForEach-Object {
-            Set-VersionInfo (Join-Path $PSScriptRoot $_) -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA
+Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' {
+        $JobsProjects | Where-Object { !$_.IsTest } | ForEach-Object {
+            $Path = Join-Path $_.Directory "Properties\AssemblyInfo.g.cs"
+            Set-VersionInfo $Path -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA
         }
     } `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Restoring solution packages' { `
-    Install-SolutionPackages -path (Join-Path $PSScriptRoot "packages.config") -output (Join-Path $PSScriptRoot "packages") -ExcludeVersion } `
+Invoke-BuildStep 'Restoring solution packages' {
+        $SolutionPath = Join-Path $PSScriptRoot "packages.config"
+        $PackagesDir = Join-Path $PSScriptRoot "packages"
+        Install-SolutionPackages -path $SolutionPath -output $PackagesDir -ExcludeVersion
+    } `
     -skip:$SkipRestore `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Removing .editorconfig file' { Remove-EditorconfigFile -Directory $PSScriptRoot } `
-    -ev +BuildErrors
-
-Invoke-BuildStep 'Building solution' { 
-    param($Configuration, $BuildNumber, $SolutionPath, $SkipRestore)
-    Build-Solution -Configuration $Configuration -BuildNumber $BuildNumber -SolutionPath $SolutionPath -SkipRestore:$SkipRestore `
+Invoke-BuildStep 'Building jobs solution' { 
+        Build-Solution -Configuration $Configuration -BuildNumber $BuildNumber -SolutionPath $JobsSolution -SkipRestore:$SkipRestore
     } `
-    -args $Configuration, $BuildNumber, (Join-Path $PSScriptRoot "NuGet.Jobs.sln"), $SkipRestore `
     -ev +BuildErrors 
 
-Invoke-BuildStep 'Building functional test solution' { 
-        $SolutionPath = Join-Path $PSScriptRoot "tests\NuGetServicesMetadata.FunctionalTests.sln"
-        Build-Solution -Configuration $Configuration -BuildNumber $BuildNumber -SolutionPath $SolutionPath -SkipRestore:$SkipRestore `
+Invoke-BuildStep 'Building jobs functional test solution' { 
+        Build-Solution -Configuration $Configuration -BuildNumber $BuildNumber -SolutionPath $JobsFunctionalTestsSolution -SkipRestore:$SkipRestore
     } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Signing the binaries' {
-        Sign-Binaries -Configuration $Configuration -BuildNumber $BuildNumber `
+        Sign-Binaries -Configuration $Configuration -BuildNumber $BuildNumber
     } `
     -ev +BuildErrors
 
@@ -192,7 +171,7 @@ Invoke-BuildStep 'Creating artifacts' {
     -ev +BuildErrors
 
 Invoke-BuildStep 'Signing the packages' {
-        Sign-Packages -Configuration $Configuration -BuildNumber $BuildNumber `
+        Sign-Packages -Configuration $Configuration -BuildNumber $BuildNumber
     } `
     -ev +BuildErrors
 
