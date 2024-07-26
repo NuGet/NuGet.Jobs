@@ -196,6 +196,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="dotNetRDF" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NuGet.StrongName.json-ld.net" />
     <PackageReference Include="Moq" />
     <PackageReference Include="xunit" />
