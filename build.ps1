@@ -9,7 +9,7 @@ param (
     [string]$JobsPackageVersion = '4.3.0-zlocal',
     [string]$Branch,
     [string]$CommitSHA,
-    [string]$BuildBranchCommit = '00a01b766623fb5b714238c4e814e906a242e88e' #DevSkim: ignore DS173237. Not a secret/token. It is a commit hash.
+    [string]$BuildBranchCommit = 'caca1e96b175172a623e67a3bd53d2f7a78f6c7e' #DevSkim: ignore DS173237. Not a secret/token. It is a commit hash.
 )
 
 trap {
@@ -36,29 +36,6 @@ if (-not $BuildNumber) {
 }
 Trace-Log "Build #$BuildNumber started at $startTime"
 
-function Get-SolutionProjects($SolutionPath) {
-    $paths = dotnet sln $SolutionPath list | Where-Object { $_ -like "*.csproj" }
-    if (!$paths) {
-        throw "Failed to find .csproj files found in solution $SolutionPath."
-    }
-
-    $solutionDir = Split-Path (Resolve-Path $SolutionPath)
-
-    $projects = $paths | ForEach-Object {
-        $projectPath = Join-Path $solutionDir $_
-        $projectRelativeDir = Split-Path $_
-        $projectDir = Join-Path $solutionDir $projectRelativeDir
-        $isTestProject = $projectRelativeDir -like "test*";
-        return [PSCustomObject]@{
-            IsTest = $isTestProject;
-            Directory = $projectDir;
-            Path = $projectPath;
-        }
-    }
-
-    return $projects | Sort-Object -Property Path
-}
-
 $BuildErrors = @()
 $JobsSolution = Join-Path $PSScriptRoot "NuGet.Jobs.sln"
 $JobsProjects = Get-SolutionProjects $JobsSolution
@@ -77,7 +54,7 @@ Invoke-BuildStep 'Clearing package cache' { Clear-PackageCache } `
 Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Set version metadata in AssemblyInfo.cs' {
+Invoke-BuildStep 'Setting job version metadata in AssemblyInfo.cs' {
         $JobsProjects | Where-Object { !$_.IsTest } | ForEach-Object {
             $Path = Join-Path $_.Directory "Properties\AssemblyInfo.g.cs"
             Set-VersionInfo $Path -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA

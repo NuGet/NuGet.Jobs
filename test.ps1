@@ -15,30 +15,6 @@ trap {
 
 . "$PSScriptRoot\build\common.ps1"
 
-function Get-SolutionProjects($SolutionPath) {
-    $paths = dotnet sln $SolutionPath list | Where-Object { $_ -like "*.csproj" }
-    if (!$paths) {
-        throw "Failed to find .csproj files found in solution $SolutionPath."
-    }
-
-    $solutionDir = Split-Path (Resolve-Path $SolutionPath)
-    
-    $projects = $paths | ForEach-Object {
-        $projectPath = Join-Path $solutionDir $_
-        $projectRelativeDir = Split-Path $_
-        $projectDir = Join-Path $solutionDir $projectRelativeDir
-        $isTestProject = $projectRelativeDir -like "test*";
-        return [PSCustomObject]@{
-            IsTest = $isTestProject;
-            Directory = $projectDir;
-            Path = $projectPath;
-            RelativePath = $_;
-        }
-    }
-
-    return $projects | Sort-Object -Property Path
-}
-
 Write-Host ("`r`n" * 3)
 Trace-Log ('=' * 60)
 
