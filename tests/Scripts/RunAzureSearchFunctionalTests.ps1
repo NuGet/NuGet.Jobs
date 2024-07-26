@@ -11,7 +11,7 @@ $rootRootName = $root.parent.FullName
 
 # Required tools
 $BuiltInVsWhereExe = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-$VsInstallationPath = & $BuiltInVsWhereExe -latest -property installationPath
+$VsInstallationPath = & $BuiltInVsWhereExe -latest -prerelease -property installationPath
 $msBuild = Join-Path $VsInstallationPath "MSBuild\Current\Bin\msbuild"
 $xunit = "$rootRootName\packages\xunit.runner.console\tools\net472\xunit.console.exe"
 $nuget = "$rootName\nuget.exe"
