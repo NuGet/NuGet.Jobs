@@ -61,14 +61,13 @@
     <ProjectReference Include="..\..\src\Ng\Ng.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" TreatAsUsed="true" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
     <PackageReference Include="NuGetGallery.Core" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
-      <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>
   </ItemGroup>
 </Project>

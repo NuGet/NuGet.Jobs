@@ -10,11 +10,10 @@
     <ProjectReference Include="..\NuGet.Services.V3.Tests\NuGet.Services.V3.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" TreatAsUsed="true" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
-      <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>
   </ItemGroup>
 </Project>

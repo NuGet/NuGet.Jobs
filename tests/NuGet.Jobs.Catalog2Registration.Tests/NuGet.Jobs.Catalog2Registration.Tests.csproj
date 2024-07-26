@@ -6,11 +6,10 @@
     <RootNamespace>NuGet.Jobs.Catalog2Registration</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" TreatAsUsed="true" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
-      <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
