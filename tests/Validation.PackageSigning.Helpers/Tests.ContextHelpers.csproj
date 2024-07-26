@@ -7,7 +7,6 @@
     <AssemblyName>Validation.PackageSigning.Helpers</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Moq" />
     <PackageReference Include="NuGet.Services.Testing.Entities" />
   </ItemGroup>
   <ItemGroup>

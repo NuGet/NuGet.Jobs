@@ -15,9 +15,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Stats.PostProcessReports\Stats.PostProcessReports.csproj">
-      <Project>{7e5387a5-de19-4e43-888b-e8e1c687ecf5}</Project>
-      <Name>Stats.PostProcessReports</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\..\src\Stats.PostProcessReports\Stats.PostProcessReports.csproj" />
   </ItemGroup>
 </Project>
