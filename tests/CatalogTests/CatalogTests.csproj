@@ -194,15 +194,11 @@
     <ProjectReference Include="..\NuGet.Services.V3.Tests\NuGet.Services.V3.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" />
-    <PackageReference Include="dotNetRDF" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="NuGet.StrongName.json-ld.net" />
-    <PackageReference Include="Moq" />
-    <PackageReference Include="xunit" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" TreatAsUsed="true" />
     <PackageReference Include="xunit.runner.visualstudio">
-      <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+      <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
