@@ -24,16 +24,16 @@ if (-not $BuildNumber) {
 }
 Trace-Log "Build #$BuildNumber started at $startTime"
 
-$BuildErrors = @()
+$TestErrors = @()
 $JobsSolution = Join-Path $PSScriptRoot "NuGet.Jobs.sln"
 $JobsProjects = Get-SolutionProjects $JobsSolution
 $ExcludeTestProjects =
     "tests\Validation.PackageSigning.Helpers\Tests.ContextHelpers.csproj"
 
 Invoke-BuildStep 'Cleaning test results' { Clear-Tests } `
-    -ev +BuildErrors
+    -ev +TestErrors
 
-Invoke-BuildStep 'Running tests' {
+Invoke-BuildStep 'Running jobs tests' {
         $JobsTestProjects = $JobsProjects `
             | Where-Object { $_.IsTest } `
             | Where-Object { $ExcludeTestProjects -notcontains $_.RelativePath }
@@ -62,9 +62,9 @@ Trace-Log "Time elapsed $(Format-ElapsedTime ($endTime - $startTime))"
 
 Trace-Log ('=' * 60)
 
-if ($BuildErrors) {
-    $ErrorLines = $BuildErrors | ForEach-Object { ">>> $($_.Exception.Message)" }
-    Error-Log "Tests completed with $($BuildErrors.Count) error(s):`r`n$($ErrorLines -join "`r`n")" -Fatal
+if ($TestErrors) {
+    $ErrorLines = $TestErrors | ForEach-Object { ">>> $($_.Exception.Message)" }
+    Error-Log "Tests completed with $($TestErrors.Count) error(s):`r`n$($ErrorLines -join "`r`n")" -Fatal
 }
 
 Write-Host ("`r`n" * 3)
