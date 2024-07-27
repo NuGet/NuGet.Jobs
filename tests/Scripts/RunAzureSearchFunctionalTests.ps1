@@ -45,7 +45,7 @@ if ($LastExitCode) {
 $exitCode = 0
 
 Write-Host "Running Azure Search functional tests..."
-& $xunit "NuGet.Services.AzureSearch.FunctionalTests\bin\$Config\NuGet.Services.AzureSearch.FunctionalTests.dll" -xml "$rootRootName\functionaltests.AzureSearchTests.xml"
+& $xunit "NuGet.Services.AzureSearch.FunctionalTests\bin\$Config\net472\NuGet.Services.AzureSearch.FunctionalTests.dll" -xml "$rootRootName\functionaltests.AzureSearchTests.xml"
 if ($LastExitCode) {
     $exitCode = 1
 }
