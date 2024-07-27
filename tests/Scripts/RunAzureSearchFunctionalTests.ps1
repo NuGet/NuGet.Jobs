@@ -35,10 +35,9 @@ if ($LASTEXITCODE -ne 0) {
 
 # Run functional tests
 Write-Host "Running Azure Search functional tests..."
-$testResultFile = Join-Path $rootRootName "functionaltests.AzureSearchTests.xml"
+$testResultFile = Join-Path $repoDir "functionaltests.AzureSearchTests.xml"
 $project = Join-Path $parentDir "NuGet.Services.AzureSearch.FunctionalTests"
 dotnet test $project --no-restore --no-build --configuration $Configuration "-l:trx;LogFileName=$testResultFile"
-& $xunit "NuGet.Services.AzureSearch.FunctionalTests\bin\$Configuration\net472\NuGet.Services.AzureSearch.FunctionalTests.dll" -xml "$rootRootName\functionaltests.AzureSearchTests.xml"
 if (-not (Test-Path $testResultFile)) {
     Write-Error "The test run failed to produce a result file";
     exit 1
