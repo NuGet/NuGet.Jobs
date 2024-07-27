@@ -1,53 +1,45 @@
 [CmdletBinding()]
 param(
-    [string]$Config = "Release",
-    [string]$SolutionPath = "NuGet.Jobs.FunctionalTests.sln"
+    [string]$Configuration = "Release"
 )
 
 # Move working directory one level up
-$root = (Get-Item $PSScriptRoot).parent
-$rootName = $root.FullName
-$rootRootName = $root.parent.FullName
+$parentDir = Split-Path $PSScriptRoot
+$repoDir = Resolve-Path (Join-Path $parentDir "..")
 
 # Required tools
-$BuiltInVsWhereExe = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-$VsInstallationPath = & $BuiltInVsWhereExe -latest -prerelease -property installationPath
-$msBuild = Join-Path $VsInstallationPath "MSBuild\Current\Bin\msbuild"
-$xunit = "$rootRootName\packages\xunit.runner.console\tools\net472\xunit.console.exe"
-$nuget = "$rootName\nuget.exe"
-& "$rootName\Scripts\DownloadLatestNuGetExeRelease.ps1" $rootName
+$nuget = Join-Path $parentDir "nuget.exe"
+& (Join-Path $PSScriptRoot "DownloadLatestNuGetExeRelease.ps1") $parentDir
 
 Write-Host "Restoring solution tools"
-& $nuget install (Join-Path $PSScriptRoot "..\..\packages.config") -SolutionDirectory (Join-Path $PSScriptRoot "..\..") -NonInteractive -ExcludeVersion
-
-# Test results files
-$functionalTestsResults = "$rootRootName/functionaltests.*.xml"
+& $nuget install (Join-Path $repoDir "packages.config") -SolutionDirectory $repoDir -NonInteractive -ExcludeVersion
 
 # Clean previous test results
+$functionalTestsResults = Join-Path $repoDir "functionaltests.*.xml"
 Remove-Item $functionalTestsResults -ErrorAction Ignore
 
 # Restore packages
 Write-Host "Restoring solution"
-$fullSolutionPath = "$rootRootName\$SolutionPath"
-& $nuget "restore" $fullSolutionPath "-NonInteractive"
-if ($LastExitCode) {
+$solutionPath = Join-Path $repoDir "NuGet.Jobs.FunctionalTests.sln"
+& $nuget restore $solutionPath -NonInteractive
+if ($LASTEXITCODE -ne 0) {
     throw "Failed to restore packages!"
 }
 
 # Build the solution
 Write-Host "Building solution"
-& $msBuild $fullSolutionPath "/p:Configuration=$Config" "/p:Platform=Any CPU" "/m" "/v:M" "/fl" "/nr:false"
-if ($LastExitCode) {
+dotnet build $solutionPath --configuration $Configuration
+if ($LASTEXITCODE -ne 0) {
     throw "Failed to build solution!"
 }
 
 # Run functional tests
-$exitCode = 0
-
 Write-Host "Running Azure Search functional tests..."
-& $xunit "NuGet.Services.AzureSearch.FunctionalTests\bin\$Config\net472\NuGet.Services.AzureSearch.FunctionalTests.dll" -xml "$rootRootName\functionaltests.AzureSearchTests.xml"
-if ($LastExitCode) {
-    $exitCode = 1
+$testResultFile = Join-Path $rootRootName "functionaltests.AzureSearchTests.xml"
+$project = Join-Path $parentDir "NuGet.Services.AzureSearch.FunctionalTests"
+dotnet test $project --no-restore --no-build --configuration $Configuration "-l:trx;LogFileName=$testResultFile"
+& $xunit "NuGet.Services.AzureSearch.FunctionalTests\bin\$Configuration\net472\NuGet.Services.AzureSearch.FunctionalTests.dll" -xml "$rootRootName\functionaltests.AzureSearchTests.xml"
+if (-not (Test-Path $testResultFile)) {
+    Write-Error "The test run failed to produce a result file";
+    exit 1
 }
-
-exit $exitCode
