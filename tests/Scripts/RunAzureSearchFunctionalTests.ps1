@@ -28,7 +28,7 @@ Remove-Item $functionalTestsResults -ErrorAction Ignore
 
 # Restore packages
 Write-Host "Restoring solution"
-$fullSolutionPath = "$rootName\$SolutionPath"
+$fullSolutionPath = "$rootRootName\$SolutionPath"
 & $nuget "restore" $fullSolutionPath "-NonInteractive"
 if ($LastExitCode) {
     throw "Failed to restore packages!"
