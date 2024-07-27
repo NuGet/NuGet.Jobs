@@ -3,7 +3,6 @@ param(
     [string]$Configuration = "Release"
 )
 
-# Move working directory one level up
 $parentDir = Split-Path $PSScriptRoot
 $repoDir = Resolve-Path (Join-Path $parentDir "..")
 
