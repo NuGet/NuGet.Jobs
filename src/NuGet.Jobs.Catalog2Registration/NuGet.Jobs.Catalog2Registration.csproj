@@ -5,9 +5,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Catalog\NuGet.Services.Metadata.Catalog.csproj" />
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj" />
-    <ProjectReference Include="..\NuGet.Protocol.Catalog\NuGet.Protocol.Catalog.csproj" />
     <ProjectReference Include="..\NuGet.Services.V3\NuGet.Services.V3.csproj" />
   </ItemGroup>
   <ItemGroup>

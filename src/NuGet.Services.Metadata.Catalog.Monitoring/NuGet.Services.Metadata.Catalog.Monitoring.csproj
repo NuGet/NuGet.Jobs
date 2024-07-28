@@ -2,17 +2,10 @@
   <Import Project="..\..\SdkProjects.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <RuntimeIdentifier>win</RuntimeIdentifier>
   </PropertyGroup>
   <PropertyGroup>
     <Description>Monitor the package metadata catalog.</Description>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System.IdentityModel" />
-    <Reference Include="System.Net.Http.WebRequest" />
-    <Reference Include="System.Security" />
-    <Reference Include="System.ServiceModel" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Update="Strings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -26,7 +19,6 @@
   <ItemGroup>
     <PackageReference Include="Autofac.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="NuGet.Protocol" />
     <PackageReference Include="NuGet.Services.Storage" />
   </ItemGroup>
   <ItemGroup>

@@ -11,9 +11,6 @@
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Dapper.StrongName" />
-    <PackageReference Include="Microsoft.Data.Services.Client" />
-    <PackageReference Include="System.Data.SqlClient" />
     <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
 </Project>

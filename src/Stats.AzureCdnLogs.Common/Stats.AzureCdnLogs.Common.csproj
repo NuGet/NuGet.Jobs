@@ -7,7 +7,6 @@
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>$(MSBuildProjectDirectory)\..\..\external\ICSharpCode.SharpZipLib.0.86.0\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
-    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="LogMessages.Designer.cs">
@@ -25,7 +24,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="System.Net.Http" />
     <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
 </Project>

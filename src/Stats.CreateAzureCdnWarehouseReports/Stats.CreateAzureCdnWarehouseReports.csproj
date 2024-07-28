@@ -12,7 +12,6 @@
     <ProjectReference Include="..\Stats.AzureCdnLogs.Common\Stats.AzureCdnLogs.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Services.Client" />
     <PackageReference Include="NuGet.Versioning" />
   </ItemGroup>
 </Project>

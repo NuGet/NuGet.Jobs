@@ -5,24 +5,13 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Net" />
-    <Reference Include="System.Net.Http.WebRequest" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Autofac" />
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="NuGet.Services.Incidents" />
-    <PackageReference Include="NuGet.Services.Status" />
     <PackageReference Include="NuGet.Services.Status.Table" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\*" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="StatusUpdater.cs" />
   </ItemGroup>
 </Project>

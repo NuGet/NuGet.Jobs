@@ -9,7 +9,6 @@
     <Description>Queue based certificate verification job</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj" />
     <ProjectReference Include="..\Validation.Common.Job\Validation.Common.Job.csproj" />
     <ProjectReference Include="..\Validation.PackageSigning.Core\Validation.PackageSigning.Core.csproj" />
   </ItemGroup>

@@ -9,9 +9,6 @@
     <Description>Shared libraries for package signing validation</Description>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Security" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Validation.Common.Job\Validation.Common.Job.csproj" />
   </ItemGroup>
 </Project>

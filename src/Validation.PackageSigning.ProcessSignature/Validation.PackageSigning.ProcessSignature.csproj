@@ -10,17 +10,10 @@
     <Description>Queue based signature verification job</Description>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Security" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Scripts\*" />
     <None Include="Settings\*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NuGet.Jobs.Common\NuGet.Jobs.Common.csproj" />
     <ProjectReference Include="..\NuGet.Services.Validation.Orchestrator\NuGet.Services.Validation.Orchestrator.csproj" />
-    <ProjectReference Include="..\Validation.Common.Job\Validation.Common.Job.csproj" />
-    <ProjectReference Include="..\Validation.PackageSigning.Core\Validation.PackageSigning.Core.csproj" />
   </ItemGroup>
 </Project>
