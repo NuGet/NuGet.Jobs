@@ -13,6 +13,7 @@
     </PackageReference>
   </ItemGroup>
 
+  <Import Project="sign.thirdparty.props" />
   <PropertyGroup>
     <SignPath>build</SignPath>
     <SignPath Condition="'$(BUILD_SOURCESDIRECTORY)' != ''">$(BUILD_SOURCESDIRECTORY)\build</SignPath>
