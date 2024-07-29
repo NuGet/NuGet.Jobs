@@ -4,7 +4,6 @@ param (
     [string]$Configuration = 'debug',
     [int]$BuildNumber,
     [switch]$SkipRestore,
-    [switch]$CleanCache,
     [string]$JobsAssemblyVersion = '4.3.0',
     [string]$JobsPackageVersion = '4.3.0-zlocal',
     [string]$Branch,
@@ -25,7 +24,7 @@ if (-not (Test-Path "$PSScriptRoot/build")) {
 }
 
 Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/NuGet/ServerCommon/$BuildBranchCommit/build/init.ps1" -OutFile "$PSScriptRoot/build/init.ps1"
-. "$PSScriptRoot/build/init.ps1" -BuildBranchCommit "$BuildBranchCommit"
+. "$PSScriptRoot/build/init.ps1" -BuildBranchCommit $BuildBranchCommit
 
 Write-Host ("`r`n" * 3)
 Trace-Log ('=' * 60)
@@ -46,20 +45,8 @@ Invoke-BuildStep 'Getting private build tools' { Install-PrivateBuildTools } `
 
 Invoke-BuildStep 'Installing NuGet.exe' { Install-NuGet } `
     -ev +BuildErrors
-    
-Invoke-BuildStep 'Clearing package cache' { Clear-PackageCache } `
-    -skip:(-not $CleanCache) `
-    -ev +BuildErrors
-    
-Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
-    -ev +BuildErrors
 
-Invoke-BuildStep 'Setting job version metadata in AssemblyInfo.cs' {
-        $JobsProjects | Where-Object { !$_.IsTest } | ForEach-Object {
-            $Path = Join-Path $_.Directory "Properties\AssemblyInfo.g.cs"
-            Set-VersionInfo $Path -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA
-        }
-    } `
+Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Restoring solution packages' {
@@ -68,6 +55,14 @@ Invoke-BuildStep 'Restoring solution packages' {
         Install-SolutionPackages -path $SolutionPath -output $PackagesDir -ExcludeVersion
     } `
     -skip:$SkipRestore `
+    -ev +BuildErrors
+
+Invoke-BuildStep 'Setting job version metadata in AssemblyInfo.cs' {
+        $JobsProjects | Where-Object { !$_.IsTest } | ForEach-Object {
+            $Path = Join-Path $_.Directory "Properties\AssemblyInfo.g.cs"
+            Set-VersionInfo $Path -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA
+        }
+    } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Building jobs solution' { 
@@ -85,7 +80,7 @@ Invoke-BuildStep 'Signing the binaries' {
     } `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Creating artifacts' {
+Invoke-BuildStep 'Creating jobs artifacts' {
         $JobsProjects =
             "src\Catalog\NuGet.Services.Metadata.Catalog.csproj",
             "src\Microsoft.PackageManagement.Search.Web\Microsoft.PackageManagement.Search.Web.csproj",
@@ -104,9 +99,9 @@ Invoke-BuildStep 'Creating artifacts' {
         }
 
         $JobsNuspecProjects =
-            "src\ArchivePackages\ArchivePackages.csproj",
-            "src\CopyAzureContainer\CopyAzureContainer.csproj",
-            "src\Gallery.CredentialExpiration\Gallery.CredentialExpiration.csproj",
+            "src\ArchivePackages\ArchivePackages.nuspec",
+            "src\CopyAzureContainer\CopyAzureContainer.nuspec",
+            "src\Gallery.CredentialExpiration\Gallery.CredentialExpiration.nuspec",
             "src\Gallery.Maintenance\Gallery.Maintenance.nuspec",
             "src\Ng\Catalog2Dnx.nuspec",
             "src\Ng\Catalog2icon.nuspec",
@@ -121,26 +116,25 @@ Invoke-BuildStep 'Creating artifacts' {
             "src\NuGet.Jobs.Catalog2Registration\NuGet.Jobs.Catalog2Registration.nuspec",
             "src\NuGet.Jobs.Db2AzureSearch\NuGet.Jobs.Db2AzureSearch.nuspec",
             "src\NuGet.Jobs.GitHubIndexer\NuGet.Jobs.GitHubIndexer.nuspec",
-            "src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.csproj",
+            "src\NuGet.Services.Revalidate\NuGet.Services.Revalidate.nuspec",
             "src\NuGet.Services.Validation.Orchestrator\Validation.Orchestrator.nuspec",
             "src\NuGet.Services.Validation.Orchestrator\Validation.SymbolsOrchestrator.nuspec",
-            "src\NuGet.SupportRequests.Notifications\NuGet.SupportRequests.Notifications.csproj",
-            "src\PackageLagMonitor\Monitoring.PackageLag.csproj",
+            "src\NuGet.SupportRequests.Notifications\NuGet.SupportRequests.Notifications.nuspec",
+            "src\PackageLagMonitor\Monitoring.PackageLag.nuspec",
             "src\SplitLargeFiles\SplitLargeFiles.nuspec",
-            "src\Stats.AggregateCdnDownloadsInGallery\Stats.AggregateCdnDownloadsInGallery.csproj",
-            "src\Stats.CDNLogsSanitizer\Stats.CDNLogsSanitizer.csproj",
-            "src\Stats.CollectAzureCdnLogs\Stats.CollectAzureCdnLogs.csproj",
-            "src\Stats.CollectAzureChinaCDNLogs\Stats.CollectAzureChinaCDNLogs.csproj",
-            "src\Stats.CreateAzureCdnWarehouseReports\Stats.CreateAzureCdnWarehouseReports.csproj",
-            "src\Stats.ImportAzureCdnStatistics\Stats.ImportAzureCdnStatistics.csproj",
+            "src\Stats.AggregateCdnDownloadsInGallery\Stats.AggregateCdnDownloadsInGallery.nuspec",
+            "src\Stats.CDNLogsSanitizer\Stats.CDNLogsSanitizer.nuspec",
+            "src\Stats.CollectAzureCdnLogs\Stats.CollectAzureCdnLogs.nuspec",
+            "src\Stats.CollectAzureChinaCDNLogs\Stats.CollectAzureChinaCDNLogs.nuspec",
+            "src\Stats.CreateAzureCdnWarehouseReports\Stats.CreateAzureCdnWarehouseReports.nuspec",
+            "src\Stats.ImportAzureCdnStatistics\Stats.ImportAzureCdnStatistics.nuspec",
             "src\Stats.PostProcessReports\Stats.PostProcessReports.nuspec",
-            "src\Stats.RollUpDownloadFacts\Stats.RollUpDownloadFacts.csproj",
-            "src\StatusAggregator\StatusAggregator.csproj",
-            "src\Validation.PackageSigning.ProcessSignature\Validation.PackageSigning.ProcessSignature.csproj",
-            "src\Validation.PackageSigning.RevalidateCertificate\Validation.PackageSigning.RevalidateCertificate.csproj",
-            "src\Validation.PackageSigning.ValidateCertificate\Validation.PackageSigning.ValidateCertificate.csproj",
-            "src\Validation.Symbols.Core\Validation.Symbols.Core.csproj",
-            "src\Validation.Symbols\Validation.Symbols.Job.csproj"
+            "src\Stats.RollUpDownloadFacts\Stats.RollUpDownloadFacts.nuspec",
+            "src\StatusAggregator\StatusAggregator.nuspec",
+            "src\Validation.PackageSigning.ProcessSignature\Validation.PackageSigning.ProcessSignature.nuspec",
+            "src\Validation.PackageSigning.RevalidateCertificate\Validation.PackageSigning.RevalidateCertificate.nuspec",
+            "src\Validation.PackageSigning.ValidateCertificate\Validation.PackageSigning.ValidateCertificate.nuspec",
+            "src\Validation.Symbols\Validation.Symbols.Job.nuspec"
         $JobsNuspecProjects | ForEach-Object {
             New-Package (Join-Path $PSScriptRoot $_) -Configuration $Configuration -BuildNumber $BuildNumber -Version $JobsPackageVersion -Branch $Branch
         }
