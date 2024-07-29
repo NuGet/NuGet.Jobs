@@ -2,7 +2,6 @@
   <Import Project="..\..\SdkProjects.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <IsPackable>false</IsPackable>
     <RootNamespace>NuGet.Tools.SplitLargeFiles</RootNamespace>
     <AssemblyName>NuGet.Tools.SplitLargeFiles.Tests</AssemblyName>
   </PropertyGroup>
