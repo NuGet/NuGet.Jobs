@@ -25,7 +25,7 @@ if (-not (Test-Path "$PSScriptRoot/build")) {
 }
 
 Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/NuGet/ServerCommon/$BuildBranchCommit/build/init.ps1" -OutFile "$PSScriptRoot/build/init.ps1"
-. "$PSScriptRoot/build/init.ps1" -BuildBranchCommit "$BuildBranchCommit"
+. "$PSScriptRoot/build/init.ps1" -BuildBranchCommit $BuildBranchCommit
 
 Write-Host ("`r`n" * 3)
 Trace-Log ('=' * 60)
@@ -46,20 +46,12 @@ Invoke-BuildStep 'Getting private build tools' { Install-PrivateBuildTools } `
 
 Invoke-BuildStep 'Installing NuGet.exe' { Install-NuGet } `
     -ev +BuildErrors
-    
+
 Invoke-BuildStep 'Clearing package cache' { Clear-PackageCache } `
     -skip:(-not $CleanCache) `
     -ev +BuildErrors
-    
-Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
-    -ev +BuildErrors
 
-Invoke-BuildStep 'Setting job version metadata in AssemblyInfo.cs' {
-        $JobsProjects | Where-Object { !$_.IsTest } | ForEach-Object {
-            $Path = Join-Path $_.Directory "Properties\AssemblyInfo.g.cs"
-            Set-VersionInfo $Path -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA
-        }
-    } `
+Invoke-BuildStep 'Clearing artifacts' { Clear-Artifacts } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Restoring solution packages' {
@@ -68,6 +60,14 @@ Invoke-BuildStep 'Restoring solution packages' {
         Install-SolutionPackages -path $SolutionPath -output $PackagesDir -ExcludeVersion
     } `
     -skip:$SkipRestore `
+    -ev +BuildErrors
+
+Invoke-BuildStep 'Setting job version metadata in AssemblyInfo.cs' {
+        $JobsProjects | Where-Object { !$_.IsTest } | ForEach-Object {
+            $Path = Join-Path $_.Directory "Properties\AssemblyInfo.g.cs"
+            Set-VersionInfo $Path -AssemblyVersion $JobsAssemblyVersion -PackageVersion $JobsPackageVersion -Branch $Branch -Commit $CommitSHA
+        }
+    } `
     -ev +BuildErrors
 
 Invoke-BuildStep 'Building jobs solution' { 

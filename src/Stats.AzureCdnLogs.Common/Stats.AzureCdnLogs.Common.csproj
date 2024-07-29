@@ -24,6 +24,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="SharpZipLib" />
     <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
 </Project>

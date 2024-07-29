@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="NuGet.Services.KeyVault" />
+    <PackageReference Include="SharpZipLib" />
     <PackageReference Include="WindowsAzure.Storage" />
   </ItemGroup>
 </Project>
