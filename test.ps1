@@ -41,7 +41,7 @@ Invoke-BuildStep 'Running jobs tests' {
         $TestCount = 0
         
         $JobsTestProjects | ForEach-Object {
-            $TestResultFile = Join-Path $PSScriptRoot "Results.$TestCount.xml"
+            $TestResultFile = Join-Path $PSScriptRoot "Results.Jobs.$TestCount.xml"
             Trace-Log "Testing $($_.Path)"
             dotnet test $_.Path --no-restore --no-build --configuration $Configuration "-l:trx;LogFileName=$TestResultFile"
             if (-not (Test-Path $TestResultFile)) {

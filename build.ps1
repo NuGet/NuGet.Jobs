@@ -4,7 +4,6 @@ param (
     [string]$Configuration = 'debug',
     [int]$BuildNumber,
     [switch]$SkipRestore,
-    [switch]$CleanCache,
     [string]$JobsAssemblyVersion = '4.3.0',
     [string]$JobsPackageVersion = '4.3.0-zlocal',
     [string]$Branch,
@@ -81,7 +80,7 @@ Invoke-BuildStep 'Signing the binaries' {
     } `
     -ev +BuildErrors
 
-Invoke-BuildStep 'Creating artifacts' {
+Invoke-BuildStep 'Creating jobs artifacts' {
         $JobsProjects =
             "src\Catalog\NuGet.Services.Metadata.Catalog.csproj",
             "src\Microsoft.PackageManagement.Search.Web\Microsoft.PackageManagement.Search.Web.csproj",
