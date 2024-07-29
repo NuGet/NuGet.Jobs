@@ -88,6 +88,7 @@ namespace NuGet.Jobs.GitHubIndexer.Tests
 
                 var sw = Stopwatch.StartNew();
                 var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => searcher.GetResponse(new SearchRepositoriesRequest { }));
+                sw.Stop();
                 Assert.Equal("The operation was forcibly canceled.", ex.Message);
                 Assert.True(sw.Elapsed >= TimeSpan.FromMilliseconds(200));
             }

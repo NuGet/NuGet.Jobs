@@ -2,7 +2,6 @@
   <Import Project="..\..\SdkProjects.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <None Update="TestData\DependencyMissingId.0.1.0.json">

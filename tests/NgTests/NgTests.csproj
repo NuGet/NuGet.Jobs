@@ -2,7 +2,6 @@
   <Import Project="..\..\SdkProjects.props" />
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="Data\TestRegistrationEntries.Designer.cs">
