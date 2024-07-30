@@ -1,40 +1,31 @@
-NuGet.Jobs
-==========
+# This repository has moved!
 
-This repo contains nuget.org's implementation of the [NuGet V3 API](https://docs.microsoft.com/en-us/nuget/api/overview)
-as well as many other back-end jobs for the operation of nuget.org.
+This repository has been merged into https://github.com/NuGet/NuGetGallery. All changes to the nuget.org jobs, V3 pipeline, and
+Search Service should be made to the NuGetGallery repository.
 
-1. Each job would be an exe with 2 main classes Program and Job
-2. Program.Main should simply do the following and nothing more
+As of NuGetGallery commit
+[`d55ed52c78a34c5416ecd6734af8e1aad0d97765`](https://github.com/NuGet/NuGetGallery/commit/d55ed52c78a34c5416ecd6734af8e1aad0d97765)
+all projects, files, and Git history of the NuGet.Jobs repository have been merged into the NuGetGallery
+repository. This merge was done to reduce the amount of overhead needed to maintain the back-end of nuget.org.
 
-    ```
-    var job = new Job();
-    JobRunner.Run(job, args).Wait();
-    ```
-    
-3. Job class must inherit `NuGet.Jobs.Common.JobBase` and implement abstract methods `Init` and `Run`
-4. An `IDictionary<string, string>` is passed to `Init` for the job to initialize the member variables
-5. Edit the project file on a new job and always set `<DefineConstants>TRACE</DefineConstants>` irrespective of configuration
-6. Also, add a post-build event command line:
+If you have a broken link found in documentation, please let us know by opening a bug on that documentation page.
 
-    ```
-    move /y App.config <jobName\>.exe.config
-    ```
-    
-7. Also, add settings.job file to mark the job as singleton, if the job will be run as a webjob, and it be a continuously running singleton
+If you'd like to try to work around the broken link, try changing the "NuGet.Jobs" part of the URL to
+"NuGetGallery". This is not guaranteed to work as the code changes, but it may help. For example:
 
-## Feedback
+<pre>
+BEFORE: https://github.com/NuGet/<b>NuGet.Jobs</b>/blob/dev/build.ps1
+ AFTER: https://github.com/NuGet/<b>NuGetGallery</b>/blob/dev/build.ps1
+</pre>
 
-If you're having trouble with the NuGet.org Website, file a bug on the [NuGet Gallery Issue Tracker](https://github.com/nuget/NuGetGallery/issues). 
+## Perhaps you're looking for...
 
-If you're having trouble with the NuGet client tools (the Visual Studio extension, NuGet.exe command line tool, etc.), file a bug on [NuGet Home](https://github.com/nuget/home/issues).
+- [NuGet/NuGetGallery](https://github.com/NuGet/NuGetGallery) -  the destination for this repository move, the code that runs the www.nuget.org website and the issue tracker for all nuget.org issues
+- [NuGet/Home](https://github.com/NuGet/Home) - the issue tracker for NuGet client
+- [NuGet/NuGet.Client](https://github.com/NuGet/NuGet.Client) - the code for NuGet client, i.e. Visual Studio
+  integration, .NET CLI integration, MSBuild integration, nuget.exe, etc. 
 
-Check out the [contributing](http://docs.nuget.org/contribute) page to see the best places to log issues and start discussions. The [NuGet Home](https://github.com/NuGet/Home) repo provides an overview of the different NuGet projects available.
+## Still confused?
 
-## Trademarks
-
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow Microsoft’s Trademark & Brand Guidelines. Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party’s policies.
-
-Open Source Code of Conduct
-===================
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+Feel free to open an issue at [NuGet/NuGetGallery](https://github.com/NuGet/NuGetGallery/issues) and someone will help
+you out.
